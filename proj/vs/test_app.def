@@ -1,0 +1,3 @@
+LIBRARY	TEST_APP
+EXPORTS
+    create_app_module

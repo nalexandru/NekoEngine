@@ -1,0 +1,94 @@
+/* NekoEngine
+ *
+ * util.glh
+ * Author: Alexandru Naiman
+ *
+ * Utility functions
+ *
+ * -----------------------------------------------------------------------------
+ *
+ * Copyright (c) 2015-2017, Alexandru Naiman
+ *
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyrig]ht notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+vec4 textureAverage(sampler2DMS texture, ivec2 uv, int numSamples)
+{
+	vec4 result = texelFetch(texture, uv, 0);
+
+	for(int i = 1; i < numSamples; ++i)
+		result += texelFetch(texture, uv, i);
+
+	return result / vec4(float(numSamples));
+}
+
+float samplePointShadow(sampler2DArray shadowMap, int firstFace, vec3 coords)
+{
+	int faceId = firstFace;
+
+	float sc = 1.0;
+	float tc = 1.0;
+	float ma = 1.0;
+
+	float s = (sc / abs(ma) + 1.0) / 2.0;
+	float t = (tc / abs(ma) + 1.0) / 2.0;
+
+	return texture(shadowMap, vec3(s, t, float(faceId))).r;
+}
+
+// float conditionals
+float f_eq(float x, float y) { return 1.0 - abs(sign(x - y)); }
+float f_neq(float x, float y) { return abs(sign(x - y)); }
+float f_gt(float x, float y) { return max(sign(x - y), 0.0); }
+float f_lt(float x, float y) { return max(sign(y - x), 0.0); }
+float f_ge(float x, float y) { return 1.0 - f_lt(x, y); }
+float f_le(float x, float y) { return 1.0 - f_gt(x, y); }
+
+// vec2 conditionals
+vec2 v2_eq(vec2 x, vec2 y) { return 1.0 - abs(sign(x - y)); }
+vec2 v2_neq(vec2 x, vec2 y) { return abs(sign(x - y)); }
+vec2 v2_gt(vec2 x, vec2 y) { return max(sign(x - y), 0.0); }
+vec2 v2_lt(vec2 x, vec2 y) { return max(sign(y - x), 0.0); }
+vec2 v2_ge(vec2 x, vec2 y) { return 1.0 - v2_lt(x, y); }
+vec2 v2_le(vec2 x, vec2 y) { return 1.0 - v2_gt(x, y); }
+
+// vec3 conditionals
+vec3 v3_eq(vec3 x, vec3 y) { return 1.0 - abs(sign(x - y)); }
+vec3 v3_neq(vec3 x, vec3 y) { return abs(sign(x - y)); }
+vec3 v3_gt(vec3 x, vec3 y) { return max(sign(x - y), 0.0); }
+vec3 v3_lt(vec3 x, vec3 y) { return max(sign(y - x), 0.0); }
+vec3 v3_ge(vec3 x, vec3 y) { return 1.0 - v3_lt(x, y); }
+vec3 v3_le(vec3 x, vec3 y) { return 1.0 - v3_gt(x, y); }
+
+// vec4 conditionals
+vec4 v4_eq(vec4 x, vec4 y){ return 1.0 - abs(sign(x - y)); }
+vec4 v4_neq(vec4 x, vec4 y) { return abs(sign(x - y)); }
+vec4 v4_gt(vec4 x, vec4 y) { return max(sign(x - y), 0.0); }
+vec4 v4_lt(vec4 x, vec4 y) { return max(sign(y - x), 0.0); }
+vec4 v4_ge(vec4 x, vec4 y) { return 1.0 - v4_lt(x, y); }
+vec4 v4_le(vec4 x, vec4 y) { return 1.0 - v4_gt(x, y); }

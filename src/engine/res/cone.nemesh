@@ -1,0 +1,6 @@
+{
+	"name": "_builtin_cone",
+	"format": "NMESH2",
+	"type": "static",
+	"path": "/system/cone.nmesh"
+}

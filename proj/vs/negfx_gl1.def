@@ -1,0 +1,3 @@
+LIBRARY	NEGFX_GL1
+EXPORTS
+    create_gfx_module

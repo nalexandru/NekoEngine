@@ -1,0 +1,140 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Source Files\runtime">
+      <UniqueIdentifier>{3f6ef6f4-1645-46ab-b736-41384dcedc9d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\system">
+      <UniqueIdentifier>{00d83824-322d-4a5e-a1f2-7e5791e83fc9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\system\compat">
+      <UniqueIdentifier>{2c24e7c9-8de1-443d-b4d7-ccf074dcb35c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\system\win32">
+      <UniqueIdentifier>{bd30da4c-1484-4a44-975c-4fe708b2babb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Header Files\runtime">
+      <UniqueIdentifier>{fee312db-4e55-4edd-97a5-9fb8fca912f4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\system">
+      <UniqueIdentifier>{a25578db-24d4-45c5-b3ee-6549e9d080d7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\runtime\array.c">
+      <Filter>Source Files\runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\runtime\queue.c">
+      <Filter>Source Files\runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\runtime\runtime.c">
+      <Filter>Source Files\runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\runtime\string.c">
+      <Filter>Source Files\runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\system\error.c">
+      <Filter>Source Files\system</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\system\log.c">
+      <Filter>Source Files\system</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\system\system.c">
+      <Filter>Source Files\system</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\system\threadpool.c">
+      <Filter>Source Files\system</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\system\compat\explicit_bzero.c">
+      <Filter>Source Files\system\compat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\system\compat\reallocarray.c">
+      <Filter>Source Files\system\compat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\system\compat\snprintf.c">
+      <Filter>Source Files\system\compat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\system\compat\strlcpy.c">
+      <Filter>Source Files\system\compat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\system\win32\cond_var.c">
+      <Filter>Source Files\system\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\system\win32\mutex.c">
+      <Filter>Source Files\system\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\system\win32\sys_win32.c">
+      <Filter>Source Files\system\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\system\win32\thread.c">
+      <Filter>Source Files\system\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\system\compat\strlcat.c">
+      <Filter>Source Files\system\compat</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\include\runtime\array.h">
+      <Filter>Header Files\runtime</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\runtime\queue.h">
+      <Filter>Header Files\runtime</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\runtime\rt_internal.h">
+      <Filter>Header Files\runtime</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\runtime\runtime.h">
+      <Filter>Header Files\runtime</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\runtime\string.h">
+      <Filter>Header Files\runtime</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\system\compat.h">
+      <Filter>Header Files\system</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\system\cond_var.h">
+      <Filter>Header Files\system</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\system\defs.h">
+      <Filter>Header Files\system</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\system\error.h">
+      <Filter>Header Files\system</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\system\log.h">
+      <Filter>Header Files\system</Filter>
+    </ClInclude>
+    <ClInclude Include="include\system\miwa_config.h">
+      <Filter>Header Files\system</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\system\mutex.h">
+      <Filter>Header Files\system</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\system\system.h">
+      <Filter>Header Files\system</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\system\thread.h">
+      <Filter>Header Files\system</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\system\threadpool.h">
+      <Filter>Header Files\system</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\include\system\miwa_config.h.in">
+      <Filter>Header Files\system</Filter>
+    </None>
+  </ItemGroup>
+</Project>

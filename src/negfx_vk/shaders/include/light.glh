@@ -1,0 +1,78 @@
+/* NekoEngine
+ *
+ * lightbuffers.glh
+ * Author: Alexandru Naiman
+ *
+ * Light buffers definition
+ *
+ * -----------------------------------------------------------------------------
+ *
+ * Copyright (c) 2015-2017, Alexandru Naiman
+ *
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyrig]ht notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#ifndef LIGHT_SET
+	#define LIGHT_SET			0
+#endif
+
+#ifndef LIGHT_BUFFER_BINDING
+	#define LIGHT_BUFFER_BINDING		0
+#endif
+
+#ifndef VISIBLE_INDICES_BINDING
+	#define VISIBLE_INDICES_BINDING		1
+#endif
+
+#ifndef VISIBLE_INDICES_WRITE
+	#define VISIBLE_INDICES_PROPERTY	readonly
+#else
+	#define VISIBLE_INDICES_PROPERTY	writeonly
+#endif
+
+struct light
+{
+	vec4 position;		// xyz - position, w - type
+	vec4 direction;		// xyz - direction, w - shadow map id
+	vec4 color;		// xyz - color, w - intensity
+	vec4 data;		// x - inner radius, y - outer radius, z - inner spot cutoff, w - outer spot cutoff
+};
+
+#define LT_DIRECTIONAL		0
+#define LT_POINT		1
+#define LT_SPOT			2
+
+layout(std430, set = LIGHT_SET, binding = LIGHT_BUFFER_BINDING) readonly buffer LightBuffer
+{
+	light data[];
+} light_buffer;
+
+layout(std430, set = LIGHT_SET, binding = VISIBLE_INDICES_BINDING) VISIBLE_INDICES_PROPERTY buffer VisibleIndices
+{
+	uint data[];
+} visible_indices_buffer;

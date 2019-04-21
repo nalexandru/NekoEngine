@@ -1,0 +1,6 @@
+{
+	"name": "_builtin_cylinder",
+	"format": "NMESH2",
+	"type": "static",
+	"path": "/system/cylinder.nmesh"
+}

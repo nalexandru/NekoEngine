@@ -1,0 +1,6 @@
+{
+	"name": "_builtin_cube",
+	"format": "NMESH2",
+	"type": "static",
+	"path": "/system/cube.nmesh"
+}
