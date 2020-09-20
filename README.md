@@ -11,6 +11,7 @@ Supported rendering APIs:
 
 Supported audio APIs:
 * XAudio2
+* OpenAL
 
 Linux, Mac OS X & Vulkan support in-progress.
 
@@ -22,7 +23,7 @@ This repository is a mirror which is not frequently updated.
 * Visual Studio 2019
 * DirectX Shader Compiler (included with the Windows 10 SDK)
 * (Optional) Vulkan driver with support for VK_KHR_ray_tracing
-* (Optional) FreeType for building the FontGen tool.
+* (Optional) FreeType for building the FontGen tool
 
 ### Build instructions
 
