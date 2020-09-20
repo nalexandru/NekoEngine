@@ -9,8 +9,8 @@
 
 #define D3D12TRMOD L"D3D12Transient"
 
-static ID3D12Heap* _transientHeap;
-static uint64_t* _heapSize, _heapOffset, _frameStart, _peakSize;
+static ID3D12Heap *_transientHeap;
+static uint64_t *_heapSize, _heapOffset, _frameStart, _peakSize;
 
 bool
 D3D12_InitTransientHeap(void)
@@ -28,10 +28,10 @@ D3D12_InitTransientHeap(void)
 	return SUCCEEDED(hr);
 }
 
-ID3D12Resource*
+ID3D12Resource *
 D3D12_CreateTransientResource(D3D12_RESOURCE_DESC* desc, D3D12_RESOURCE_STATES initialState, const D3D12_CLEAR_VALUE* clearValue)
 {
-	ID3D12Resource* res;
+	ID3D12Resource *res;
 
 	D3D12_RESOURCE_ALLOCATION_INFO ai = Re_Device.dev->GetResourceAllocationInfo(0, 1, desc);
 	_heapOffset = ROUND_UP(_heapOffset, ai.Alignment);
