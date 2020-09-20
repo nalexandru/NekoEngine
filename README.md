@@ -16,13 +16,15 @@ Linux, Mac OS X & Vulkan support in-progress.
 
 This repository is a mirror which is not frequently updated.
 
-## Instructions
+## Howto
 
 ### Prerequisites
 * Visual Studio 2019
 * DirectX Shader Compiler (included with the Windows 10 SDK)
 * (Optional) Vulkan driver with support for VK_KHR_ray_tracing
 * (Optional) FreeType for building the FontGen tool.
+
+### Build instructions
 
 1. Clone the repository
 2. Clone the data repository found at https://github.com/nalexandru/NekoEngineData in SOURCE_DIR\bin\Data
