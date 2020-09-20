@@ -1,6 +1,0 @@
-{
-	"name": "_builtin_sphere",
-	"format": "NMESH2",
-	"type": "static",
-	"path": "/system/sphere.nmesh"
-}

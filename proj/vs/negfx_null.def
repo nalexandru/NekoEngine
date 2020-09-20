@@ -1,3 +1,0 @@
-LIBRARY	NEGFX_NULL
-EXPORTS
-    create_gfx_module

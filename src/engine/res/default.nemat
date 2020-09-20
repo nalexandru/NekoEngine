@@ -1,8 +1,0 @@
-{
-	"name": "Default",
-	"color": "1.0, 1.0, 1.0, 1.0",
-	"roughness": 1.0,
-	"metallic": 1.0,
-	"specular": 1.0,
-	"transparent": false
-}

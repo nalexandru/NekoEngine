@@ -1,3 +1,0 @@
-LIBRARY	NEKOEDITOR
-EXPORTS
-    create_app_module

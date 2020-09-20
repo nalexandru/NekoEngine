@@ -1,3 +1,0 @@
-LIBRARY	NEGFX_D3D12
-EXPORTS
-    create_gfx_module
