@@ -1,0 +1,438 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Header Files\System">
+      <UniqueIdentifier>{54147db7-040c-42d2-88c8-5da0c7eabdfd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Render">
+      <UniqueIdentifier>{d64858c7-8c2f-478e-bc51-18f26ad00713}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Scene">
+      <UniqueIdentifier>{f0efa107-0794-4031-a7c4-04f971b3fe46}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Scene">
+      <UniqueIdentifier>{443c832d-2b16-428e-aaac-188931ee294c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\System">
+      <UniqueIdentifier>{ab7766ad-2471-411b-b567-546d4af7f9c4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Engine">
+      <UniqueIdentifier>{b3560a4e-9473-43a2-ab97-8f75b95f4cc0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Engine">
+      <UniqueIdentifier>{f2372859-f130-45c9-88f1-7e7faf93f1fd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Runtime">
+      <UniqueIdentifier>{f4b34829-854a-46d2-8f21-57be7697cb7a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Audio">
+      <UniqueIdentifier>{3aa74528-bed2-4381-b56e-2d5af67ea803}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Audio">
+      <UniqueIdentifier>{1a12bd1f-89dc-4817-be95-0ede26fe9788}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Deps">
+      <UniqueIdentifier>{913f5e35-417f-4304-8ff6-b34d2edc044f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Deps\PhysFS">
+      <UniqueIdentifier>{68a45ed8-e7d6-4787-97d0-f8693aa836f6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\System\Compat">
+      <UniqueIdentifier>{8e8d240a-69c2-4de5-9f53-007816b4d5d9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Asset">
+      <UniqueIdentifier>{3bd15963-3341-41ce-958a-14c1d0a9efef}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Render">
+      <UniqueIdentifier>{1c32c2a1-64c6-47d9-b21e-46e72dba1cb9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Math">
+      <UniqueIdentifier>{f089b281-775b-48d5-8698-e124689b100f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Math\sse">
+      <UniqueIdentifier>{bd1cc43a-a0f4-4ec1-a2cc-7c9f0d693a55}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Input">
+      <UniqueIdentifier>{46feef23-b0c5-4ae0-aa7b-3f51e6634523}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Input">
+      <UniqueIdentifier>{bac4ab21-53bd-4c34-8953-ed921e000a0b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Script">
+      <UniqueIdentifier>{dd9179ab-4cf8-48e5-8ba8-c79a83f96c10}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Script">
+      <UniqueIdentifier>{54e11074-831c-4569-9070-1559f052a372}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\UI">
+      <UniqueIdentifier>{f8289a22-8e3d-4ad2-8f5b-433c9da7cbf1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\UI">
+      <UniqueIdentifier>{c361f585-216c-4826-b42d-597210712e8b}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\Include\System\System.h">
+      <Filter>Header Files\System</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Render\Render.h">
+      <Filter>Header Files\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Render\Material.h">
+      <Filter>Header Files\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Engine\Engine.h">
+      <Filter>Header Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\System\Window.h">
+      <Filter>Header Files\System</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Runtime\Array.h">
+      <Filter>Header Files\Runtime</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Render\Device.h">
+      <Filter>Header Files\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Engine\Job.h">
+      <Filter>Header Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Audio\Audio.h">
+      <Filter>Header Files\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Audio\Source.h">
+      <Filter>Header Files\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Audio\Clip.h">
+      <Filter>Header Files\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Engine\Entity.h">
+      <Filter>Header Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Engine\Component.h">
+      <Filter>Header Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Engine\ECSystem.h">
+      <Filter>Header Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Engine\Types.h">
+      <Filter>Header Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Runtime\Runtime.h">
+      <Filter>Header Files\Runtime</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Runtime\RtDefs.h">
+      <Filter>Header Files\Runtime</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\System\Log.h">
+      <Filter>Header Files\System</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Render\Shader.h">
+      <Filter>Header Files\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Engine\Resource.h">
+      <Filter>Header Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Engine\IO.h">
+      <Filter>Header Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Render\Model.h">
+      <Filter>Header Files\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Scene\Scene.h">
+      <Filter>Header Files\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Engine\Asset.h">
+      <Filter>Header Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\ECS.h">
+      <Filter>Source Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Engine\Application.h">
+      <Filter>Header Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Math\Math.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Render\ModelRender.h">
+      <Filter>Header Files\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Scene\Transform.h">
+      <Filter>Header Files\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Scene\Components.h">
+      <Filter>Header Files\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Math\aabb2.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Math\aabb3.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Math\debug.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Math\defs.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Math\func.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Math\mat3.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Math\mat4.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Math\plane.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Math\quat.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Math\ray2.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Math\ray3.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Math\vec2.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Math\vec3.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Math\vec4.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Math\sse\mat4_sse.h">
+      <Filter>Header Files\Math\sse</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Math\sse\vec4_sse.h">
+      <Filter>Header Files\Math\sse</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Render\Texture.h">
+      <Filter>Header Files\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\System\AtomicLock.h">
+      <Filter>Header Files\System</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\System\Memory.h">
+      <Filter>Header Files\System</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Engine\Config.h">
+      <Filter>Header Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Scene\Camera.h">
+      <Filter>Header Files\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Scene\Sky.h">
+      <Filter>Header Files\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Scene\Systems.h">
+      <Filter>Header Files\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Input\Input.h">
+      <Filter>Header Files\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\System\Endian.h">
+      <Filter>Header Files\System</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Input\Codes.h">
+      <Filter>Header Files\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Engine\Version.h">
+      <Filter>Header Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Engine\Event.h">
+      <Filter>Header Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Script\Script.h">
+      <Filter>Header Files\Script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Scene\ScriptHost.h">
+      <Filter>Header Files\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\UI\UI.h">
+      <Filter>Header Files\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\UI\Text.h">
+      <Filter>Header Files\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Engine\Events.h">
+      <Filter>Header Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\UI\Font.h">
+      <Filter>Header Files\UI</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="System\System.c">
+      <Filter>Source Files\System</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Engine.c">
+      <Filter>Source Files\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Job.c">
+      <Filter>Source Files\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Entity.c">
+      <Filter>Source Files\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Component.c">
+      <Filter>Source Files\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\ECSystem.c">
+      <Filter>Source Files\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="System\Log.c">
+      <Filter>Source Files\System</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\ECSInit.c">
+      <Filter>Source Files\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Resource.c">
+      <Filter>Source Files\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\IO.c">
+      <Filter>Source Files\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Deps\PhysFS\physfs.c">
+      <Filter>Source Files\Deps\PhysFS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_7z.c">
+      <Filter>Source Files\Deps\PhysFS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_dir.c">
+      <Filter>Source Files\Deps\PhysFS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_grp.c">
+      <Filter>Source Files\Deps\PhysFS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_hog.c">
+      <Filter>Source Files\Deps\PhysFS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_iso9660.c">
+      <Filter>Source Files\Deps\PhysFS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_mvl.c">
+      <Filter>Source Files\Deps\PhysFS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_qpak.c">
+      <Filter>Source Files\Deps\PhysFS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_slb.c">
+      <Filter>Source Files\Deps\PhysFS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_unpacked.c">
+      <Filter>Source Files\Deps\PhysFS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_vdf.c">
+      <Filter>Source Files\Deps\PhysFS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_wad.c">
+      <Filter>Source Files\Deps\PhysFS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_zip.c">
+      <Filter>Source Files\Deps\PhysFS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Deps\PhysFS\physfs_byteorder.c">
+      <Filter>Source Files\Deps\PhysFS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Deps\PhysFS\physfs_unicode.c">
+      <Filter>Source Files\Deps\PhysFS</Filter>
+    </ClCompile>
+    <ClCompile Include="System\Compat\getopt.c">
+      <Filter>Source Files\System\Compat</Filter>
+    </ClCompile>
+    <ClCompile Include="System\Compat\reallocarray.c">
+      <Filter>Source Files\System\Compat</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Scene.c">
+      <Filter>Source Files\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\NMesh.c">
+      <Filter>Source Files\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Model.c">
+      <Filter>Source Files\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\ModelRender.c">
+      <Filter>Source Files\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Transform.c">
+      <Filter>Source Files\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Texture.c">
+      <Filter>Source Files\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\TGA.c">
+      <Filter>Source Files\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Material.c">
+      <Filter>Source Files\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Config.c">
+      <Filter>Source Files\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Camera.c">
+      <Filter>Source Files\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\Ogg.c">
+      <Filter>Source Files\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\Wave.c">
+      <Filter>Source Files\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Audio\Clip.c">
+      <Filter>Source Files\Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="Audio\Source.c">
+      <Filter>Source Files\Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="Audio\Audio.c">
+      <Filter>Source Files\Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="Input\Input.c">
+      <Filter>Source Files\Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\glTF.c">
+      <Filter>Source Files\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\Image.c">
+      <Filter>Source Files\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Event.c">
+      <Filter>Source Files\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\Script.c">
+      <Filter>Source Files\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\ScriptHost.c">
+      <Filter>Source Files\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="UI\UI.c">
+      <Filter>Source Files\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="UI\Text.c">
+      <Filter>Source Files\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\Font.c">
+      <Filter>Source Files\Asset</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+</Project>

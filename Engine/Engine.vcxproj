@@ -1,0 +1,303 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug_ASAN|x64">
+      <Configuration>Debug_ASAN</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\Include\Audio\Audio.h" />
+    <ClInclude Include="..\Include\Audio\Clip.h" />
+    <ClInclude Include="..\Include\Audio\Source.h" />
+    <ClInclude Include="..\Include\Engine\Application.h" />
+    <ClInclude Include="..\Include\Engine\Asset.h" />
+    <ClInclude Include="..\Include\Engine\Component.h" />
+    <ClInclude Include="..\Include\Engine\Config.h" />
+    <ClInclude Include="..\Include\Engine\ECSystem.h" />
+    <ClInclude Include="..\Include\Engine\Engine.h" />
+    <ClInclude Include="..\Include\Engine\Entity.h" />
+    <ClInclude Include="..\Include\Engine\Event.h" />
+    <ClInclude Include="..\Include\Engine\Events.h" />
+    <ClInclude Include="..\Include\Engine\IO.h" />
+    <ClInclude Include="..\Include\Engine\Job.h" />
+    <ClInclude Include="..\Include\Engine\Resource.h" />
+    <ClInclude Include="..\Include\Engine\Types.h" />
+    <ClInclude Include="..\Include\Engine\Version.h" />
+    <ClInclude Include="..\Include\Input\Input.h" />
+    <ClInclude Include="..\Include\Input\Codes.h" />
+    <ClInclude Include="..\Include\Math\aabb2.h" />
+    <ClInclude Include="..\Include\Math\aabb3.h" />
+    <ClInclude Include="..\Include\Math\debug.h" />
+    <ClInclude Include="..\Include\Math\defs.h" />
+    <ClInclude Include="..\Include\Math\func.h" />
+    <ClInclude Include="..\Include\Math\mat3.h" />
+    <ClInclude Include="..\Include\Math\mat4.h" />
+    <ClInclude Include="..\Include\Math\Math.h" />
+    <ClInclude Include="..\Include\Math\plane.h" />
+    <ClInclude Include="..\Include\Math\quat.h" />
+    <ClInclude Include="..\Include\Math\ray2.h" />
+    <ClInclude Include="..\Include\Math\ray3.h" />
+    <ClInclude Include="..\Include\Math\sse\mat4_sse.h" />
+    <ClInclude Include="..\Include\Math\sse\vec4_sse.h" />
+    <ClInclude Include="..\Include\Math\vec2.h" />
+    <ClInclude Include="..\Include\Math\vec3.h" />
+    <ClInclude Include="..\Include\Math\vec4.h" />
+    <ClInclude Include="..\Include\Render\Device.h" />
+    <ClInclude Include="..\Include\Render\Material.h" />
+    <ClInclude Include="..\Include\Render\Model.h" />
+    <ClInclude Include="..\Include\Render\ModelRender.h" />
+    <ClInclude Include="..\Include\Render\Render.h" />
+    <ClInclude Include="..\Include\Render\Shader.h" />
+    <ClInclude Include="..\Include\Render\Texture.h" />
+    <ClInclude Include="..\Include\Runtime\Array.h" />
+    <ClInclude Include="..\Include\Runtime\RtDefs.h" />
+    <ClInclude Include="..\Include\Runtime\Runtime.h" />
+    <ClInclude Include="..\Include\Scene\Camera.h" />
+    <ClInclude Include="..\Include\Scene\Components.h" />
+    <ClInclude Include="..\Include\Scene\Scene.h" />
+    <ClInclude Include="..\Include\Scene\ScriptHost.h" />
+    <ClInclude Include="..\Include\Scene\Sky.h" />
+    <ClInclude Include="..\Include\Scene\Systems.h" />
+    <ClInclude Include="..\Include\Scene\Transform.h" />
+    <ClInclude Include="..\Include\Script\Script.h" />
+    <ClInclude Include="..\Include\System\AtomicLock.h" />
+    <ClInclude Include="..\Include\System\Endian.h" />
+    <ClInclude Include="..\Include\System\Log.h" />
+    <ClInclude Include="..\Include\System\Memory.h" />
+    <ClInclude Include="..\Include\System\Window.h" />
+    <ClInclude Include="..\Include\System\System.h" />
+    <ClInclude Include="..\Include\UI\Font.h" />
+    <ClInclude Include="..\Include\UI\Text.h" />
+    <ClInclude Include="..\Include\UI\UI.h" />
+    <ClInclude Include="Engine\ECS.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\Deps\PhysFS\physfs.c" />
+    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_7z.c" />
+    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_dir.c" />
+    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_grp.c" />
+    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_hog.c" />
+    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_iso9660.c" />
+    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_mvl.c" />
+    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_qpak.c" />
+    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_slb.c" />
+    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_unpacked.c" />
+    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_vdf.c" />
+    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_wad.c" />
+    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_zip.c" />
+    <ClCompile Include="..\Deps\PhysFS\physfs_byteorder.c" />
+    <ClCompile Include="..\Deps\PhysFS\physfs_unicode.c" />
+    <ClCompile Include="Asset\Font.c" />
+    <ClCompile Include="Asset\glTF.c" />
+    <ClCompile Include="Asset\Image.c" />
+    <ClCompile Include="Asset\NMesh.c" />
+    <ClCompile Include="Asset\Ogg.c" />
+    <ClCompile Include="Asset\TGA.c" />
+    <ClCompile Include="Asset\Wave.c" />
+    <ClCompile Include="Audio\Audio.c" />
+    <ClCompile Include="Audio\Clip.c" />
+    <ClCompile Include="Audio\Source.c" />
+    <ClCompile Include="Engine\Component.c" />
+    <ClCompile Include="Engine\Config.c" />
+    <ClCompile Include="Engine\ECSInit.c" />
+    <ClCompile Include="Engine\ECSystem.c" />
+    <ClCompile Include="Engine\Engine.c" />
+    <ClCompile Include="Engine\Entity.c" />
+    <ClCompile Include="Engine\Event.c" />
+    <ClCompile Include="Engine\IO.c" />
+    <ClCompile Include="Engine\Job.c" />
+    <ClCompile Include="Engine\Resource.c" />
+    <ClCompile Include="Input\Input.c" />
+    <ClCompile Include="Render\Material.c" />
+    <ClCompile Include="Render\Model.c" />
+    <ClCompile Include="Render\ModelRender.c" />
+    <ClCompile Include="Render\Texture.c" />
+    <ClCompile Include="Scene\Camera.c" />
+    <ClCompile Include="Scene\Scene.c" />
+    <ClCompile Include="Scene\ScriptHost.c" />
+    <ClCompile Include="Scene\Transform.c" />
+    <ClCompile Include="Script\Script.c" />
+    <ClCompile Include="System\Compat\getopt.c" />
+    <ClCompile Include="System\Compat\reallocarray.c" />
+    <ClCompile Include="System\Log.c" />
+    <ClCompile Include="System\System.c" />
+    <ClCompile Include="UI\Text.c" />
+    <ClCompile Include="UI\UI.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{073bce1a-16d7-45dd-ad74-0134e52f2a24}</ProjectGuid>
+    <RootNamespace>Engine</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_ASAN|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <EnableASAN>true</EnableASAN>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <EnableASAN>false</EnableASAN>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug_ASAN|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(SolutionDir)Include;$(SolutionDir)Deps;$(SolutionDir)Deps\PhysFS;$(SolutionDir)Deps\LuaJIT\Include;$(IncludePath)</IncludePath>
+    <OutDir>$(SolutionDir)\bin\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)\build\$(Configuration)\$(ProjectName)\</IntDir>
+    <LibraryPath>$(SolutionDir)Deps\LuaJIT\Lib\x64;$(LibraryPath)</LibraryPath>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_ASAN|x64'">
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(SolutionDir)Include;$(SolutionDir)Deps;$(SolutionDir)Deps\PhysFS;$(SolutionDir)Deps\LuaJIT\Include;$(IncludePath)</IncludePath>
+    <OutDir>$(SolutionDir)\bin\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)\build\$(Configuration)\$(ProjectName)\</IntDir>
+    <LibraryPath>$(SolutionDir)Deps\LuaJIT\Lib\x64;$(LibraryPath)</LibraryPath>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(SolutionDir)Include;$(SolutionDir)Deps;$(SolutionDir)Deps\PhysFS;$(SolutionDir)Deps\LuaJIT\Include;$(IncludePath)</IncludePath>
+    <OutDir>$(SolutionDir)\bin\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)\build\$(Configuration)\$(ProjectName)\</IntDir>
+    <LibraryPath>$(SolutionDir)Deps\LuaJIT\Lib\x64;$(LibraryPath)</LibraryPath>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
+      <DisableSpecificWarnings>4996</DisableSpecificWarnings>
+      <ExceptionHandling>false</ExceptionHandling>
+    </ClCompile>
+    <Link>
+      <SubSystem>
+      </SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <Lib>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_ASAN|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4996</DisableSpecificWarnings>
+      <ExceptionHandling>false</ExceptionHandling>
+    </ClCompile>
+    <Link>
+      <SubSystem>
+      </SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <Lib>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <DisableSpecificWarnings>4996</DisableSpecificWarnings>
+      <ExceptionHandling>false</ExceptionHandling>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <DebugInformationFormat>None</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <SubSystem>
+      </SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <Lib>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
+    </Lib>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="..\packages\Microsoft.XAudio2.Redist.1.2.2\build\native\Microsoft.XAudio2.Redist.targets" Condition="Exists('..\packages\Microsoft.XAudio2.Redist.1.2.2\build\native\Microsoft.XAudio2.Redist.targets')" />
+  </ImportGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\Microsoft.XAudio2.Redist.1.2.2\build\native\Microsoft.XAudio2.Redist.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.XAudio2.Redist.1.2.2\build\native\Microsoft.XAudio2.Redist.targets'))" />
+  </Target>
+</Project>
