@@ -3,14 +3,7 @@
 
 #include <Engine/Types.h>
 
-struct TextVertex
-{
-	float posUv[4];
-	float color[4];
-	float data;
-};
-
-void UI_DrawText(float x, float y, float size, const wchar_t *text);
+void UI_DrawText(struct UIContext *ctx, const wchar_t *text, float px, float py, float size, struct Font *font);
 
 bool UI_InitText(void);
 void UI_TermText(void);

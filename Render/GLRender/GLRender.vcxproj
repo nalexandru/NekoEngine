@@ -166,13 +166,17 @@
     </CopyFileToFolders>
   </ItemGroup>
   <ItemGroup>
-    <CopyFileToFolders Include="Shaders\Default.shader">
+    <CopyFileToFolders Include="Shaders\Metadata\Default.shader">
       <FileType>Document</FileType>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release_GL|x64'">$(SolutionDir)bin\Data\Shaders\GL\</DestinationFolders>
       <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug_GL|x64'">$(SolutionDir)bin\Data\Shaders\GL\</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug_ASAN|x64'">$(SolutionDir)bin\Data\Shaders\GL\</DestinationFolders>
     </CopyFileToFolders>
-    <CopyFileToFolders Include="Shaders\Text.shader">
+    <CopyFileToFolders Include="Shaders\Metadata\Text.shader">
       <FileType>Document</FileType>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release_GL|x64'">$(SolutionDir)bin\Data\Shaders\GL\</DestinationFolders>
       <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug_GL|x64'">$(SolutionDir)bin\Data\Shaders\GL\</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug_ASAN|x64'">$(SolutionDir)bin\Data\Shaders\GL\</DestinationFolders>
     </CopyFileToFolders>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

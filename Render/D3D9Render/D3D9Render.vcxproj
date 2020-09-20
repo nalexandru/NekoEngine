@@ -170,6 +170,14 @@
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release_D3D9|x64'">3.0</ShaderModel>
     </FxCompile>
   </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="Shaders\Metadata\Default.shader">
+      <FileType>Document</FileType>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug_D3D9|x64'">$(SolutionDir)bin\Data\Shaders\SM3\</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug_ASAN|x64'">$(SolutionDir)bin\Data\Shaders\SM3\</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release_D3D9|x64'">$(SolutionDir)bin\Data\Shaders\SM3\</DestinationFolders>
+    </CopyFileToFolders>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

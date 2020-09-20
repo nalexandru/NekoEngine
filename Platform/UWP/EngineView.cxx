@@ -35,7 +35,7 @@ EngineView::EngineView()
 		(void)freopen("CON", "w", stdout);
 		(void)freopen("CON", "w", stderr);
 
-		system("title Project Claire Log Console");
+		system("title NekoEngine Log");
 		system("color 0c");
 	}
 #endif

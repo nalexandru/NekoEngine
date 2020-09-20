@@ -96,7 +96,7 @@ WinMain(HINSTANCE inst, HINSTANCE prevInst, LPSTR cmdList, INT showCmd)
 		x = (GetSystemMetrics(SM_CXSCREEN) - WIDTH) / 2;
 		y = (GetSystemMetrics(SM_CYSCREEN) - HEIGHT) / 2;
 
-		wnd = CreateWindowEx(exStyle, CLASSNAME, L"Claire Debug Log Server", style, x, y,
+		wnd = CreateWindowEx(exStyle, CLASSNAME, L"NekoEngine Debug Log Server", style, x, y,
 			rc.right - rc.left, rc.bottom - rc.top, HWND_DESKTOP, menuBar, inst, NULL);
 	}
 

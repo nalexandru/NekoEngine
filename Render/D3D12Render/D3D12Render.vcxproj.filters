@@ -21,6 +21,9 @@
     <Filter Include="Shaders">
       <UniqueIdentifier>{013a08d8-543a-4ef2-a3be-74d80418462b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders\Metadata">
+      <UniqueIdentifier>{14713356-0a46-4568-80c7-700a360a7a61}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Pass\RayTracingPass.cxx">
@@ -119,5 +122,13 @@
     <None Include="Shaders\Random.hlsli">
       <Filter>Shaders</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="Shaders\Metadata\Text.shader">
+      <Filter>Shaders\Metadata</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Shaders\Metadata\PathTracer.shader">
+      <Filter>Shaders\Metadata</Filter>
+    </CopyFileToFolders>
   </ItemGroup>
 </Project>

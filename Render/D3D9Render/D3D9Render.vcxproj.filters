@@ -16,6 +16,9 @@
     <Filter Include="Shaders">
       <UniqueIdentifier>{526eb095-0e3d-4102-be2a-f04ed0d2a205}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders\Metadata">
+      <UniqueIdentifier>{e26f092e-88b3-469f-be30-fd765a9352dc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="D3D9Render.h">
@@ -46,5 +49,10 @@
     <FxCompile Include="Shaders\DefaultPixel.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="Shaders\Metadata\Default.shader">
+      <Filter>Shaders\Metadata</Filter>
+    </CopyFileToFolders>
   </ItemGroup>
 </Project>

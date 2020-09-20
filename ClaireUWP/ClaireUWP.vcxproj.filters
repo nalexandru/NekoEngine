@@ -11,6 +11,12 @@
     <Filter Include="Source Files">
       <UniqueIdentifier>{93bbc7f0-7663-41f5-9aeb-a0b2b256b0b9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Data">
+      <UniqueIdentifier>{5b3cd3b5-f132-4c3d-821b-c53d9b7cf006}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Data\Models">
+      <UniqueIdentifier>{e5a68d96-7fa3-4d73-8a2e-514514f9fbf5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\LockScreenLogo.scale-200.png">
@@ -45,5 +51,10 @@
     <ClCompile Include="..\Claire\Claire.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\bin\Data\Models\Sponza.glb">
+      <Filter>Data\Models</Filter>
+    </None>
   </ItemGroup>
 </Project>

@@ -108,7 +108,7 @@ Sys_CreateWindow(void)
     y = (GetSystemMetrics(SM_CYSCREEN) - *E_ScreenHeight) / 2;
 
 	_window = CreateWindowEx(exStyle, WND_CLASS_NAME,
-		L"Project Claire", style, x, y, rc.right - rc.left, rc.bottom - rc.top,
+		L"NekoEngine", style, x, y, rc.right - rc.left, rc.bottom - rc.top,
 		HWND_DESKTOP, NULL, GetModuleHandle(NULL), NULL);
 
 	if (!_window) {

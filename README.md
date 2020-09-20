@@ -21,7 +21,7 @@ This repository is a mirror which is not frequently updated.
 
 ### Prerequisites
 * Visual Studio 2019
-* DirectX Shader Compiler (included with the Windows 10 SDK)
+* DirectX Shader Compiler from https://github.com/Microsoft/DirectXShaderCompiler. The version included with the Windows 10 SDK (version 19041 as of this writing) doesn't define __DXC_VERSION_RELEASE and will result in a failed build while compiling the shaders.
 * (Optional) Vulkan driver with support for VK_KHR_ray_tracing
 * (Optional) FreeType for building the FontGen tool
 
@@ -29,7 +29,11 @@ This repository is a mirror which is not frequently updated.
 
 1. Clone the repository
 2. Clone the data repository found at https://github.com/nalexandru/NekoEngineData in SOURCE_DIR\bin\Data
-3. Build Claire.sln
+3. Build NekoEngine.sln
+
+### Notes
+* The D3D12 renderer only supports DXR at the moment, so a GPU with HW ray tracing is required.
+* UWP support is experimental and will most likely not work. The Data directory must be copied to SOURCE_DIR\bin\<Configuration>\AppX because of the limitations imposed by the platform.
 
 ## 3rd Party libraries
 

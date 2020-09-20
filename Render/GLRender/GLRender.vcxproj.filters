@@ -16,6 +16,9 @@
     <Filter Include="Source Files\Shaders">
       <UniqueIdentifier>{a9b656a3-b133-456c-a710-249f2ae880f2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Shaders\Metadata">
+      <UniqueIdentifier>{d8d91030-1d46-40d5-a804-a34db7cf5b89}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="GLRender.c">
@@ -61,11 +64,13 @@
     <CopyFileToFolders Include="Shaders\Text.frag">
       <Filter>Source Files\Shaders</Filter>
     </CopyFileToFolders>
-    <CopyFileToFolders Include="Shaders\Default.shader">
-      <Filter>Source Files\Shaders</Filter>
-    </CopyFileToFolders>
-    <CopyFileToFolders Include="Shaders\Text.shader">
-      <Filter>Source Files\Shaders</Filter>
-    </CopyFileToFolders>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Shaders\Metadata\Default.shader">
+      <Filter>Source Files\Shaders\Metadata</Filter>
+    </None>
+    <None Include="Shaders\Metadata\Text.shader">
+      <Filter>Source Files\Shaders\Metadata</Filter>
+    </None>
   </ItemGroup>
 </Project>

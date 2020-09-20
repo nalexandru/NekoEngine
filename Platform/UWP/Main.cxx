@@ -49,7 +49,7 @@ _RealMain(Platform::Array<Platform::String^>^)
 	wcstombs(dir, sf->Path->Data(), sizeof(dir));
 
 	snprintf(dataDir, _MAX_PATH, "%s\\Data", dir);
-	E_SetCVarStr(L"dataDir", dataDir);
+	E_SetCVarStr(L"Engine_DataDir", dataDir);
 
 /*	if (engine_early_init(7, args) != NE_OK) {
 		MessageDialog ^dlg = ref new MessageDialog(L"Initialization failed. The program will now exit.", L"Fatal Error");

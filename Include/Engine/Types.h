@@ -12,6 +12,7 @@ struct Model;
 struct Stream;
 struct Camera;
 struct Texture;
+struct UIContext;
 struct AudioClip;
 struct AtomicLock;
 struct ResourceLoadInfo;

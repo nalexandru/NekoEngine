@@ -17,8 +17,8 @@
 
 struct ApplicationInfo App_ApplicationInfo =
 {
-	L"ClaireTestApplication",
-	{ 0, 1, 10, 0 }
+	L"NekoEngine Test Application",
+	{ 0, 7, 20, 0 }
 };
 
 static uint64_t _sceneLoadedEvt;
@@ -62,13 +62,13 @@ App_InitPlayerMovement(struct PlayerMovement *comp, const void **args)
 	comp->rotationSpeed = 50.f;
 
 	for (args; *args; ++args) {
-		const char *arg = *args;
+		const char *arg = (const char *)*args;
 		size_t len = strlen(arg);
 
 		if (!strncmp(arg, "MovementSpeed", len))
-			comp->movementSpeed = strtof(*(++args), NULL);
+			comp->movementSpeed = strtof((const char *)*(++args), NULL);
 		else if (!strncmp(arg, "RotationSpeed", len))
-			comp->rotationSpeed = strtof(*(++args), NULL);
+			comp->rotationSpeed = strtof((const char *)*(++args), NULL);
 	}
 
 	comp->moveForward = In_CreateMap(L"forward");

@@ -32,7 +32,7 @@
 
 #define EMOD	L"Engine"
 
-#define E_CONFIG_FILE	"Claire.ini"
+#define E_CONFIG_FILE	"Data/Config/Engine.ini"
 
 void *E_Screen = NULL;
 uint32_t *E_ScreenWidth = NULL;
@@ -88,7 +88,7 @@ E_Init(int argc, char *argv[])
 	Sys_CreateWindow();
 
 	E_InitJobSystem();
-	E_InitIOSystem(argv ? argv[0] : "ProjectClaire");
+	E_InitIOSystem(argv ? argv[0] : "NekoEngine");
 	E_InitEventSystem();
 
 	E_InitComponents();

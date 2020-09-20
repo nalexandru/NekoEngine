@@ -413,6 +413,9 @@
     <ResourceCompile Include="Claire.rc" />
   </ItemGroup>
   <ItemGroup>
+    <CopyFileToFolders Include="..\Deps\LuaJIT\Bin\x64\lua51.dll">
+      <FileType>Document</FileType>
+    </CopyFileToFolders>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
