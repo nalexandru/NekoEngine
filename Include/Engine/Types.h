@@ -7,6 +7,7 @@
 
 #define E_INVALID_HANDLE (uint64_t)-1
 
+struct Font;
 struct Scene;
 struct Model;
 struct Stream;
@@ -40,6 +41,9 @@ typedef bool (*CompInitProc)(void *, const void **);
 typedef void (*CompTermProc)(void *);
 
 typedef void (*ECSysExecProc)(void **comp, void *args);
+
+struct mat3;
+struct mat4;
 
 /*#if defined(__PARSER__)
 #	define Attribute(...) __attribute__((annotate(#__VA_ARGS__)))

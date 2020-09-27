@@ -1,12 +1,14 @@
 #include <assert.h>
 
 #include <Engine/Job.h>
+#include <Engine/Config.h>
 #include <Engine/ECSystem.h>
 #include <Scene/Scene.h>
 #include <Scene/Camera.h>
 #include <Scene/Transform.h>
 #include <Render/Render.h>
 #include <Render/Device.h>
+#include <Render/Texture.h>
 #include <Render/Material.h>
 #include <Render/ModelRender.h>
 
@@ -30,6 +32,8 @@ const size_t Re_SceneRenderDataSize = sizeof(struct SceneRenderData);
 
 static UINT _descIncrement;
 static inline void _CreateHeaps(struct SceneRenderData *srd);
+static bool *_multisample;
+static int32_t *_samples;
 
 bool
 Re_InitScene(struct Scene *scene)
@@ -76,7 +80,17 @@ D3D12_UpdateSceneData(struct Scene *scene)
 	m4_inverse(&srd->shaderData.inverseViewProjection, &srd->shaderData.viewProjection);*/
 
 	srd->shaderData.aspect = (float)*E_ScreenWidth / (float)*E_ScreenHeight;
-	srd->shaderData.numSamples = 4;
+
+	if (!_multisample) {
+		_multisample = &E_GetCVarBln(L"Render_Multisampling", false)->bln;
+		_samples = &E_GetCVarI32(L"Render_Samples", 1)->i32;
+	}
+
+	srd->shaderData.numSamples = *_multisample ? *_samples : 1;
+	srd->shaderData.aperture = Scn_ActiveCamera->aperture;
+
+	struct TextureRenderData *trd = (struct TextureRenderData *)&((struct Texture *)E_ResourcePtr(scene->environmentMap))->renderDataStart;
+	srd->shaderData.environmentMap = (uint32_t)trd->id;
 
 	srd->dataBuffer = D3D12_CreateTransientResource(&CD3DX12_RESOURCE_DESC::Buffer(sizeof(srd->shaderData)), D3D12_RESOURCE_STATE_COPY_DEST);
 	srd->dataBuffer->SetName(L"Scene Data Buffer");

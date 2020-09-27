@@ -71,7 +71,7 @@
     <ClCompile Include="RenderPath\FwdPlusRenderPath.cxx">
       <Filter>Source Files\RenderPath</Filter>
     </ClCompile>
-    <ClCompile Include="D3D12Text.cxx">
+    <ClCompile Include="D3D12UI.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -117,17 +117,29 @@
     <CustomBuild Include="Shaders\PathTracer.hlsl">
       <Filter>Shaders</Filter>
     </CustomBuild>
+    <CustomBuild Include="Shaders\UIPixel.hlsl">
+      <Filter>Shaders</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Shaders\UIVertex.hlsl">
+      <Filter>Shaders</Filter>
+    </CustomBuild>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\Random.hlsli">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\Tonemap.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\PBR.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
-    <CopyFileToFolders Include="Shaders\Metadata\Text.shader">
+    <CopyFileToFolders Include="Shaders\Metadata\PathTracer.shader">
       <Filter>Shaders\Metadata</Filter>
     </CopyFileToFolders>
-    <CopyFileToFolders Include="Shaders\Metadata\PathTracer.shader">
+    <CopyFileToFolders Include="Shaders\Metadata\UI.shader">
       <Filter>Shaders\Metadata</Filter>
     </CopyFileToFolders>
   </ItemGroup>

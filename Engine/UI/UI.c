@@ -1,8 +1,18 @@
 #include <UI/UI.h>
+#include <Math/Math.h>
+#include <Engine/Engine.h>
+#include <Render/Render.h>
+
+struct mat4 UI_Projection;
 
 bool
 UI_InitUI(void)
 {
+	if (!Re_RenderInfo.negativeDepth)
+		m4_ortho(&UI_Projection, 0.f, (float)*E_ScreenWidth, (float)*E_ScreenHeight, 0.f, 0.f, 1.f);
+	else
+		m4_ortho_nd(&UI_Projection, 0.f, (float)*E_ScreenWidth, (float)*E_ScreenHeight, 0.f, 0.f, 1.f);
+
 	return UI_InitText();
 }
 
@@ -52,6 +62,10 @@ UI_TermContext(struct UIContext *ctx)
 void
 UI_ResetContext(void **comp, void *args)
 {
+	struct UIContext *ctx = comp[0];
 
+	Rt_ClearArray(&ctx->vertices, false);
+	Rt_ClearArray(&ctx->indices, false);
+	Rt_ClearArray(&ctx->draws, false);
 }
 

@@ -209,7 +209,7 @@
     <ClCompile Include="D3D12Graph.cxx" />
     <ClCompile Include="D3D12Material.cxx" />
     <ClCompile Include="D3D12Model.cxx" />
-    <ClCompile Include="D3D12Text.cxx" />
+    <ClCompile Include="D3D12UI.cxx" />
     <ClCompile Include="D3D12Texture.cxx" />
     <ClCompile Include="Pass\RayTracingPass.cxx" />
     <ClCompile Include="D3D12Pipeline.cxx" />
@@ -248,13 +248,29 @@
       <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug_ASAN|x64'">$(SolutionDir)bin\Data\Shaders\SM6\</DestinationFolders>
       <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)bin\Data\Shaders\SM6\</DestinationFolders>
     </CopyFileToFolders>
-    <CopyFileToFolders Include="Shaders\Metadata\Text.shader">
+    <CopyFileToFolders Include="Shaders\Metadata\UI.shader">
       <FileType>Document</FileType>
       <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)bin\Data\Shaders\SM6\</DestinationFolders>
       <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug_ASAN|x64'">$(SolutionDir)bin\Data\Shaders\SM6\</DestinationFolders>
       <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)bin\Data\Shaders\SM6\</DestinationFolders>
     </CopyFileToFolders>
+    <None Include="Shaders\PBR.hlsli" />
     <None Include="Shaders\Random.hlsli" />
+    <None Include="Shaders\Tonemap.hlsli" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="Shaders\UIPixel.hlsl">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">dxc.exe -Qembed_debug -Zi -Od -Vd -T ps_6_5 -I $(SolutionDir)Include -I $(ProjectDir) -Fo $(SolutionDir)bin\Data\Shaders\SM6\%(Filename).obj %(FullPath)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug_ASAN|x64'">dxc.exe -Qembed_debug -Zi -Od -Vd -T ps_6_5 -I $(SolutionDir)Include -I $(ProjectDir) -Fo $(SolutionDir)bin\Data\Shaders\SM6\%(Filename).obj %(FullPath)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">dxc.exe -T ps_6_5 -I $(SolutionDir)Include -I $(ProjectDir) -Fo $(SolutionDir)bin\Data\Shaders\SM6\%(Filename).obj %(FullPath)</Command>
+    </CustomBuild>
+    <CustomBuild Include="Shaders\UIVertex.hlsl">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">dxc.exe -T vs_6_5 -I $(SolutionDir)Include -I $(ProjectDir) -Fo $(SolutionDir)bin\Data\Shaders\SM6\%(Filename).obj %(FullPath)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug_ASAN|x64'">dxc.exe -Qembed_debug -Zi -Od -Vd -T vs_6_5 -I $(SolutionDir)Include -I $(ProjectDir) -Fo $(SolutionDir)bin\Data\Shaders\SM6\%(Filename).obj %(FullPath)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">dxc.exe -Qembed_debug -Zi -Od -Vd -T vs_6_5 -I $(SolutionDir)Include -I $(ProjectDir) -Fo $(SolutionDir)bin\Data\Shaders\SM6\%(Filename).obj %(FullPath)</Command>
+    </CustomBuild>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>

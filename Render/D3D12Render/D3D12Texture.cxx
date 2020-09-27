@@ -67,6 +67,7 @@ Re_InitTexture(const char *name, struct Texture *tex, Handle h)
 	if (tex->format >= _countof(_textureFormat))
 		return false;
 
+	trd->id = h;
 	trd->format = _textureFormat[tex->format];
 
 	D3D12_RESOURCE_DESC rd{};
@@ -175,6 +176,14 @@ D3D12_UpdateTextureHeap(D3D12_CPU_DESCRIPTOR_HANDLE dest)
 	}
 
 	Re_Device.dev->CopyDescriptorsSimple(_maxTextures, dest, _textureHeap->GetCPUDescriptorHandleForHeapStart(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+}
+
+void
+D3D12_CopyTextureDescriptor(uint64_t id, D3D12_CPU_DESCRIPTOR_HANDLE dest)
+{
+	D3D12_CPU_DESCRIPTOR_HANDLE src = _textureHeap->GetCPUDescriptorHandleForHeapStart();
+	src.ptr += id * _incrementSize;
+	Re_Device.dev->CopyDescriptorsSimple(1, dest, src, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 }
 
 void

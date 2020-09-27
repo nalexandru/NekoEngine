@@ -42,8 +42,6 @@ void Re_WaitIdle(void);
 void Re_ScreenResized(void);
 void Re_RenderFrame(void);
 
-void Re_DrawText(uint16_t x, uint16_t y, const wchar_t *fmt, ...);
-
 bool Re_InitScene(struct Scene *scene);
 void Re_TermScene(struct Scene *scene);
 

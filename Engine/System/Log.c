@@ -1,6 +1,7 @@
 #include <time.h>
 #include <stdio.h>
 #include <errno.h>
+#include <wchar.h>
 #include <string.h>
 
 #include <System/Log.h>
@@ -67,14 +68,14 @@ Sys_LogEntry(const wchar_t *module, uint8_t severity, const wchar_t *format, ...
 		return;
 
 	if ((fp = fopen(_logFile, "a+")) == NULL) {
-		fprintf(stderr, "failed to open log file for append [%s]: %d\n", _logFile, errno);
+		fwprintf(stderr, L"failed to open log file for append [%hs]: %d\n", _logFile, errno);
 		return;
 	}
 
 	t = time(0);
 	tm = localtime(&t);
 
-	fwprintf(fp, L"%d-%d-%d-%d:%d:%d [%s][%s]: %s",
+	fwprintf(fp, L"%d-%d-%d-%d:%d:%d [%ls][%ls]: %ls",
 		tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
 		tm->tm_hour, tm->tm_min, tm->tm_sec,
 		module, _logSeverityStr[severity], buff);

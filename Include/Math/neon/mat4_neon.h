@@ -609,21 +609,31 @@ m4_infinite_perspective_rz(struct mat4 *dst, float fov_y, float aspect, float ne
 }
 
 static inline struct mat4 *
-m4_ortho(struct mat4 *dst,
-	float left, float right, float bottom, float top,
-	float near, float far)
+m4_ortho(struct mat4 *dst, float left, float right, float bottom, float top, float z_near, float z_far)
 {
-	float tx = -((right + left) / (right - left));
-	float ty = -((top + bottom) / (top - bottom));
-	float tz = -((far + near) / (far - near));
-
 	m4_ident(dst);
-	dst->m[0] = 2.f / (right - left);
-	dst->m[5] = 2.f / (top - bottom);
-	dst->m[10] = -2.f / (far - near);
-	dst->m[12] = tx;
-	dst->m[13] = ty;
-	dst->m[14] = tz;
+
+	dst->r[0][0] = 2.f / (right - left);
+	dst->r[1][1] = 2.f / (top - bottom);
+	dst->r[2][2] = 1.f / (z_far - z_near);
+	dst->r[3][0] = -((right + left) / (right - left));
+	dst->r[3][1] = -((top + bottom) / (top - bottom));
+	dst->r[3][2] = -dst->r[2][2] * z_near;
+
+	return dst;
+}
+
+static inline struct mat4 *
+m4_ortho_nd(struct mat4 *dst, float left, float right, float bottom, float top, float z_near, float z_far)
+{
+	m4_ident(dst);
+
+	dst->r[0][0] = 2.f / (right - left);
+	dst->r[1][1] = 2.f / (top - bottom);
+	dst->r[2][2] = -2.f / (z_far - z_near);
+	dst->r[3][0] = -((right + left) / (right - left));
+	dst->r[3][1] = -((top + bottom) / (top - bottom));
+	dst->r[3][2] = -((z_far + z_near) / (z_far - z_near));
 
 	return dst;
 }

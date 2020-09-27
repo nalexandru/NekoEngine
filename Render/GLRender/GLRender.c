@@ -52,9 +52,9 @@ Re_Init(void)
 	version = glGetString(GL_VERSION);
 	if (version) {
 		if (strstr(version, "OpenGL"))
-			swprintf(Re_RenderInfo.name, 64, L"%S", version);
+			swprintf(Re_RenderInfo.name, 64, L"%hs", version);
 		else
-			swprintf(Re_RenderInfo.name, 64, L"OpenGL %S", version);
+			swprintf(Re_RenderInfo.name, 64, L"OpenGL %hs", version);
 	} else {
 		glGetIntegerv(GL_MAJOR_VERSION, &major);
 		glGetIntegerv(GL_MINOR_VERSION, &minor);
@@ -76,20 +76,32 @@ Re_Init(void)
 			Sys_LogEntry(GLRMOD, LOG_WARNING, L"Debug callback extension not available");
 	}
 
-	const wchar_t *comp[] = { TRANSFORM_COMP, MODEL_RENDER_COMP };
-	E_RegisterSystem(GET_DRAWABLES_SYS, ECSYS_GROUP_MANUAL, comp, _countof(comp), (ECSysExecProc)GL_GetDrawables, 0);
+	if (!GL_LoadShaders())
+		return false;
+
+	if (!GL_InitUI())
+		return false;
 
 	glFrontFace(GL_CCW);
 	glEnable(GL_DEPTH_TEST);
 
 	GL_SwapInterval(CVAR_BOOL(L"Render_VerticalSync"));
 
-	return GL_LoadShaders();;
+	const wchar_t *comp[] = { TRANSFORM_COMP, MODEL_RENDER_COMP };
+	E_RegisterSystem(GET_DRAWABLES_SYS, ECSYS_GROUP_MANUAL, comp, _countof(comp), (ECSysExecProc)GL_GetDrawables, 0);
+
+	comp[0] = UI_CONTEXT_COMP;
+	E_RegisterSystem(LOAD_UI_CONTEXT, ECSYS_GROUP_MANUAL, comp, 1, (ECSysExecProc)GL_LoadUIContext, 0);
+	E_RegisterSystem(DRAW_UI_CONTEXT, ECSYS_GROUP_MANUAL, comp, 1, (ECSysExecProc)GL_DrawUIContext, 0);
+
+	return true;
 }
 
 void
 Re_Term(void)
 {
+	GL_TermUI();
+
 	GL_UnloadShaders();
 
 	if (!Re_Device.loadLock) {
@@ -119,6 +131,7 @@ Re_RenderFrame(void)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 	GL_RenderScene(Scn_ActiveScene);
+	GL_RenderUI(Scn_ActiveScene);
 
 	GL_SwapBuffers();
 }

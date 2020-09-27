@@ -21,12 +21,12 @@ Re_InitModel(const char *name, struct Model *m)
 	void *dst;
 
 	hr = Re_Device.dev->CreateVertexBuffer(vertexSize, D3DUSAGE_WRITEONLY, 0, D3DPOOL_DEFAULT, &mrd->vtxBuffer, NULL);
-	mrd->vtxBuffer->Lock(0, 0, &dst, D3DLOCK_DISCARD);
+	mrd->vtxBuffer->Lock(0, 0, &dst, 0);
 	memcpy(dst, m->vertices, vertexSize);
 	mrd->vtxBuffer->Unlock();
 
 	hr = Re_Device.dev->CreateIndexBuffer(indexSize, D3DUSAGE_WRITEONLY, D3DFMT_INDEX32, D3DPOOL_DEFAULT, &mrd->idxBuffer, NULL);
-	mrd->idxBuffer->Lock(0, 0, &dst, D3DLOCK_DISCARD);
+	mrd->idxBuffer->Lock(0, 0, &dst, 0);
 	memcpy(dst, m->indices, indexSize);
 	mrd->idxBuffer->Unlock();
 

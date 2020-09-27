@@ -42,6 +42,9 @@
     <ClCompile Include="glad.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="GLUI.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GLRender.h">
@@ -58,19 +61,13 @@
     <CopyFileToFolders Include="Shaders\Default.vert">
       <Filter>Source Files\Shaders</Filter>
     </CopyFileToFolders>
-    <CopyFileToFolders Include="Shaders\Text.vert">
+    <CopyFileToFolders Include="Shaders\Metadata\Default.shader" />
+    <CopyFileToFolders Include="Shaders\Metadata\UI.shader" />
+    <CopyFileToFolders Include="Shaders\UI.frag">
       <Filter>Source Files\Shaders</Filter>
     </CopyFileToFolders>
-    <CopyFileToFolders Include="Shaders\Text.frag">
+    <CopyFileToFolders Include="Shaders\UI.vert">
       <Filter>Source Files\Shaders</Filter>
     </CopyFileToFolders>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Shaders\Metadata\Default.shader">
-      <Filter>Source Files\Shaders\Metadata</Filter>
-    </None>
-    <None Include="Shaders\Metadata\Text.shader">
-      <Filter>Source Files\Shaders\Metadata</Filter>
-    </None>
   </ItemGroup>
 </Project>

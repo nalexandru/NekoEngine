@@ -69,12 +69,12 @@ E_RegisterResourceType(const char *name, size_t size, ResourceCreateProc create,
 	ert = Rt_ArrayFind(&_ResTypes, &rt, _ResTypeCmp);
 	if (ert) {
 		// TODO: Support multiple handlers ?
-		Sys_LogEntry(RES_MOD, LOG_WARNING, L"Attempt to register handler for [%s] multiple times", name);
+		Sys_LogEntry(RES_MOD, LOG_WARNING, L"Attempt to register handler for [%ls] multiple times", name);
 		return false;
 	}
 
 	if (!_InitResourceList(50, size + sizeof(struct ResInfo), &rt.list)) {
-		Sys_LogEntry(RES_MOD, LOG_CRITICAL, L"Failed to initialize resource list for type [%s]", name);
+		Sys_LogEntry(RES_MOD, LOG_CRITICAL, L"Failed to initialize resource list for type [%ls]", name);
 		return false;
 	}
 
@@ -200,7 +200,7 @@ _NewResource(const char *path, const char *type, const void *ci, bool create)
 	rt_id = (uint32_t)Rt_ArrayFindId(&_ResTypes, &type_hash, _ResTypeCmp);
 	rt = Rt_ArrayGet(&_ResTypes, rt_id);
 	if (!rt) {
-		Sys_LogEntry(RES_MOD, LOG_CRITICAL, L"Resource type [%S] not found", type);
+		Sys_LogEntry(RES_MOD, LOG_CRITICAL, L"Resource type [%s] not found", type);
 		return E_INVALID_HANDLE;
 	}
 
@@ -245,7 +245,7 @@ _NewResource(const char *path, const char *type, const void *ci, bool create)
 			li.path = path;
 
 			if (!E_FileStream(path, IO_READ, &li.stm)) {
-				Sys_LogEntry(RES_MOD, LOG_CRITICAL, L"Failed to open file [%S] for resource of type [%S]", path, type);
+				Sys_LogEntry(RES_MOD, LOG_CRITICAL, L"Failed to open file [%s] for resource of type [%s]", path, type);
 				rc = false;
 				goto exit;
 			}
@@ -311,7 +311,7 @@ _UnloadAll(struct ResType *rt)
 			continue;
 
 		Sys_LogEntry(RES_MOD, LOG_WARNING,
-			L"Resource [%S] has %d reference%s at shutdown time",
+			L"Resource [%s] has %d reference%s at shutdown time",
 			rptr->info.path, rptr->info.references,
 			rptr->info.references > 1 ? "s" : "");
 

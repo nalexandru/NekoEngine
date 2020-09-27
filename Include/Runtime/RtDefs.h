@@ -4,6 +4,7 @@
 #include <limits.h>
 #include <stdint.h>
 #include <string.h>
+#include <wchar.h>
 
 #define RT_DEF_INC	20
 #define RT_NOT_FOUND	(size_t)-1

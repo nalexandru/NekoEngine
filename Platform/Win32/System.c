@@ -1,19 +1,24 @@
 #include <stdio.h>
 #include <Windows.h>
 
+#if defined(_M_AMD64) || defined(_M_IX86)
+#	include <intrin.h>
+#endif
+
 #include <System/System.h>
 #include <Engine/Engine.h>
 
 #include "Win32Platform.h"
 
 static int _numCpus = 0;
-static HANDLE h_stdout;
-static HANDLE h_stderr;
-static WORD _colors[4] =
+static HANDLE _stdout;
+static HANDLE _stderr;
+static WORD _cpuArch, _colors[4] =
 {
 	13, 7, 14, 12
 };
 static WORD _defaultColor;
+static char _hostname[MAX_COMPUTERNAME_LENGTH + 1], _cpu[50];
 
 bool
 Sys_InitDbgOut(void)
@@ -31,10 +36,10 @@ Sys_InitDbgOut(void)
 		SetConsoleTitleA("Debug Console");
 	}
 
-	h_stdout = GetStdHandle(STD_OUTPUT_HANDLE);
-	h_stderr = GetStdHandle(STD_ERROR_HANDLE);
+	_stdout = GetStdHandle(STD_OUTPUT_HANDLE);
+	_stderr = GetStdHandle(STD_ERROR_HANDLE);
 
-	GetConsoleScreenBufferInfo(h_stdout, &csbi);
+	GetConsoleScreenBufferInfo(_stdout, &csbi);
 	_defaultColor = csbi.wAttributes;
 
 	return true;
@@ -43,17 +48,17 @@ Sys_InitDbgOut(void)
 void
 Sys_DbgOut(int color, const wchar_t *module, const wchar_t *severity, const wchar_t *text)
 {
-	SetConsoleTextAttribute(h_stdout, _colors[color]);
+	SetConsoleTextAttribute(_stdout, _colors[color]);
 
 	if (IsDebuggerPresent()) {
 		wchar_t buff[4096];
-		swprintf(buff, 4096, L"[%s][%s]: %s\n", module, severity, text);
+		swprintf(buff, 4096, L"[%ls][%ls]: %ls\n", module, severity, text);
 		OutputDebugString(buff);
 	} else {
-		fwprintf(stdout, L"[%s][%s]: %s\n", module, severity, text);
+		fwprintf(stdout, L"[%ls][%ls]: %ls\n", module, severity, text);
 	}
 
-	SetConsoleTextAttribute(h_stdout, _defaultColor);
+	SetConsoleTextAttribute(_stdout, _defaultColor);
 }
 
 void
@@ -150,6 +155,75 @@ Sys_Yield(void)
 	SwitchToThread();
 }
 
+const char *
+Sys_Hostname(void)
+{
+	DWORD size = sizeof(_hostname);
+
+	if (!_hostname[0])
+		GetComputerNameA(_hostname, &size);
+
+	return _hostname;
+}
+
+const char *
+Sys_Machine(void)
+{
+	switch (_cpuArch)
+	{
+	case PROCESSOR_ARCHITECTURE_AMD64:			return "x64";
+	case PROCESSOR_ARCHITECTURE_INTEL:			return "x86";
+	case PROCESSOR_ARCHITECTURE_ARM64:			return "arm64";
+	case PROCESSOR_ARCHITECTURE_ARM:			return "arm";
+	case PROCESSOR_ARCHITECTURE_MIPS:			return "MIPS";
+	case PROCESSOR_ARCHITECTURE_ALPHA:			return "Alpha";
+	case PROCESSOR_ARCHITECTURE_ALPHA64:		return "Alpha 64";
+	case PROCESSOR_ARCHITECTURE_SHX:			return "SuperH";
+	case PROCESSOR_ARCHITECTURE_PPC:			return "PowerPC";
+	case PROCESSOR_ARCHITECTURE_IA32_ON_WIN64:	return "Itanium on x64";
+	case PROCESSOR_ARCHITECTURE_ARM32_ON_WIN64:	return "arm on x64";
+	case PROCESSOR_ARCHITECTURE_IA64:			return "Itanium";
+	case PROCESSOR_ARCHITECTURE_MSIL:			return "msil";
+	default:									return "Unknown";
+	}
+}
+
+const char *
+Sys_CpuName(void)
+{
+	if (!_cpu[0]) {
+#if defined(_M_AMD64) || defined(_M_IX86)
+		int cpuInfo[4] = { 0 };
+
+		__cpuid(cpuInfo, 0x80000002);
+		memcpy(_cpu, cpuInfo, sizeof(cpuInfo));
+
+		__cpuid(cpuInfo, 0x80000003);
+		memcpy(_cpu + 16, cpuInfo, sizeof(cpuInfo));
+
+		__cpuid(cpuInfo, 0x80000004);
+		memcpy(_cpu + 32, cpuInfo, sizeof(cpuInfo));
+#elif defined(_M_ARM64)
+#else // Unknown architecture, attempt to read from registry
+		HKEY key;
+		DWORD size = 0;
+
+		if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, "HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0", 0, KEY_READ, &key)
+				== ERROR_SUCCESS) {
+			size = sizeof(_cpu);
+			RegQueryValueExA(key, "ProcessorNameString", 0, 0, (LPBYTE)_cpu, &size);
+
+			RegCloseKey(key);
+		}
+#endif
+
+		if (!_cpu[0])
+			memcpy(_cpu, "Unknown", 7);
+	}
+
+	return _cpu;
+}
+
 int
 Sys_NumCpus(void)
 {
@@ -230,6 +304,7 @@ Sys_InitPlatform(void)
 	GetNativeSystemInfo(&si);
 
 	_numCpus = si.dwNumberOfProcessors;
+	_cpuArch = si.wProcessorArchitecture;
 
 	if (FAILED(CoInitializeEx(NULL, COINIT_MULTITHREADED)))
 		return false;

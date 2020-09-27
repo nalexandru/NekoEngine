@@ -82,6 +82,12 @@
     <Filter Include="Header Files\UI">
       <UniqueIdentifier>{c361f585-216c-4826-b42d-597210712e8b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Math\altivec">
+      <UniqueIdentifier>{12b5fe55-f362-4a8c-aee0-036feef8a3a2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Math\neon">
+      <UniqueIdentifier>{6f7c8891-19c4-4717-aaee-06f90f88eefb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Include\System\System.h">
@@ -276,15 +282,24 @@
     <ClInclude Include="..\Include\UI\Font.h">
       <Filter>Header Files\UI</Filter>
     </ClInclude>
+    <ClInclude Include="..\Include\Math\neon\mat4_neon.h">
+      <Filter>Header Files\Math\neon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Math\neon\vec4_neon.h">
+      <Filter>Header Files\Math\neon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Math\altivec\mat4_altivec.h">
+      <Filter>Header Files\Math\altivec</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Math\altivec\vec4_altivec.h">
+      <Filter>Header Files\Math\altivec</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="System\System.c">
       <Filter>Source Files\System</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Engine.c">
-      <Filter>Source Files\Engine</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\Job.c">
       <Filter>Source Files\Engine</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Entity.c">

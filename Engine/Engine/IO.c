@@ -35,7 +35,7 @@ E_OpenFile(const char *path, FileOpenMode mode)
 
 	if (!f)
 		Sys_LogEntry(IO_MODULE, LOG_CRITICAL,
-			L"Failed to open file [%S], %S", path,
+			L"Failed to open file [%s], %s", path,
 			PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
 
 	return (File)f;
@@ -155,13 +155,15 @@ E_FGets(File f, char *buff, int64_t max)
 			}
 		}
 
-		if (c == '\n') {
+		if (c == '\r') {
+			*p = 0x0;
+		} else if (c == '\n') {
 			*p = 0x0;
 			return buff;
+		} else {
+			*p = c;
+			++p;
 		}
-
-		*p = c;
-		++p;
 	}
 	while (1);
 }
@@ -220,7 +222,7 @@ E_Mount(const char *path, const char *point)
 {
 	if (!PHYSFS_mount(path, point, 0)) {
 		Sys_LogEntry(IO_MODULE, LOG_CRITICAL,
-			L"Failed to mount directory [%S] -> [%S]: %S", path, point,
+			L"Failed to mount directory [%s] -> [%s]: %s", path, point,
 			PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
 		return false;
 	}
@@ -282,6 +284,8 @@ E_ProcessFiles(const char *path, const char *ext, bool recurse, void (*cb)(const
 bool
 E_FileStream(const char *path, FileOpenMode mode, struct Stream *stm)
 {
+	memset(stm, 0x0, sizeof(*stm));
+
 	if (Sys_Capabilities() & SC_MMIO) {
 		stm->ptr = E_MapFile(path, mode, &stm->size);
 		stm->pos = 0;
@@ -322,32 +326,18 @@ E_CloseStream(struct Stream *stm)
 bool
 E_InitIOSystem(const char *argv0)
 {
-	const PHYSFS_ArchiveInfo **i = NULL;
-
 	if (!PHYSFS_init(argv0)) {
-		Sys_LogEntry(IO_MODULE, LOG_CRITICAL, L"Failed to initialize I/O subsystem: %S", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+		Sys_LogEntry(IO_MODULE, LOG_CRITICAL, L"Failed to initialize I/O subsystem: %s", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
 		return false;
 	}
-
-/*	log_entry(IO_MODULE, LOG_DEBUG, "Data directory [%s]", data_dir);
-
-	if (sys_config_get_bool("load_loose_files", true)) {
-		if (!PHYSFS_mount(data_dir, "/", 0))
-			log_entry(IO_MODULE, LOG_CRITICAL,
-				"Failed to open Data directory: %s",
-				PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
-	}*/
 
 	if (!PHYSFS_mount(E_GetCVarStr(L"Engine_DataDir", "Data")->str, "/", 0))
 		return false;
 
-	for (i = PHYSFS_supportedArchiveTypes(); *i != NULL; i++)
-		Sys_LogEntry(IO_MODULE, LOG_DEBUG, L"Supported archive: [%S], which is [%S].", (*i)->extension, (*i)->description);
-
 	/*if (!PHYSFS_mountMemory(engine_res, engine_res_size, 0,
 		"engine_res.zip", "/system", 0))
 		Sys_LogEntry(IO_MODULE, LOG_CRITICAL,
-			L"Failed to load builtin resources: %s",
+			L"Failed to load builtin resources: %ls",
 			PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));*/
 
 /*	rt_string write_dir;

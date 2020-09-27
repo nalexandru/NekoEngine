@@ -10,6 +10,8 @@
 #include <Engine/Component.h>
 
 #define GET_DRAWABLES_SYS	L"D3D9GetDrawables"
+#define LOAD_UI_CONTEXT		L"D3D9_LoadUIContext"
+#define DRAW_UI_CONTEXT		L"D3D9_DrawUIContext"
 
 struct RenderDevice
 {
@@ -65,6 +67,7 @@ struct TextureRenderData
 };
 
 struct GetDrawablesArgs;
+struct UIContextLoadArgs;
 
 extern IDirect3DVertexDeclaration9 *D3D9_VertexDeclaration;
 
@@ -74,4 +77,10 @@ bool D3D9_LoadShaders(void);
 void D3D9_UnloadShaders(void);
 
 void D3D9_RenderScene(struct Scene *scene);
+
+bool D3D9_InitUI(void);
+void D3D9_RenderUI(struct Scene *scene);
+void D3D9_TermUI(void);
+void D3D9_LoadUIContext(void **comp, struct UIContextLoadArgs *args);
+void D3D9_DrawUIContext(void **comp, void *args);
 

@@ -10,6 +10,7 @@ extern "C" {
 struct ApplicationInfo
 {
 	const wchar_t name[64];
+	const wchar_t copyright[64];
 	struct Version version;
 };
 

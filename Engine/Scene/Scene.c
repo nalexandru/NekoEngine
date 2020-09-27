@@ -9,9 +9,11 @@
 #include <Scene/Scene.h>
 #include <Scene/Camera.h>
 #include <Render/Render.h>
+#include <Render/Texture.h>
 #include <System/System.h>
 #include <System/Memory.h>
 #include <Runtime/Runtime.h>
+#include <Engine/Resource.h>
 
 #include "../Engine/ECS.h"
 
@@ -21,6 +23,7 @@
 struct Scene *Scn_ActiveScene = NULL;
 static inline bool _InitScene(struct Scene *s);
 static void _LoadJob(int worker, struct Scene *scn);
+static inline void _ReadSceneInfo(struct Scene *s, struct Stream *stm, char *data, wchar_t *buff);
 static inline void _ReadEntity(struct Scene *s, struct Stream *stm, char *data, wchar_t *wbuff, Array *args);
 
 struct Scene *
@@ -30,7 +33,7 @@ Scn_CreateScene(const wchar_t *name)
 	if (!s)
 		return NULL;
 
-	swprintf(s->name, sizeof(s->name) / sizeof(wchar_t), L"%s", name);
+	swprintf(s->name, sizeof(s->name) / sizeof(wchar_t), L"%ls", name);
 
 	if (!_InitScene(s)) {
 		Sys_Free(s);
@@ -110,7 +113,7 @@ _LoadJob(int wid, struct Scene *s)
 	Array args;
 
 	if (!E_FileStream(s->path, IO_READ, &stm)) {
-		Sys_LogEntry(SCNMOD, LOG_CRITICAL, L"Failed to open scene file %S", s->path);
+		Sys_LogEntry(SCNMOD, LOG_CRITICAL, L"Failed to open scene file %s", s->path);
 		return;
 	}
 
@@ -125,13 +128,13 @@ _LoadJob(int wid, struct Scene *s)
 		char *line = E_ReadStreamLine(&stm, data, BUFF_SZ);
 		size_t len;
 
-		if (!*(line = Rt_SkipWhitespace(line)))
+		if (!*(line = Rt_SkipWhitespace(line)) || line[0] == '#')
 			continue;
 		
 		len = strlen(line);
 
 		if (!strncmp(line, "SceneInfo", len)) {
-			//
+			_ReadSceneInfo(s, &stm, data, wbuff);
 		} else if (!strncmp(line, "EndSceneInfo", len)) {
 			//
 		} else if (strstr(line, "Entity")) {
@@ -148,6 +151,31 @@ _LoadJob(int wid, struct Scene *s)
 }
 
 void
+_ReadSceneInfo(struct Scene *s, struct Stream *stm, char *data, wchar_t *buff)
+{
+	while (!E_EndOfStream(stm)) {
+		char *line = E_ReadStreamLine(stm, data, BUFF_SZ);
+		size_t len;
+
+		if (!*(line = Rt_SkipWhitespace(line)) || line[0] == '#')
+			continue;
+		
+		len = strlen(line);
+
+		memset(buff, 0x0, BUFF_SZ * sizeof(*buff));
+		if (!strncmp(line, "Name", 4)) {
+			char *type = strchr(line, '=') + 1;
+			mbstowcs(s->name, type, sizeof(s->name) / sizeof(wchar_t));
+		} else if (!strncmp(line, "EnvironmentMap", 14)) {
+			char *file = strchr(line, '=') + 1;
+			s->environmentMap = E_LoadResource(file, RES_TEXTURE);
+		} else if (!strncmp(line, "EndSceneInfo", len)) {
+			break;
+		}
+	}
+}
+
+void
 _ReadEntity(struct Scene *s, struct Stream *stm, char *data, wchar_t *wbuff, Array *args)
 {
 	EntityHandle entity = NULL;
@@ -159,7 +187,7 @@ _ReadEntity(struct Scene *s, struct Stream *stm, char *data, wchar_t *wbuff, Arr
 		char *line = E_ReadStreamLine(stm, data, BUFF_SZ);
 		size_t len;
 
-		if (!*(line = Rt_SkipWhitespace(line)))
+		if (!*(line = Rt_SkipWhitespace(line)) || line[0] == '#')
 			continue;
 		
 		len = strlen(line);

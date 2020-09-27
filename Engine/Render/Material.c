@@ -22,6 +22,11 @@ static int32_t _CompMaterials(const struct Material *m, const uint64_t *hash);
 bool
 Re_LoadMaterials(void)
 {
+	struct TextureCreateInfo tci = { 1, 1, 1, TT_2D, TF_R8G8B8A8_UNORM, NULL, 4, false };
+	tci.data = Sys_Alloc(sizeof(uint8_t), 4, MH_Transient);
+	memset(tci.data, 0xFF, 4);
+	E_CreateResource(RE_BLANK_TEXTURE, RES_TEXTURE, &tci);
+
 	Rt_InitArray(&_materials, 10, sizeof(struct Material));
 	E_ProcessFiles("/", "mat", true, _LoadMaterial);
 
@@ -136,7 +141,7 @@ _LoadMaterial(const char *path)
 	jsmn_parse(&p, data, (size_t)size, tokens, tokCount);
 
 	if (tokens[0].type != JSMN_OBJECT) {
-		Sys_LogEntry(MATMOD, LOG_WARNING, L"Invalid material file %S", path);
+		Sys_LogEntry(MATMOD, LOG_WARNING, L"Invalid material file %s", path);
 		return;
 	}
 

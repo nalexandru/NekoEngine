@@ -115,7 +115,7 @@ FwdPlusRenderPath::Init()
 }
 
 void
-FwdPlusRenderPath::RenderScene(const struct Scene *s, ID3D12Resource *output, D3D12_RESOURCE_STATES outputState)
+FwdPlusRenderPath::RenderScene(const struct Scene *s, ID3D12Resource *output, D3D12_RESOURCE_STATES startState, D3D12_RESOURCE_STATES endState)
 {
 	const struct SceneRenderData *srd = (const struct SceneRenderData *)&s->renderDataStart;
 	ID3D12GraphicsCommandList *cmdList = Re_MainThreadWorker.cmdList;
@@ -209,7 +209,7 @@ FwdPlusRenderPath::RenderScene(const struct Scene *s, ID3D12Resource *output, D3
 	{
 		//CD3DX12_RESOURCE_BARRIER::Transition(srd->materialBuffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER),
 		CD3DX12_RESOURCE_BARRIER::Transition(color, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COPY_SOURCE),
-		CD3DX12_RESOURCE_BARRIER::Transition(output, outputState, D3D12_RESOURCE_STATE_COPY_DEST)
+		CD3DX12_RESOURCE_BARRIER::Transition(output, startState, D3D12_RESOURCE_STATE_COPY_DEST)
 	};
 	cmdList->ResourceBarrier(_countof(barriers), barriers);
 
@@ -218,7 +218,7 @@ FwdPlusRenderPath::RenderScene(const struct Scene *s, ID3D12Resource *output, D3
 	D3D12_RESOURCE_BARRIER endBarriers[] =
 	{
 //		CD3DX12_RESOURCE_BARRIER::Transition(srd->materialBuffer, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, D3D12_RESOURCE_STATE_COPY_DEST),
-		CD3DX12_RESOURCE_BARRIER::Transition(output, D3D12_RESOURCE_STATE_COPY_DEST, outputState)
+		CD3DX12_RESOURCE_BARRIER::Transition(output, D3D12_RESOURCE_STATE_COPY_DEST, endState)
 	};
 	cmdList->ResourceBarrier(_countof(endBarriers), endBarriers);
 }

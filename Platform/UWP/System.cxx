@@ -26,7 +26,13 @@ Sys_InitDbgOut(void)
 void
 Sys_DbgOut(int color, const wchar_t *module, const wchar_t *severity, const wchar_t *text)
 {
-	wprintf(L"[%s][%s]: %s\n", module, severity, text);
+	if (IsDebuggerPresent()) {
+		wchar_t buff[4096];
+		swprintf(buff, 4096, L"[%ls][%ls]: %ls\n", module, severity, text);
+		OutputDebugString(buff);
+	} else {
+		fwprintf(stdout, L"[%ls][%ls]: %ls\n", module, severity, text);
+	}
 }
 
 void

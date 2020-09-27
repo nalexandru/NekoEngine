@@ -8,10 +8,12 @@
 #include <Engine/Engine.h>
 #include <Engine/Config.h>
 #include <System/Log.h>
+#include <System/Endian.h>
 #include <System/Memory.h>
 #include <System/System.h>
 #include <System/Window.h>
 #include <Scene/Scene.h>
+#include <Scene/Camera.h>
 #include <Render/Render.h>
 #include <Render/Model.h>
 #include <Render/Material.h>
@@ -80,10 +82,23 @@ E_Init(int argc, char *argv[])
 
 	Sys_InitMemory();
 
-	Sys_LogEntry(EMOD, LOG_INFORMATION, L"%s \"%s\" v%s", E_PGM_NAME, E_CODENAME, E_VER_STR);
-	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Copyright \u00A9 %s", E_CPY_STR);
+	if (App_ApplicationInfo.version.revision)
+		Sys_LogEntry(EMOD, LOG_INFORMATION, L"%ls v%d.%d.%d.%d", App_ApplicationInfo.name, App_ApplicationInfo.version.major,
+			App_ApplicationInfo.version.minor, App_ApplicationInfo.version.build, App_ApplicationInfo.version.revision);
+	else
+		Sys_LogEntry(EMOD, LOG_INFORMATION, L"%ls v%d.%d.%d", App_ApplicationInfo.name, App_ApplicationInfo.version.major,
+			App_ApplicationInfo.version.minor, App_ApplicationInfo.version.build);
+	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Copyright \u00A9 %ls", App_ApplicationInfo.copyright);
+
+	Sys_LogEntry(EMOD, LOG_INFORMATION, L"%ls \"%ls\" v%ls", E_PGM_NAME, E_CODENAME, E_VER_STR);
+	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Copyright \u00A9 %ls", E_CPY_STR);
 	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Starting up...");
-	Sys_LogEntry(EMOD, LOG_INFORMATION, L"CPU count: %d", Sys_NumCpus());
+
+	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Host: %s", Sys_Hostname());
+	Sys_LogEntry(EMOD, LOG_INFORMATION, L"CPU: %s", Sys_CpuName());
+	Sys_LogEntry(EMOD, LOG_INFORMATION, L"\tCount: %d", Sys_NumCpus());
+	Sys_LogEntry(EMOD, LOG_INFORMATION, L"\tArchitecture: %s", Sys_Machine());
+	Sys_LogEntry(EMOD, LOG_INFORMATION, L"\tBig Endian: %s", Sys_BigEndian() ? "True" : "False");
 
 	Sys_CreateWindow();
 
@@ -98,8 +113,8 @@ E_Init(int argc, char *argv[])
 	E_InitResourceSystem();
 
 	Re_Init();
-	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Rendering API: %s", Re_RenderInfo.name);
-	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Render Device: %s", Re_RenderInfo.device);
+	Sys_LogEntry(EMOD, LOG_INFORMATION, L"GPU: %ls", Re_RenderInfo.device);
+	Sys_LogEntry(EMOD, LOG_INFORMATION, L"\tRendering API: %ls", Re_RenderInfo.name);
 
 	E_RegisterResourceType(RES_MODEL, RE_APPEND_DATA_SIZE(struct Model, Re_ModelRenderDataSize),
 		(ResourceCreateProc)Re_CreateModel, (ResourceLoadProc)Re_LoadModel, (ResourceUnloadProc)Re_UnloadModel);
@@ -114,11 +129,11 @@ E_Init(int argc, char *argv[])
 	UI_InitUI();
 
 	if (App_ApplicationInfo.version.revision)
-		swprintf(titleBuff, 256, L"%s v%u.%u.%u.%u - %s - %s", App_ApplicationInfo.name,
+		swprintf(titleBuff, 256, L"%ls v%u.%u.%u.%u - %ls - %ls", App_ApplicationInfo.name,
 			App_ApplicationInfo.version.major, App_ApplicationInfo.version.minor, App_ApplicationInfo.version.build,
 			App_ApplicationInfo.version.revision, Re_RenderInfo.device, Re_RenderInfo.name);
 	else
-		swprintf(titleBuff, 256, L"%s v%u.%u.%u - %s - %s", App_ApplicationInfo.name,
+		swprintf(titleBuff, 256, L"%ls v%u.%u.%u - %ls - %ls", App_ApplicationInfo.name,
 			App_ApplicationInfo.version.major, App_ApplicationInfo.version.minor, App_ApplicationInfo.version.build,
 			Re_RenderInfo.device, Re_RenderInfo.name);
 
@@ -130,7 +145,12 @@ E_Init(int argc, char *argv[])
 
 	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Engine start up complete.");
 
-	return App_InitApplication(argc, argv);
+	if (!App_InitApplication(argc, argv))
+		return false;
+	
+	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Application started.");
+
+	return true;
 }
 
 void
@@ -200,7 +220,7 @@ E_Frame(void)
 	E_DeltaTime = now - _prevTime;
 	_prevTime = now;
 
-	if (!Scn_ActiveScene) {
+	if (!Scn_ActiveScene || !Scn_ActiveCamera) {
 		E_ProcessEvents();
 		return;
 	}
@@ -232,14 +252,3 @@ E_Shutdown(void)
 	_shutdown = true;
 }
 
-void
-E_LoadScene(void)
-{
-
-}
-
-void
-E_ActivateScene(void)
-{
-
-}

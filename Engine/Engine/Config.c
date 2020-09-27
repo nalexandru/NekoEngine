@@ -57,7 +57,7 @@ E_InitConfig(const char *file)
 			ptr = strchr(ptr, '=');
 			*ptr++ = 0x0;
 
-			swprintf(name, CVAR_MAX_NAME, L"%S_%S", section, &key[1]);
+			swprintf(name, CVAR_MAX_NAME, L"%hs_%hs", section, &key[1]);
 			switch (key[0]) {
 			case 's': E_GetCVarStr(name, ptr); break;
 			case 'i': E_GetCVarI32(name, atoi(ptr)); break;

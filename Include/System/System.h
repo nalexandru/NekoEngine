@@ -2,6 +2,7 @@
 #define _SYS_SYSTEM_H_
 
 #include <wchar.h>
+#include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -26,7 +27,9 @@ enum MachineType
 	MT_XBOX_360,
 	MT_XBOX_ONE,
 	MT_PS3,
-	MT_XBOX
+	MT_XBOX,
+	MT_SWITCH,
+	MT_WII
 };
 
 enum SystemCapabilityFlags
@@ -53,6 +56,9 @@ void Sys_TlsFree(uint32_t key);
 
 void Sys_Yield(void);
 
+const char *Sys_Hostname(void);
+const char *Sys_Machine(void);
+const char *Sys_CpuName(void);
 int Sys_NumCpus(void);
 
 enum MachineType Sys_MachineType(void);
@@ -80,7 +86,7 @@ static inline wchar_t *wcsdup(const wchar_t *str)
 {
 	size_t len = wcslen(str) * sizeof(*str);
 	wchar_t *copy = (wchar_t *)calloc(1, len + sizeof(*str));
-	memmove(copy, str, len);
+	memcpy(copy, str, len);
 	return copy;
 }
 #endif

@@ -19,6 +19,7 @@
 #include <Math/Math.h>
 
 #define PREPARE_SCENE_DATA_SYS	L"D3D12_PrepareSceneData"
+#define DRAW_UI_CONTEXT			L"D3D12_DrawUIContext"
 
 // From: https://nvpro-samples.github.io/vk_raytracing_tutorial_KHR/vkrt_tuto_manyhits.md.htm
 #define ROUND_UP(v, powerOf2Alignment) (((v) + (powerOf2Alignment)-1) & ~((powerOf2Alignment)-1))
@@ -135,7 +136,10 @@ struct SceneRenderData
 		mat4 viewProjection;
 		mat4 inverseViewProjection;
 		float aspect;
+		float aperture;
 		uint32_t numSamples;
+		uint32_t seed;
+		uint32_t environmentMap;
 	} shaderData;
 };
 
@@ -143,6 +147,7 @@ struct TextureRenderData
 {
 	ID3D12Resource *res;
 	DXGI_FORMAT format;
+	uint64_t id;
 };
 
 struct AccelerationStructure
@@ -151,6 +156,7 @@ struct AccelerationStructure
 };
 
 struct PrepareInstanceBufferArgs;
+struct DrawUIContextArgs;
 
 extern struct GlobalRenderData Re_GlobalRenderData;
 extern struct RenderWorker Re_MainThreadWorker;
@@ -166,12 +172,13 @@ bool D3D12_InitStaging(void);
 void D3D12_StageUpload(ID3D12Resource *dest, UINT64 size, const void *data, UINT64 alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT, UINT64 rowPitch = 0, UINT64 slicePitch = 0);
 void *D3D12_AllocStagingArea(UINT64 size, UINT64 alignment, D3D12_GPU_VIRTUAL_ADDRESS *gpuHandle);
 void D3D12_StageBLASBuild(struct Model *m, D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS buildFlags);
-void D3D12_Upload(void);
+void D3D12_ResetUploadHeap(void);
 void D3D12_BuildBLAS(ID3D12GraphicsCommandList4 *cmdList);
 void D3D12_TermStaging();
 
 bool D3D12_InitTextureHeap(void);
 void D3D12_UpdateTextureHeap(D3D12_CPU_DESCRIPTOR_HANDLE dest);
+void D3D12_CopyTextureDescriptor(uint64_t id, D3D12_CPU_DESCRIPTOR_HANDLE dest);
 void D3D12_TermTextureHeap(void);
 
 void D3D12_BuildTLAS(ID3D12GraphicsCommandList4 *cmdList, struct Scene *scene);
@@ -187,6 +194,11 @@ void D3D12_TermTransientHeap(void);
 
 bool D3D12_LoadShaders();
 void D3D12_UnloadShaders();
+
+bool D3D12_InitUI();
+void D3D12_RenderUI(struct Scene *s, ID3D12Resource *output, D3D12_RESOURCE_STATES startState = D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATES endState = D3D12_RESOURCE_STATE_PRESENT);
+void D3D12_TermUI();
+void D3D12_DrawUIContext(void **comp, struct DrawUIContextArgs *args);
 
 void D3D12_HandleDeviceRemoved(void);
 

@@ -15,6 +15,7 @@ Scn_InitCamera(struct Camera *cam, const void **args)
 	cam->fov = 90.f;
 	cam->zNear = .1f;
 	cam->zFar = 1024.f;
+	cam->aperture = 0.0016f;
 
 	for (args; *args; ++args) {
 		const char *arg = *args;
@@ -31,6 +32,8 @@ Scn_InitCamera(struct Camera *cam, const void **args)
 			cam->zFar = (float)atof(*(++args));
 		} else if (!strncmp(arg, "InfinitePerspective", len)) {
 			infinite = !strncmp(*(++args), "true", 4);
+		} else if (!strncmp(arg, "Aperture", len)) {
+			cam->zFar = (float)atof(*(++args));
 		}
 	}
 

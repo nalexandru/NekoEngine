@@ -22,6 +22,8 @@
 
 #include <Engine/Types.h>
 
+#define RE_BLANK_TEXTURE	"__Re_BlankTexture"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

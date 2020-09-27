@@ -74,14 +74,14 @@ E_InitJobSystem(void)
 	_jobQueue.head = 0;
 	_jobQueue.tail = 0;
 	_jobQueue.size = 1000;
-	_jobQueue.jobs = calloc(_jobQueue.size, sizeof(*_jobQueue.jobs));
+	_jobQueue.jobs = (struct Job *)calloc(_jobQueue.size, sizeof(*_jobQueue.jobs));
 
 	if (!_jobQueue.jobs)
 		return false;
 
 	InitializeSRWLock(&_jobQueue.lock);
 
-	_threads = calloc(_numThreads, sizeof(HANDLE));
+	_threads = (HANDLE *)calloc(_numThreads, sizeof(*_threads));
 	if (!_threads)
 		return false;
 
@@ -93,32 +93,9 @@ E_InitJobSystem(void)
 
 		SetThreadAffinityMask(_threads[i], (DWORD_PTR)1 << ((DWORD_PTR)i + 2));
 
-		if (IsWindows10OrGreater()) {
-			HANDLE k32 = LoadLibrary(L"kernel32");
-			if (k32) {
-				HRESULT (*k32_SetThreadDescription)(HANDLE, PCWSTR);
-				k32_SetThreadDescription = (HRESULT (*)(HANDLE, PCWSTR))GetProcAddress(k32, "SetThreadDescription");
-
-				if (k32_SetThreadDescription) {
-					wchar_t wname[10];
-				
-					swprintf(wname, 10, L"Worker %d", i);
-					k32_SetThreadDescription(_threads[i], wname);
-				}
-
-				FreeLibrary(k32);
-			}
-		}
-
-		char name[10];
-		
-		snprintf(name, 10, "Worker %d", i);
-		THREADNAME_INFO info = { 0x1000, name, id, 0 };
-		__try {
-			RaiseException(0x406D1388, 0, sizeof(info) / sizeof(ULONG_PTR), (const ULONG_PTR *)&info);
-		}
-		__except (EXCEPTION_EXECUTE_HANDLER) {
-		}
+		wchar_t wname[10];
+		swprintf(wname, 10, L"Worker %d", i);
+		SetThreadDescription(_threads[i], wname);
 	}
 
 	return true;
@@ -161,7 +138,7 @@ E_DispatchJobs(uint64_t count, JobProc proc, void **args, void (*completed)(uint
 	_submittedJobs += dispatches;
 
 	for (int i = 0; i < dispatches; ++i) {
-		struct DispatchArgs *dargs = Sys_Alloc(sizeof(*dargs), 1, MH_Transient);
+		struct DispatchArgs *dargs = (struct DispatchArgs *)Sys_Alloc(sizeof(*dargs), 1, MH_Transient);
 
 		dargs->exec = proc;
 		dargs->count = jobs;
@@ -174,7 +151,7 @@ E_DispatchJobs(uint64_t count, JobProc proc, void **args, void (*completed)(uint
 
 		next_start += dargs->count;
 
-		while(!_JQ_Push(&_jobQueue, _DispatchWrapper, dargs, NULL))
+		while(!_JQ_Push(&_jobQueue, (JobProc)_DispatchWrapper, dargs, NULL))
 			SwitchToThread();
 	}
 
@@ -261,4 +238,3 @@ _JQ_Push(struct JobQueue *jq, JobProc exec, void *args, void (*completed)(uint64
 
 	return ret;
 }
-

@@ -41,6 +41,9 @@
     <ClCompile Include="D3D9Shader.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="D3D9UI.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\DefaultVertex.hlsl">
@@ -49,9 +52,18 @@
     <FxCompile Include="Shaders\DefaultPixel.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\UIPixel.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\UIVertex.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="Shaders\Metadata\Default.shader">
+      <Filter>Shaders\Metadata</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Shaders\Metadata\UI.shader">
       <Filter>Shaders\Metadata</Filter>
     </CopyFileToFolders>
   </ItemGroup>

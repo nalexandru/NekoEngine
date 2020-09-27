@@ -160,14 +160,16 @@ RtRenderPath::Init()
 
 		struct Shader *s = (struct Shader *)Re_GetShader(Rt_HashStringW(L"PathTracer"));
 		lib->SetDXILLibrary(&s->lib);
-		lib->DefineExport(L"RayGen");
-		lib->DefineExport(L"ClosestHit");
-		lib->DefineExport(L"Miss");
 
 		CD3DX12_HIT_GROUP_SUBOBJECT *hitGroup = desc.CreateSubobject<CD3DX12_HIT_GROUP_SUBOBJECT>();
 		hitGroup->SetClosestHitShaderImport(L"ClosestHit");
 		hitGroup->SetHitGroupExport(L"HitGroup");
 		hitGroup->SetHitGroupType(D3D12_HIT_GROUP_TYPE_TRIANGLES);
+
+		CD3DX12_HIT_GROUP_SUBOBJECT *shadowHitGroup = desc.CreateSubobject<CD3DX12_HIT_GROUP_SUBOBJECT>();
+		shadowHitGroup->SetClosestHitShaderImport(L"ShadowHit");
+		shadowHitGroup->SetHitGroupExport(L"ShadowHitGroup");
+		shadowHitGroup->SetHitGroupType(D3D12_HIT_GROUP_TYPE_TRIANGLES);
 
 		CD3DX12_RAYTRACING_SHADER_CONFIG_SUBOBJECT *shaderConfig = desc.CreateSubobject<CD3DX12_RAYTRACING_SHADER_CONFIG_SUBOBJECT>();
 		shaderConfig->Config(4 * sizeof(float), 2 * sizeof(float));
@@ -177,7 +179,6 @@ RtRenderPath::Init()
 		
 		CD3DX12_SUBOBJECT_TO_EXPORTS_ASSOCIATION_SUBOBJECT *assoc = desc.CreateSubobject<CD3DX12_SUBOBJECT_TO_EXPORTS_ASSOCIATION_SUBOBJECT>();
 		assoc->SetSubobjectToAssociate(*lrs);
-		assoc->AddExport(L"RayGen");
 
 		CD3DX12_GLOBAL_ROOT_SIGNATURE_SUBOBJECT *grs = desc.CreateSubobject<CD3DX12_GLOBAL_ROOT_SIGNATURE_SUBOBJECT>();
 		grs->SetRootSignature(_globalRootSignature);
@@ -203,6 +204,8 @@ RtRenderPath::Init()
 			D3D12_AddShader(&_sbt[i], SET_RayGen, L"RayGen", (void *)handle.ptr);
 			D3D12_AddShader(&_sbt[i], SET_Miss, L"Miss", NULL);
 			D3D12_AddShader(&_sbt[i], SET_HitGroup, L"HitGroup", NULL);
+			D3D12_AddShader(&_sbt[i], SET_Miss, L"ShadowMiss", NULL);
+			D3D12_AddShader(&_sbt[i], SET_HitGroup, L"ShadowHitGroup", NULL);
 
 			if (!D3D12_BuildSBT(&_sbt[i], _psoProps))
 				return false;
@@ -215,7 +218,7 @@ RtRenderPath::Init()
 }
 
 void
-RtRenderPath::RenderScene(const struct Scene *s, ID3D12Resource *output, D3D12_RESOURCE_STATES outputState)
+RtRenderPath::RenderScene(const struct Scene *s, ID3D12Resource *output, D3D12_RESOURCE_STATES startState, D3D12_RESOURCE_STATES endState)
 {
 	const struct SceneRenderData *srd = (const struct SceneRenderData *)&s->renderDataStart;
 	ID3D12GraphicsCommandList4 *cmdList = Re_MainThreadWorker.rtCmdList;
@@ -313,7 +316,7 @@ RtRenderPath::RenderScene(const struct Scene *s, ID3D12Resource *output, D3D12_R
 	{
 		//CD3DX12_RESOURCE_BARRIER::Transition(srd->materialBuffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER),
 		CD3DX12_RESOURCE_BARRIER::Transition(rtOutput, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_SOURCE),
-		CD3DX12_RESOURCE_BARRIER::Transition(output, outputState, D3D12_RESOURCE_STATE_COPY_DEST)
+		CD3DX12_RESOURCE_BARRIER::Transition(output, startState, D3D12_RESOURCE_STATE_COPY_DEST)
 	};
 	cmdList->ResourceBarrier(_countof(barriers), barriers);
 
@@ -322,7 +325,7 @@ RtRenderPath::RenderScene(const struct Scene *s, ID3D12Resource *output, D3D12_R
 	D3D12_RESOURCE_BARRIER endBarriers[] =
 	{
 //		CD3DX12_RESOURCE_BARRIER::Transition(srd->materialBuffer, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, D3D12_RESOURCE_STATE_COPY_DEST),
-		CD3DX12_RESOURCE_BARRIER::Transition(output, D3D12_RESOURCE_STATE_COPY_DEST, outputState)
+		CD3DX12_RESOURCE_BARRIER::Transition(output, D3D12_RESOURCE_STATE_COPY_DEST, endState)
 	};
 	cmdList->ResourceBarrier(_countof(endBarriers), endBarriers);
 }

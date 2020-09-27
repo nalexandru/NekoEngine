@@ -15,10 +15,14 @@ static int _compare(const void *key, const void *elem);
 void
 UI_DrawText(struct UIContext *ctx, const wchar_t *text, float px, float py, float size, struct Font *font)
 {
+	float sizeFactor;
 	uint16_t vtxOffset;
 	struct UIVertex v;
 	struct UIDrawCall drawCall;
-	
+
+	if (!text[0])
+		return;
+
 	if (!font)
 		font = &_sysFont;
 
@@ -29,8 +33,11 @@ UI_DrawText(struct UIContext *ctx, const wchar_t *text, float px, float py, floa
 
 	v.color[0] = v.color[1] = v.color[2] = v.color[3] = 1.f;
 
+	sizeFactor = size / 10.f;
+	py += size;
+
 	vtxOffset = drawCall.vtxOffset;
-	while (*text) {
+	for (text; *text; ++text) {
 		struct Glyph *g = NULL;
 		float x, y, w, h;
 
@@ -44,33 +51,34 @@ UI_DrawText(struct UIContext *ctx, const wchar_t *text, float px, float py, floa
 		else
 			g = &font->glyphs[*text - 0x20];
 
-		x = px + g->bearing.x;
-		y = py;
-		w = (float)g->size.w;
-		h = (float)g->size.h;
+		x = px + (g->bearing.x * sizeFactor);
+		y = py - (g->bearing.y * sizeFactor);
+		w = (float)g->size.w * sizeFactor;
+		h = (float)g->size.h * sizeFactor;
+		px = x + w;
 
 		v.posUv[0] = x;
 		v.posUv[1] = y;
 		v.posUv[2] = g->u;
-		v.posUv[3] = g->v + g->th;
+		v.posUv[3] = g->v;
 		Rt_ArrayAdd(&ctx->vertices, &v);
 
 		v.posUv[0] = x;
 		v.posUv[1] = y + h;
 		v.posUv[2] = g->u;
-		v.posUv[3] = g->v;
+		v.posUv[3] = g->v + g->th;
 		Rt_ArrayAdd(&ctx->vertices, &v);
 
 		v.posUv[0] = x + w;
 		v.posUv[1] = y + h;
 		v.posUv[2] = g->u + g->tw;
-		v.posUv[3] = g->v;
+		v.posUv[3] = g->v + g->th;
 		Rt_ArrayAdd(&ctx->vertices, &v);
 
 		v.posUv[0] = x + w;
 		v.posUv[1] = y;
 		v.posUv[2] = g->u + g->tw;
-		v.posUv[3] = g->v + g->th;
+		v.posUv[3] = g->v;
 		Rt_ArrayAdd(&ctx->vertices, &v);
 
 		*(uint16_t *)Rt_ArrayAllocate(&ctx->indices) = vtxOffset;
@@ -95,7 +103,9 @@ UI_InitText(void)
 	bool rc;
 	struct Stream stm;
 
-	E_FileStream("/System/System.fnt", IO_READ, &stm);
+	if (!E_FileStream("/System/System.fnt", IO_READ, &stm))
+		return false;
+
 	rc = E_LoadFontAsset(&stm, &_sysFont);
 	E_CloseStream(&stm);
 

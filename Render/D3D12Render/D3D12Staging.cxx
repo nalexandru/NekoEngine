@@ -146,10 +146,8 @@ D3D12_StageBLASBuild(struct Model *model, D3D12_RAYTRACING_ACCELERATION_STRUCTUR
 }
 
 void
-D3D12_Upload(void)
+D3D12_ResetUploadHeap(void)
 {
-	SignalFence(&Re_UploadFence, Re_Device.transferQueue);
-
 	_peakSize = max(_peakSize, _offset);
 	_offset = 0;
 }

@@ -151,6 +151,7 @@
     <ClCompile Include="D3D9Scene.cxx" />
     <ClCompile Include="D3D9Shader.cxx" />
     <ClCompile Include="D3D9Texture.cxx" />
+    <ClCompile Include="D3D9UI.cxx" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\DefaultPixel.hlsl">
@@ -169,6 +170,10 @@
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug_ASAN|x64'">3.0</ShaderModel>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release_D3D9|x64'">3.0</ShaderModel>
     </FxCompile>
+    <FxCompile Include="Shaders\UIVertex.hlsl" />
+    <FxCompile Include="Shaders\UIPixel.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug_D3D9|x64'">Pixel</ShaderType>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="Shaders\Metadata\Default.shader">
@@ -176,6 +181,12 @@
       <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug_D3D9|x64'">$(SolutionDir)bin\Data\Shaders\SM3\</DestinationFolders>
       <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug_ASAN|x64'">$(SolutionDir)bin\Data\Shaders\SM3\</DestinationFolders>
       <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release_D3D9|x64'">$(SolutionDir)bin\Data\Shaders\SM3\</DestinationFolders>
+    </CopyFileToFolders>
+  </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="Shaders\Metadata\UI.shader">
+      <FileType>Document</FileType>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug_D3D9|x64'">$(SolutionDir)bin\Data\Shaders\SM3\</DestinationFolders>
     </CopyFileToFolders>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

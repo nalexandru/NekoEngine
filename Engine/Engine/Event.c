@@ -59,7 +59,7 @@ E_RegisterHandler(const wchar_t *event, EventHandlerProc handlerProc, void *user
 	
 	Sys_AtomicLockWrite(_handlerLock);
 
-	handlerIdx = (uint32_t)Rt_ArrayBSearchId(&_handlers, &hash, _Comp);
+	handlerIdx = (uint32_t)Rt_ArrayBSearchId(&_handlers, &hash, (RtCmpFunc)_Comp);
 	info = Rt_ArrayGet(&_handlers, handlerIdx);
 	if (!info) {
 		info = Rt_ArrayAllocate(&_handlers);
@@ -75,8 +75,8 @@ E_RegisterHandler(const wchar_t *event, EventHandlerProc handlerProc, void *user
 	idx = (uint32_t)info->handlers.count - 1;
 
 	if (sort) {
-		Rt_ArraySort(&_handlers, _Sort);
-		handlerIdx = (uint32_t)Rt_ArrayBSearchId(&_handlers, &event, _Comp);
+		Rt_ArraySort(&_handlers, (RtSortFunc)_Sort);
+		handlerIdx = (uint32_t)Rt_ArrayBSearchId(&_handlers, &event, (RtCmpFunc)_Comp);
 	}
 	
 	Sys_AtomicUnlockWrite(_handlerLock);
@@ -161,7 +161,7 @@ E_ProcessEvents(void)
 
 	for (i = 0; i < queue->count; ++i) {
 		evt = Rt_ArrayGet(queue, i);
-		info = Rt_ArrayBSearch(&_handlers, &evt->event, _Comp);
+		info = Rt_ArrayBSearch(&_handlers, &evt->event, (RtCmpFunc)_Comp);
 		if (!info)
 			continue;
 

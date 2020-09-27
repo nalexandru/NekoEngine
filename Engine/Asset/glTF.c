@@ -119,6 +119,7 @@ E_LoadglTFAsset(const char *baseDir, struct Stream *stm, struct Model *m)
 		}*/
 
 		E_CreateResource(img->name, RES_TEXTURE, &tci);
+		free(tci.data);
 	}
 
 	for (i = 0; i < gltf->materials_count; ++i) {

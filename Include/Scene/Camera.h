@@ -21,7 +21,7 @@ struct Camera
 	struct mat4 viewMatrix;
 	struct mat4 projMatrix;
 
-	float fov, zNear, zFar;
+	float fov, zNear, zFar, aperture;
 	enum ProjectionType projection;
 };
 

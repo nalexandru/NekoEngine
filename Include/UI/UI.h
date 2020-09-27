@@ -6,6 +6,10 @@
 #include <Engine/Component.h>
 #include <Runtime/Runtime.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct UIVertex
 {
 	float posUv[4];
@@ -28,6 +32,8 @@ struct UIContext
 	Array vertices, indices, draws;
 };
 
+extern struct mat4 UI_Projection;
+
 bool UI_InitUI();
 void UI_TermUI();
 
@@ -35,5 +41,9 @@ bool UI_InitContext(struct UIContext *ctx, const void **);
 void UI_TermContext(struct UIContext *ctx);
 
 void UI_ResetContext(void **comp, void *args);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _UI_UI_H_ */

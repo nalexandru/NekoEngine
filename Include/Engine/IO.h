@@ -77,19 +77,21 @@ E_ReadStream(struct Stream *stm, void *ptr, int64_t size)
 		return size;
 	} else if (stm->f) {
 		return E_ReadFile(stm->f, ptr, size);
+	} else {
+		return -1;
 	}
-
-	return -1;
 }
 
 static inline char *
 E_ReadStreamLine(struct Stream *stm, char *ptr, int64_t size)
 {
-	char *ret = ptr;
+	char *ret = NULL;
 
 	if (stm->ptr) {
 		if (stm->pos == stm->size)
 			return NULL;
+
+		ret = ptr;
 
 		while (size && (stm->pos < stm->size)) {
 			*ptr = *(stm->ptr + stm->pos++);
@@ -120,39 +122,60 @@ E_WriteStream(struct Stream *stm, void *ptr, int64_t size)
 		return size;
 	} else if (stm->f) {
 		return E_WriteFile(stm->f, ptr, size);
+	} else {
+		return -1;
 	}
-
-	return -1;
 }
 
 static inline int64_t
 E_StreamTell(const struct Stream *stm)
 {
-	return stm->pos;
+	if (stm->ptr)
+		return stm->pos;
+	else if (stm->f)
+		return E_FTell(stm->f);
+	else
+		return 0;
 }
 
 static inline int64_t
 E_StreamSeek(struct Stream *stm, int64_t offset, FileSeekStart whence)
 {
-	switch (whence) {
-	case IO_SEEK_SET: stm->pos = offset; break;
-	case IO_SEEK_CUR: stm->pos += offset; break;
-	case IO_SEEK_END: stm->pos = stm->size - offset; break;
-	}
+	if (stm->ptr) {
+		switch (whence) {
+		case IO_SEEK_SET: stm->pos = offset; break;
+		case IO_SEEK_CUR: stm->pos += offset; break;
+		case IO_SEEK_END: stm->pos = stm->size - offset; break;
+		}
 
-	return 0;
+		return 0;
+	} else if (stm->f) {
+		return E_FSeek(stm->f, offset, whence);
+	} else {
+		return -1;
+	}
 }
 
 static inline int64_t
 E_StreamLength(const struct Stream *stm)
 {
-	return stm->size;
+	if (stm->ptr)
+		return stm->size;
+	else if (stm->f)
+		return E_FileLength(stm->f);
+	else
+		return 0;
 }
 
 static inline bool
 E_EndOfStream(const struct Stream *stm)
 {
-	return stm->pos == stm->size;
+	if (stm->ptr)
+		return stm->pos == stm->size;
+	else if (stm->f)
+		return E_FEof(stm->f);
+	else
+		return true;
 }
 
 #ifdef __cplusplus

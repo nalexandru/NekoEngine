@@ -1,19 +1,42 @@
+#ifndef _RESOURCES_H_
+#define _RESOURCES_H_
+
+#include <Render/Material.h>
+
 struct Material
 {
-	float4 diffuseColor;
-	float4 emissiveColor;
+	float4 diffuse;
+	float4 emissive;
 	float roughness;
 	float metallic;
-	uint textures[10];
+	uint textures[RE_MAX_TEXTURES];
 };
 
-struct Light
+// Scene Data
+cbuffer RenderData : register(b0)
 {
-	float4 position;
+	float4x4 RD_inverseView;
+	float4x4 RD_inverseProjection;
+	float4x4 RD_viewProjection;
+	float4x4 RD_inverseViewProjection;
+
+/*	float3 RD_SunDirection;
+	float RD_CosSunAngularRadius;
+	float3 RD_SunIrradiance;
+	float RD_SinSunAngularRadius;
+	float3 RD_SunRenderColor;*/
+
+	float RD_aspectRatio;
+	float RD_aperture;
+	uint RD_numSamples;
+	uint RD_seed;
+
+	uint RD_environmentMap;
 };
 
-Texture2D Res_Textures[] : register(t0, space0);
-TextureCube Res_CubeTextures[] : register(t0, space1);
+// Resources
+StructuredBuffer<Material> Res_Materials : register(t1, space0);
+Texture2D Res_Textures[] : register(t0, space3);
+SamplerState Res_Sampler : register(s0);
 
-StructuredBuffer<Material> Res_Materials[] : register(t0, space2);
-StructuredBuffer<Light> Res_Lights[] : register(t0, space3);
+#endif /* _RESOURCES_H_ */

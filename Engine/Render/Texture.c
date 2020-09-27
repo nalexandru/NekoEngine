@@ -21,7 +21,6 @@ Re_CreateTexture(const char *name, const struct TextureCreateInfo *ci, struct Te
 	rc = Re_InitTexture(name, tex, h);
 
 	if (!ci->keepData) {
-		free(tex->data);
 		tex->data = NULL;
 		tex->dataSize = 0;
 	}

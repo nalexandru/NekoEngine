@@ -1,6 +1,8 @@
 #include <assert.h>
 #include <Windows.h>
 #include <dxgidebug.h>
+#include <VersionHelpers.h>
+#include <d3d12sdklayers.h>
 
 #include <Engine/Job.h>
 #include <Engine/Config.h>
@@ -64,11 +66,13 @@ static RenderPath *_renderPath;
 
 static ID3D12DeviceRemovedExtendedDataSettings *_dredSettings;
 static ID3D12Debug *_d3dDebug;
+static ID3D12DebugDevice2 *_debugDevice;
 static IDXGIDebug *_dxgiDebug;
 static IDXGIInfoQueue *_dxgiInfoQueue;
 static HMODULE _dxgiDebugDLL;
 static bool *_enableDebug = NULL;
 static DWORD _workerKey = 0;
+static UINT _syncInterval = 0;
 
 static inline void _logDxgiMessages(void);
 
@@ -118,7 +122,6 @@ Re_Init(void)
 			_dredSettings->SetPageFaultEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
 			_dredSettings->SetWatsonDumpEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
 		}
-
 	}
 #endif
 
@@ -126,6 +129,14 @@ Re_Init(void)
 	D3D12EnableExperimentalFeatures(1, features, NULL, NULL);
 
 	D3D12_InitDevice();
+
+	if (*_enableDebug)
+		Re_Device.dev->QueryInterface(IID_PPV_ARGS(&_debugDevice));
+
+	if (_debugDevice && E_GetCVarBln(L"D3D12_Windows7Emulation", false)->bln) {
+		D3D12_DEBUG_FEATURE feat = D3D12_DEBUG_FEATURE_EMULATE_WINDOWS7;
+		_debugDevice->SetDebugParameter(D3D12_DEBUG_DEVICE_PARAMETER_FEATURE_FLAGS, &feat, sizeof(feat));
+	}
 
 #if ENABLE_AFTERMATH
 	rc = GFSDK_Aftermath_DX12_Initialize(GFSDK_Aftermath_Version_API,
@@ -183,11 +194,19 @@ Re_Init(void)
 	if (!D3D12_LoadShaders())
 		return false;
 
+	if (!D3D12_InitUI())
+		return false;
+
 	const wchar_t *comp[] = { TRANSFORM_COMP, MODEL_RENDER_COMP };
 	E_RegisterSystem(PREPARE_SCENE_DATA_SYS, ECSYS_GROUP_MANUAL, comp, _countof(comp), (ECSysExecProc)D3D12_PrepareSceneData, 0);
 
+	comp[0] = UI_CONTEXT_COMP;
+	E_RegisterSystem(DRAW_UI_CONTEXT, ECSYS_GROUP_MANUAL, comp, 1, (ECSysExecProc)D3D12_DrawUIContext, 0);
+
 	_renderPath = new RtRenderPath();
 	_renderPath->Init();
+
+	_syncInterval = CVAR_BOOL(L"Render_VerticalSync");
 
 	return true;
 }
@@ -199,6 +218,8 @@ Re_Term(void)
 
 	_renderPath->Term();
 	delete _renderPath;
+
+	D3D12_TermUI();
 
 	D3D12_UnloadShaders();
 	D3D12_TermTransientHeap();
@@ -225,6 +246,9 @@ Re_Term(void)
 	for (int i = 0; i < RE_NUM_BUFFERS; ++i)
 		Re_Device.renderFence[i]->Release();
 
+	if (_debugDevice)
+		_debugDevice->Release();
+
 	D3D12_TermDevice();
 
 	if (*_enableDebug) {
@@ -249,7 +273,7 @@ void
 Re_RenderFrame(void)
 {
 	{ // Begin frame
-		D3D12_Upload();
+		SignalFence(&Re_UploadFence, Re_Device.transferQueue);
 
 		D3D12_UpdateSceneData(Scn_ActiveScene);
 
@@ -266,11 +290,12 @@ Re_RenderFrame(void)
 			D3DCHK(WaitForFenceGPU(&Re_ASFence, Re_Device.graphicsQueue));
 		}
 
-		D3D12_Upload();
+		SignalFence(&Re_UploadFence, Re_Device.transferQueue);
 	}
 	
 	{ // Render
-		_renderPath->RenderScene(Scn_ActiveScene, Re_Device.targets[Re_Device.frame], D3D12_RESOURCE_STATE_PRESENT);
+		_renderPath->RenderScene(Scn_ActiveScene, Re_Device.targets[Re_Device.frame], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+		D3D12_RenderUI(Scn_ActiveScene, Re_Device.targets[Re_Device.frame]);
 	}
 
 	{ // End frame
@@ -282,10 +307,10 @@ Re_RenderFrame(void)
 			ID3D12CommandList *lists[] = { Re_MainThreadWorker.cmdList };
 			Re_Device.graphicsQueue->ExecuteCommandLists(_countof(lists), lists);
 
-			D3DCHK(Re_Device.swapChain->Present(1, 0));
+			D3DCHK(Re_Device.swapChain->Present(_syncInterval, 0));
 		} else {
 			D3DCHK(Re_Device.graphicsQueueDownlevel->Present(Re_MainThreadWorker.cmdList, Re_Device.targets[Re_Device.frame],
-				(HWND)E_Screen, D3D12_DOWNLEVEL_PRESENT_FLAG_WAIT_FOR_VBLANK));
+				(HWND)E_Screen, _syncInterval ? D3D12_DOWNLEVEL_PRESENT_FLAG_WAIT_FOR_VBLANK : D3D12_DOWNLEVEL_PRESENT_FLAG_NONE));
 		}
 
 		++Re_Device.fenceValue[Re_Device.frame];
@@ -299,6 +324,7 @@ Re_RenderFrame(void)
 		_WaitForFence();
 
 		D3D12_ResetTransientHeap();
+		D3D12_ResetUploadHeap();
 
 		// Destroy pending resources
 		for (size_t i = 0; i < _pendingDestroy[Re_Device.frame].count; ++i) {

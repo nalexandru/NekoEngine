@@ -31,7 +31,7 @@ bool
 E_LoadScript(lua_State *vm, const char *source)
 {
 	if (luaL_dostring(vm, source) && lua_gettop(vm)) {
-		Sys_LogEntry(SCRIPTMOD, LOG_CRITICAL, L"Failed to load script: %S", lua_tostring(vm, -1));
+		Sys_LogEntry(SCRIPTMOD, LOG_CRITICAL, L"Failed to load script: %s", lua_tostring(vm, -1));
 		lua_pop(vm, 1);
 		return false;
 	}
@@ -56,7 +56,7 @@ E_LoadScriptFile(lua_State *vm, const char *path)
 	E_CloseStream(&stm);
 
 	if (luaL_dostring(vm, source) && lua_gettop(vm)) {
-		Sys_LogEntry(SCRIPTMOD, LOG_CRITICAL, L"Failed to load script: %S", lua_tostring(vm, -1));
+		Sys_LogEntry(SCRIPTMOD, LOG_CRITICAL, L"Failed to load script: %s", lua_tostring(vm, -1));
 		lua_pop(vm, 1);
 		return false;
 	}

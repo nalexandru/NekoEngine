@@ -101,6 +101,8 @@ Re_Init(void)
 		}
 	}*/
 
+	_pp.PresentationInterval = CVAR_BOOL(L"Render_VerticalSync") ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
+
 	hr = Re_Device.d3d->CreateDevice(adapterIndex, D3DDEVTYPE_HAL, (HWND)E_Screen,
 		D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED, &_pp, &Re_Device.dev);
 	if (FAILED(hr))
@@ -131,9 +133,6 @@ Re_Init(void)
 	if (FAILED(Re_Device.dev->CreateVertexDeclaration(elements, &D3D9_VertexDeclaration)))
 		return false;
 
-	const wchar_t *comp[] = { TRANSFORM_COMP, MODEL_RENDER_COMP };
-	E_RegisterSystem(GET_DRAWABLES_SYS, ECSYS_GROUP_MANUAL, comp, _countof(comp), (ECSysExecProc)D3D9_GetDrawables, 0);
-
 	Re_Device.dev->SetRenderState(D3DRS_CULLMODE, D3DCULL_CW);
 
 	D3DVIEWPORT9 vp = { 0, 0, *E_ScreenWidth, *E_ScreenHeight, 0.f, 1.f };
@@ -163,12 +162,27 @@ Re_Init(void)
 	if (_pp.MultiSampleType != D3DMULTISAMPLE_NONE)
 		Re_Device.dev->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS, TRUE);
 
-	return D3D9_LoadShaders();
+	if (!D3D9_LoadShaders())
+		return false;
+
+	if (!D3D9_InitUI())
+		return false;
+
+	const wchar_t *comp[] = { TRANSFORM_COMP, MODEL_RENDER_COMP };
+	E_RegisterSystem(GET_DRAWABLES_SYS, ECSYS_GROUP_MANUAL, comp, _countof(comp), (ECSysExecProc)D3D9_GetDrawables, 0);
+
+	comp[0] = UI_CONTEXT_COMP;
+	E_RegisterSystem(LOAD_UI_CONTEXT, ECSYS_GROUP_MANUAL, comp, 1, (ECSysExecProc)D3D9_LoadUIContext, 0);
+	E_RegisterSystem(DRAW_UI_CONTEXT, ECSYS_GROUP_MANUAL, comp, 1, (ECSysExecProc)D3D9_DrawUIContext, 0);
+
+	return true;
 }
 
 void
 Re_Term(void)
 {
+	D3D9_TermUI();
+
 	D3D9_UnloadShaders();
 
 	Re_Device.dev->Release();
@@ -200,6 +214,7 @@ Re_RenderFrame(void)
 	Re_Device.dev->BeginScene();
 
 	D3D9_RenderScene(Scn_ActiveScene);
+	D3D9_RenderUI(Scn_ActiveScene);
 
 	Re_Device.dev->EndScene();
 	Re_Device.dev->Present(NULL, NULL, NULL, NULL);

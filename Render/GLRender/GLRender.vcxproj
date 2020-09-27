@@ -133,6 +133,7 @@
     <ClCompile Include="GLScene.c" />
     <ClCompile Include="GLShader.c" />
     <ClCompile Include="GLTexture.c" />
+    <ClCompile Include="GLUI.c" />
     <ClCompile Include="GLWin32.c" />
   </ItemGroup>
   <ItemGroup>
@@ -154,13 +155,13 @@
     </CopyFileToFolders>
   </ItemGroup>
   <ItemGroup>
-    <CopyFileToFolders Include="Shaders\Text.vert">
+    <CopyFileToFolders Include="Shaders\UI.vert">
       <FileType>Document</FileType>
       <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug_GL|x64'">$(SolutionDir)bin\Data\Shaders\GL\</DestinationFolders>
     </CopyFileToFolders>
   </ItemGroup>
   <ItemGroup>
-    <CopyFileToFolders Include="Shaders\Text.frag">
+    <CopyFileToFolders Include="Shaders\UI.frag">
       <FileType>Document</FileType>
       <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug_GL|x64'">$(SolutionDir)bin\Data\Shaders\GL\</DestinationFolders>
     </CopyFileToFolders>
@@ -172,7 +173,7 @@
       <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug_GL|x64'">$(SolutionDir)bin\Data\Shaders\GL\</DestinationFolders>
       <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug_ASAN|x64'">$(SolutionDir)bin\Data\Shaders\GL\</DestinationFolders>
     </CopyFileToFolders>
-    <CopyFileToFolders Include="Shaders\Metadata\Text.shader">
+    <CopyFileToFolders Include="Shaders\Metadata\UI.shader">
       <FileType>Document</FileType>
       <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release_GL|x64'">$(SolutionDir)bin\Data\Shaders\GL\</DestinationFolders>
       <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug_GL|x64'">$(SolutionDir)bin\Data\Shaders\GL\</DestinationFolders>

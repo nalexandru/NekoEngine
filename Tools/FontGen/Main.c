@@ -40,7 +40,7 @@ static inline void _downsize(const uint8_t *src, uint8_t *dst, uint32_t srcSize,
 
 static inline void _usage(const char *argv0)
 {
-	wprintf(L"usage: %S <font file> <texture size> <output file>\n", argv0);
+	wprintf(L"usage: %hs <font file> <texture size> <output file>\n", argv0);
 	exit(0);
 }
 
@@ -103,8 +103,8 @@ main(int argc, char *argv[])
 		glyphs[g].v = (float)y / (float)font.texSize;
 		glyphs[g].th = (float)renderGlyph->bitmap.rows / (float)font.texSize;
 		glyphs[g].tw = (float)renderGlyph->bitmap.width / (float)font.texSize;
-		glyphs[g].bearing.x = renderGlyph->bitmap_left;
-		glyphs[g].bearing.y = renderGlyph->bitmap_top;
+		glyphs[g].bearing.x = sizeGlyph->bitmap_left;
+		glyphs[g].bearing.y = sizeGlyph->bitmap_top;
 		glyphs[g].size.w = sizeGlyph->bitmap.width;
 		glyphs[g].size.h = sizeGlyph->bitmap.rows;
 		glyphs[g].adv = (uint32_t)sizeGlyph->advance.x >> 6;

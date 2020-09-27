@@ -1,3 +1,6 @@
+#ifndef _RANDOM_H_
+#define _RANDOM_H_
+
 uint
 RandSeed(uint a, uint b)
 {
@@ -36,3 +39,5 @@ RandDisk(inout uint s)
 			return v;
 	}
 }
+
+#endif /* _RANDOM_H_ */

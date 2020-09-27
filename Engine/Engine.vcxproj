@@ -36,12 +36,16 @@
     <ClInclude Include="..\Include\Input\Codes.h" />
     <ClInclude Include="..\Include\Math\aabb2.h" />
     <ClInclude Include="..\Include\Math\aabb3.h" />
+    <ClInclude Include="..\Include\Math\altivec\mat4_altivec.h" />
+    <ClInclude Include="..\Include\Math\altivec\vec4_altivec.h" />
     <ClInclude Include="..\Include\Math\debug.h" />
     <ClInclude Include="..\Include\Math\defs.h" />
     <ClInclude Include="..\Include\Math\func.h" />
     <ClInclude Include="..\Include\Math\mat3.h" />
     <ClInclude Include="..\Include\Math\mat4.h" />
     <ClInclude Include="..\Include\Math\Math.h" />
+    <ClInclude Include="..\Include\Math\neon\mat4_neon.h" />
+    <ClInclude Include="..\Include\Math\neon\vec4_neon.h" />
     <ClInclude Include="..\Include\Math\plane.h" />
     <ClInclude Include="..\Include\Math\quat.h" />
     <ClInclude Include="..\Include\Math\ray2.h" />
@@ -114,7 +118,6 @@
     <ClCompile Include="Engine\Entity.c" />
     <ClCompile Include="Engine\Event.c" />
     <ClCompile Include="Engine\IO.c" />
-    <ClCompile Include="Engine\Job.c" />
     <ClCompile Include="Engine\Resource.c" />
     <ClCompile Include="Input\Input.c" />
     <ClCompile Include="Render\Material.c" />

@@ -17,6 +17,7 @@ struct Scene
 	char path[256];
 	bool loaded;
 	Array entities, compData, compHandle;
+	Handle environmentMap;
 	uint8_t renderDataStart;
 };
 

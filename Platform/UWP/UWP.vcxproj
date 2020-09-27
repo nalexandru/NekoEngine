@@ -24,6 +24,7 @@
     <ClCompile Include="AtomicLock.cxx" />
     <ClCompile Include="EngineView.cxx" />
     <ClCompile Include="Input.cxx" />
+    <ClCompile Include="Job.cxx" />
     <ClCompile Include="Main.cxx" />
     <ClCompile Include="Memory.cxx" />
     <ClCompile Include="System.cxx" />

@@ -18,6 +18,7 @@
     <ClCompile Include="..\..\Deps\PhysFS\physfs_platform_windows.c" />
     <ClCompile Include="AtomicLock.c" />
     <ClCompile Include="Input.c" />
+    <ClCompile Include="Job.c" />
     <ClCompile Include="Main.c" />
     <ClCompile Include="Memory.c" />
     <ClCompile Include="System.c" />

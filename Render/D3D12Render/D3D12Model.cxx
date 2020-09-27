@@ -48,14 +48,14 @@ Re_InitModel(const char *name, struct Model *m)
 				D3D12_RESOURCE_STATE_COPY_DEST, NULL, IID_PPV_ARGS(&mrd->vtxBuffer)); FAILED(hr))
 			return false;
 
-		swprintf(buff, 512, L"%S Vertex Buffer", name);
+		swprintf(buff, 512, L"%hs Vertex Buffer", name);
 		mrd->vtxBuffer->SetName(buff);
 
 		if (HRESULT hr = Re_Device.dev->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &CD3DX12_RESOURCE_DESC::Buffer(indexSize),
 				D3D12_RESOURCE_STATE_COPY_DEST, NULL, IID_PPV_ARGS(&mrd->idxBuffer)); FAILED(hr))
 			return false;
 
-		swprintf(buff, 512, L"%S Index Buffer", name);
+		swprintf(buff, 512, L"%hs Index Buffer", name);
 		mrd->idxBuffer->SetName(buff);
 
 		if (Re_Features.rayTracing) {
@@ -69,7 +69,7 @@ Re_InitModel(const char *name, struct Model *m)
 						D3D12_RESOURCE_STATE_UNORDERED_ACCESS, NULL, IID_PPV_ARGS(&mrd->structures[i].scratchBuffer)); FAILED(hr))
 					return false;
 
-				swprintf(buff, 512, L"%S Scratch Buffer", name);
+				swprintf(buff, 512, L"%hs Scratch Buffer", name);
 				mrd->structures[i].scratchBuffer->SetName(buff);
 
 				if (HRESULT hr = Re_Device.dev->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE,
@@ -77,7 +77,7 @@ Re_InitModel(const char *name, struct Model *m)
 						D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, NULL, IID_PPV_ARGS(&mrd->structures[i].asBuffer)); FAILED(hr))
 					return false;
 
-				swprintf(buff, 512, L"%S BLAS Buffer", name);
+				swprintf(buff, 512, L"%hs BLAS Buffer", name);
 				mrd->structures[i].asBuffer->SetName(buff);
 			}
 		}

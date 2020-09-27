@@ -27,27 +27,27 @@ E_CreateComponentS(struct Scene *s, const wchar_t *typeName, EntityHandle owner,
 
 	id = E_ComponentTypeId(typeName);
 	if (id == RT_NOT_FOUND) {
-		Sys_LogEntry(COMP_MOD, LOG_CRITICAL, L"Type [%] does not exist", typeName);
+		Sys_LogEntry(COMP_MOD, LOG_CRITICAL, L"Type [%ls] does not exist", typeName);
 		return ES_INVALID_COMPONENT;
 	}
 	type = Rt_ArrayGet(&_component_types, id);
 
 	a = Rt_ArrayGet(&s->compData, id);
 	if (!a) {
-		Sys_LogEntry(COMP_MOD, LOG_CRITICAL, L"Data for type [%s] does not exist", typeName);
+		Sys_LogEntry(COMP_MOD, LOG_CRITICAL, L"Data for type [%ls] does not exist", typeName);
 		return ES_INVALID_COMPONENT;
 	}
 
 	comp = Rt_ArrayAllocate(a);
 	if (!comp) {
-		Sys_LogEntry(COMP_MOD, LOG_CRITICAL, L"Failed to allocate component of type [%s]", typeName);
+		Sys_LogEntry(COMP_MOD, LOG_CRITICAL, L"Failed to allocate component of type [%ls]", typeName);
 		return ES_INVALID_COMPONENT;
 	}
 
 	handle = Rt_ArrayAllocate(&s->compHandle);
 	if (!handle) {
 		Sys_LogEntry(COMP_MOD, LOG_CRITICAL,
-			L"Failed to allocate component handle of type [%s]", typeName);
+			L"Failed to allocate component handle of type [%ls]", typeName);
 		return ES_INVALID_COMPONENT;
 	}
 
@@ -62,7 +62,7 @@ E_CreateComponentS(struct Scene *s, const wchar_t *typeName, EntityHandle owner,
 		--a->count;
 		--_next_handle;
 		--s->compHandle.count;
-		Sys_LogEntry(COMP_MOD, LOG_CRITICAL, L"Failed to create component of type [%s]", typeName);
+		Sys_LogEntry(COMP_MOD, LOG_CRITICAL, L"Failed to create component of type [%ls]", typeName);
 		return ES_INVALID_COMPONENT;
 	}
 

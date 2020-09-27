@@ -70,12 +70,12 @@ D3D12_InitDevice(void)
 	Re_Features.variableRateShading = o6.VariableShadingRateTier != D3D12_VARIABLE_SHADING_RATE_TIER_NOT_SUPPORTED;
 	Re_Features.physicallyBased = true;
 
-	swprintf(Re_RenderInfo.name, sizeof(Re_RenderInfo.name) / sizeof(wchar_t), L"%s%s", Re_RenderInfo.name, Re_Features.rayTracing ? L" Ray Tracing" : L"");
+	swprintf(Re_RenderInfo.name, sizeof(Re_RenderInfo.name) / sizeof(wchar_t), L"%ls%ls", Re_RenderInfo.name, Re_Features.rayTracing ? L" Ray Tracing" : L"");
 
-	Sys_LogEntry(D3D12MOD, LOG_INFORMATION, L"GPU: %s", aDesc.Description);
-	Sys_LogEntry(D3D12MOD, LOG_INFORMATION, L"\tRay Tracing: %s", Re_Features.rayTracing ? L"true" : L"false");
-	Sys_LogEntry(D3D12MOD, LOG_INFORMATION, L"\tMesh Shaders: %s", Re_Features.meshShading ? L"true" : L"false");
-	Sys_LogEntry(D3D12MOD, LOG_INFORMATION, L"\tVariable Rate Shading: %s", Re_Features.variableRateShading ? L"true" : L"false");
+	Sys_LogEntry(D3D12MOD, LOG_INFORMATION, L"GPU: %ls", aDesc.Description);
+	Sys_LogEntry(D3D12MOD, LOG_INFORMATION, L"\tRay Tracing: %ls", Re_Features.rayTracing ? L"true" : L"false");
+	Sys_LogEntry(D3D12MOD, LOG_INFORMATION, L"\tMesh Shaders: %ls", Re_Features.meshShading ? L"true" : L"false");
+	Sys_LogEntry(D3D12MOD, LOG_INFORMATION, L"\tVariable Rate Shading: %ls", Re_Features.variableRateShading ? L"true" : L"false");
 
 	D3D12_COMMAND_QUEUE_DESC cqd =
 	{
