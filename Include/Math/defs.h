@@ -47,9 +47,10 @@
 #endif
 
 #ifndef DISABLE_SIMD
-#if defined(_M_X64) || defined(_M_IX86)
+#if defined(__amd64__) || defined(_M_X64) || defined(_M_IX86)
 #	include <xmmintrin.h>
 #	if defined(__AVX__)
+#		define USE_AVX
 #		include <immintrin.h>
 #	endif
 #	define USE_SSE

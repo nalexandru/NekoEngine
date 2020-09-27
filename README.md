@@ -2,7 +2,7 @@
 
 ## Description
 
-Cross-platform game engine with support for Windows 7+ & Xbox One (UWP).
+Cross-platform game engine with support for Windows 7+, Xbox One (UWP) & Linux.
 
 Supported rendering APIs:
 * Direct3D 12 with DXR
@@ -13,7 +13,7 @@ Supported audio APIs:
 * XAudio2
 * OpenAL
 
-Linux, Mac OS X & Vulkan support in-progress.
+Mac OS X & Vulkan support in-progress.
 
 This repository is a mirror which is not frequently updated.
 
@@ -27,9 +27,25 @@ This repository is a mirror which is not frequently updated.
 
 ### Build instructions
 
+#### Windows
+
 1. Clone the repository
 2. Clone the data repository found at https://github.com/nalexandru/NekoEngineData in SOURCE_DIR\bin\Data
 3. Build NekoEngine.sln
+
+#### Linux
+
+1. Install prerequisites. On Debian based systems you need to install the following packages:
+	* gcc
+	* libx11-dev
+	* libopenal-dev
+	* libluajit-5.1-dev
+	* libphysfs-dev
+	* libgl-dev
+	* cmake
+2. Clone the repository
+2. Clone the data repository found at https://github.com/nalexandru/NekoEngineData in SOURCE_DIR\bin\Data
+3. Build the project with CMake
 
 ### Notes
 * The D3D12 renderer only supports DXR at the moment, so a GPU with HW ray tracing is required.

@@ -12,7 +12,7 @@
 
 #define X11INMOD	L"X11Input"
 
-static enum Button _keymap[256];
+enum Button X11_Keymap[256];
 
 static inline void _deadzone(float *x, float *y, const float max, const float deadzone);
 static inline enum Button _mapKey(const int key);
@@ -21,7 +21,7 @@ bool
 In_SysInit(void)
 {
 	for (uint16_t i = 0; i < 256; ++i)
-		_keymap[i] = _mapKey(i);
+		X11_Keymap[i] = _mapKey(i);
 
 	return true;
 }

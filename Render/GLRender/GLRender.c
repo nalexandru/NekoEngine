@@ -11,6 +11,10 @@
 
 #define GLRMOD	L"OpenGLRender"
 
+#ifndef _countof
+#	define _countof(array) (sizeof(array) / sizeof(array[0]))
+#endif
+
 struct RenderInfo Re_RenderInfo = 
 {
 	{ L"OpenGL" },
@@ -25,11 +29,9 @@ static void _TermThreadContext(int worker, void *args);
 
 static uint32_t _workerKey = 0;
 
-#ifdef _DEBUG
 static void _DebugCallbackAMD(GLuint id, GLenum category, GLenum severity, GLsizei length, const GLchar* message, GLvoid* userParam);
 static void _DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const GLvoid* userParam);
 static inline void _LogDebugOutput(GLenum source, GLenum type, GLuint id, GLenum severity, const char* msg);
-#endif
 
 bool
 Re_Init(void)
@@ -152,8 +154,6 @@ _TermThreadContext(int worker, void *args)
 	GL_TermLoadContext(ctx);
 }
 
-#ifdef _DEBUG
-
 void
 _DebugCallbackAMD(GLuint id, GLenum category, GLenum severity, GLsizei length, const GLchar* message, GLvoid* userParam)
 {
@@ -250,5 +250,3 @@ _LogDebugOutput(GLenum source, GLenum type, GLuint id, GLenum severity, const ch
 	
 	Sys_LogEntry(sourceString, LOG_DEBUG, L"[%s][%s][%u]: %S", typeString, severityString, id, msg);
 }
-
-#endif

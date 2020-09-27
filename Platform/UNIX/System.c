@@ -6,6 +6,7 @@
 #include <pthread.h>
 #include <sys/time.h>
 #include <sys/mman.h>
+#include <sys/utsname.h>
 
 #include <Input/Input.h>
 #include <System/System.h>
@@ -26,6 +27,7 @@ static char _colors[4][8] =
 	"\x1B[33m\0",
 	"\x1B[31m\0"
 };
+static struct utsname _uname;
 
 bool
 Sys_InitDbgOut(void)
@@ -36,7 +38,7 @@ Sys_InitDbgOut(void)
 void
 Sys_DbgOut(int color, const wchar_t *module, const wchar_t *severity, const wchar_t *text)
 {
-	fwprintf(stderr, L"%S[%s][%s]: %s\x1B[0m", _colors[color], module, severity, text);
+	fwprintf(stderr, L"%hs[%ls][%ls]: %ls\x1B[0m\n", _colors[color], module, severity, text);
 }
 
 void
@@ -47,10 +49,17 @@ Sys_TermDbgOut(void)
 uint64_t
 Sys_Time(void)
 {
-	struct timeval tv;
-	gettimeofday(&tv, NULL);
-
-	return (uint64_t)tv.tv_sec * (uint64_t)1000000 + (uint64_t)tv.tv_usec;
+#ifdef CLOCK_MONOTONIC
+    struct timespec tp;
+    clock_gettime(CLOCK_MONOTONIC, &tp);
+ 
+    return (uint64_t)tp.tv_sec * (uint64_t)1000000000 + (uint64_t)tp.tv_nsec;
+#else
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+ 
+    return (uint64_t)tv.tv_sec * (uint64_t)1000000 + (uint64_t)tv.tv_usec;
+#endif
 }
 
 bool
@@ -126,6 +135,30 @@ Sys_Yield(void)
 	sched_yield();
 }
 
+const char *
+Sys_Hostname(void)
+{
+	if (!_uname.sysname[0])
+		uname(&_uname);
+
+	return _uname.nodename;
+}
+
+const char *
+Sys_Machine(void)
+{
+	if (!_uname.sysname[0])
+		uname(&_uname);
+
+	return _uname.machine;
+}
+
+const char *
+Sys_CpuName(void)
+{
+	return "Unknown";
+}
+
 int
 Sys_NumCpus(void)
 {
@@ -142,6 +175,12 @@ uint32_t
 Sys_Capabilities(void)
 {
 	return SC_MMIO;
+}
+
+bool
+Sys_ScreenVisible(void)
+{
+	return true;
 }
 
 bool

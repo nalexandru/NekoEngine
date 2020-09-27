@@ -11,6 +11,7 @@
 #define MMOD L"MemoryManager"
 #define MAGIC 0xB15B00B5
 
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #define ROUND_UP(v, powerOf2Alignment) (((v) + (powerOf2Alignment)-1) & ~((powerOf2Alignment)-1))
 
 struct Allocation
@@ -110,7 +111,7 @@ Sys_ResetHeap(enum MemoryHeap heap)
 {
 	switch (heap) {
 	case MH_Transient:
-		_transientHeapPeak = max(_transientHeapPeak, (size_t)(_transientHeapPtr - _transientHeap));
+		_transientHeapPeak = MAX(_transientHeapPeak, (size_t)(_transientHeapPtr - _transientHeap));
 
 		_transientHeapPtr = _transientHeap;
 	break;

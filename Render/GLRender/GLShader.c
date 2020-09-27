@@ -163,7 +163,7 @@ _LoadShader(const char *path, GLenum stage)
 	GLuint s;
 	char *source;
 	int64_t sourceSize;
-	GLint len;
+	GLint len = 0;
 	File f;
 
 	f = E_OpenFile(path, IO_READ);
@@ -176,6 +176,7 @@ _LoadShader(const char *path, GLenum stage)
 	if (!(s = glCreateShader(stage)))
 		return 0;
 	
+	len = sourceSize;
 	glShaderSource(s, 1, &source, &len);
 	glCompileShader(s);
 	glGetShaderiv(s, GL_COMPILE_STATUS, &len);

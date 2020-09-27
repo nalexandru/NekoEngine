@@ -1,4 +1,6 @@
-#include <X1s.h>
+#include <X11/X.h>
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
 
 #include <System/Log.h>
 #include <Engine/Engine.h>
@@ -7,10 +9,14 @@
 #include <Render/Device.h>
 
 #include "GLRender.h"
+
+#include <GL/glx.h>
 #include <GL/glxext.h>
 
 #define GLRMOD	L"OpenGLX11"
 
+extern Display *X11_Display;
+extern XVisualInfo X11_VisualInfo;
 
 static int _visualAttribs[] =
 {
@@ -21,7 +27,7 @@ static int _visualAttribs[] =
 	GLX_RED_SIZE, 8,
 	GLX_GREEN_SIZE, 8,
 	GLX_BLUE_SIZE, 8,
-	GLX_ALPHA_SIZE, 8,
+	GLX_ALPHA_SIZE, 0,
 	GLX_DEPTH_SIZE, 24,
 	GLX_STENCIL_SIZE, 0,
 	0, 0,
@@ -38,7 +44,8 @@ static int _ctxAttribs[] =
 	0
 };
 
-static PFNWGLSWAPINTERVALEXTPROC _wglSwapIntervalEXT;
+static PFNGLXSWAPINTERVALEXTPROC _glXSwapIntervalEXT;
+static GLXFBConfig _fbConfig;
 
 static inline bool
 _checkExtension(const char *extension)
@@ -50,8 +57,8 @@ _checkExtension(const char *extension)
 		static GLint numExtensions = 0;
 
 		if (!GetStringi) {
-			GetStringi = (PFNGLGETSTRINGIPROC)wglGetProcAddress("glGetStringi");
-			((PFNGLGETINTEGERVPROC)GetProcAddress(_libGL, "glGetIntegerv"))(GL_NUM_EXTENSIONS, &numExtensions);
+			GetStringi = (PFNGLGETSTRINGIPROC)glXGetProcAddress("glGetStringi");
+			((PFNGLGETINTEGERVPROC)glXGetProcAddress("glGetIntegerv"))(GL_NUM_EXTENSIONS, &numExtensions);
 		}
 
 		len = strlen(extension);
@@ -65,7 +72,7 @@ _checkExtension(const char *extension)
 		static const char *ext = NULL;
 
 		if (!ext)
-			ext = ((PFNGLGETSTRINGPROC)GetProcAddress(_libGL, "glGetString"))(GL_EXTENSIONS);
+			ext = ((PFNGLGETSTRINGPROC)glXGetProcAddress("glGetString"))(GL_EXTENSIONS);
 
 		return strstr(ext, extension);
 	}
@@ -74,100 +81,73 @@ _checkExtension(const char *extension)
 static inline void
 _LogError(const wchar_t *message)
 {
-	LPWSTR buffer;
+	/*LPWSTR buffer;
 
 	FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
 		NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR)&buffer, 0, NULL);
 
 	Sys_LogEntry(GLRMOD, LOG_CRITICAL, L"%s: %s", message, buffer);
 
-	LocalFree(buffer);
+	LocalFree(buffer);*/
 }
 
 bool
 GL_InitDevice(void)
 {
-	int glXMajor, glXMinor;
+	GLXFBConfig *fbc = NULL;
+	int glXMajor, glXMinor, fbCount, bestFbc, worstFbc, i;
 	PFNGLXCHOOSEFBCONFIGPROC glXChooseFBConfig = NULL;
 	PFNGLXGETVISUALFROMFBCONFIGPROC glXGetVisualFromFBConfig = NULL;
 	PFNGLXGETFBCONFIGATTRIBPROC glXGetFBConfigAttrib = NULL;
 	PFNGLXCREATECONTEXTATTRIBSARBPROC glXCreateContextAttribsARB = NULL;
 
-	if (!glXQueryVersion(
-
-//	_libGL = LoadLibrary(L"opengl32");
-//	if (!_libGL)
-//		return false;
-
-	_dc = GetDC((HWND)E_Screen);
-
-	pixelFormat = ChoosePixelFormat(_dc, &_pfd);
-	SetPixelFormat(_dc, pixelFormat, &_pfd);
-
-	dummy = wglCreateContext(_dc);
-	if (!dummy) {
-		_LogError(L"Failed to create dummy context");
+	if (!glXQueryVersion(X11_Display, &glXMajor, &glXMinor) || ((glXMajor == 1) && (glXMinor < 4)) || (glXMajor < 1)) {
+		//Platform::MessageBox("Fatal Error", "This program requires a newer version of GLX", MessageBoxButtons::OK, MessageBoxIcon::Error);
 		return false;
 	}
 
-	if (!wglMakeCurrent(_dc, dummy)) {
-		_LogError(L"Failed to activate dummy context");
-		wglDeleteContext(dummy);
+	glXChooseFBConfig = (PFNGLXCHOOSEFBCONFIGPROC)glXGetProcAddress((const GLubyte*)"glXChooseFBConfig");
+	glXGetVisualFromFBConfig = (PFNGLXGETVISUALFROMFBCONFIGPROC)glXGetProcAddress((const GLubyte*)"glXGetVisualFromFBConfig");
+	glXGetFBConfigAttrib = (PFNGLXGETFBCONFIGATTRIBPROC)glXGetProcAddress((const GLubyte*)"glXGetFBConfigAttrib");
+	glXCreateContextAttribsARB = (PFNGLXCREATECONTEXTATTRIBSARBPROC)glXGetProcAddress("glXCreateContextAttribsARB");
+
+	if (!glXChooseFBConfig || !glXGetVisualFromFBConfig || !glXGetFBConfigAttrib || !glXCreateContextAttribsARB) {
+		//Platform::MessageBox("Fatal Error", "Unable to load required GLX functions", MessageBoxButtons::OK, MessageBoxIcon::Error);
 		return false;
 	}
+
+	fbc = glXChooseFBConfig(X11_Display, DefaultScreen(X11_Display), _visualAttribs, &fbCount);
+	if (!fbc) {
+		_LogError(L"Failed to find fb config");
+		return false;
+	}
+
+	_fbConfig = fbc[0];
+	XFree(fbc);
 
 	if (CVAR_BOOL(L"GL_Debug"))
 		_ctxAttribs[7] |= GLX_CONTEXT_DEBUG_BIT_ARB;
 
-	wglCreateContextAttribsARB = (PFNWGLCREATECONTEXTATTRIBSARBPROC)wglGetProcAddress("wglCreateContextAttribsARB");
-	if (wglCreateContextAttribsARB) {
-		wglMakeCurrent(NULL, NULL);
-		wglDeleteContext(dummy);
+	Re_Device.glContext = glXCreateContextAttribsARB(X11_Display, _fbConfig, 0, True, _ctxAttribs);
 
-		Re_Device.glContext = wglCreateContextAttribsARB(_dc, NULL, _ctxAttribs);
-		if (!Re_Device.glContext) {
-			_LogError(L"Failed to create context");
-			return false;
-		}
-	} else {
-		// Use the already created OpenGL context
-		Re_Device.glContext = dummy;
-		Re_Device.loadLock = Sys_InitAtomicLock();
-	}
-
-	if (!wglMakeCurrent(_dc, Re_Device.glContext)) {
-		_LogError(L"Failed to activate context");
-		wglDeleteContext(Re_Device.glContext);
+	if (!Re_Device.glContext) {
+		_LogError(L"Failed to create context");
 		return false;
 	}
 
-	((PFNGLGETINTEGERVPROC)GetProcAddress(_libGL, "glGetIntegerv"))(GL_MAJOR_VERSION, &Re_Device.verMajor);
-	((PFNGLGETINTEGERVPROC)GetProcAddress(_libGL, "glGetIntegerv"))(GL_MINOR_VERSION, &Re_Device.verMinor);
+	XSync(X11_Display, False);
+	Re_Device.loadLock = Sys_InitAtomicLock();
 
-	wglChoosePixelFormatARB = (PFNWGLCHOOSEPIXELFORMATARBPROC)wglGetProcAddress("wglChoosePixelFormatARB");
-	if (wglChoosePixelFormatARB) {
-		if (CVAR_BOOL(L"Render_Multisampling")) {
-			if (_checkExtension("GL_ARB_multisample") || _checkExtension("GL_EXT_multisample")) {
-				_pixelFormatAttribs[12] = WGL_SAMPLE_BUFFERS_ARB;
-				_pixelFormatAttribs[13] = 1;
-				_pixelFormatAttribs[14] = WGL_SAMPLES_ARB;
-				_pixelFormatAttribs[15] = CVAR_INT32(L"Render_Samples");
-			} else if (_checkExtension("GL_3DFX_multisample")) {
-				_pixelFormatAttribs[12] = WGL_SAMPLE_BUFFERS_3DFX;
-				_pixelFormatAttribs[13] = 1;
-				_pixelFormatAttribs[14] = WGL_SAMPLES_3DFX;
-				_pixelFormatAttribs[15] = CVAR_INT32(L"Render_Samples");
-			} else {
-				Sys_LogEntry(GLRMOD, LOG_WARNING, L"Multisampling requested, but no multisampling extensions present");
-			}
-		}
-
-		wglChoosePixelFormatARB(_dc, _pixelFormatAttribs, NULL, 1, &pixelFormat, &numFormats);
+	if (!glXMakeCurrent(X11_Display, (GLXDrawable)E_Screen, (GLXContext)Re_Device.glContext)) {
+		_LogError(L"Failed to activate context");
+		glXDestroyContext(X11_Display, (GLXContext)Re_Device.glContext);
+		return false;
 	}
 
-	SetPixelFormat(_dc, pixelFormat, &_pfd);
+	((PFNGLGETINTEGERVPROC)glXGetProcAddress("glGetIntegerv"))(GL_MAJOR_VERSION, &Re_Device.verMajor);
+	((PFNGLGETINTEGERVPROC)glXGetProcAddress("glGetIntegerv"))(GL_MINOR_VERSION, &Re_Device.verMinor);
 
-	_wglSwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC)wglGetProcAddress("wglSwapIntervalEXT");
+	_glXSwapIntervalEXT = (PFNGLXSWAPINTERVALEXTPROC)glXGetProcAddress("glXSwapIntervalEXT");
 
 	return true;
 }
@@ -175,26 +155,26 @@ GL_InitDevice(void)
 void
 GL_SwapBuffers(void)
 {
-	SwapBuffers(_dc);
+	glXSwapBuffers(X11_Display, (GLXDrawable)E_Screen);
 }
 
 void
 GL_SwapInterval(int interval)
 {
-	if (_wglSwapIntervalEXT)
-		_wglSwapIntervalEXT(interval);
+	if (_glXSwapIntervalEXT)
+		_glXSwapIntervalEXT(X11_Display, (GLXDrawable)E_Screen, interval);
 }
 
 void *
 GL_InitLoadContext(void)
 {
 	void *ctx = NULL;
-	PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB = NULL;
-	wglCreateContextAttribsARB = (PFNWGLCREATECONTEXTATTRIBSARBPROC)wglGetProcAddress("wglCreateContextAttribsARB");
-	if (!wglCreateContextAttribsARB)
+	PFNGLXCREATECONTEXTATTRIBSARBPROC glXCreateContextAttribsARB = NULL;
+	glXCreateContextAttribsARB = (PFNGLXCREATECONTEXTATTRIBSARBPROC)glXGetProcAddress("glXCreateContextAttribsARB");
+	if (!glXCreateContextAttribsARB)
 		return NULL;
 
-	ctx = wglCreateContextAttribsARB(_dc, Re_Device.glContext, _ctxAttribs);
+	ctx = glXCreateContextAttribsARB(X11_Display, _fbConfig, Re_Device.glContext, True, _ctxAttribs);
 	if (!ctx)
 		_LogError(L"Failed to load context");
 
@@ -204,14 +184,15 @@ GL_InitLoadContext(void)
 void
 GL_MakeCurrent(void *ctx)
 {
-	wglMakeCurrent(_dc, (HGLRC)ctx);
+	glXMakeCurrent(X11_Display, (GLXDrawable)E_Screen, (GLXContext)ctx);
 }
 
 void
 GL_TermLoadContext(void *ctx)
 {
-	wglDeleteContext((HGLRC)ctx);
+	glXDestroyContext(X11_Display, (GLXContext)ctx);
 }
+
 
 void
 GL_TermDevice(void)
@@ -219,7 +200,5 @@ GL_TermDevice(void)
 	if (Re_Device.loadLock)
 		Sys_TermAtomicLock(Re_Device.loadLock);
 
-	wglDeleteContext((HGLRC)Re_Device.glContext);
-
-	FreeLibrary(_libGL);
+	glXDestroyContext(X11_Display, (GLXContext)Re_Device.glContext);
 }
