@@ -43,13 +43,11 @@ This repository is a mirror which is not frequently updated.
 #### Prerequisites
 * gcc
 * cmake
-* X11 & OpenGL development files
+* X11, OpenGL & OpenAL development files
 * On Debian based systems you need to install the following packages:
 	* gcc
 	* libx11-dev
 	* libopenal-dev
-	* libluajit-5.1-dev
-	* libphysfs-dev
 	* libgl-dev
 	* cmake
 
