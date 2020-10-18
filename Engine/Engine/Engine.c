@@ -43,7 +43,7 @@ double E_DeltaTime = 0.0;
 
 static bool _shutdown;
 static double _startTime, _prevTime;
-
+#include <Math/sanity.h>
 bool
 E_Init(int argc, char *argv[])
 {
@@ -66,22 +66,23 @@ E_Init(int argc, char *argv[])
 			break;
 		}
 	}
-	
+
 	E_InitConfig(configFile);
+
+	Sys_Init();
+	Sys_InitMemory();
+
+	__MathDbg_SanityTest();
 
 	if (logFile)
 		E_SetCVarStr(L"Engine_LogFile", logFile);
-
+	
 	if (dataDir)
 		E_SetCVarStr(L"Engine_DataDir", dataDir);
-
+	
 	E_ScreenWidth = &E_GetCVarU32(L"Engine_ScreenWidth", 1280)->u32;
 	E_ScreenHeight = &E_GetCVarU32(L"Engine_ScreenHeight", 720)->u32;
-
-	Sys_Init();
-
-	Sys_InitMemory();
-
+	
 	if (App_ApplicationInfo.version.revision)
 		Sys_LogEntry(EMOD, LOG_INFORMATION, L"%ls v%d.%d.%d.%d", App_ApplicationInfo.name, App_ApplicationInfo.version.major,
 			App_ApplicationInfo.version.minor, App_ApplicationInfo.version.build, App_ApplicationInfo.version.revision);
@@ -94,11 +95,11 @@ E_Init(int argc, char *argv[])
 	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Copyright \u00A9 %ls", E_CPY_STR);
 	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Starting up...");
 
-	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Host: %s", Sys_Hostname());
-	Sys_LogEntry(EMOD, LOG_INFORMATION, L"CPU: %s", Sys_CpuName());
+	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Host: %hs", Sys_Hostname());
+	Sys_LogEntry(EMOD, LOG_INFORMATION, L"CPU: %hs", Sys_CpuName());
 	Sys_LogEntry(EMOD, LOG_INFORMATION, L"\tCount: %d", Sys_NumCpus());
-	Sys_LogEntry(EMOD, LOG_INFORMATION, L"\tArchitecture: %s", Sys_Machine());
-	Sys_LogEntry(EMOD, LOG_INFORMATION, L"\tBig Endian: %s", Sys_BigEndian() ? "True" : "False");
+	Sys_LogEntry(EMOD, LOG_INFORMATION, L"\tArchitecture: %hs", Sys_Machine());
+	Sys_LogEntry(EMOD, LOG_INFORMATION, L"\tBig Endian: %hs", Sys_BigEndian() ? "True" : "False");
 
 	Sys_CreateWindow();
 
@@ -113,12 +114,12 @@ E_Init(int argc, char *argv[])
 	E_InitResourceSystem();
 
 	Re_Init();
-	Sys_LogEntry(EMOD, LOG_INFORMATION, L"GPU: %ls", Re_RenderInfo.device);
-	Sys_LogEntry(EMOD, LOG_INFORMATION, L"\tRendering API: %ls", Re_RenderInfo.name);
+	Sys_LogEntry(EMOD, LOG_INFORMATION, L"GPU: %ls", Re.info.device);
+	Sys_LogEntry(EMOD, LOG_INFORMATION, L"\tRendering API: %ls", Re.info.name);
 
-	E_RegisterResourceType(RES_MODEL, RE_APPEND_DATA_SIZE(struct Model, Re_ModelRenderDataSize),
+	E_RegisterResourceType(RES_MODEL, RE_APPEND_DATA_SIZE(struct Model, Re.modelRenderDataSize),
 		(ResourceCreateProc)Re_CreateModel, (ResourceLoadProc)Re_LoadModel, (ResourceUnloadProc)Re_UnloadModel);
-	E_RegisterResourceType(RES_TEXTURE, RE_APPEND_DATA_SIZE(struct Texture, Re_TextureRenderDataSize),
+	E_RegisterResourceType(RES_TEXTURE, RE_APPEND_DATA_SIZE(struct Texture, Re.textureRenderDataSize),
 		(ResourceCreateProc)Re_CreateTexture, (ResourceLoadProc)Re_LoadTexture, (ResourceUnloadProc)Re_UnloadTexture);
 
 	Re_LoadMaterials();
@@ -131,11 +132,11 @@ E_Init(int argc, char *argv[])
 	if (App_ApplicationInfo.version.revision)
 		swprintf(titleBuff, 256, L"%ls v%u.%u.%u.%u - %ls - %ls", App_ApplicationInfo.name,
 			App_ApplicationInfo.version.major, App_ApplicationInfo.version.minor, App_ApplicationInfo.version.build,
-			App_ApplicationInfo.version.revision, Re_RenderInfo.device, Re_RenderInfo.name);
+			App_ApplicationInfo.version.revision, Re.info.device, Re.info.name);
 	else
 		swprintf(titleBuff, 256, L"%ls v%u.%u.%u - %ls - %ls", App_ApplicationInfo.name,
 			App_ApplicationInfo.version.major, App_ApplicationInfo.version.minor, App_ApplicationInfo.version.build,
-			Re_RenderInfo.device, Re_RenderInfo.name);
+			Re.info.device, Re.info.name);
 
 	Sys_SetWindowTitle(titleBuff);
 
@@ -232,7 +233,7 @@ E_Frame(void)
 	E_ExecuteSystemGroupS(Scn_ActiveScene, ECSYS_GROUP_POST_LOGIC);
 
 	E_ExecuteSystemGroupS(Scn_ActiveScene, ECSYS_GROUP_PRE_RENDER);
-	Re_RenderFrame();
+	Re.RenderFrame();
 	E_ExecuteSystemGroupS(Scn_ActiveScene, ECSYS_GROUP_POST_RENDER);
 
 	In_Update();

@@ -1,7 +1,13 @@
 #ifndef _OAL_OALSOUND_H_
 #define _OAL_OALSOUND_H_
 
-#include <AL/al.h>
+#ifdef __APPLE__
+#	include <OpenAL/al.h>
+#	include <OpenAL/alc.h>
+#else
+#	include <AL/al.h>
+#	include <AL/alc.h>
+#endif
 
 #include <Engine/Types.h>
 #include <Engine/Component.h>

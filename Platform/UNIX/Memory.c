@@ -14,6 +14,21 @@
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #define ROUND_UP(v, powerOf2Alignment) (((v) + (powerOf2Alignment)-1) & ~((powerOf2Alignment)-1))
 
+#if (defined(_XOPEN_SOURCE) && _XOPEN_SOURCE >= 600)
+#define	USE_POSIX_MEMALIGN
+#elif (defined(__GLIBC__) && ((__GLIBC__ >= 2 && __GLIBC_MINOR__ >= 8) || __GLIBC__ > 2) && defined(__LP64__)) \
+		|| (defined(__FreeBSD__) && !defined(__arm__) && !defined(__mips__)) \
+		|| defined(__APPLE__)
+#define	USE_MALLOC
+#elif __STDC_VERSION__ >= 201112L
+#define USE_ALIGNED_ALLOC
+#elif __SSE__
+#include <intrin.h>
+#define USE_MM_MALLLOC
+#else
+#define USE_MEMALIGN
+#endif
+
 struct Allocation
 {
 	uint32_t magic;
@@ -22,7 +37,7 @@ struct Allocation
 };
 
 static uint8_t *_transientHeap, *_transientHeapPtr;
-static uint8_t *_sceneHeap, *_sceneHeapPtr;
+//static uint8_t *_sceneHeap, *_sceneHeapPtr;
 static uint64_t *_transientHeapSize;
 static uint64_t _transientHeapPeak = 0;
 
@@ -90,6 +105,39 @@ Sys_Free(void *mem)
 
 	// check end
 	// free
+}
+
+void *
+Sys_AlignedAlloc(size_t size, size_t alignment)
+{
+#if defined(USE_POSIX_MEMALIGN)
+	void *mem;
+	if (posix_memalign(&mem, alignment, size))
+		return NULL;
+	return mem;
+#elif defined(USE_MEMALIGN)
+	return memalign(alignment, size);
+#elif defined(USE_MALLOC)
+	return malloc(size);
+#elif defined(USE_ALIGNED_ALLOC)
+	return aligned_alloc(alignment, size);
+#elif defined(USE_MM_MALLOC)
+	return _mm_malloc(size, alignment);
+#else
+#error	Aligned memory allocation not implemented for this platform
+#endif
+}
+
+void
+Sys_AlignedFree(void *mem)
+{
+#if defined(USE_MALLOC) || defined(USE_ALIGNED_ALLOC) || defined(USE_MEMALIGN) || defined(USE_POSIX_MEMALIGN)
+	return free(mem);
+#elif defined(USE_MM_MALLOC)
+	return _mm_free(mem);
+#else
+#error	Aligned memory allocation not implemented for this platform
+#endif
 }
 
 bool

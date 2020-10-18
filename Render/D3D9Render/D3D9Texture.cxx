@@ -64,11 +64,12 @@ static D3D9Format _textureFormat[] =
 	{ D3DFMT_UNKNOWN, FS_UNKNOWN, 0 },
 	{ D3DFMT_UNKNOWN, FS_UNKNOWN, 0 },
 	{ D3DFMT_UNKNOWN, FS_UNKNOWN, 0 },
-	{ D3DFMT_UNKNOWN, FS_UNKNOWN, 0 }
+	{ D3DFMT_UNKNOWN, FS_UNKNOWN, 0 },
+	{ D3DFMT_L8, FS_UNKNOWN, 1 }
 };
 
 bool
-Re_InitTexture(const char *name, struct Texture *tex, Handle h)
+D3D9_InitTexture(const char *name, struct Texture *tex, Handle h)
 {
 	HRESULT hr;
 	IDirect3DTexture9 *staging = NULL;
@@ -131,13 +132,13 @@ error:
 }
 
 bool
-Re_UpdateTexture(struct Texture *tex, const void *data, uint64_t offset, uint64_t size)
+D3D9_UpdateTexture(struct Texture *tex, const void *data, uint64_t offset, uint64_t size)
 {
 	return false;
 }
 
 void
-Re_TermTexture(struct Texture *tex)
+D3D9_TermTexture(struct Texture *tex)
 {
 	struct TextureRenderData *trd = (struct TextureRenderData *)&tex->renderDataStart;
 	trd->tex->Release();

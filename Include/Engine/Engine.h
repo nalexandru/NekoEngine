@@ -4,14 +4,16 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include <Engine/Types.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern void *E_Screen;
-extern uint32_t *E_ScreenWidth;
-extern uint32_t *E_ScreenHeight;
-extern double E_DeltaTime;
+ENGINE_API extern void *E_Screen;
+ENGINE_API extern uint32_t *E_ScreenWidth;
+ENGINE_API extern uint32_t *E_ScreenHeight;
+ENGINE_API extern double E_DeltaTime;
 
 bool E_Init(int argc, char *argv[]);
 void E_Term(void);
@@ -22,8 +24,6 @@ void E_Frame(void);
 double E_Time(void);
 
 void E_Shutdown(void);
-void E_LoadScene(void);
-void E_ActivateScene(void);
 
 #ifdef __cplusplus
 }

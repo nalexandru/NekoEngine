@@ -48,10 +48,10 @@ static int _pixelFormatAttribs[] =
 
 static int _ctxAttribs[] =
 {
-	WGL_CONTEXT_MAJOR_VERSION_ARB, 4,
-	WGL_CONTEXT_MINOR_VERSION_ARB, 6,
-	WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
 	WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
+	WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+	0, 0,
+	0, 0,
 	0
 };
 
@@ -84,7 +84,7 @@ _checkExtension(const char *extension)
 		if (!ext)
 			ext = ((PFNGLGETSTRINGPROC)GetProcAddress(_libGL, "glGetString"))(GL_EXTENSIONS);
 
-		return strstr(ext, extension);
+		return strstr(ext, extension) != NULL;
 	}
 }
 
@@ -132,28 +132,40 @@ GL_InitDevice(void)
 	}
 
 	if (CVAR_BOOL(L"GL_Debug"))
-		_ctxAttribs[7] |= WGL_CONTEXT_DEBUG_BIT_ARB;
+		_ctxAttribs[3] |= WGL_CONTEXT_DEBUG_BIT_ARB;
 
 	wglCreateContextAttribsARB = (PFNWGLCREATECONTEXTATTRIBSARBPROC)wglGetProcAddress("wglCreateContextAttribsARB");
 	if (wglCreateContextAttribsARB) {
 		wglMakeCurrent(NULL, NULL);
-		wglDeleteContext(dummy);
-
+		
+		// attempt to create a forward-compatible core profile context first
 		Re_Device.glContext = wglCreateContextAttribsARB(_dc, NULL, _ctxAttribs);
 		if (!Re_Device.glContext) {
-			_LogError(L"Failed to create context");
-			return false;
+			memset(_ctxAttribs, 0x0, sizeof(_ctxAttribs));
+			Re_Device.glContext = wglCreateContextAttribsARB(_dc, NULL, _ctxAttribs);
+		}
+
+		if (Re_Device.glContext) {
+			wglDeleteContext(dummy);
+			dummy = NULL;
+		} else {
+			_LogError(L"wglCreateContextAttribsARB failed");
+			Re_Device.glContext = dummy;
 		}
 	} else {
 		// Use the already created OpenGL context
 		Re_Device.glContext = dummy;
-		Re_Device.loadLock = Sys_InitAtomicLock();
 	}
 
 	if (!wglMakeCurrent(_dc, Re_Device.glContext)) {
 		_LogError(L"Failed to activate context");
 		wglDeleteContext(Re_Device.glContext);
 		return false;
+	}
+
+	if (Re_Device.glContext == dummy) {
+		Re_Device.loadLock = Sys_AlignedAlloc(sizeof(*Re_Device.loadLock), 16);
+		Sys_InitAtomicLock(Re_Device.loadLock);
 	}
 
 	((PFNGLGETINTEGERVPROC)GetProcAddress(_libGL, "glGetIntegerv"))(GL_MAJOR_VERSION, &Re_Device.verMajor);
@@ -200,6 +212,12 @@ GL_SwapInterval(int interval)
 		_wglSwapIntervalEXT(interval);
 }
 
+void
+GL_ScreenResized(void)
+{
+	//
+}
+
 void *
 GL_InitLoadContext(void)
 {
@@ -232,7 +250,7 @@ void
 GL_TermDevice(void)
 {
 	if (Re_Device.loadLock)
-		Sys_TermAtomicLock(Re_Device.loadLock);
+		Sys_AlignedFree(Re_Device.loadLock);
 
 	wglDeleteContext((HGLRC)Re_Device.glContext);
 

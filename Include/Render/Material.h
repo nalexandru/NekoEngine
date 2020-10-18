@@ -73,11 +73,6 @@ bool Re_CreateMaterial(const wchar_t *name, const wchar_t *shader, const struct 
 bool Re_InstantiateMaterial(const wchar_t *name, struct MaterialInstance *inst);
 void Re_DestroyMaterialInstance(struct MaterialInstance *inst);
 
-// Implemented in render library
-bool Re_InitMaterial(struct Material *m);
-struct MaterialInstance Re_InitMaterialInstance(struct Material *mat);
-void Re_TermMaterial(struct Material *m);
-
 #endif // _DXC_VERSION
 
 #ifdef __cplusplus

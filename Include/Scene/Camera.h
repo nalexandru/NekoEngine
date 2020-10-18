@@ -2,6 +2,7 @@
 #define _SCN_CAMERA_H_
 
 #include <Math/Math.h>
+#include <Engine/Types.h>
 #include <Engine/Component.h>
 
 #ifdef __cplusplus
@@ -25,7 +26,7 @@ struct Camera
 	enum ProjectionType projection;
 };
 
-extern struct Camera *Scn_ActiveCamera;
+ENGINE_API extern struct Camera *Scn_ActiveCamera;
 
 bool Scn_InitCamera(struct Camera *cam, const void **args);
 void Scn_TermCamera(struct Camera *cam);

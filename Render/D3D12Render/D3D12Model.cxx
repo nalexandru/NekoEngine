@@ -6,10 +6,8 @@
 
 #include "D3D12Render.h"
 
-const size_t Re_ModelRenderDataSize = sizeof(struct ModelRenderData);
-
 bool
-Re_InitModel(const char *name, struct Model *m)
+D3D12_InitModel(const char *name, struct Model *m)
 {
 	struct ModelRenderData *mrd = (struct ModelRenderData *)&m->renderDataStart;
 	wchar_t *buff = (wchar_t *)Sys_Alloc(sizeof(wchar_t), 512, MH_Transient);
@@ -19,7 +17,7 @@ Re_InitModel(const char *name, struct Model *m)
 	D3D12_RAYTRACING_GEOMETRY_DESC geomDesc = {};
 	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS buildInputs = {};
 
-	if (Re_Features.rayTracing) {
+	if (Re.features.rayTracing) {
 		geomDesc.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
 		geomDesc.Triangles.VertexBuffer.StrideInBytes = sizeof(struct Vertex);
 		geomDesc.Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
@@ -58,7 +56,7 @@ Re_InitModel(const char *name, struct Model *m)
 		swprintf(buff, 512, L"%hs Index Buffer", name);
 		mrd->idxBuffer->SetName(buff);
 
-		if (Re_Features.rayTracing) {
+		if (Re.features.rayTracing) {
 			mrd->structures = (struct AccelerationStructure *)calloc(m->numMeshes, sizeof(*mrd->structures));
 			if (!mrd->structures)
 				return false;
@@ -94,21 +92,21 @@ Re_InitModel(const char *name, struct Model *m)
 	D3D12_StageUpload(mrd->vtxBuffer, vertexSize, m->vertices);
 	D3D12_StageUpload(mrd->idxBuffer, indexSize, m->indices);
 
-	if (Re_Features.rayTracing)
+	if (Re.features.rayTracing)
 		D3D12_StageBLASBuild(m, buildInputs.Flags);
 
 	return true;
 }
 
 void
-Re_TermModel(struct Model *m)
+D3D12_TermModel(struct Model *m)
 {
 	struct ModelRenderData *mrd = (struct ModelRenderData *)&m->renderDataStart;
 
 	D3D12_DestroyResource(mrd->vtxBuffer);
 	D3D12_DestroyResource(mrd->idxBuffer);
 
-	if (Re_Features.rayTracing) {
+	if (Re.features.rayTracing) {
 		for (uint32_t i = 0; i < m->numMeshes; ++i) {
 			D3D12_DestroyResource(mrd->structures[i].scratchBuffer);
 			D3D12_DestroyResource(mrd->structures[i].asBuffer);

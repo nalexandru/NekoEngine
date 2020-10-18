@@ -54,7 +54,8 @@ enum TextureFormat
 	TF_BC6H_UF16,
 	TF_BC6H_SF16,
 	TF_BC7_UNORM,
-	TF_BC7_UNORM_SRGB
+	TF_BC7_UNORM_SRGB,
+	TF_ALPHA
 };
 
 struct Texture
@@ -81,11 +82,6 @@ struct TextureCreateInfo
 bool Re_CreateTexture(const char *name, const struct TextureCreateInfo *ci, struct Texture *tex, Handle h);
 bool Re_LoadTexture(struct ResourceLoadInfo *li, const char *args, struct Texture *tex, Handle h);
 void Re_UnloadTexture(struct Texture *tex, Handle h);
-
-// Implemented in render library
-bool Re_InitTexture(const char *name, struct Texture *tex, Handle h);
-bool Re_UpdateTexture(struct Texture *tex, const void *data, uint64_t offset, uint64_t size);
-void Re_TermTexture(struct Texture *tex);
 
 #ifdef __cplusplus
 }

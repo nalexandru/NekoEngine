@@ -45,7 +45,7 @@ struct CompBase
 
 struct CompType
 {
-	size_t size;
+	size_t size, alignment;
 	uint64_t hash;
 	CompInitProc create;
 	CompTermProc destroy;

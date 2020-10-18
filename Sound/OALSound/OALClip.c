@@ -7,7 +7,7 @@ size_t Au_AudioClipDataSize = sizeof(ALuint);
 bool
 Au_InitClip(struct AudioClip *ac)
 {
-	ALuint *buff = (ALuint *)&ac->soundSystemData;
+	//ALuint *buff = (ALuint *)&ac->soundSystemData;
 
 	/*alGetBuffers(1, buff);
 	alBufferData(*buff, 

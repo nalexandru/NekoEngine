@@ -24,25 +24,22 @@
     <ClCompile Include="Window.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="System.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Main.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Deps\PhysFS\physfs_platform_windows.c">
       <Filter>Source Files\Deps\PhysFS</Filter>
     </ClCompile>
-    <ClCompile Include="Input.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="AtomicLock.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Memory.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Job.c">
+    <ClCompile Include="Thread.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Win32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="W32Input.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

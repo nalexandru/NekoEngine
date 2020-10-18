@@ -3,9 +3,6 @@
 
 #include "OALSound.h"
 
-#include <AL/al.h>
-#include <AL/alc.h>
-
 static ALCdevice *_device;
 static ALCcontext *_context;
 static ALfloat _initOrientation[] = { 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f };

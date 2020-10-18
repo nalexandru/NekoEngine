@@ -47,12 +47,6 @@
     <ClCompile Include="D3D12Model.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="D3D12Material.cxx">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="D3D12Graph.cxx">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="D3D12Device.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>

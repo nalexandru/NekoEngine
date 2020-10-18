@@ -17,27 +17,52 @@
 #	define D3DCREATE_MULTITHREADED	0
 #endif
 
-struct RenderInfo Re_RenderInfo = 
-{
-	{ L"Direct3D 9" },
-	{ 0x0 },
-	false
-};
-struct RenderFeatures Re_Features = { false, false, false };
-
 struct RenderDevice Re_Device = { 0 };
-
 IDirect3DVertexDeclaration9 *D3D9_VertexDeclaration;
-
 static D3DPRESENT_PARAMETERS _pp = { 0 };
 
+static bool _Init(void);
+static void _Term(void);
+static void _WaitIdle(void) { }
+static void _ScreenResized(void);
+static void _RenderFrame(void);
+
+extern "C" __declspec(dllexport) uint32_t Re_ApiVersion = RE_API_VERSION;
+extern "C" __declspec(dllexport) bool
+Re_InitLibrary(void)
+{
+	memset(&Re, 0x0, sizeof(Re));
+
+	Re.Init = _Init;
+	Re.Term = _Term;
+	Re.WaitIdle = _WaitIdle;
+	Re.ScreenResized = _ScreenResized;
+	Re.RenderFrame = _RenderFrame;
+	Re.InitScene = D3D9_InitScene;
+	Re.TermScene = D3D9_TermScene;
+	Re.GetShader = D3D9_GetShader;
+	Re.InitTexture = D3D9_InitTexture;
+	Re.UpdateTexture = D3D9_UpdateTexture;
+	Re.TermTexture = D3D9_TermTexture;
+	Re.InitModel = D3D9_InitModel;
+	Re.TermModel = D3D9_TermModel;
+
+	Re.sceneRenderDataSize = sizeof(struct SceneRenderData);
+	Re.modelRenderDataSize = sizeof(struct ModelRenderData);
+	Re.textureRenderDataSize = sizeof(struct TextureRenderData);
+
+	swprintf(Re.info.name, 64, L"Direct3D 9");
+
+	return true;
+}
+
 bool
-Re_Init(void)
+_Init(void)
 {
 	UINT adapterIndex = D3DADAPTER_DEFAULT;
 	HRESULT hr;
 	D3DDISPLAYMODE dm;
-
+	
 	Re_Device.d3d = Direct3DCreate9(D3D_SDK_VERSION);
 	if (!Re_Device.d3d)
 		return false;
@@ -89,7 +114,7 @@ Re_Init(void)
 	D3DADAPTER_IDENTIFIER9 identifier;
 	Re_Device.d3d->GetAdapterIdentifier(adapterIndex, 0, &identifier);
 
-	mbstowcs(Re_RenderInfo.device, identifier.Description, sizeof(Re_RenderInfo.device) / sizeof(wchar_t));
+	mbstowcs(Re.info.device, identifier.Description, sizeof(Re.info.device) / sizeof(wchar_t));
 
 	/*if (CVAR_BOOL(L"Render_Multisampling")) {
 		_pp.MultiSampleType = (D3DMULTISAMPLE_TYPE)CVAR_INT32(L"Render_Samples");
@@ -175,11 +200,13 @@ Re_Init(void)
 	E_RegisterSystem(LOAD_UI_CONTEXT, ECSYS_GROUP_MANUAL, comp, 1, (ECSysExecProc)D3D9_LoadUIContext, 0);
 	E_RegisterSystem(DRAW_UI_CONTEXT, ECSYS_GROUP_MANUAL, comp, 1, (ECSysExecProc)D3D9_DrawUIContext, 0);
 
+	Re.limits.maxTextureSize = (uint16_t)min(Re_Device.caps.MaxTextureWidth, Re_Device.caps.MaxTextureHeight);
+
 	return true;
 }
 
 void
-Re_Term(void)
+_Term(void)
 {
 	D3D9_TermUI();
 
@@ -190,13 +217,7 @@ Re_Term(void)
 }
 
 void
-Re_WaitIdle(void)
-{
-	//
-}
-
-void
-Re_ScreenResized(void)
+_ScreenResized(void)
 {
 	if (!Re_Device.dev)
 		return;
@@ -208,7 +229,7 @@ Re_ScreenResized(void)
 }
 
 void
-Re_RenderFrame(void)
+_RenderFrame(void)
 {
 	Re_Device.dev->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_COLORVALUE(.8f, .2f, .2f, 1.f), 1.f, 0);
 	Re_Device.dev->BeginScene();

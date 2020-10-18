@@ -8,8 +8,6 @@
 extern "C" {
 #endif
 
-void *Re_GetShader(uint64_t hash);
-
 #ifdef __cplusplus
 }
 #endif

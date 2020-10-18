@@ -125,7 +125,7 @@ main(int argc, char *argv[])
 	size = font.texSize / 2;
 	while (size >= minSize) {
 		_downsize(data, img, font.texSize, size);
-		fwrite(img, sizeof(uint8_t), (size_t)size / size, fp);
+		fwrite(img, sizeof(uint8_t), (size_t)size * size, fp);
 		size /= 2;
 	}
 

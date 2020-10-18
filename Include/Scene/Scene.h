@@ -21,8 +21,8 @@ struct Scene
 	uint8_t renderDataStart;
 };
 
-extern struct Scene *Scn_ActiveScene;
-extern struct Scene *Scn_LoadingScene;
+ENGINE_API extern struct Scene *Scn_ActiveScene;
+ENGINE_API extern struct Scene *Scn_LoadingScene;
 
 struct Scene *Scn_CreateScene(const wchar_t *name);
 struct Scene *Scn_StartSceneLoad(const char *path);

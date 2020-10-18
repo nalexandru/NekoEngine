@@ -7,8 +7,6 @@
 
 #include "D3D12Render.h"
 
-const size_t Re_TextureRenderDataSize = sizeof(struct TextureRenderData);
-
 static ID3D12DescriptorHeap *_textureHeap{ 0 };
 static bool _heapDirty{ true };
 static UINT _incrementSize;
@@ -53,11 +51,12 @@ static DXGI_FORMAT _textureFormat[] =
 	DXGI_FORMAT_BC6H_UF16,
 	DXGI_FORMAT_BC6H_SF16,
 	DXGI_FORMAT_BC7_UNORM,
-	DXGI_FORMAT_BC7_UNORM_SRGB
+	DXGI_FORMAT_BC7_UNORM_SRGB,
+	DXGI_FORMAT_R8_UNORM
 };
 
 bool
-Re_InitTexture(const char *name, struct Texture *tex, Handle h)
+D3D12_InitTexture(const char *name, struct Texture *tex, Handle h)
 {
 	struct TextureRenderData *trd = (struct TextureRenderData *)&tex->renderDataStart;
 
@@ -103,13 +102,13 @@ Re_InitTexture(const char *name, struct Texture *tex, Handle h)
 }
 
 bool
-Re_UpdateTexture(struct Texture *tex, const void *data, uint64_t dataSize, uint64_t offset)
+D3D12_UpdateTexture(struct Texture *tex, const void *data, uint64_t dataSize, uint64_t offset)
 {
 	return false;
 }
 
 void
-Re_TermTexture(struct Texture *tex)
+D3D12_TermTexture(struct Texture *tex)
 {
 	struct TextureRenderData *trd = (struct TextureRenderData *)&tex->renderDataStart;
 

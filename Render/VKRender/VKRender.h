@@ -217,4 +217,13 @@ VK_TransitionImage(VkImage image, VkImageLayout oldLyt, VkImageLayout newLyt, Vk
 	VK_TransitionImageRange(image, oldLyt, newLyt, &range, cmdBuff);
 }
 
+bool  VK_InitScene(struct Scene *scene);
+void  VK_TermScene(struct Scene *scene);
+void *VK_GetShader(uint64_t hash);
+bool  VK_InitTexture(const char *name, struct Texture *tex, Handle h);
+bool  VK_UpdateTexture(struct Texture *tex, const void *data, uint64_t dataSize, uint64_t offset);
+void  VK_TermTexture(struct Texture *tex);;
+bool  VK_InitModel(const char *name, struct Model *m);
+void  VK_TermModel(struct Model *m);
+
 #endif /* _VK_RENDER_H_ */

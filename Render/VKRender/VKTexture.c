@@ -3,8 +3,6 @@
 
 #include "VKRender.h"
 
-const size_t Re_TextureRenderDataSize = sizeof(struct TextureRenderData);
-
 static VkDescriptorPool _texturePool;
 static VkDescriptorSet _textureSet;
 static VkFormat _textureFormat[] =
@@ -45,11 +43,12 @@ static VkFormat _textureFormat[] =
 	VK_FORMAT_BC6H_UFLOAT_BLOCK,
 	VK_FORMAT_BC6H_SFLOAT_BLOCK,
 	VK_FORMAT_BC7_UNORM_BLOCK,
-	VK_FORMAT_BC7_SRGB_BLOCK
+	VK_FORMAT_BC7_SRGB_BLOCK,
+	VK_FORMAT_R8_UNORM
 };
 
 bool
-Re_InitTexture(const char *name, struct Texture *tex, Handle h)
+VK_InitTexture(const char *name, struct Texture *tex, Handle h)
 {
 	struct TextureRenderData *trd = (struct TextureRenderData *)&tex->renderDataStart;
 
@@ -132,13 +131,13 @@ Re_InitTexture(const char *name, struct Texture *tex, Handle h)
 }
 
 bool
-Re_UpdateTexture(struct Texture *tex, const void *data, uint64_t offset, uint64_t size)
+VK_UpdateTexture(struct Texture *tex, const void *data, uint64_t offset, uint64_t size)
 {
 	return false;
 }
 
 void
-Re_TermTexture(struct Texture *tex)
+VK_TermTexture(struct Texture *tex)
 {
 	//
 }

@@ -14,7 +14,7 @@
 int
 Sys_CreateWindow(void)
 {
-	int x, y;
+	int x = 10, y = 10;
 	Window root, win;
 	XSetWindowAttributes swa;
 	XEvent xev;

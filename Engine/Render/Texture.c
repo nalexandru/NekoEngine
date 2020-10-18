@@ -1,6 +1,7 @@
 #include <Engine/IO.h>
 #include <Engine/Asset.h>
 #include <Engine/Resource.h>
+#include <Render/Render.h>
 #include <Render/Texture.h>
 #include <Runtime/Runtime.h>
 
@@ -18,7 +19,7 @@ Re_CreateTexture(const char *name, const struct TextureCreateInfo *ci, struct Te
 	tex->data = ci->data;
 	tex->dataSize = ci->dataSize;
 
-	rc = Re_InitTexture(name, tex, h);
+	rc = Re.InitTexture(name, tex, h);
 
 	if (!ci->keepData) {
 		tex->data = NULL;
@@ -44,7 +45,7 @@ Re_LoadTexture(struct ResourceLoadInfo *li, const char *args, struct Texture *te
 			rc = false;
 	}
 
-	if (rc && !Re_InitTexture(li->path, tex, h))
+	if (rc && !Re.InitTexture(li->path, tex, h))
 		rc = false;
 
 	free(tex->data);
@@ -57,7 +58,7 @@ Re_LoadTexture(struct ResourceLoadInfo *li, const char *args, struct Texture *te
 void
 Re_UnloadTexture(struct Texture *tex, Handle h)
 {
-	Re_TermTexture(tex);
+	Re.TermTexture(tex);
 
 	free(tex->data);
 }

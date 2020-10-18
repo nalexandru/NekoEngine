@@ -7,15 +7,18 @@
 extern "C" {
 #endif
 
-struct AtomicLock *Sys_InitAtomicLock(void);
+struct AtomicLock
+{
+	ALIGN(16) volatile int32_t read, write;
+};
+
+void Sys_InitAtomicLock(struct AtomicLock *lock);
 
 void Sys_AtomicLockRead(struct AtomicLock *lock);
 void Sys_AtomicUnlockRead(struct AtomicLock *lock);
 
 void Sys_AtomicLockWrite(struct AtomicLock *lock);
 void Sys_AtomicUnlockWrite(struct AtomicLock *lock);
-
-void Sys_TermAtomicLock(struct AtomicLock *lock);
 
 #ifdef __cplusplus
 }

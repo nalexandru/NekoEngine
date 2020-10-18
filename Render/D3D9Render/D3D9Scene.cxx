@@ -27,17 +27,15 @@ struct GetDrawablesArgs
 
 };
 
-const size_t Re_SceneRenderDataSize = sizeof(struct SceneRenderData);
-
 bool
-Re_InitScene(struct Scene *scene)
+D3D9_InitScene(struct Scene *scene)
 {
 	struct SceneRenderData *srd = (struct SceneRenderData *)&scene->renderDataStart;
 	return Rt_InitArray(&srd->drawables, 10, sizeof(struct Drawable));
 }
 
 void
-Re_TermScene(struct Scene *scene)
+D3D9_TermScene(struct Scene *scene)
 {
 	struct SceneRenderData *srd = (struct SceneRenderData *)&scene->renderDataStart;
 	Rt_TermArray(&srd->drawables);
@@ -61,7 +59,7 @@ D3D9_RenderScene(struct Scene *scene)
 
 	for (size_t i = 0; i < srd->drawables.count; ++i) {
 		struct Drawable *draw = (struct Drawable *)Rt_ArrayGet(&srd->drawables, i);
-		struct Shader *s = (struct Shader *)draw->mat->shader;[[]]
+		struct Shader *s = (struct Shader *)draw->mat->shader;
 
 		if (vtxBuffer != draw->vtxBuffer) {
 			Re_Device.dev->SetStreamSource(0, draw->vtxBuffer, 0, sizeof(struct Vertex));

@@ -22,7 +22,7 @@
 
 #include <Math/plane.h>
 
-//#include <math/debug.h>
+#include <Math/debug.h>
 
 #endif /* _NE_MATH_H_ */
 

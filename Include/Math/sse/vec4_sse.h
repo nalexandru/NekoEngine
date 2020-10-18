@@ -147,12 +147,13 @@ v4_divs(struct vec4 *dst, const struct vec4 *v1, const float s)
 static inline float
 v4_dot(const struct vec4 *v1, const struct vec4 *v2)
 {
-#if _MSC_VER >= 1400 && defined(__AVX__)
+#ifdef USE_AVX
 	return _mm_cvtss_f32(_mm_dp_ps(v1->sv, v2->sv, 0xFF));
 #else
+	ALIGN(16) float out[4];
 	__m128 t2 = v2->sv;
 	__m128 t1 = _mm_mul_ps(v1->sv, t2);
-	float out[4];
+	
 
 	t2 = _mm_shuffle_ps(t2, t1, _MM_SHUFFLE(1, 0, 0, 0));
 	t2 = _mm_add_ps(t2, t1);
@@ -183,7 +184,6 @@ v4_norm(struct vec4 *dst, const struct vec4 *src)
 {
 	const __m128 l = _mm_set1_ps(1.f / v4_len(src));
 	dst->sv = _mm_mul_ps(src->sv, l);
-
 	return dst;
 }
 
@@ -203,13 +203,21 @@ v4_distance(const struct vec4 *v1, const struct vec4 *v2)
 {
 	const __m128 tmp = _mm_sub_ps(v1->sv, v2->sv);
 
-#if _MSC_VER >= 1400 && defined(__AVX__)
+	// TODO: SSSE3
+	// #include <tmmintrin.h>
+	// _mm_abs_epi32
+	// https://software.intel.com/sites/landingpage/IntrinsicsGuide
+	// Need some kind of configuration / runtime detection for this
+	// as it will break on older CPUS (pre C2D)
+
+
+#ifdef USE_AVX
 	return fabsf(sqrtf(_mm_cvtss_f32(_mm_dp_ps(tmp, tmp, 0xFF))));
 #else
+	ALIGN(16) float out[4];
 	__m128 t2 = tmp;
 	__m128 t1 = _mm_mul_ps(tmp, t2);
-	float out[4];
-
+	
 	t2 = _mm_shuffle_ps(t2, t1, _MM_SHUFFLE(1, 0, 0, 0));
 	t2 = _mm_add_ps(t2, t1);
 
@@ -225,18 +233,28 @@ v4_distance(const struct vec4 *v1, const struct vec4 *v2)
 static inline void
 v4_swap(struct vec4 *a, struct vec4 *b)
 {
-	float x, y, z, w;
-
-	x = a->x; a->x = b->x; b->x = x;
-	y = a->y; a->y = b->y; b->y = y;
-	z = a->z; a->z = b->z; b->z = z;
-	w = a->w; a->w = b->w; b->w = w;
+	const float x = a->x;
+	const float y = a->y;
+	const float z = a->z;
+	const float w = a->w;
+	
+	a->x = b->x; b->x = x;
+	a->y = b->y; b->y = y;
+	a->z = b->z; b->z = z;
+	a->w = b->w; b->w = w;
 }
 
 static inline int
 v4_equal(const struct vec4 *p1, const struct vec4 *p2)
 {
-	return _mm_movemask_ps(_mm_cmpeq_ps(p1->sv, p2->sv));
+	union {
+		struct {
+			uint32_t a, b, c, d;
+		};
+		__m128 v;
+	} eq;
+	eq.v = _mm_cmpeq_ps(p1->sv, p2->sv);
+	return eq.a && eq.b && eq.c && eq.d;
 }
 
 static inline struct vec4 *
@@ -263,4 +281,3 @@ v4_mul_m4(struct vec4 *dst, const struct vec4 *v, const struct mat4 *m)
 #endif
 
 #endif /* _NE_MATH_SSE_VEC4_H_ */
-

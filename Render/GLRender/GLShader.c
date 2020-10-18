@@ -1,8 +1,10 @@
 #include <Engine/IO.h>
+#include <Engine/Config.h>
 #include <System/Log.h>
 #include <Runtime/Json.h>
 #include <System/Memory.h>
 #include <Render/Shader.h>
+#include <Render/Device.h>
 
 #include "GLRender.h"
 
@@ -23,9 +25,14 @@ static int32_t _SortShaders(const struct Shader *a, const struct Shader *b);
 static int32_t _CompShaders(const struct Shader *m, const uint64_t *hash);
 
 void *
-Re_GetShader(uint64_t hash)
+GL_GetShader(uint64_t hash)
 {
-	void *ret = Rt_ArrayBSearch(&_shaders, &hash, (RtCmpFunc)_CompShaders);
+	void *ret = NULL;
+
+	if (!GL_ShaderSupport)
+		return NULL;
+		
+	ret = Rt_ArrayBSearch(&_shaders, &hash, (RtCmpFunc)_CompShaders);
 	if (!ret)
 		ret = Rt_ArrayBSearch(&_shaders, &_defaultHash, (RtCmpFunc)_CompShaders);
 
@@ -35,6 +42,35 @@ Re_GetShader(uint64_t hash)
 bool
 GL_LoadShaders(void)
 {
+	if (Re_Device.verMajor == 1 || CVAR_BOOL(L"GL_DisableShaders"))
+		return true;
+
+	GL_ShaderSupport = true;
+	
+	if (Re_Device.verMajor == 1) {
+		glCreateShader = (PFNGLCREATESHADERPROC)glCreateShaderObjectARB;
+		glShaderSource = (PFNGLSHADERSOURCEPROC)glShaderSourceARB;
+		glCompileShader = (PFNGLCOMPILESHADERPROC)glCompileShaderARB;
+		glGetShaderiv = (PFNGLGETPROGRAMIVPROC)glGetObjectParameterivARB;
+		glGetShaderInfoLog = (PFNGLGETPROGRAMINFOLOGPROC)glGetInfoLogARB;
+
+		glCreateProgram = (PFNGLCREATEPROGRAMPROC)glCreateProgramObjectARB;
+		glAttachShader = (PFNGLATTACHSHADERPROC)glAttachObjectARB;
+		glLinkProgram = (PFNGLLINKPROGRAMPROC)glLinkProgramARB;
+		glGetProgramiv = (PFNGLGETPROGRAMIVPROC)glGetObjectParameterivARB;
+		glGetProgramInfoLog = (PFNGLGETPROGRAMINFOLOGPROC)glGetInfoLogARB;
+
+		glUseProgram = (PFNGLUSEPROGRAMPROC)glUseProgramObjectARB;
+		
+		glUniform1i = glUniform1iARB;
+		glUniformMatrix4fv = glUniformMatrix4fvARB;
+		
+		glGetUniformLocation = (PFNGLGETUNIFORMLOCATIONPROC)glGetUniformLocationARB;
+		
+		glGetAttribLocation = (PFNGLGETATTRIBLOCATIONPROC)glGetAttribLocationARB;
+		glBindAttribLocation = (PFNGLBINDATTRIBLOCATIONPROC)glBindAttribLocationARB;
+	}
+	
 	Rt_InitArray(&_shaders, 10, sizeof(struct Shader));
 	E_ProcessFiles("/Shaders/GL", "shader", true, _LoadProgram);
 
@@ -50,27 +86,33 @@ GL_UnloadShaders(void)
 {
 	size_t i;
 	struct Shader *s;
+	
+	if (!GL_ShaderSupport)
+		return;
 
-	for (i = 0; i < _shaders.count; ++i) {
-		s = Rt_ArrayGet(&_shaders, i);
+	if (glDeleteShader && glDeleteProgram)
+		for (i = 0; i < _shaders.count; ++i) {
+			s = Rt_ArrayGet(&_shaders, i);
 
-		for (i = 0; i < GL_SHADER_COUNT; ++i)
-			if (s->shaders[i])
-				glDeleteShader(s->shaders[i]);
+			for (i = 0; i < GL_SHADER_COUNT; ++i)
+				if (s->shaders[i])
+					glDeleteShader(s->shaders[i]);
 
-		glDeleteProgram(s->program);
-	}
+			glDeleteProgram(s->program);
+		}
+		
+	Rt_TermArray(&_shaders);
 }
 
 static void
 _LoadProgram(const char *path)
 {
-	uint32_t i = 0, j = 0;
+	int32_t i = 0, j = 0;
 	struct Shader *s;
 	File f;
 	int64_t size;
 	char *data, *shPath;
-	uint32_t tokCount;
+	int32_t tokCount;
 	jsmntok_t *tokens, tok;
 	jsmn_parser p;
 	wchar_t *buff;
@@ -109,17 +151,23 @@ _LoadProgram(const char *path)
 		} else if (JSON_STRING("fragment", tok, data)) {
 			tok = tokens[++i];
 			stage = GL_FRAGMENT_SHADER;
+	#ifdef GL_GEOMETRY_SHADER
 		} else if (JSON_STRING("geometry", tok, data)) {
 			tok = tokens[++i];
 			stage = GL_GEOMETRY_SHADER;
+	#endif
+	#ifdef GL_TESS_CONTROL_SHADER
 		} else if (JSON_STRING("tessControl", tok, data)) {
 			tok = tokens[++i];
 			stage = GL_TESS_CONTROL_SHADER;
+	#endif
+	#ifdef GL_TESS_EVALUATION_SHADER
 		} else if (JSON_STRING("tessEval", tok, data)) {
 			tok = tokens[++i];
 			stage = GL_TESS_EVALUATION_SHADER;
+	#endif
 		}
-
+		
 		if (stage != GL_INVALID_ENUM) {
 			snprintf(shPath, 13 + (size_t)tok.end - (size_t)tok.start, "/Shaders/GL/%s", data + tok.start);
 			s->shaders[j++] = _LoadShader(shPath, stage);
@@ -134,27 +182,49 @@ _LoadProgram(const char *path)
 	for (i = 0; i < GL_SHADER_COUNT; ++i)
 		if (s->shaders[i])
 			glAttachShader(s->program, s->shaders[i]);
-	
+
 	glLinkProgram(s->program);
 	glGetProgramiv(s->program, GL_LINK_STATUS, &i);
 	
-	if (!i) {
-		glGetProgramiv(s->program, GL_INFO_LOG_LENGTH, &i);
+	if (!i)
+		goto LinkError;
+	
+	if (Re_Device.verMajor < 3 || (Re_Device.verMajor == 3 && Re_Device.verMinor < 3)) {
+		if (glGetAttribLocation(s->program, "a_position") != -1) {
+			glBindAttribLocation(s->program, 0, "a_position");
+			glBindAttribLocation(s->program, 1, "a_normal");
+			glBindAttribLocation(s->program, 2, "a_tangent");
+			glBindAttribLocation(s->program, 3, "a_uv");
+		} else if (glGetAttribLocation(s->program, "a_posUv") != -1) {
+			glBindAttribLocation(s->program, 0, "a_posUv");
+			glBindAttribLocation(s->program, 1, "a_color");
+		}
 
-		data = Sys_Alloc(sizeof(char), i, MH_Transient);
-		glGetProgramInfoLog(s->program, i, NULL, data);
+		glLinkProgram(s->program);
+		glGetProgramiv(s->program, GL_LINK_STATUS, &i);
 
-		Sys_LogEntry(GLSMOD, LOG_CRITICAL, L"Failed to link program %S: %S", path, data);
-
-		for (i = 0; i < GL_SHADER_COUNT; ++i)
-			if (s->shaders[i])
-				glDeleteShader(s->shaders[i]);
-
-		glDeleteProgram(s->program);
-
-		memset(s, 0x0, sizeof(*s));
-		--_shaders.count;
+		if (!i)
+			goto LinkError;
 	}
+
+	return;
+
+LinkError:
+	glGetProgramiv(s->program, GL_INFO_LOG_LENGTH, &i);
+
+	data = Sys_Alloc(sizeof(char), i, MH_Transient);
+	glGetProgramInfoLog(s->program, i, NULL, data);
+
+	Sys_LogEntry(GLSMOD, LOG_CRITICAL, L"Failed to link program %hs: %hs", path, data);
+
+	for (i = 0; i < GL_SHADER_COUNT; ++i)
+		if (s->shaders[i])
+			glDeleteShader(s->shaders[i]);
+
+	glDeleteProgram(s->program);
+
+	memset(s, 0x0, sizeof(*s));
+	--_shaders.count;
 }
 
 static GLuint
@@ -176,8 +246,8 @@ _LoadShader(const char *path, GLenum stage)
 	if (!(s = glCreateShader(stage)))
 		return 0;
 	
-	len = sourceSize;
-	glShaderSource(s, 1, &source, &len);
+	len = (GLint)sourceSize;
+	glShaderSource(s, 1, (const GLchar **)&source, &len);
 	glCompileShader(s);
 	glGetShaderiv(s, GL_COMPILE_STATUS, &len);
 	
@@ -187,9 +257,11 @@ _LoadShader(const char *path, GLenum stage)
 		source = Sys_Alloc(sizeof(char), len, MH_Transient);
 		glGetShaderInfoLog(s, len, NULL, source);
 
-		Sys_LogEntry(GLSMOD, LOG_CRITICAL, L"Failed to compile shader %S: %S", path, source);
+		Sys_LogEntry(GLSMOD, LOG_CRITICAL, L"Failed to compile shader %hs: %hs", path, source);
 
-		glDeleteShader(s);
+		if (glDeleteShader)
+			glDeleteShader(s);
+	
 		return 0;
 	}
 

@@ -53,7 +53,8 @@ _WndProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
 		*E_ScreenWidth = LOWORD(lparam);
 		*E_ScreenHeight = HIWORD(lparam);
 
-		Re_ScreenResized();
+		if (Re.ScreenResized)
+			Re.ScreenResized();
 	} break;
 	default: {
 		if (umsg == WM_SHOWCURSOR) {

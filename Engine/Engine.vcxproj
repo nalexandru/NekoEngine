@@ -15,6 +15,34 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\Deps\Lua\lapi.h" />
+    <ClInclude Include="..\Deps\Lua\lauxlib.h" />
+    <ClInclude Include="..\Deps\Lua\lcode.h" />
+    <ClInclude Include="..\Deps\Lua\lctype.h" />
+    <ClInclude Include="..\Deps\Lua\ldebug.h" />
+    <ClInclude Include="..\Deps\Lua\ldo.h" />
+    <ClInclude Include="..\Deps\Lua\lfunc.h" />
+    <ClInclude Include="..\Deps\Lua\lgc.h" />
+    <ClInclude Include="..\Deps\Lua\ljumptab.h" />
+    <ClInclude Include="..\Deps\Lua\llex.h" />
+    <ClInclude Include="..\Deps\Lua\llimits.h" />
+    <ClInclude Include="..\Deps\Lua\lmem.h" />
+    <ClInclude Include="..\Deps\Lua\lobject.h" />
+    <ClInclude Include="..\Deps\Lua\lopcodes.h" />
+    <ClInclude Include="..\Deps\Lua\lopnames.h" />
+    <ClInclude Include="..\Deps\Lua\lparser.h" />
+    <ClInclude Include="..\Deps\Lua\lprefix.h" />
+    <ClInclude Include="..\Deps\Lua\lstate.h" />
+    <ClInclude Include="..\Deps\Lua\lstring.h" />
+    <ClInclude Include="..\Deps\Lua\ltable.h" />
+    <ClInclude Include="..\Deps\Lua\ltm.h" />
+    <ClInclude Include="..\Deps\Lua\lua.h" />
+    <ClInclude Include="..\Deps\Lua\lua.hpp" />
+    <ClInclude Include="..\Deps\Lua\luaconf.h" />
+    <ClInclude Include="..\Deps\Lua\lualib.h" />
+    <ClInclude Include="..\Deps\Lua\lundump.h" />
+    <ClInclude Include="..\Deps\Lua\lvm.h" />
+    <ClInclude Include="..\Deps\Lua\lzio.h" />
     <ClInclude Include="..\Include\Audio\Audio.h" />
     <ClInclude Include="..\Include\Audio\Clip.h" />
     <ClInclude Include="..\Include\Audio\Source.h" />
@@ -50,6 +78,7 @@
     <ClInclude Include="..\Include\Math\quat.h" />
     <ClInclude Include="..\Include\Math\ray2.h" />
     <ClInclude Include="..\Include\Math\ray3.h" />
+    <ClInclude Include="..\Include\Math\sanity.h" />
     <ClInclude Include="..\Include\Math\sse\mat4_sse.h" />
     <ClInclude Include="..\Include\Math\sse\vec4_sse.h" />
     <ClInclude Include="..\Include\Math\vec2.h" />
@@ -77,6 +106,7 @@
     <ClInclude Include="..\Include\System\Endian.h" />
     <ClInclude Include="..\Include\System\Log.h" />
     <ClInclude Include="..\Include\System\Memory.h" />
+    <ClInclude Include="..\Include\System\Thread.h" />
     <ClInclude Include="..\Include\System\Window.h" />
     <ClInclude Include="..\Include\System\System.h" />
     <ClInclude Include="..\Include\UI\Font.h" />
@@ -85,6 +115,38 @@
     <ClInclude Include="Engine\ECS.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\Deps\Lua\lapi.c" />
+    <ClCompile Include="..\Deps\Lua\lauxlib.c" />
+    <ClCompile Include="..\Deps\Lua\lbaselib.c" />
+    <ClCompile Include="..\Deps\Lua\lcode.c" />
+    <ClCompile Include="..\Deps\Lua\lcorolib.c" />
+    <ClCompile Include="..\Deps\Lua\lctype.c" />
+    <ClCompile Include="..\Deps\Lua\ldblib.c" />
+    <ClCompile Include="..\Deps\Lua\ldebug.c" />
+    <ClCompile Include="..\Deps\Lua\ldo.c" />
+    <ClCompile Include="..\Deps\Lua\ldump.c" />
+    <ClCompile Include="..\Deps\Lua\lfunc.c" />
+    <ClCompile Include="..\Deps\Lua\lgc.c" />
+    <ClCompile Include="..\Deps\Lua\linit.c" />
+    <ClCompile Include="..\Deps\Lua\liolib.c" />
+    <ClCompile Include="..\Deps\Lua\llex.c" />
+    <ClCompile Include="..\Deps\Lua\lmathlib.c" />
+    <ClCompile Include="..\Deps\Lua\lmem.c" />
+    <ClCompile Include="..\Deps\Lua\loadlib.c" />
+    <ClCompile Include="..\Deps\Lua\lobject.c" />
+    <ClCompile Include="..\Deps\Lua\lopcodes.c" />
+    <ClCompile Include="..\Deps\Lua\loslib.c" />
+    <ClCompile Include="..\Deps\Lua\lparser.c" />
+    <ClCompile Include="..\Deps\Lua\lstate.c" />
+    <ClCompile Include="..\Deps\Lua\lstring.c" />
+    <ClCompile Include="..\Deps\Lua\lstrlib.c" />
+    <ClCompile Include="..\Deps\Lua\ltable.c" />
+    <ClCompile Include="..\Deps\Lua\ltablib.c" />
+    <ClCompile Include="..\Deps\Lua\ltm.c" />
+    <ClCompile Include="..\Deps\Lua\lundump.c" />
+    <ClCompile Include="..\Deps\Lua\lutf8lib.c" />
+    <ClCompile Include="..\Deps\Lua\lvm.c" />
+    <ClCompile Include="..\Deps\Lua\lzio.c" />
     <ClCompile Include="..\Deps\PhysFS\physfs.c" />
     <ClCompile Include="..\Deps\PhysFS\physfs_archiver_7z.c" />
     <ClCompile Include="..\Deps\PhysFS\physfs_archiver_dir.c" />
@@ -118,17 +180,20 @@
     <ClCompile Include="Engine\Entity.c" />
     <ClCompile Include="Engine\Event.c" />
     <ClCompile Include="Engine\IO.c" />
+    <ClCompile Include="Engine\Job.c" />
     <ClCompile Include="Engine\Resource.c" />
     <ClCompile Include="Input\Input.c" />
     <ClCompile Include="Render\Material.c" />
     <ClCompile Include="Render\Model.c" />
     <ClCompile Include="Render\ModelRender.c" />
+    <ClCompile Include="Render\Render.c" />
     <ClCompile Include="Render\Texture.c" />
     <ClCompile Include="Scene\Camera.c" />
     <ClCompile Include="Scene\Scene.c" />
     <ClCompile Include="Scene\ScriptHost.c" />
     <ClCompile Include="Scene\Transform.c" />
     <ClCompile Include="Script\Script.c" />
+    <ClCompile Include="System\AtomicLock.c" />
     <ClCompile Include="System\Compat\getopt.c" />
     <ClCompile Include="System\Compat\reallocarray.c" />
     <ClCompile Include="System\Log.c" />
@@ -137,6 +202,7 @@
     <ClCompile Include="UI\UI.c" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Exports.def" />
     <None Include="packages.config" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -185,33 +251,30 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(SolutionDir)Include;$(SolutionDir)Deps;$(SolutionDir)Deps\PhysFS;$(SolutionDir)Deps\LuaJIT\Include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)Include;$(SolutionDir)Deps;$(SolutionDir)Deps\PhysFS;$(SolutionDir)Deps\Lua;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)\bin\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\build\$(Configuration)\$(ProjectName)\</IntDir>
-    <LibraryPath>$(SolutionDir)Deps\LuaJIT\Lib\x64;$(LibraryPath)</LibraryPath>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_ASAN|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(SolutionDir)Include;$(SolutionDir)Deps;$(SolutionDir)Deps\PhysFS;$(SolutionDir)Deps\LuaJIT\Include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)Include;$(SolutionDir)Deps;$(SolutionDir)Deps\PhysFS;$(SolutionDir)Deps\Lua;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)\bin\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\build\$(Configuration)\$(ProjectName)\</IntDir>
-    <LibraryPath>$(SolutionDir)Deps\LuaJIT\Lib\x64;$(LibraryPath)</LibraryPath>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)Include;$(SolutionDir)Deps;$(SolutionDir)Deps\PhysFS;$(SolutionDir)Deps\LuaJIT\Include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)Include;$(SolutionDir)Deps;$(SolutionDir)Deps\PhysFS;$(SolutionDir)Deps\Lua;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)\bin\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\build\$(Configuration)\$(ProjectName)\</IntDir>
-    <LibraryPath>$(SolutionDir)Deps\LuaJIT\Lib\x64;$(LibraryPath)</LibraryPath>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_ENGINE_INTERNAL_;_CRT_SECURE_NO_WARNINGS;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>
@@ -237,7 +300,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_ENGINE_INTERNAL_;_CRT_SECURE_NO_WARNINGS;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>
@@ -266,7 +329,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_ENGINE_INTERNAL_;_CRT_SECURE_NO_WARNINGS;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>

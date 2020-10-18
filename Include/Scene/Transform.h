@@ -76,10 +76,10 @@ xform_look_at(struct Transform *t, struct vec3 *target, struct vec3 *up)
 static inline void
 xform_update(struct Transform *t)
 {
-	size_t i;
 	struct mat4 m1;
 	struct mat4 m2;
 	struct vec4 tmp;
+	size_t i;
 
 	if ((t->parent && !t->parent->dirty) && !t->dirty)
 		return;

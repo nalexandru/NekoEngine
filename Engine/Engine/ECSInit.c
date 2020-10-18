@@ -14,10 +14,10 @@
 
 bool E_LoadComponents()
 {
-	E_RegisterComponent(MODEL_RENDER_COMP, sizeof(struct ModelRender), (CompInitProc)Re_InitModelRender, (CompTermProc)Re_TermModelRender);
-	E_RegisterComponent(TRANSFORM_COMP, sizeof(struct Transform), (CompInitProc)Scn_InitTransform, (CompTermProc)Scn_TermTransform);
-	E_RegisterComponent(CAMERA_COMP, sizeof(struct Camera), (CompInitProc)Scn_InitCamera, (CompTermProc)Scn_TermCamera);
-	E_RegisterComponent(UI_CONTEXT_COMP, sizeof(struct UIContext), (CompInitProc)UI_InitContext, (CompTermProc)UI_TermContext);
+	E_RegisterComponent(MODEL_RENDER_COMP, sizeof(struct ModelRender), 1, (CompInitProc)Re_InitModelRender, (CompTermProc)Re_TermModelRender);
+	E_RegisterComponent(TRANSFORM_COMP, sizeof(struct Transform), 16, (CompInitProc)Scn_InitTransform, (CompTermProc)Scn_TermTransform);
+	E_RegisterComponent(CAMERA_COMP, sizeof(struct Camera), 16, (CompInitProc)Scn_InitCamera, (CompTermProc)Scn_TermCamera);
+	E_RegisterComponent(UI_CONTEXT_COMP, sizeof(struct UIContext), 1, (CompInitProc)UI_InitContext, (CompTermProc)UI_TermContext);
 
 	return true;
 }

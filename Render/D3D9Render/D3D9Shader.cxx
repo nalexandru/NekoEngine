@@ -26,7 +26,7 @@ static int32_t _SortShaders(const struct Shader *a, const struct Shader *b);
 static int32_t _CompShaders(const struct Shader *m, const uint64_t *hash);
 
 void *
-Re_GetShader(uint64_t hash)
+D3D9_GetShader(uint64_t hash)
 {
 	void *ret = Rt_ArrayBSearch(&_shaders, &hash, (RtCmpFunc)_CompShaders);
 	if (!ret)

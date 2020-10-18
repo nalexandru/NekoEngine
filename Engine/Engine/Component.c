@@ -212,11 +212,12 @@ E_SetComponentOwnerS(struct Scene *s, CompHandle comp, EntityHandle owner)
 }
 
 bool
-E_RegisterComponent(const wchar_t *name, size_t size, CompInitProc create, CompTermProc destroy)
+E_RegisterComponent(const wchar_t *name, size_t size, size_t alignment, CompInitProc create, CompTermProc destroy)
 {
 	struct CompType type;
 
-	type.size = size;
+	type.size = (size + alignment - 1) & ~(alignment - 1);
+	type.alignment = alignment;
 	type.hash = Rt_HashStringW(name);
 	type.create = create;
 	type.destroy = destroy;
@@ -270,7 +271,7 @@ E_InitSceneComponents(struct Scene *s)
 		struct CompType *type = Rt_ArrayGet(&_component_types, i);
 		struct Array *a = Rt_ArrayGet(&s->compData, i);
 
-		if (!Rt_InitArray(a, 10, type->size))
+		if (!Rt_InitAlignedArray(a, 10, type->size, type->alignment))
 			return false;
 	}
 

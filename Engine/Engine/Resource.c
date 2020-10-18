@@ -14,7 +14,7 @@ struct ResourceList
 {
 	Array res;
 	Array free;
-	struct AtomicLock *lock;
+	struct AtomicLock lock;
 };
 
 struct ResType
@@ -288,7 +288,7 @@ _RealUnload(struct ResType *rt, struct Resource *res)
 	if (rt->unload)
 		rt->unload(&res->dataStart, res->info.id);
 
-	Sys_AtomicUnlockWrite(rt->list.lock);
+	Sys_AtomicUnlockWrite(&rt->list.lock);
 }
 
 static int32_t
@@ -311,7 +311,7 @@ _UnloadAll(struct ResType *rt)
 			continue;
 
 		Sys_LogEntry(RES_MOD, LOG_WARNING,
-			L"Resource [%s] has %d reference%s at shutdown time",
+			L"Resource [%hs] has %d reference%hs at shutdown time",
 			rptr->info.path, rptr->info.references,
 			rptr->info.references > 1 ? "s" : "");
 
@@ -329,7 +329,7 @@ _InitResourceList(uint64_t count, size_t size, struct ResourceList *rl)
 	if (!Rt_InitArray(&rl->free, (size_t)count, sizeof(uint32_t)))
 		return false;
 
-	rl->lock = Sys_InitAtomicLock();
+	Sys_InitAtomicLock(&rl->lock);
 
 	return true;
 }
@@ -337,7 +337,7 @@ _InitResourceList(uint64_t count, size_t size, struct ResourceList *rl)
 static inline void
 _ResourceListAlloc(struct ResourceList *rl, uint64_t *id, void **ptr)
 {
-	Sys_AtomicLockWrite(rl->lock);
+	Sys_AtomicLockWrite(&rl->lock);
 
 	if (rl->free.count) {
 		*id = *((uint64_t *)Rt_ArrayLast(&rl->free));
@@ -349,18 +349,18 @@ _ResourceListAlloc(struct ResourceList *rl, uint64_t *id, void **ptr)
 		*ptr = Rt_ArrayAllocate(&rl->res);
 	}
 
-	Sys_AtomicUnlockWrite(rl->lock);
+	Sys_AtomicUnlockWrite(&rl->lock);
 }
 
 static inline void
 _ResourceListFree(struct ResourceList *rl, uint64_t id, bool unlock)
 {
-	Sys_AtomicLockWrite(rl->lock);
+	Sys_AtomicLockWrite(&rl->lock);
 
 	Rt_ArrayAdd(&rl->free, &id);
 
 	if (unlock)
-		Sys_AtomicUnlockWrite(rl->lock);
+		Sys_AtomicUnlockWrite(&rl->lock);
 }
 
 static inline void
@@ -368,6 +368,5 @@ _TermResourceList(struct ResourceList *rl)
 {
 	Rt_TermArray(&rl->res);
 	Rt_TermArray(&rl->free);
-	Sys_TermAtomicLock(rl->lock);
 }
 

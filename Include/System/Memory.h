@@ -18,6 +18,9 @@ enum MemoryHeap
 void *Sys_Alloc(size_t size, size_t count, enum MemoryHeap heap);
 void Sys_Free(void *mem);
 
+void *Sys_AlignedAlloc(size_t size, size_t alignment);
+void Sys_AlignedFree(void *mem);
+
 bool Sys_InitMemory(void);
 void Sys_ResetHeap(enum MemoryHeap heap);
 void Sys_TermMemory(void);

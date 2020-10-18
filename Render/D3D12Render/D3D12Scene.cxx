@@ -28,17 +28,15 @@ struct SceneModelBuffers
 	UINT firstVtx, vtxCount, firstIdx, idxCount;
 };
 
-const size_t Re_SceneRenderDataSize = sizeof(struct SceneRenderData);
-
 static UINT _descIncrement;
 static inline void _CreateHeaps(struct SceneRenderData *srd);
 static bool *_multisample;
 static int32_t *_samples;
 
 bool
-Re_InitScene(struct Scene *scene)
+D3D12_InitScene(struct Scene *scene)
 {
-	if (!Re_Features.rayTracing)
+	if (!Re.features.rayTracing)
 		return true;
 
 	struct SceneRenderData *srd = (struct SceneRenderData *)&scene->renderDataStart;
@@ -56,7 +54,7 @@ Re_InitScene(struct Scene *scene)
 }
 
 void
-Re_TermScene(struct Scene *scene)
+D3D12_TermScene(struct Scene *scene)
 {
 	struct SceneRenderData *srd = (struct SceneRenderData *)&scene->renderDataStart;
 

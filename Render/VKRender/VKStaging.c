@@ -30,6 +30,7 @@ static VkDeviceSize *_size;
 static VkDeviceSize _peakSize = 0;
 
 static inline VkDeviceSize _TextureSize(VkFormat format, VkDeviceSize width, VkDeviceSize height);
+static inline void _CheckFlush(VkDeviceSize size, VkDeviceSize alignment);
 
 bool
 VK_InitStaging(void)
@@ -59,7 +60,7 @@ VK_InitStaging(void)
 
 	rc = vkBindBufferMemory(Re_Device.dev, _stagingBuffer, _stagingMemory, 0);
 
-	if (Re_Features.rayTracing)
+	if (Re.features.rayTracing)
 		Rt_InitArray(&_blasBuildInfo, 10, sizeof(struct ASBuildInfo));
 
 	return true;
@@ -82,7 +83,7 @@ VK_StageImage(const void *data, VkImage dst, VkFormat fmt, uint32_t width, uint3
 
 	memcpy(_bufferPtr + _offset, data, dataSize);
 
-	VkCommandBuffer cmdBuff = VK_TransferCommandBuffer();
+	VkCommandBuffer cmdBuff = VK_NULL_HANDLE;//VK_TransferCommandBuffer();
 
 	VkCommandBufferBeginInfo cbbi =
 	{

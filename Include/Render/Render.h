@@ -1,10 +1,9 @@
 #ifndef _RE_RENDER_H_
 #define _RE_RENDER_H_
 
-#include <stdarg.h>
-
 #include <Engine/Types.h>
 
+#define RE_API_VERSION	1
 #define RE_NUM_BUFFERS	3
 #define RE_APPEND_DATA_SIZE(a, b) (sizeof(a) - sizeof(uint8_t) + b)
 
@@ -27,23 +26,47 @@ struct RenderFeatures
 	bool physicallyBased;
 };
 
-extern struct RenderInfo Re_RenderInfo;
-extern struct RenderFeatures Re_Features;
+struct RenderLimits
+{
+	uint16_t maxTextureSize;
+};
 
-extern const size_t Re_SceneRenderDataSize;
-extern const size_t Re_ModelRenderDataSize;
-extern const size_t Re_TextureRenderDataSize;
+struct RenderEngine
+{
+	void (*RenderFrame)(void);
+
+	bool (*Init)(void);
+	void (*Term)(void);
+
+	void (*WaitIdle)(void);
+
+	void (*ScreenResized)(void);
+
+	bool (*InitScene)(struct Scene *scene);
+	void (*TermScene)(struct Scene *scene);
+
+	void *(*GetShader)(uint64_t hash);
+
+	bool (*InitTexture)(const char *name, struct Texture *tex, Handle h);
+	bool (*UpdateTexture)(struct Texture *tex, const void *data, uint64_t offset, uint64_t size);
+	void (*TermTexture)(struct Texture *tex);
+
+	bool (*InitModel)(const char *name, struct Model *m);
+	void (*TermModel)(struct Model *m);
+
+	size_t sceneRenderDataSize;
+	size_t modelRenderDataSize;
+	size_t textureRenderDataSize;
+
+	struct RenderLimits limits;
+	struct RenderFeatures features;
+	struct RenderInfo info;
+};
+
+ENGINE_API extern struct RenderEngine Re;
 
 bool Re_Init(void);
 void Re_Term(void);
-
-void Re_WaitIdle(void);
-
-void Re_ScreenResized(void);
-void Re_RenderFrame(void);
-
-bool Re_InitScene(struct Scene *scene);
-void Re_TermScene(struct Scene *scene);
 
 #ifdef __cplusplus
 }

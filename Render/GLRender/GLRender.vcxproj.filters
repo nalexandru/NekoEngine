@@ -61,13 +61,17 @@
     <CopyFileToFolders Include="Shaders\Default.vert">
       <Filter>Source Files\Shaders</Filter>
     </CopyFileToFolders>
-    <CopyFileToFolders Include="Shaders\Metadata\Default.shader" />
-    <CopyFileToFolders Include="Shaders\Metadata\UI.shader" />
     <CopyFileToFolders Include="Shaders\UI.frag">
       <Filter>Source Files\Shaders</Filter>
     </CopyFileToFolders>
     <CopyFileToFolders Include="Shaders\UI.vert">
       <Filter>Source Files\Shaders</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Shaders\Metadata\UI.shader">
+      <Filter>Source Files\Shaders\Metadata</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Shaders\Metadata\Default.shader">
+      <Filter>Source Files\Shaders\Metadata</Filter>
     </CopyFileToFolders>
   </ItemGroup>
 </Project>

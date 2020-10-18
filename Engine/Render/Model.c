@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #include <Render/Model.h>
+#include <Render/Render.h>
 #include <Render/Material.h>
 #include <Engine/Asset.h>
 #include <Engine/Resource.h>
@@ -40,7 +41,7 @@ Re_CreateModel(const char *name, const struct ModelCreateInfo *ci, struct Model 
 		Re_InstantiateMaterial(m->materialNames[i], &m->materialInstances[i]);
 	}
 
-	if (Re_InitModel(name, m))
+	if (Re.InitModel(name, m))
 		return true;
 
 error:
@@ -73,7 +74,7 @@ Re_LoadModel(struct ResourceLoadInfo *li, const char *args, struct Model *m, Han
 	for (i = 0; i < m->numMeshes; ++i)
 		Re_InstantiateMaterial(m->materialNames[i], &m->materialInstances[i]);
 
-	if (Re_InitModel(li->path, m))
+	if (Re.InitModel(li->path, m))
 		return true;
 
 error:
@@ -102,5 +103,5 @@ Re_UnloadModel(struct Model *m, Handle h)
 	free(m->materialNames);
 	free(m->materialInstances);
 
-	Re_TermModel(m);
+	Re.TermModel(m);
 }

@@ -44,7 +44,7 @@ D3D12_InitStaging(void)
 
 	_stagingBuffer->Map(0, NULL, (void **)&_bufferPtr);
 
-	if (Re_Features.rayTracing) {
+	if (Re.features.rayTracing) {
 		Rt_InitArray(&_blasBuildInfo, 10, sizeof(struct ASBuildInfo));
 		Rt_InitArray(&_blasBarriers, 10, sizeof(D3D12_RESOURCE_BARRIER));
 	}
@@ -181,7 +181,7 @@ D3D12_TermStaging(void)
 	TermFence(&Re_ASFence);
 	TermFence(&Re_UploadFence);
 
-	if (Re_Features.rayTracing) {
+	if (Re.features.rayTracing) {
 		Rt_TermArray(&_blasBarriers);
 		Rt_TermArray(&_blasBuildInfo);
 	}

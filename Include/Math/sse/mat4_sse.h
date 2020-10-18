@@ -44,21 +44,20 @@
 
 #ifdef USE_SSE
 
-#if __AVX2__
+#ifdef USE_AVX2
 #	include <immintrin.h>
 #endif
 
 #include <Math/vec3.h>
 #include <Math/quat.h>
 
-// fu m$
-#undef near
-#undef far
-
 static inline struct mat4 *
 m4(struct mat4 *dst, const float *m)
 {
-	memcpy(dst->m, m, sizeof(float) * 16);
+	dst->sm[0] = _mm_setr_ps(m[0], m[1], m[2], m[3]);
+	dst->sm[1] = _mm_setr_ps(m[4], m[5], m[6], m[7]);
+	dst->sm[2] = _mm_setr_ps(m[8], m[9], m[10], m[11]);
+	dst->sm[3] = _mm_setr_ps(m[12], m[13], m[14], m[15]);
 	return dst;
 }
 
@@ -86,32 +85,21 @@ m4_copy(struct mat4 *dst, const struct mat4 *src)
 static inline struct mat4 *
 m4_ident(struct mat4 *m)
 {
-	memset(m->m, 0, sizeof(float) * 16);
-	m->m[0] = m->m[5] = m->m[10] = m->m[15] = 1.f;
+	m->sm[0] = _mm_setr_ps(1.f, 0.f, 0.f, 0.f);
+	m->sm[1] = _mm_setr_ps(0.f, 1.f, 0.f, 0.f);
+	m->sm[2] = _mm_setr_ps(0.f, 0.f, 1.f, 0.f);
+	m->sm[3] = _mm_setr_ps(0.f, 0.f, 0.f, 1.f);
 	return m;
 }
 
 static inline struct mat4 *
-m4_init_m3(struct mat4 *pOut, const struct mat3 *pIn)
+m4_init_m3(struct mat4 *dst, const struct mat3 *src)
 {
-	m4_ident(pOut);
-
-	pOut->m[0] = pIn->mat[0];
-	pOut->m[1] = pIn->mat[1];
-	pOut->m[2] = pIn->mat[2];
-	pOut->m[3] = 0.0;
-
-	pOut->m[4] = pIn->mat[3];
-	pOut->m[5] = pIn->mat[4];
-	pOut->m[6] = pIn->mat[5];
-	pOut->m[7] = 0.0;
-
-	pOut->m[8] = pIn->mat[6];
-	pOut->m[9] = pIn->mat[7];
-	pOut->m[10] = pIn->mat[8];
-	pOut->m[11] = 0.0;
-
-	return pOut;
+	dst->sm[0] = _mm_setr_ps(src->mat[0], src->mat[1], src->mat[2], 0.f);
+	dst->sm[1] = _mm_setr_ps(src->mat[3], src->mat[4], src->mat[5], 0.f);
+	dst->sm[2] = _mm_setr_ps(src->mat[6], src->mat[7], src->mat[8], 0.f);
+	dst->sm[3] = _mm_setr_ps(0.f, 0.f, 0.f, 1.f);
+	return dst;
 }
 
 static inline struct mat4 *
@@ -150,7 +138,7 @@ m4_mul(struct mat4 *dst, const struct mat4 *m1, const struct mat4 *m2)
 static inline struct mat4 *
 m4_mul_scalar(struct mat4 *dst, const struct mat4 *m, const float f)
 {
-	__m128 scalar = _mm_set1_ps(f);
+	const __m128 scalar = _mm_set1_ps(f);
 
 	dst->sm[0] = _mm_mul_ps(m->sm[0], scalar);
 	dst->sm[1] = _mm_mul_ps(m->sm[1], scalar);
@@ -163,7 +151,7 @@ m4_mul_scalar(struct mat4 *dst, const struct mat4 *m, const float f)
 static inline struct mat4 *
 m4_transpose(struct mat4 *dst, const struct mat4 *src)
 {
-	memcpy(dst->m, src->m, sizeof(dst->m));
+	(void)m4_copy(dst, src);
 	_MM_TRANSPOSE4_PS(dst->sm[0], dst->sm[1], dst->sm[2], dst->sm[3]);
 	return dst;
 }
@@ -172,8 +160,8 @@ static inline struct mat4 *
 m4_inverse(struct mat4 *dst, const struct mat4 *src)
 {
 	struct mat4 tmp;
-	float det;
-	int i;
+	float det = 0.f;
+	int i = 0;
 
 	tmp.m[0] = src->m[5] * src->m[10] * src->m[15] -
 		src->m[5] * src->m[11] * src->m[14] -
@@ -428,117 +416,69 @@ m4_inverse(struct mat4 *dst, const struct mat4 *src)
 }
 
 static inline struct mat4 *
-m4_rot_x(struct mat4 *dst, const float radians)
+m4_rot_x(struct mat4 *dst, const float rad)
 {
-	dst->m[0] = 1.f;
-	dst->m[1] = 0.f;
-	dst->m[2] = 0.f;
-	dst->m[3] = 0.f;
-
-	dst->m[4] = 0.f;
-	dst->m[5] = cosf(radians);
-	dst->m[6] = sinf(radians);
-	dst->m[7] = 0.f;
-	
-	dst->m[8] = 0.f;
-	dst->m[9] = -sinf(radians);
-	dst->m[10] = cosf(radians);
-	dst->m[11] = 0.f;
-	
-	dst->m[12] = 0.f;
-	dst->m[13] = 0.f;
-	dst->m[14] = 0.f;
-	dst->m[15] = 1.f;
-
+	dst->sm[0] = _mm_setr_ps(1.f, 0.f, 0.f, 0.f);
+	dst->sm[1] = _mm_setr_ps(0.f, cosf(rad), sinf(rad), 0.f);
+	dst->sm[2] = _mm_setr_ps(0.f, -sinf(rad), cosf(rad), 0.f);
+	dst->sm[3] = _mm_setr_ps(0.f, 0.f, 0.f, 1.f);
 	return dst;
 }
 
 static inline struct mat4 *
-m4_rot_y(struct mat4 *dst, const float radians)
+m4_rot_y(struct mat4 *dst, const float rad)
 {
-	dst->m[0] = cosf(radians);
-	dst->m[1] = 0.f;
-	dst->m[2] = -sinf(radians);
-	dst->m[3] = 0.f;
-	
-	dst->m[4] = 0.f;
-	dst->m[5] = 1.f;
-	dst->m[6] = 0.f;
-	dst->m[7] = 0.f;
-	
-	dst->m[8] = sinf(radians);
-	dst->m[9] = 0.f;
-	dst->m[10] = cosf(radians);
-	dst->m[11] = 0.f;
-
-	dst->m[12] = 0.f;
-	dst->m[13] = 0.f;
-	dst->m[14] = 0.f;
-	dst->m[15] = 1.f;
-
+	dst->sm[0] = _mm_setr_ps(cosf(rad), 0.f, -sinf(rad), 0.f);
+	dst->sm[1] = _mm_setr_ps(0.f, 1.f, 0.f, 0.f);
+	dst->sm[2] = _mm_setr_ps(sinf(rad), 0.f, cosf(rad), 0.f);
+	dst->sm[3] = _mm_setr_ps(0.f, 0.f, 0.f, 1.f);
 	return dst;
 }
 
 static inline struct mat4 *
-m4_rot_z(struct mat4 *dst, const float radians)
+m4_rot_z(struct mat4 *dst, const float rad)
 {
-	dst->m[0] = cosf(radians);
-	dst->m[1] = sinf(radians);
-	dst->m[2] = 0.f;
-	dst->m[3] = 0.f;
-
-	dst->m[4] = -sinf(radians);
-	dst->m[5] = cosf(radians);
-	dst->m[6] = 0.f;
-	dst->m[7] = 0.f;
-
-	dst->m[8] = 0.f;
-	dst->m[9] = 0.f;
-	dst->m[10] = 1.f;
-	dst->m[11] = 0.f;
-
-	dst->m[12] = 0.f;
-	dst->m[13] = 0.f;
-	dst->m[14] = 0.f;
-	dst->m[15] = 1.f;
-
+	dst->sm[0] = _mm_setr_ps(cosf(rad), sinf(rad), 0.f, 0.f);
+	dst->sm[1] = _mm_setr_ps(-sinf(rad), cosf(rad), 0.f, 0.f);
+	dst->sm[2] = _mm_setr_ps(0.f, 0.f, 1.f, 0.f);
+	dst->sm[3] = _mm_setr_ps(0.f, 0.f, 0.f, 1.f);
 	return dst;
 }
 
 static inline struct mat4 *
-m4_rot_quat(struct mat4 *dst, const struct quat *pQ)
+m4_rot_quat(struct mat4 *dst, const struct quat *q)
 {
-	const float xx = pQ->x * pQ->x;
-	const float xy = pQ->x * pQ->y;
-	const float xz = pQ->x * pQ->z;
-	const float xw = pQ->x * pQ->w;
+	const float xx = q->x * q->x;
+	const float xy = q->x * q->y;
+	const float xz = q->x * q->z;
+	const float xw = q->x * q->w;
 
-	const float yy = pQ->y * pQ->y;
-	const float yz = pQ->y * pQ->z;
-	const float yw = pQ->y * pQ->w;
+	const float yy = q->y * q->y;
+	const float yz = q->y * q->z;
+	const float yw = q->y * q->w;
 
-	const float zz = pQ->z * pQ->z;
-	const float zw = pQ->z * pQ->w;
+	const float zz = q->z * q->z;
+	const float zw = q->z * q->w;
 
-	dst->m[0] = 1.f - 2.f * (yy + zz);
-	dst->m[1] = 2.f * (xy + zw);
-	dst->m[2] = 2.f * (xz - yw);
-	dst->m[3] = 0.f;
-	
-	dst->m[4] = 2.f * (xy - zw);
-	dst->m[5] = 1.f - 2.f * (xx + zz);
-	dst->m[6] = 2.f * (yz + xw);
-	dst->m[7] = 0.f;
-	
-	dst->m[8] = 2.f * (xz + yw);
-	dst->m[9] = 2.f * (yz - xw);
-	dst->m[10] = 1.f - 2.f * (xx + yy);
-	dst->m[11] = 0.f;
-
-	dst->m[12] = 0.f;
-	dst->m[13] = 0.f;
-	dst->m[14] = 0.f;
-	dst->m[15] = 1.f;
+	dst->sm[0] = _mm_setr_ps(
+		1.f - 2.f * (yy + zz),
+		2.f * (xy + zw),
+		2.f * (xz - yw),
+		0.f
+	);
+	dst->sm[1] = _mm_setr_ps(
+		2.f * (xy - zw),
+		1.f - 2.f * (xx + zz),
+		2.f * (yz + xw),
+		0.f
+	);
+	dst->sm[2] = _mm_setr_ps(
+		2.f * (xz + yw),
+		2.f * (yz - xw),
+		1.f - 2.f * (xx + yy),
+		0.f
+	);
+	dst->sm[3] = _mm_setr_ps(0.f, 0.f, 0.f, 1.f);
 
 	return dst;
 }
@@ -574,23 +514,6 @@ m4_rot_pitch_yaw_roll(struct mat4 *dst, const float pitch, const float yaw, cons
 static inline struct mat4 *
 m4_look_at(struct mat4 *dst, const struct vec3 *eye, const struct vec3 *center, const struct vec3 *up)
 {
-	/*struct vec3 r0, r1, r2, d0, d1, d2, negEye;
-
-	v3_sub(&r2, eye, center);
-	v3_norm(&r2, &r2);
-
-	v3_cross(&r0, up, &r2);
-	v3_norm(&r0, &r0);
-
-	v3_cross(&r1, &r2, &r0);
-
-	v3(&negEye, -eye->x, -eye->y, -eye->z);
-
-	v3_dot(&d0, &negEye);
-	v3_dot(&d1, &negEye);
-	v3_dot(&d2, &negEye);
-
-	dst->m*/
 	struct vec3 f;
 	struct vec3 s;
 	struct vec3 u;
@@ -603,25 +526,15 @@ m4_look_at(struct mat4 *dst, const struct vec3 *eye, const struct vec3 *center, 
 
 	v3_cross(&u, &s, &f);
 
-	dst->m[0] = s.x;
-	dst->m[1] = u.x;
-	dst->m[2] = -f.x;
-	dst->m[3] = 0.f;
-	
-	dst->m[4] = s.y;
-	dst->m[5] = u.y;
-	dst->m[6] = -f.y;
-	dst->m[7] = 0.f;
-	
-	dst->m[8] = s.z;
-	dst->m[9] = u.z;
-	dst->m[10] = -f.z;
-	dst->m[11] = 0.f;
-	
-	dst->m[12] = -v3_dot(&s, eye);
-	dst->m[13] = -v3_dot(&u, eye);
-	dst->m[14] = v3_dot(&f, eye);
-	dst->m[15] = 1.f;
+	dst->sm[0] = _mm_setr_ps(s.x, u.x, -f.x, 0.f);
+	dst->sm[1] = _mm_setr_ps(s.y, u.y, -f.y, 0.f);
+	dst->sm[2] = _mm_setr_ps(s.z, u.z, -f.z, 0.f);
+	dst->sm[3] = _mm_setr_ps(
+		-v3_dot(&s, eye),
+		-v3_dot(&u, eye),
+		v3_dot(&f, eye),
+		1.f
+	);
 
 	return dst;
 }
@@ -629,18 +542,15 @@ m4_look_at(struct mat4 *dst, const struct vec3 *eye, const struct vec3 *center, 
 static inline struct mat4 *
 m4_scale(struct mat4 *dst, const float x, const float y, const float z)
 {
-	memset(dst->m, 0, sizeof(float) * 16);
-	
-	dst->m[0] = x;
-	dst->m[5] = y;
-	dst->m[10] = z;
-	dst->m[15] = 1.f;
-
+	dst->sm[0] = _mm_setr_ps(  x, 0.f, 0.f, 0.f);
+	dst->sm[1] = _mm_setr_ps(0.f,   y, 0.f, 0.f);
+	dst->sm[2] = _mm_setr_ps(0.f, 0.f,   z, 0.f);
+	dst->sm[3] = _mm_setr_ps(0.f, 0.f, 0.f, 1.f);
 	return dst;
 }
 
 static inline struct mat4 *
-m4_scale_v(struct mat4 *dst, struct vec3 *v)
+m4_scale_v(struct mat4 *dst, const struct vec3 *v)
 {
 	return m4_scale(dst, v->x, v->y, v->z);
 }
@@ -648,22 +558,15 @@ m4_scale_v(struct mat4 *dst, struct vec3 *v)
 static inline struct mat4 *
 m4_translate(struct mat4 *dst, const float x, const float y, const float z)
 {
-	memset(dst->m, 0, sizeof(float) * 16);
-
-	dst->r[0][0] = 1.0f;
-	dst->r[1][1] = 1.0f;
-	dst->r[2][2] = 1.0f;
-
-	dst->r[3][0] = x;
-	dst->r[3][1] = y;
-	dst->r[3][2] = z;
-	dst->r[3][3] = 1.0f;
-
+	dst->sm[0] = _mm_setr_ps(1.f, 0.f, 0.f, 0.f);
+	dst->sm[1] = _mm_setr_ps(0.f, 1.f, 0.f, 0.f);
+	dst->sm[2] = _mm_setr_ps(0.f, 0.f, 1.f, 0.f);
+	dst->sm[3] = _mm_setr_ps(  x,   y,   z, 1.f);
 	return dst;
 }
 
 static inline struct mat4 *
-m4_translate_v(struct mat4 *dst, struct vec3 *v)
+m4_translate_v(struct mat4 *dst, const struct vec3 *v)
 {
 	return m4_translate(dst, v->x, v->y, v->z);
 }
@@ -703,13 +606,13 @@ m4_perspective(struct mat4 *dst, float fov_y, float aspect, float z_near, float 
 	const float h = cosf(rad) / sinf(rad);
 	const float w = h / aspect;
 
-	memset(dst, 0x0, sizeof(*dst));
+	const float m22 = z_far / (z_near - z_far);
+	const float m32 = -(z_far * z_near) / (z_far - z_near);
 
-	dst->r[0][0] = w;
-	dst->r[1][1] = h;
-	dst->r[2][2] = z_far / (z_near - z_far);
-	dst->r[2][3] = -1.0f;
-	dst->r[3][2] = -(z_far * z_near) / (z_far - z_near);
+	dst->sm[0] = _mm_setr_ps(  w, 0.f, 0.f,  0.f);
+	dst->sm[1] = _mm_setr_ps(0.f,   h, 0.f,  0.f);
+	dst->sm[2] = _mm_setr_ps(0.f, 0.f, m22, -1.f);
+	dst->sm[3] = _mm_setr_ps(0.f, 0.f, m32,  1.f);
 
 	return dst;
 }
@@ -721,13 +624,13 @@ m4_perspective_nd(struct mat4 *dst, float fov_y, float aspect, float z_near, flo
 	const float h = cosf(rad) / sinf(rad);
 	const float w = h / aspect;
 
-	memset(dst, 0x0, sizeof(*dst));
+	const float m22 = -(z_far * z_near) / (z_far - z_near);
+	const float m32 = -(2.f * z_far * z_near) / (z_far - z_near);
 
-	dst->r[0][0] = w;
-	dst->r[1][1] = h;
-	dst->r[3][2] = -(z_far * z_near) / (z_far - z_near);
-	dst->r[2][3] = -1.0f;
-	dst->r[3][2] = -(2.f * z_far * z_near) / (z_far - z_near);
+	dst->sm[0] = _mm_setr_ps(  w, 0.f, 0.f,  0.f);
+	dst->sm[1] = _mm_setr_ps(0.f,   h, 0.f,  0.f);
+	dst->sm[2] = _mm_setr_ps(0.f, 0.f, m22, -1.f);
+	dst->sm[3] = _mm_setr_ps(0.f, 0.f, m32,  1.f);
 
 	return dst;
 }
@@ -736,27 +639,25 @@ static inline struct mat4 *
 m4_infinite_perspective_rz(struct mat4 *dst, float fov_y, float aspect, float z_near)
 {
 	const float f = 1.f / tanf(deg_to_rad(fov_y) / 2.f);
-
-	memset(dst, 0x0, sizeof(*dst));
-	dst->m[0] = f / aspect;
-	dst->m[5] = f;
-	dst->m[11] = -1.f;
-	dst->m[14] = z_near;
-
+	
+	dst->sm[0] = _mm_setr_ps(f / aspect, 0.f, 0.f,  0.f);
+	dst->sm[1] = _mm_setr_ps(0.f,   f, 0.f,  0.f);
+	dst->sm[2] = _mm_setr_ps(0.f, 0.f, 1.f, -1.f);
+	dst->sm[3] = _mm_setr_ps(0.f, 0.f, z_near,  1.f);
+	
 	return dst;
 }
 
 static inline struct mat4 *
 m4_ortho(struct mat4 *dst, float left, float right, float bottom, float top, float z_near, float z_far)
 {
-	m4_ident(dst);
-
-	dst->r[0][0] = 2.f / (right - left);
-	dst->r[1][1] = 2.f / (top - bottom);
-	dst->r[2][2] = 1.f / (z_far - z_near);
-	dst->r[3][0] = -((right + left) / (right - left));
-	dst->r[3][1] = -((top + bottom) / (top - bottom));
-	dst->r[3][2] = -dst->r[2][2] * z_near;
+	dst->sm[0] = _mm_setr_ps(2.f / (right - left), 0.f, 0.f,  0.f);
+	dst->sm[1] = _mm_setr_ps(0.f, 2.f / (top - bottom), 0.f,  0.f);
+	dst->sm[2] = _mm_setr_ps(0.f, 0.f, 1.f / (z_far - z_near), 0.f);
+	dst->sm[3] = _mm_setr_ps(
+		-((right + left) / (right - left)),
+		-((top + bottom) / (top - bottom)),
+		-dst->r[2][2] * z_near, 1.f);
 
 	return dst;
 }
@@ -764,14 +665,13 @@ m4_ortho(struct mat4 *dst, float left, float right, float bottom, float top, flo
 static inline struct mat4 *
 m4_ortho_nd(struct mat4 *dst, float left, float right, float bottom, float top, float z_near, float z_far)
 {
-	m4_ident(dst);
-
-	dst->r[0][0] = 2.f / (right - left);
-	dst->r[1][1] = 2.f / (top - bottom);
-	dst->r[2][2] = -2.f / (z_far - z_near);
-	dst->r[3][0] = -((right + left) / (right - left));
-	dst->r[3][1] = -((top + bottom) / (top - bottom));
-	dst->r[3][2] = -((z_far + z_near) / (z_far - z_near));
+	dst->sm[0] = _mm_setr_ps(2.f / (right - left), 0.f, 0.f,  0.f);
+	dst->sm[1] = _mm_setr_ps(0.f, 2.f / (top - bottom), 0.f,  0.f);
+	dst->sm[2] = _mm_setr_ps(0.f, 0.f, -2.f / (z_far - z_near), 0.f);
+	dst->sm[3] = _mm_setr_ps(
+		-((right + left) / (right - left)),
+		-((top + bottom) / (top - bottom)),
+		-((z_far + z_near) / (z_far - z_near)), 1.f);
 
 	return dst;
 }

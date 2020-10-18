@@ -130,8 +130,8 @@ VK_InitDevice(void)
 	vkGetPhysicalDeviceProperties(Re_Device.physicalDevice, &Re_Device.deviceProperties);
 	vkGetPhysicalDeviceMemoryProperties(Re_Device.physicalDevice, &Re_Device.memoryProperties);
 
-	mbstowcs(Re_RenderInfo.device, Re_Device.deviceProperties.deviceName, 64);
-	swprintf(Re_RenderInfo.name, sizeof(Re_RenderInfo.name) / sizeof(wchar_t), L"Vulkan %d.%d.%d",
+	mbstowcs(Re.info.device, Re_Device.deviceProperties.deviceName, 64);
+	swprintf(Re.info.name, sizeof(Re.info.name) / sizeof(wchar_t), L"Vulkan %d.%d.%d",
 		VK_VERSION_MAJOR(Re_Device.deviceProperties.apiVersion), VK_VERSION_MINOR(Re_Device.deviceProperties.apiVersion),
 		VK_VERSION_PATCH(Re_Device.deviceProperties.apiVersion));
 

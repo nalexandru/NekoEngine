@@ -14,7 +14,7 @@ struct ApplicationInfo
 	struct Version version;
 };
 
-extern struct ApplicationInfo App_ApplicationInfo;
+ENGINE_API extern struct ApplicationInfo App_ApplicationInfo;
 
 bool App_InitApplication(int argc, char *argv[]);
 void App_TermApplication(void);

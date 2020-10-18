@@ -13,7 +13,7 @@ RtRenderPath::Init()
 {
 	HRESULT hr;
 
-	if (!Re_Features.rayTracing)
+	if (!Re.features.rayTracing)
 		return false;
 
 	{ // Descriptor heap
@@ -158,7 +158,7 @@ RtRenderPath::Init()
 
 		CD3DX12_DXIL_LIBRARY_SUBOBJECT *lib = desc.CreateSubobject<CD3DX12_DXIL_LIBRARY_SUBOBJECT>();
 
-		struct Shader *s = (struct Shader *)Re_GetShader(Rt_HashStringW(L"PathTracer"));
+		struct Shader *s = (struct Shader *)Re.GetShader(Rt_HashStringW(L"PathTracer"));
 		lib->SetDXILLibrary(&s->lib);
 
 		CD3DX12_HIT_GROUP_SUBOBJECT *hitGroup = desc.CreateSubobject<CD3DX12_HIT_GROUP_SUBOBJECT>();

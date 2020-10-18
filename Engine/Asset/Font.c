@@ -5,6 +5,7 @@
 #include <Engine/Asset.h>
 #include <Engine/Config.h>
 #include <Engine/Resource.h>
+#include <Render/Render.h>
 #include <Render/Texture.h>
 #include <System/Endian.h>
 
@@ -44,7 +45,23 @@ E_LoadFontAsset(struct Stream *stm, struct Font *fnt)
 	if (E_ReadStream(stm, fnt->glyphs, sizeof(*fnt->glyphs) * fnt->glyphCount) != sizeof(*fnt->glyphs) * fnt->glyphCount)
 		goto error;
 
-	texSize = E_GetCVarU32(L"UI_MaxFontTextureSize", 0xFFFFFFFF)->u32;
+	if (Sys_BigEndian()) {
+		uint32_t i = 0;
+		for (i; i < fnt->glyphCount; ++i) {
+			fnt->glyphs[i].u = Sys_SwapFloat(fnt->glyphs[i].u);
+			fnt->glyphs[i].v = Sys_SwapFloat(fnt->glyphs[i].v);
+			fnt->glyphs[i].tw = Sys_SwapFloat(fnt->glyphs[i].tw);
+			fnt->glyphs[i].th = Sys_SwapFloat(fnt->glyphs[i].th);
+			
+			fnt->glyphs[i].bearing.x = Sys_SwapInt32(fnt->glyphs[i].bearing.x);
+			fnt->glyphs[i].bearing.y = Sys_SwapInt32(fnt->glyphs[i].bearing.y);
+			fnt->glyphs[i].size.w = Sys_SwapInt32(fnt->glyphs[i].size.w);
+			fnt->glyphs[i].size.h = Sys_SwapInt32(fnt->glyphs[i].size.h);
+			fnt->glyphs[i].adv = Sys_SwapInt32(fnt->glyphs[i].adv);
+		}
+	}
+	
+	texSize = E_GetCVarU32(L"UI_MaxFontTextureSize", Re.limits.maxTextureSize)->u32;
 	if (texSize < hdr.texSize) {
 		uint32_t curSize = hdr.texSize;
 
@@ -65,7 +82,7 @@ E_LoadFontAsset(struct Stream *stm, struct Font *fnt)
 	tci.height = texSize,
 	tci.depth = 1,
 	tci.type = TT_2D,
-	tci.format = TF_R8_UNORM,
+	tci.format = TF_ALPHA,
 	tci.data = texData,
 	tci.dataSize = texDataSize,
 	tci.keepData = false;
@@ -79,6 +96,8 @@ E_LoadFontAsset(struct Stream *stm, struct Font *fnt)
 error:
 	free(texData);
 	free(fnt->glyphs);
+
+	memset(fnt, 0x0, sizeof(*fnt));
 
 	return false;
 }

@@ -7,10 +7,8 @@
 
 #include "VKRender.h"
 
-const size_t Re_ModelRenderDataSize = sizeof(struct ModelRenderData);
-
 bool
-Re_InitModel(const char *name, struct Model *model)
+VK_InitModel(const char *name, struct Model *model)
 {
 	VkResult rc;
 	struct ModelRenderData *mrd = (struct ModelRenderData *)&model->renderDataStart;
@@ -52,7 +50,7 @@ Re_InitModel(const char *name, struct Model *model)
 	VkDeviceSize *asOffsets = NULL;
 	VkDeviceSize *scratchOffsets = NULL;
 
-	if (Re_Features.rayTracing) {
+	if (Re.features.rayTracing) {
 		mrd->structures = Sys_Alloc(sizeof(*mrd->structures), model->numMeshes, MH_Persistent);
 
 		asOffsets = Sys_Alloc(sizeof(VkDeviceSize), model->numMeshes, MH_Transient);
@@ -147,7 +145,7 @@ Re_InitModel(const char *name, struct Model *model)
 	bdai.buffer = mrd->indexBuffer;
 	mrd->indexAddress = vkGetBufferDeviceAddress(Re_Device.dev, &bdai);
 
-	if (Re_Features.rayTracing) {
+	if (Re.features.rayTracing) {
 		VkBindAccelerationStructureMemoryInfoKHR *basmi = Sys_Alloc(sizeof(*basmi), model->numMeshes, MH_Transient);
 		memset(basmi, 0x0, sizeof(*basmi) * model->numMeshes);
 
@@ -176,7 +174,7 @@ Re_InitModel(const char *name, struct Model *model)
 }
 
 void
-Re_TermModel(struct Model *m)
+VK_TermModel(struct Model *m)
 {
 	struct ModelRenderData *mrd = (struct ModelRenderData *)&m->renderDataStart;
 	

@@ -12,7 +12,7 @@ Au_Init(void)
 	E_RegisterResourceType(RES_AUDIO_CLIP, sizeof(struct AudioClip) - sizeof(uint8_t) + Au_AudioClipDataSize,
 		(ResourceCreateProc)Au_CreateClip, (ResourceLoadProc)Au_LoadClip, (ResourceUnloadProc)Au_UnloadClip);
 
-	return E_RegisterComponent(AUDIO_SOURCE_COMP, Au_SourceSize,
+	return E_RegisterComponent(AUDIO_SOURCE_COMP, Au_SourceSize, 1,
 		(CompInitProc)Au_InitSourceComponent, (CompTermProc)Au_TermSourceComponent);
 }
 

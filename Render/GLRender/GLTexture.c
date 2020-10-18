@@ -4,7 +4,9 @@
 
 #include "GLRender.h"
 
-const size_t Re_TextureRenderDataSize = sizeof(struct TextureRenderData);
+#define _TEX_S3TC	1
+#define _TEX_RGTC	2
+#define _TEX_BPTC	3
 
 static const char *_textureFilter = NULL;
 static int32_t *_aniso = NULL;
@@ -34,20 +36,21 @@ static GLenum _textureSizedFormat[] =
 	GL_R16,
 	GL_R32F,
 	GL_R32UI,
-/*	DXGI_FORMAT_BC1_UNORM,
-	DXGI_FORMAT_BC1_UNORM_SRGB,
-	DXGI_FORMAT_BC2_UNORM,
-	DXGI_FORMAT_BC2_UNORM_SRGB,
-	DXGI_FORMAT_BC3_UNORM,
-	DXGI_FORMAT_BC3_UNORM_SRGB,
-	DXGI_FORMAT_BC4_UNORM,
-	DXGI_FORMAT_BC4_SNORM,
-	DXGI_FORMAT_BC5_UNORM,
-	DXGI_FORMAT_BC5_SNORM,
-	DXGI_FORMAT_BC6H_UF16,
-	DXGI_FORMAT_BC6H_SF16,
-	DXGI_FORMAT_BC7_UNORM,
-	DXGI_FORMAT_BC7_UNORM_SRGB*/
+	_TEX_S3TC,
+	_TEX_S3TC,
+	_TEX_S3TC,
+	_TEX_S3TC,
+	_TEX_S3TC,
+	_TEX_S3TC,
+	_TEX_RGTC,
+	_TEX_RGTC,
+	_TEX_RGTC,
+	_TEX_RGTC,
+	_TEX_BPTC,
+	_TEX_BPTC,
+	_TEX_BPTC,
+	_TEX_BPTC,
+	GL_ALPHA
 };
 
 static GLenum _textureFormat[] =
@@ -75,20 +78,21 @@ static GLenum _textureFormat[] =
 	GL_RED,
 	GL_RED,
 	GL_RED,
-/*	DXGI_FORMAT_BC1_UNORM,
-	DXGI_FORMAT_BC1_UNORM_SRGB,
-	DXGI_FORMAT_BC2_UNORM,
-	DXGI_FORMAT_BC2_UNORM_SRGB,
-	DXGI_FORMAT_BC3_UNORM,
-	DXGI_FORMAT_BC3_UNORM_SRGB,
-	DXGI_FORMAT_BC4_UNORM,
-	DXGI_FORMAT_BC4_SNORM,
-	DXGI_FORMAT_BC5_UNORM,
-	DXGI_FORMAT_BC5_SNORM,
-	DXGI_FORMAT_BC6H_UF16,
-	DXGI_FORMAT_BC6H_SF16,
-	DXGI_FORMAT_BC7_UNORM,
-	DXGI_FORMAT_BC7_UNORM_SRGB*/
+	GL_COMPRESSED_RGBA_S3TC_DXT1_EXT,
+	GL_COMPRESSED_RGBA_S3TC_DXT1_EXT,
+	GL_COMPRESSED_RGBA_S3TC_DXT3_EXT,
+	GL_COMPRESSED_RGBA_S3TC_DXT3_EXT,
+	GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,
+	GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,
+	GL_COMPRESSED_RED_RGTC1_EXT,
+	GL_COMPRESSED_SIGNED_RED_RGTC1_EXT,
+	GL_COMPRESSED_RED_GREEN_RGTC2_EXT,
+	GL_COMPRESSED_SIGNED_RED_GREEN_RGTC2_EXT,
+	GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT_ARB,
+	GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT_ARB,
+	GL_COMPRESSED_RGBA_BPTC_UNORM_ARB,
+	GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM_ARB,
+	GL_ALPHA
 };
 
 static GLenum _textureType[] =
@@ -116,24 +120,26 @@ static GLenum _textureType[] =
 	GL_UNSIGNED_SHORT,
 	GL_FLOAT,
 	GL_UNSIGNED_INT,
-/*	DXGI_FORMAT_BC1_UNORM,
-	DXGI_FORMAT_BC1_UNORM_SRGB,
-	DXGI_FORMAT_BC2_UNORM,
-	DXGI_FORMAT_BC2_UNORM_SRGB,
-	DXGI_FORMAT_BC3_UNORM,
-	DXGI_FORMAT_BC3_UNORM_SRGB,
-	DXGI_FORMAT_BC4_UNORM,
-	DXGI_FORMAT_BC4_SNORM,
-	DXGI_FORMAT_BC5_UNORM,
-	DXGI_FORMAT_BC5_SNORM,
-	DXGI_FORMAT_BC6H_UF16,
-	DXGI_FORMAT_BC6H_SF16,
-	DXGI_FORMAT_BC7_UNORM,
-	DXGI_FORMAT_BC7_UNORM_SRGB*/
+	// compressed
+	GL_FLOAT,
+	GL_FLOAT,
+	GL_FLOAT,
+	GL_FLOAT,
+	GL_FLOAT,
+	GL_FLOAT,
+	GL_FLOAT,
+	GL_FLOAT,
+	GL_FLOAT,
+	GL_FLOAT,
+	GL_FLOAT,
+	GL_FLOAT,
+	GL_FLOAT,
+	GL_FLOAT,
+	GL_UNSIGNED_BYTE
 };
 
 bool
-Re_InitTexture(const char *name, struct Texture *tex, Handle h)
+GL_InitTexture(const char *name, struct Texture *tex, Handle h)
 {
 	GLenum target = GL_TEXTURE_2D;
 	struct TextureRenderData *trd = (struct TextureRenderData *)&tex->renderDataStart;
@@ -148,33 +154,14 @@ Re_InitTexture(const char *name, struct Texture *tex, Handle h)
 		Sys_AtomicLockWrite(Re_Device.loadLock);
 		GL_MakeCurrent(Re_Device.glContext);
 	}
-
-	glCreateTextures(target, 1, &trd->id);
-
+	
 	if (!_textureFilter)
-		_textureFilter = E_GetCVarStr(L"Render_TextureFilter", "Anisotropic")->str;
-
+		_textureFilter = E_GetCVarStr(L"Render_TextureFilter",
+			(GLAD_GL_EXT_texture_filter_anisotropic || GLAD_GL_ARB_texture_filter_anisotropic) ? "Anisotropic" : "Trilinear")->str;
+	
 	if (!_aniso)
 		_aniso = &E_GetCVarI32(L"Render_TextureAnisotropy", 16)->i32;
-
-	glTextureParameteri(trd->id, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTextureParameteri(trd->id, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-	if (!strncmp(_textureFilter, "Bilinear", strlen(_textureFilter))) {
-		glTextureParameteri(trd->id, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTextureParameteri(trd->id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	} else if (!strncmp(_textureFilter, "Trilinear", strlen(_textureFilter))) {
-		glTextureParameteri(trd->id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		glTextureParameteri(trd->id, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	} else if (!strncmp(_textureFilter, "Anisotropic", strlen(_textureFilter))) {
-		glTextureParameteri(trd->id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		glTextureParameteri(trd->id, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		glTextureParameterf(trd->id, GL_TEXTURE_MAX_ANISOTROPY, (float)*_aniso);
-	} else {
-		glTextureParameteri(trd->id, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTextureParameteri(trd->id, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	}
-
+	
 	levels = 1;
 	size = tex->width > tex->height ? tex->height : tex->width;
 	while (size > 1) {
@@ -182,11 +169,64 @@ Re_InitTexture(const char *name, struct Texture *tex, Handle h)
 		size /= 2;
 	}
 
-	glTextureStorage2D(trd->id, levels, _textureSizedFormat[tex->format], tex->width, tex->height);
-	glTextureSubImage2D(trd->id, 0, 0, 0, tex->width, tex->height, _textureFormat[tex->format], _textureType[tex->format], tex->data);
+	if (GLAD_GL_ARB_direct_state_access) {
+		glCreateTextures(target, 1, &trd->id);
 
-	glGenerateTextureMipmap(trd->id);
+		glTextureParameteri(trd->id, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTextureParameteri(trd->id, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
+		if (!strncmp(_textureFilter, "Bilinear", strlen(_textureFilter))) {
+			glTextureParameteri(trd->id, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTextureParameteri(trd->id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		} else if (!strncmp(_textureFilter, "Trilinear", strlen(_textureFilter))) {
+			glTextureParameteri(trd->id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+			glTextureParameteri(trd->id, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		} else if (!strncmp(_textureFilter, "Anisotropic", strlen(_textureFilter))) {
+			glTextureParameteri(trd->id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+			glTextureParameteri(trd->id, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+			glTextureParameterf(trd->id, GL_TEXTURE_MAX_ANISOTROPY, (float)*_aniso);
+		} else {
+			glTextureParameteri(trd->id, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTextureParameteri(trd->id, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		}
+
+		glTextureStorage2D(trd->id, levels, _textureSizedFormat[tex->format], tex->width, tex->height);
+		glTextureSubImage2D(trd->id, 0, 0, 0, tex->width, tex->height, _textureFormat[tex->format], _textureType[tex->format], tex->data);
+
+		glGenerateTextureMipmap(trd->id);
+	} else {
+		glGenTextures(1, &trd->id);
+		glBindTexture(target, trd->id);
+		
+		glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		
+		if (!strncmp(_textureFilter, "Bilinear", strlen(_textureFilter))) {
+			glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		} else if (!strncmp(_textureFilter, "Trilinear", strlen(_textureFilter))) {
+			glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+			glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		} else if (!strncmp(_textureFilter, "Anisotropic", strlen(_textureFilter))) {
+			glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+			glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+			glTexParameterf(target, GL_TEXTURE_MAX_ANISOTROPY, (float)*_aniso);
+		} else {
+			glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		}
+		
+		if (GLAD_GL_SGIS_generate_mipmap && !glGenerateMipmap)
+			glTexParameteri(target, GL_GENERATE_MIPMAP_SGIS, GL_TRUE);
+		
+		glTexImage2D(target, 0, _textureSizedFormat[tex->format], tex->width, tex->height, 0, _textureFormat[tex->format], _textureType[tex->format], tex->data);
+		
+		if (glGenerateMipmap)
+			glGenerateMipmap(target);
+		
+		glBindTexture(target, 0);
+	}
+	
 	if (Re_Device.loadLock)
 		Sys_AtomicUnlockWrite(Re_Device.loadLock);
 
@@ -194,13 +234,13 @@ Re_InitTexture(const char *name, struct Texture *tex, Handle h)
 }
 
 bool
-Re_UpdateTexture(struct Texture *tex, const void *data, uint64_t offset, uint64_t size)
+GL_UpdateTexture(struct Texture *tex, const void *data, uint64_t offset, uint64_t size)
 {
 	return false;
 }
 
 void
-Re_TermTexture(struct Texture *tex)
+GL_TermTexture(struct Texture *tex)
 {
 	struct TextureRenderData *trd = (struct TextureRenderData *)&tex->renderDataStart;
 
@@ -213,4 +253,13 @@ Re_TermTexture(struct Texture *tex)
 
 	if (Re_Device.loadLock)
 		Sys_AtomicUnlockWrite(Re_Device.loadLock);
+}
+
+void
+GL_InitTextureFormats(void)
+{
+	if (GL_ShaderSupport) {
+		_textureFormat[TF_ALPHA] = GL_RED;
+		_textureSizedFormat[TF_ALPHA] = GL_R8;
+	}
 }

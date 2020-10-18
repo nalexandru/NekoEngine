@@ -35,7 +35,7 @@ D3D9_InitUI(void)
 	Re_Device.dev->CreateVertexBuffer(sizeof(UIVertex) * 4000, D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, 0, D3DPOOL_DEFAULT, &_vtxBuffer, NULL);
 	Re_Device.dev->CreateIndexBuffer(sizeof(uint16_t) * 6000, D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, D3DFMT_INDEX16, D3DPOOL_DEFAULT, &_idxBuffer, NULL);
 
-	_uiShader = (struct Shader *)Re_GetShader(Rt_HashStringW(L"UI"));
+	_uiShader = (struct Shader *)Re.GetShader(Rt_HashStringW(L"UI"));
 
 	return true;
 }

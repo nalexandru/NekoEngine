@@ -21,7 +21,7 @@ struct EntityCompInfo
 	const void **args;
 };
 
-extern struct Scene *Scn_ActiveScene;
+ENGINE_API extern struct Scene *Scn_ActiveScene;
 
 EntityHandle E_CreateEntityS(struct Scene *s, const wchar_t *type);
 static inline EntityHandle E_CreateEntity(const wchar_t *type) { return E_CreateEntityS(Scn_ActiveScene, type); }

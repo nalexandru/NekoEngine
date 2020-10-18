@@ -11,7 +11,7 @@
 extern "C" {
 #endif
 
-extern struct Scene *Scn_ActiveScene;
+ENGINE_API extern struct Scene *Scn_ActiveScene;
 
 CompHandle E_CreateComponentS(struct Scene *s, const wchar_t *typeName, EntityHandle owner, const void **args);
 static inline CompHandle
@@ -46,7 +46,7 @@ static inline void E_SetComponentOwner(CompHandle comp, EntityHandle owner) { E_
 const struct Array *E_GetAllComponentsS(struct Scene *s, CompTypeId type);
 static inline const struct Array *E_GetAllComponents(CompTypeId type) { return E_GetAllComponentsS(Scn_ActiveScene, type); }
 
-bool E_RegisterComponent(const wchar_t *name, size_t size, CompInitProc init, CompTermProc release);
+bool E_RegisterComponent(const wchar_t *name, size_t size, size_t alignment, CompInitProc init, CompTermProc release);
 
 #ifdef __cplusplus
 }

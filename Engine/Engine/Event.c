@@ -30,7 +30,7 @@ struct ProcessEventArgs
 
 static Array _handlers, _queue[2], *_currentQueue;
 static int _currentQueueId;
-static struct AtomicLock *_queueLock, *_handlerLock;
+static struct AtomicLock _queueLock, _handlerLock;
 
 static int32_t _Sort(const struct EventHandlerInfo *a, const struct EventHandlerInfo *b);
 static int32_t _Comp(const struct EventHandlerInfo *m, const uint64_t *Event);
@@ -43,9 +43,9 @@ E_Broadcast(const wchar_t *event, void *args)
 	evt.event = Rt_HashStringW(event);
 	evt.args = args;
 
-	Sys_AtomicLockWrite(_queueLock);
+	Sys_AtomicLockWrite(&_queueLock);
 	Rt_ArrayAdd(_currentQueue, &evt);
-	Sys_AtomicUnlockWrite(_queueLock);
+	Sys_AtomicUnlockWrite(&_queueLock);
 }
 
 uint64_t
@@ -57,7 +57,7 @@ E_RegisterHandler(const wchar_t *event, EventHandlerProc handlerProc, void *user
 	uint64_t hash = Rt_HashStringW(event);
 	uint32_t idx = 0, handlerIdx = 0;
 	
-	Sys_AtomicLockWrite(_handlerLock);
+	Sys_AtomicLockWrite(&_handlerLock);
 
 	handlerIdx = (uint32_t)Rt_ArrayBSearchId(&_handlers, &hash, (RtCmpFunc)_Comp);
 	info = Rt_ArrayGet(&_handlers, handlerIdx);
@@ -79,7 +79,7 @@ E_RegisterHandler(const wchar_t *event, EventHandlerProc handlerProc, void *user
 		handlerIdx = (uint32_t)Rt_ArrayBSearchId(&_handlers, &event, (RtCmpFunc)_Comp);
 	}
 	
-	Sys_AtomicUnlockWrite(_handlerLock);
+	Sys_AtomicUnlockWrite(&_handlerLock);
 
 	return (uint64_t)idx | (uint64_t)handlerIdx << 32;
 }
@@ -91,7 +91,7 @@ E_UnregisterHandler(uint64_t handler)
 	uint32_t handlerIdx = (uint32_t)((handler & (uint64_t)0xFFFFFFFF00000000) >> 32);
 	uint32_t infoIdx = (uint32_t)(handler & (uint64_t)0x00000000FFFFFFFF);
 
-	Sys_AtomicLockWrite(_handlerLock);
+	Sys_AtomicLockWrite(&_handlerLock);
 
 	info = Rt_ArrayGet(&_handlers, infoIdx);
 	if (info) {
@@ -100,7 +100,7 @@ E_UnregisterHandler(uint64_t handler)
 			Rt_ArrayRemove(&_handlers, handlerIdx);
 	}
 
-	Sys_AtomicUnlockWrite(_handlerLock);
+	Sys_AtomicUnlockWrite(&_handlerLock);
 }
 
 bool
@@ -118,8 +118,8 @@ E_InitEventSystem(void)
 	_currentQueue = &_queue[0];
 	_currentQueueId = 0;
 
-	_queueLock = Sys_InitAtomicLock();
-	_handlerLock = Sys_InitAtomicLock();
+	Sys_InitAtomicLock(&_queueLock);
+	Sys_InitAtomicLock(&_handlerLock);
 
 	return true;
 }
@@ -138,9 +138,6 @@ E_TermEventSystem(void)
 	Rt_TermArray(&_queue[0]);
 	Rt_TermArray(&_queue[1]);
 	Rt_TermArray(&_handlers);
-
-	Sys_TermAtomicLock(_queueLock);
-	Sys_TermAtomicLock(_handlerLock);
 }
 
 void
@@ -152,12 +149,12 @@ E_ProcessEvents(void)
 	struct ProcessEventArgs *args;
 	Array *queue = _currentQueue;
 	
-	Sys_AtomicLockWrite(_queueLock);
+	Sys_AtomicLockWrite(&_queueLock);
 	_currentQueueId = !_currentQueueId;
 	_currentQueue = &_queue[_currentQueueId];
-	Sys_AtomicUnlockWrite(_queueLock);
+	Sys_AtomicUnlockWrite(&_queueLock);
 
-	Sys_AtomicLockRead(_handlerLock);
+	Sys_AtomicLockRead(&_handlerLock);
 
 	for (i = 0; i < queue->count; ++i) {
 		evt = Rt_ArrayGet(queue, i);
@@ -175,7 +172,7 @@ E_ProcessEvents(void)
 
 	Rt_ClearArray(queue, false);
 
-	Sys_AtomicUnlockRead(_handlerLock);
+	Sys_AtomicUnlockRead(&_handlerLock);
 
 	//
 }

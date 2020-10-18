@@ -40,31 +40,28 @@
 #ifndef _NE_MATH_DEFS_H_
 #define _NE_MATH_DEFS_H_
 
-#ifdef __GNUC__
-#	if __GNUC__ < 4 || (__GNUC__ == 4 && __GNUC_MINOR__ <= 2)
-#		define DISABLE_SIMD
-#	endif
-#endif
+#include <System/System.h>
 
 #ifndef DISABLE_SIMD
-#if defined(__amd64__) || defined(_M_X64) || defined(_M_IX86)
-#	include <xmmintrin.h>
-#	if defined(__AVX__)
-#		define USE_AVX
-#		include <immintrin.h>
+#	if defined(__SSE__) || defined(_M_AMD64) || defined(_M_IX86)
+#		include <xmmintrin.h>
+#		if defined(__AVX__)
+#			define USE_AVX
+#			if defined(__AVX2__)
+#				define USE_AVX2
+#			endif
+#			include <immintrin.h>
+#		endif
+#		define USE_SSE
+#	elif defined(__ALTIVEC__)
+#		define USE_ALTIVEC
+#	elif defined(__ARM_NEON) || defined(_M_ARM)
+#		include <arm_neon.h>
+#		define USE_NEON
+#	elif defined(_M_ARM64)
+#		include <arm64_neon.h>
+#		define USE_NEON
 #	endif
-#	define USE_SSE
-#	define ALIGN	_Alignas(32)
-#elif defined(__PPU__) || defined(__powerpc__)
-#	ifndef __APPLE_ALTIVEC__
-#		include <altivec.h>
-#	endif
-#	define USE_ALTIVEC
-#elif defined(_M_ARM64)
-#	define USE_NEON
-#else
-#	define ALIGN
-#endif
 #endif
 
 #include <math.h>
@@ -150,14 +147,14 @@ struct vec4
 			float w;
 		};
 #if defined(USE_SSE)
-		/*_Alignas(16) */__m128 sv;
+		__m128 sv;
 #elif defined(USE_ALTIVEC)
-		__vector float sv;
+		vector float sv;
 #elif defined (USE_NEON)
 		float32x4_t sv;
 #endif
 	};
-};
+} ALIGN(16);
 
 struct quat
 {
@@ -169,14 +166,14 @@ struct quat
 			float w;
 		};
 #if defined(USE_SSE)
-	/*	_Alignas(16)*/ __m128 sv;
+		__m128 sv;
 #elif defined(USE_ALTIVEC)
-		__vector float sv;
+		__attribute__((aligned(16))) __vector float sv;
 #elif defined(USE_NEON)
 		float32x4_t sv;
 #endif
 	};
-};
+} ALIGN(16);
 
 struct mat3
 {
@@ -189,14 +186,14 @@ struct mat4
 		float r[4][4];
 		float m[16];
 #if defined(USE_SSE)
-		/*_Alignas(16)*/ __m128 sm[4];
+		__m128 sm[4];
 #elif defined(USE_ALTIVEC)
-		__vector float sm[4];
+		vector float sm[4];
 #elif defined(USE_NEON)
-		float32x4_t sv[4];
+		float32x4_t sm[4];
 #endif
 	};
-};
+} ALIGN(16);
 
 struct ray2
 {

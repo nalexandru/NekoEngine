@@ -55,14 +55,9 @@ struct ModelCreateInfo
 	uint32_t meshCount;
 };
 
-// shared resource handling
 bool Re_CreateModel(const char *name, const struct ModelCreateInfo *ci, struct Model *data, Handle h);
 bool Re_LoadModel(struct ResourceLoadInfo *li, const char *args, struct Model *model, Handle h);
 void Re_UnloadModel(struct Model *model, Handle h);
-
-// Implemented in render library
-bool Re_InitModel(const char *name, struct Model *m);
-void Re_TermModel(struct Model *m);
 
 #ifdef __cplusplus
 }

@@ -84,3 +84,12 @@ void D3D9_TermUI(void);
 void D3D9_LoadUIContext(void **comp, struct UIContextLoadArgs *args);
 void D3D9_DrawUIContext(void **comp, void *args);
 
+bool D3D9_InitScene(struct Scene *scene);
+void D3D9_TermScene(struct Scene *scene);
+void *D3D9_GetShader(uint64_t hash);
+bool D3D9_InitTexture(const char *name, struct Texture *tex, Handle h);
+bool D3D9_UpdateTexture(struct Texture *tex, const void *data, uint64_t dataSize, uint64_t offset);
+void D3D9_TermTexture(struct Texture *tex);;
+bool D3D9_InitModel(const char *name, struct Model *m);
+void D3D9_TermModel(struct Model *m);
+

@@ -17,7 +17,7 @@ static VkPipelineLayout _rtPipelineLayout;
 static bool
 _Init(void)
 {
-	if (!Re_Features.rayTracing)
+	if (!Re.features.rayTracing)
 		return false;
 
 	{ // Descriptor heap

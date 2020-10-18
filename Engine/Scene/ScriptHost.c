@@ -2,7 +2,6 @@
 #include <string.h>
 
 #include <lua.h>
-#include <luajit.h>
 #include <lualib.h>
 #include <lauxlib.h>
 
@@ -58,7 +57,7 @@ Scn_TermScriptHost(struct ScriptHost *s)
 void
 Scn_ExecScriptHosts(void **comp, void *args)
 {
-	struct ScriptHost *cam = comp[0];
+//	struct ScriptHost *sh = comp[0];
 
 	// ...
 }

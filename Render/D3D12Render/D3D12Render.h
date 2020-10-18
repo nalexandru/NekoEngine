@@ -162,6 +162,15 @@ extern struct GlobalRenderData Re_GlobalRenderData;
 extern struct RenderWorker Re_MainThreadWorker;
 extern struct Fence Re_UploadFence, Re_ASFence;
 
+bool D3D12_InitScene(struct Scene *scene);
+void D3D12_TermScene(struct Scene *scene);
+void *D3D12_GetShader(uint64_t hash);
+bool D3D12_InitTexture(const char *name, struct Texture *tex, Handle h);
+bool D3D12_UpdateTexture(struct Texture *tex, const void *data, uint64_t dataSize, uint64_t offset);
+void D3D12_TermTexture(struct Texture *tex);;
+bool D3D12_InitModel(const char *name, struct Model *m);
+void D3D12_TermModel(struct Model *m);
+
 bool D3D12_InitDevice(void);
 bool D3D12_InitSwapchain(void);
 void D3D12_TermDevice(void);

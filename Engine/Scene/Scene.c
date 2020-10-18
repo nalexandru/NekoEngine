@@ -29,7 +29,7 @@ static inline void _ReadEntity(struct Scene *s, struct Stream *stm, char *data, 
 struct Scene *
 Scn_CreateScene(const wchar_t *name)
 {
-	struct Scene *s = Sys_Alloc(RE_APPEND_DATA_SIZE(struct Scene, Re_SceneRenderDataSize), 1, MH_Persistent);
+	struct Scene *s = Sys_Alloc(RE_APPEND_DATA_SIZE(struct Scene, Re.sceneRenderDataSize), 1, MH_Persistent);
 	if (!s)
 		return NULL;
 
@@ -46,7 +46,7 @@ Scn_CreateScene(const wchar_t *name)
 struct Scene *
 Scn_StartSceneLoad(const char *path)
 {
-	struct Scene *s = Sys_Alloc(RE_APPEND_DATA_SIZE(struct Scene, Re_SceneRenderDataSize), 1, MH_Persistent);
+	struct Scene *s = Sys_Alloc(RE_APPEND_DATA_SIZE(struct Scene, Re.sceneRenderDataSize), 1, MH_Persistent);
 	if (!s)
 		return NULL;
 
@@ -70,7 +70,7 @@ Scn_UnloadScene(struct Scene *s)
 {
 	E_TermSceneEntities(s);
 	E_TermSceneComponents(s);
-	Re_TermScene(s);
+	Re.TermScene(s);
 
 	Sys_Free(s);
 }
@@ -92,7 +92,7 @@ _InitScene(struct Scene *s)
 	if (!E_InitSceneComponents(s) || !E_InitSceneEntities(s))
 		goto error;
 
-	if (!Re_InitScene(s))
+	if (!Re.InitScene(s))
 		goto error;
 	
 	return true;
@@ -113,7 +113,7 @@ _LoadJob(int wid, struct Scene *s)
 	Array args;
 
 	if (!E_FileStream(s->path, IO_READ, &stm)) {
-		Sys_LogEntry(SCNMOD, LOG_CRITICAL, L"Failed to open scene file %s", s->path);
+		Sys_LogEntry(SCNMOD, LOG_CRITICAL, L"Failed to open scene file %hs", s->path);
 		return;
 	}
 
@@ -218,12 +218,14 @@ _ReadEntity(struct Scene *s, struct Stream *stm, char *data, wchar_t *wbuff, Arr
 
 			*val++ = 0x0;
 
-			dst = Sys_Alloc(sizeof(char), strlen(arg) + 1, MH_Transient);
-			strncpy(dst, arg, strlen(arg) + 1);
+			len = strlen(arg) + 1;
+			dst = Sys_Alloc(sizeof(char), len, MH_Transient);
+			strncpy(dst, arg, len);
 			Rt_ArrayAddPtr(args, dst);
 
-			dst = Sys_Alloc(sizeof(char), strlen(val) + 1, MH_Transient);
-			strncpy(dst, val, strlen(val) + 1);
+			len = strlen(val) + 1;
+			dst = Sys_Alloc(sizeof(char), len, MH_Transient);
+			strncpy(dst, val, len);
 			Rt_ArrayAddPtr(args, dst);
 		}
 	}

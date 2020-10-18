@@ -55,7 +55,7 @@ D3D12_InitDevice(void)
 	}
 	Re_Device.dev->SetName(L"Primary Device");
 
-	memcpy(Re_RenderInfo.device, aDesc.Description, wcslen(aDesc.Description) * sizeof(wchar_t));
+	memcpy(Re.info.device, aDesc.Description, wcslen(aDesc.Description) * sizeof(wchar_t));
 
 	D3D12_FEATURE_DATA_D3D12_OPTIONS5 o5{};
 	D3D12_FEATURE_DATA_D3D12_OPTIONS6 o6{};
@@ -65,17 +65,17 @@ D3D12_InitDevice(void)
 	Re_Device.dev->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS6, &o6, sizeof(o6));
 	Re_Device.dev->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS7, &o7, sizeof(o7));
 
-	Re_Features.rayTracing = o5.RaytracingTier != D3D12_RAYTRACING_TIER_NOT_SUPPORTED;
-	Re_Features.meshShading = o7.MeshShaderTier != D3D12_MESH_SHADER_TIER_NOT_SUPPORTED;
-	Re_Features.variableRateShading = o6.VariableShadingRateTier != D3D12_VARIABLE_SHADING_RATE_TIER_NOT_SUPPORTED;
-	Re_Features.physicallyBased = true;
+	Re.features.rayTracing = o5.RaytracingTier != D3D12_RAYTRACING_TIER_NOT_SUPPORTED;
+	Re.features.meshShading = o7.MeshShaderTier != D3D12_MESH_SHADER_TIER_NOT_SUPPORTED;
+	Re.features.variableRateShading = o6.VariableShadingRateTier != D3D12_VARIABLE_SHADING_RATE_TIER_NOT_SUPPORTED;
+	Re.features.physicallyBased = true;
 
-	swprintf(Re_RenderInfo.name, sizeof(Re_RenderInfo.name) / sizeof(wchar_t), L"%ls%ls", Re_RenderInfo.name, Re_Features.rayTracing ? L" Ray Tracing" : L"");
+	swprintf(Re.info.name, sizeof(Re.info.name) / sizeof(wchar_t), L"Direct3D 12%ls", Re.features.rayTracing ? L" Ray Tracing" : L"");
 
 	Sys_LogEntry(D3D12MOD, LOG_INFORMATION, L"GPU: %ls", aDesc.Description);
-	Sys_LogEntry(D3D12MOD, LOG_INFORMATION, L"\tRay Tracing: %ls", Re_Features.rayTracing ? L"true" : L"false");
-	Sys_LogEntry(D3D12MOD, LOG_INFORMATION, L"\tMesh Shaders: %ls", Re_Features.meshShading ? L"true" : L"false");
-	Sys_LogEntry(D3D12MOD, LOG_INFORMATION, L"\tVariable Rate Shading: %ls", Re_Features.variableRateShading ? L"true" : L"false");
+	Sys_LogEntry(D3D12MOD, LOG_INFORMATION, L"\tRay Tracing: %ls", Re.features.rayTracing ? L"true" : L"false");
+	Sys_LogEntry(D3D12MOD, LOG_INFORMATION, L"\tMesh Shaders: %ls", Re.features.meshShading ? L"true" : L"false");
+	Sys_LogEntry(D3D12MOD, LOG_INFORMATION, L"\tVariable Rate Shading: %ls", Re.features.variableRateShading ? L"true" : L"false");
 
 	D3D12_COMMAND_QUEUE_DESC cqd =
 	{

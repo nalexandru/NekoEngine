@@ -90,6 +90,18 @@ Sys_Free(void *mem)
 	// free
 }
 
+void *
+Sys_AlignedAlloc(size_t size, size_t alignment)
+{
+	return _aligned_malloc(size, alignment);
+}
+
+void
+Sys_AlignedFree(void* mem)
+{
+	_aligned_free(mem);
+}
+
 bool
 Sys_InitMemory(void)
 {

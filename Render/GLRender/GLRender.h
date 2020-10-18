@@ -22,6 +22,7 @@ struct RenderDevice
 struct ModelRenderData
 {
 	GLuint vao, vbo, ibo;
+	GLenum indexType;
 };
 
 struct SceneRenderData
@@ -42,27 +43,65 @@ struct Shader
 	GLuint shaders[GL_SHADER_COUNT];
 };
 
+struct GLRenderProcs
+{
+	void (*RenderScene)(struct Scene *s);
+	void (*RenderUI)(struct Scene *s);
+	
+	bool (*InitUI)(void);
+	void (*TermUI)(void);
+};
+
 struct GetDrawablesArgs;
 struct UIContextLoadArgs;
 
-bool GL_InitDevice(void);
-void GL_SwapBuffers(void);
-void GL_SwapInterval(int interval);
+extern bool GL_ShaderSupport;
+extern struct GLRenderProcs GLProcs;
+
+bool  GL_InitDevice(void);
+void  GL_SwapBuffers(void);
+void  GL_SwapInterval(int interval);
+void  GL_ScreenResized(void);
 void *GL_InitLoadContext(void);
-void GL_MakeCurrent(void *ctx);
-void GL_TermLoadContext(void *ctx);
-void GL_TermDevice(void);
+void  GL_MakeCurrent(void *ctx);
+void  GL_TermLoadContext(void *ctx);
+void  GL_TermDevice(void);
 
-bool GL_LoadShaders(void);
-void GL_UnloadShaders(void);
+bool  GL_LoadShaders(void);
+void  GL_UnloadShaders(void);
 
-void GL_RenderScene(struct Scene *scene);
-void GL_GetDrawables(void **comp, struct GetDrawablesArgs *args);
+bool  GL_InitUIVAO(void);
+void  GL_RenderUIVAO(struct Scene *scene);
+void  GL_TermUIVAO(void);
 
-bool GL_InitUI(void);
-void GL_RenderUI(struct Scene *scene);
-void GL_TermUI(void);
-void GL_LoadUIContext(void **comp, struct UIContextLoadArgs *args);
-void GL_DrawUIContext(void **comp, void *args);
+void  GL_LoadUIContext(void **comp, struct UIContextLoadArgs *args);
+void  GL_DrawUIContext(void **comp, void *args);
+
+bool  GL_InitModelImmediate(const char *name, struct Model *m);
+void  GL_TermModelImmediate(struct Model *m);
+bool  GL_InitSceneImmediate(struct Scene *scene);
+void  GL_TermSceneImmediate(struct Scene *scene);
+void  GL_RenderSceneImmediate(struct Scene *scene);
+void  GL_GetDrawablesImmediate(void **comp, struct GetDrawablesArgs *args);
+
+bool  GL_InitModelBuffers(const char *name, struct Model *m);
+void  GL_TermModelBuffers(struct Model *m);
+bool  GL_InitSceneBuffers(struct Scene *scene);
+void  GL_TermSceneBuffers(struct Scene *scene);
+void  GL_RenderSceneBuffers(struct Scene *scene);
+void  GL_GetDrawablesBuffers(void **comp, struct GetDrawablesArgs *args);
+
+bool  GL_InitModelVAO(const char *name, struct Model *m);
+void  GL_TermModelVAO(struct Model *m);
+bool  GL_InitSceneVAO(struct Scene *scene);
+void  GL_TermSceneVAO(struct Scene *scene);
+void  GL_RenderSceneVAO(struct Scene *scene);
+void  GL_GetDrawablesVAO(void **comp, struct GetDrawablesArgs *args);
+
+void *GL_GetShader(uint64_t hash);
+bool  GL_InitTexture(const char *name, struct Texture *tex, Handle h);
+bool  GL_UpdateTexture(struct Texture *tex, const void *data, uint64_t dataSize, uint64_t offset);
+void  GL_TermTexture(struct Texture *tex);;
+void  GL_InitTextureFormats(void);
 
 #endif /* _GL_RENDER_H_ */

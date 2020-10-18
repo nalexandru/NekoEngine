@@ -8,6 +8,7 @@
 #include <System/Log.h>
 #include <Engine/Resource.h>
 #include <Render/Texture.h>
+#include <Render/Render.h>
 #include <Render/Shader.h>
 
 #define MATMOD	L"Material"
@@ -98,7 +99,7 @@ Re_InstantiateMaterial(const wchar_t *name, struct MaterialInstance *inst)
 
 	inst->props = mat->props;
 
-	inst->shader = Re_GetShader(mat->shaderHash);
+	inst->shader = Re.GetShader(mat->shaderHash);
 
 	for (i = 0; i < RE_MAX_TEXTURES; ++i)
 		if (mat->textures[i])

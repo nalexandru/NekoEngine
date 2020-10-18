@@ -98,7 +98,7 @@ In_InitInput(void)
 				b = atoi(ptr);
 
 				mbstowcs(wbuff, buff, BUFF_SZ);
-				In_CreateVirtualAxis(wbuff, a, b);
+				In_CreateVirtualAxis(wbuff, (enum Button)a, (enum Button)b);
 			} break;
 			case CFG_AM: {
 				ptr = strchr(line, '=');
@@ -117,8 +117,8 @@ In_InitInput(void)
 				mbstowcs(wbuff, buff, BUFF_SZ);
 				map = In_CreateMap(wbuff);
 
-				In_MapPrimaryAxis(map, a, (uint8_t)b);
-				In_MapSecondaryAxis(map, c, (uint8_t)d);
+				In_MapPrimaryAxis(map, (enum Axis)a, (uint8_t)b);
+				In_MapSecondaryAxis(map, (enum Axis)c, (uint8_t)d);
 			} break;
 			case CFG_KM: {
 				ptr = strchr(line, '=');
@@ -137,8 +137,8 @@ In_InitInput(void)
 				mbstowcs(wbuff, buff, BUFF_SZ);
 				map = In_CreateMap(wbuff);
 
-				In_MapPrimaryButton(map, a, (uint8_t)b);
-				In_MapSecondaryButton(map, c, (uint8_t)d);
+				In_MapPrimaryButton(map, (enum Button)a, (uint8_t)b);
+				In_MapSecondaryButton(map, (enum Button)c, (uint8_t)d);
 			} break;
 			}
 		}

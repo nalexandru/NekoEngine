@@ -78,10 +78,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <Math/vec3.h>
 #include <Math/quat.h>
 
-// fu m$
-#undef near
-#undef far
-
 /*
 A 4x4 matrix
 
@@ -94,9 +90,9 @@ mat = | 1   5   9  13 |
 /*
  * Fills a mat4 structure with the values from a 16
  * element array of floats
- * @Params pOut - A pointer to the destination matrix
- * 		   pMat - A 16 element array of floats
- * @Return Returns pOut so that the call can be nested
+ * @Params dst - A pointer to the destination matrix
+ * 		   m - A 16 element array of floats
+ * @Return Returns dst so that the call can be nested
  */
 static inline struct mat4 *
 m4(struct mat4 *dst, const float *m)
@@ -121,20 +117,19 @@ m4f(struct mat4 *dst,
 }
 
 /*
- * Assigns the value of pIn to pOut
+ * Assigns the value of src to dst
  */
 static inline struct mat4 *
-m4_copy(struct mat4 *dst,
-	const struct mat4 *src)
+m4_copy(struct mat4 *dst, const struct mat4 *src)
 {
 	memcpy(dst->m, src->m, sizeof(float) * 16);
 	return dst;
 }
 
 /*
- * Sets pOut to an identity matrix returns pOut
- * @Params pOut - A pointer to the matrix to set to identity
- * @Return Returns pOut so that the call can be nested
+ * Sets m to an identity matrix returns m
+ * @Params m - A pointer to the matrix to set to identity
+ * @Return Returns m so that the call can be nested
  */
 static inline struct mat4 *
 m4_ident(struct mat4 *m)
@@ -145,26 +140,28 @@ m4_ident(struct mat4 *m)
 }
 
 static inline struct mat4 *
-m4_init_m3(struct mat4 *pOut, const struct mat3 *pIn)
+m4_init_m3(struct mat4 *m4, const struct mat3 *m3)
 {
-	m4_ident(pOut);
-
-	pOut->m[0] = pIn->mat[0];
-	pOut->m[1] = pIn->mat[1];
-	pOut->m[2] = pIn->mat[2];
-	pOut->m[3] = 0.0;
-
-	pOut->m[4] = pIn->mat[3];
-	pOut->m[5] = pIn->mat[4];
-	pOut->m[6] = pIn->mat[5];
-	pOut->m[7] = 0.0;
-
-	pOut->m[8] = pIn->mat[6];
-	pOut->m[9] = pIn->mat[7];
-	pOut->m[10] = pIn->mat[8];
-	pOut->m[11] = 0.0;
-
-	return pOut;
+	m4_ident(m4);
+	
+	m4->m[0] = m3->mat[0];
+	m4->m[1] = m3->mat[1];
+	m4->m[2] = m3->mat[2];
+	m4->m[3] = 0.0;
+	
+	m4->m[4] = m3->mat[3];
+	m4->m[5] = m3->mat[4];
+	m4->m[6] = m3->mat[5];
+	m4->m[7] = 0.0;
+	
+	m4->m[8] = m3->mat[6];
+	m4->m[9] = m3->mat[7];
+	m4->m[10] = m3->mat[8];
+	m4->m[11] = 0.0;
+	
+	m4->m[15] = 1.f;
+	
+	return m4;
 }
 
 /*
@@ -214,8 +211,8 @@ m4_mul_scalar(struct mat4 *dst, const struct mat4 *m, const float f)
 	dst->m[7] = m->m[7] * f;
 
 	dst->m[8] = m->m[8] * f;
-	dst->m[9] = m->m[8] * f;
-	dst->m[10] = m->m[9] * f;
+	dst->m[9] = m->m[9] * f;
+	dst->m[10] = m->m[10] * f;
 	dst->m[11] = m->m[11] * f;
 
 	dst->m[12] = m->m[12] * f;
@@ -227,158 +224,160 @@ m4_mul_scalar(struct mat4 *dst, const struct mat4 *m, const float f)
 }
 
 /*
- * Sets pOut to the transpose of pIn, returns pOut
+ * Sets pOut to the transpose of src, returns dst
  */
 static inline struct mat4 *
 m4_transpose(struct mat4 *dst, const struct mat4 *src)
 {
+	struct mat4 tmp;
 	int x, z;
 
 	for (z = 0; z < 4; ++z)
 		for (x = 0; x < 4; ++x)
-			dst->m[(z * 4) + x] = src->m[(x * 4) + z];
+			tmp.m[(z * 4) + x] = src->m[(x * 4) + z];
+
+	memcpy(dst, &tmp, sizeof(*dst));
 
 	return dst;
 }
 
 /*
- * Calculates the inverse of pM and stores the result in
- * pOut.
- * @Return Returns NULL if there is no inverse, else pOut
+ * Calculates the inverse of src and stores the result in dst.
+ * @Return Returns NULL if there is no inverse, else dst
  */
 static inline struct mat4 *
 m4_inverse(struct mat4 *dst, const struct mat4 *src)
 {
 	struct mat4 tmp;
-	float det;
-	int i;
-
-	tmp.m[0] = src->m[5]  * src->m[10] * src->m[15] -
-		src->m[5]  * src->m[11] * src->m[14] -
-		src->m[9]  * src->m[6]  * src->m[15] +
-		src->m[9]  * src->m[7]  * src->m[14] +
-		src->m[13] * src->m[6]  * src->m[11] -
-		src->m[13] * src->m[7]  * src->m[10];
-
-	tmp.m[4] = -src->m[4]  * src->m[10] * src->m[15] +
-		src->m[4]  * src->m[11] * src->m[14] +
-		src->m[8]  * src->m[6]  * src->m[15] -
-		src->m[8]  * src->m[7]  * src->m[14] -
-		src->m[12] * src->m[6]  * src->m[11] +
-		src->m[12] * src->m[7]  * src->m[10];
-
-	tmp.m[8] = src->m[4]  * src->m[9] * src->m[15] -
-		src->m[4]  * src->m[11] * src->m[13] -
-		src->m[8]  * src->m[5] * src->m[15] +
-		src->m[8]  * src->m[7] * src->m[13] +
+	float det = 0.f;
+	int i = 0;
+	
+	tmp.m[0] = src->m[5] * src->m[10] * src->m[15] -
+		src->m[5] * src->m[11] * src->m[14] -
+		src->m[9] * src->m[6] * src->m[15] +
+		src->m[9] * src->m[7] * src->m[14] +
+		src->m[13] * src->m[6] * src->m[11] -
+		src->m[13] * src->m[7] * src->m[10];
+	
+	tmp.m[4] = -src->m[4] * src->m[10] * src->m[15] +
+		src->m[4] * src->m[11] * src->m[14] +
+		src->m[8] * src->m[6] * src->m[15] -
+		src->m[8] * src->m[7] * src->m[14] -
+		src->m[12] * src->m[6] * src->m[11] +
+		src->m[12] * src->m[7] * src->m[10];
+	
+	tmp.m[8] = src->m[4] * src->m[9] * src->m[15] -
+		src->m[4] * src->m[11] * src->m[13] -
+		src->m[8] * src->m[5] * src->m[15] +
+		src->m[8] * src->m[7] * src->m[13] +
 		src->m[12] * src->m[5] * src->m[11] -
 		src->m[12] * src->m[7] * src->m[9];
-
-	tmp.m[12] = -src->m[4]  * src->m[9] * src->m[14] +
-		src->m[4]  * src->m[10] * src->m[13] +
-		src->m[8]  * src->m[5] * src->m[14] -
-		src->m[8]  * src->m[6] * src->m[13] -
+	
+	tmp.m[12] = -src->m[4] * src->m[9] * src->m[14] +
+		src->m[4] * src->m[10] * src->m[13] +
+		src->m[8] * src->m[5] * src->m[14] -
+		src->m[8] * src->m[6] * src->m[13] -
 		src->m[12] * src->m[5] * src->m[10] +
 		src->m[12] * src->m[6] * src->m[9];
-
-	tmp.m[1] = -src->m[1]  * src->m[10] * src->m[15] +
-		src->m[1]  * src->m[11] * src->m[14] +
-		src->m[9]  * src->m[2] * src->m[15] -
-		src->m[9]  * src->m[3] * src->m[14] -
+	
+	tmp.m[1] = -src->m[1] * src->m[10] * src->m[15] +
+		src->m[1] * src->m[11] * src->m[14] +
+		src->m[9] * src->m[2] * src->m[15] -
+		src->m[9] * src->m[3] * src->m[14] -
 		src->m[13] * src->m[2] * src->m[11] +
 		src->m[13] * src->m[3] * src->m[10];
-
-	tmp.m[5] = src->m[0]  * src->m[10] * src->m[15] -
-		src->m[0]  * src->m[11] * src->m[14] -
-		src->m[8]  * src->m[2] * src->m[15] +
-		src->m[8]  * src->m[3] * src->m[14] +
+	
+	tmp.m[5] = src->m[0] * src->m[10] * src->m[15] -
+		src->m[0] * src->m[11] * src->m[14] -
+		src->m[8] * src->m[2] * src->m[15] +
+		src->m[8] * src->m[3] * src->m[14] +
 		src->m[12] * src->m[2] * src->m[11] -
 		src->m[12] * src->m[3] * src->m[10];
-
-	tmp.m[9] = -src->m[0]  * src->m[9] * src->m[15] +
-		src->m[0]  * src->m[11] * src->m[13] +
-		src->m[8]  * src->m[1] * src->m[15] -
-		src->m[8]  * src->m[3] * src->m[13] -
+	
+	tmp.m[9] = -src->m[0] * src->m[9] * src->m[15] +
+		src->m[0] * src->m[11] * src->m[13] +
+		src->m[8] * src->m[1] * src->m[15] -
+		src->m[8] * src->m[3] * src->m[13] -
 		src->m[12] * src->m[1] * src->m[11] +
 		src->m[12] * src->m[3] * src->m[9];
-
-	tmp.m[13] = src->m[0]  * src->m[9] * src->m[14] -
-		src->m[0]  * src->m[10] * src->m[13] -
-		src->m[8]  * src->m[1] * src->m[14] +
-		src->m[8]  * src->m[2] * src->m[13] +
+	
+	tmp.m[13] = src->m[0] * src->m[9] * src->m[14] -
+		src->m[0] * src->m[10] * src->m[13] -
+		src->m[8] * src->m[1] * src->m[14] +
+		src->m[8] * src->m[2] * src->m[13] +
 		src->m[12] * src->m[1] * src->m[10] -
 		src->m[12] * src->m[2] * src->m[9];
-
-	tmp.m[2] = src->m[1]  * src->m[6] * src->m[15] -
-		src->m[1]  * src->m[7] * src->m[14] -
-		src->m[5]  * src->m[2] * src->m[15] +
-		src->m[5]  * src->m[3] * src->m[14] +
+	
+	tmp.m[2] = src->m[1] * src->m[6] * src->m[15] -
+		src->m[1] * src->m[7] * src->m[14] -
+		src->m[5] * src->m[2] * src->m[15] +
+		src->m[5] * src->m[3] * src->m[14] +
 		src->m[13] * src->m[2] * src->m[7] -
 		src->m[13] * src->m[3] * src->m[6];
-
-	tmp.m[6] = -src->m[0]  * src->m[6] * src->m[15] +
-		src->m[0]  * src->m[7] * src->m[14] +
-		src->m[4]  * src->m[2] * src->m[15] -
-		src->m[4]  * src->m[3] * src->m[14] -
+	
+	tmp.m[6] = -src->m[0] * src->m[6] * src->m[15] +
+		src->m[0] * src->m[7] * src->m[14] +
+		src->m[4] * src->m[2] * src->m[15] -
+		src->m[4] * src->m[3] * src->m[14] -
 		src->m[12] * src->m[2] * src->m[7] +
 		src->m[12] * src->m[3] * src->m[6];
-
-	tmp.m[10] = src->m[0]  * src->m[5] * src->m[15] -
-		src->m[0]  * src->m[7] * src->m[13] -
-		src->m[4]  * src->m[1] * src->m[15] +
-		src->m[4]  * src->m[3] * src->m[13] +
+	
+	tmp.m[10] = src->m[0] * src->m[5] * src->m[15] -
+		src->m[0] * src->m[7] * src->m[13] -
+		src->m[4] * src->m[1] * src->m[15] +
+		src->m[4] * src->m[3] * src->m[13] +
 		src->m[12] * src->m[1] * src->m[7] -
 		src->m[12] * src->m[3] * src->m[5];
-
-	tmp.m[14] = -src->m[0]  * src->m[5] * src->m[14] +
-		src->m[0]  * src->m[6] * src->m[13] +
-		src->m[4]  * src->m[1] * src->m[14] -
-		src->m[4]  * src->m[2] * src->m[13] -
+	
+	tmp.m[14] = -src->m[0] * src->m[5] * src->m[14] +
+		src->m[0] * src->m[6] * src->m[13] +
+		src->m[4] * src->m[1] * src->m[14] -
+		src->m[4] * src->m[2] * src->m[13] -
 		src->m[12] * src->m[1] * src->m[6] +
 		src->m[12] * src->m[2] * src->m[5];
-
+	
 	tmp.m[3] = -src->m[1] * src->m[6] * src->m[11] +
 		src->m[1] * src->m[7] * src->m[10] +
 		src->m[5] * src->m[2] * src->m[11] -
 		src->m[5] * src->m[3] * src->m[10] -
 		src->m[9] * src->m[2] * src->m[7] +
 		src->m[9] * src->m[3] * src->m[6];
-
+	
 	tmp.m[7] = src->m[0] * src->m[6] * src->m[11] -
 		src->m[0] * src->m[7] * src->m[10] -
 		src->m[4] * src->m[2] * src->m[11] +
 		src->m[4] * src->m[3] * src->m[10] +
 		src->m[8] * src->m[2] * src->m[7] -
 		src->m[8] * src->m[3] * src->m[6];
-
+	
 	tmp.m[11] = -src->m[0] * src->m[5] * src->m[11] +
 		src->m[0] * src->m[7] * src->m[9] +
 		src->m[4] * src->m[1] * src->m[11] -
 		src->m[4] * src->m[3] * src->m[9] -
 		src->m[8] * src->m[1] * src->m[7] +
 		src->m[8] * src->m[3] * src->m[5];
-
+	
 	tmp.m[15] = src->m[0] * src->m[5] * src->m[10] -
 		src->m[0] * src->m[6] * src->m[9] -
 		src->m[4] * src->m[1] * src->m[10] +
 		src->m[4] * src->m[2] * src->m[9] +
 		src->m[8] * src->m[1] * src->m[6] -
 		src->m[8] * src->m[2] * src->m[5];
-
+	
 	det = src->m[0] *
 		tmp.m[0] + src->m[1] *
 		tmp.m[4] + src->m[2] *
 		tmp.m[8] + src->m[3] *
 		tmp.m[12];
-
+	
 	if (det == 0)
 		return NULL;
-
+	
 	det = 1.f / det;
-
+	
 	for (i = 0; i < 16; i++)
 		dst->m[i] = tmp.m[i] * det;
-
+	
 	return dst;
 }
 
@@ -499,17 +498,17 @@ m4_rot_z(struct mat4 *dst, const float radians)
 static inline struct mat4 *
 m4_rot_quat(struct mat4 *dst, const struct quat *pQ)
 {
-	float xx = pQ->x * pQ->x;
-	float xy = pQ->x * pQ->y;
-	float xz = pQ->x * pQ->z;
-	float xw = pQ->x * pQ->w;
-	
-	float yy = pQ->y * pQ->y;
-	float yz = pQ->y * pQ->z;
-	float yw = pQ->y * pQ->w;
-	
-	float zz = pQ->z * pQ->z;
-	float zw = pQ->z * pQ->w;
+	const float xx = pQ->x * pQ->x;
+	const float xy = pQ->x * pQ->y;
+	const float xz = pQ->x * pQ->z;
+	const float xw = pQ->x * pQ->w;
+
+	const float yy = pQ->y * pQ->y;
+	const float yz = pQ->y * pQ->z;
+	const float yw = pQ->y * pQ->w;
+
+	const float zz = pQ->z * pQ->z;
+	const float zw = pQ->z * pQ->w;
 
 	dst->m[0] = 1.f - 2.f * (yy + zz);
 	dst->m[1] = 2.f * (xy + zw);
@@ -712,15 +711,16 @@ m4_perspective(struct mat4 *dst, float fov_y, float aspect, float z_near, float 
 	const float rad = 0.5f * deg_to_rad(fov_y / 2.f);
 	const float h = cosf(rad) / sinf(rad);
 	const float w = h / aspect;
-
+	
 	memset(dst, 0x0, sizeof(*dst));
-
+	
 	dst->r[0][0] = w;
 	dst->r[1][1] = h;
 	dst->r[2][2] = z_far / (z_near - z_far);
 	dst->r[2][3] = -1.0f;
 	dst->r[3][2] = -(z_far * z_near) / (z_far - z_near);
-
+	dst->r[3][3] = 1.f;
+	
 	return dst;
 }
 
@@ -730,15 +730,16 @@ m4_perspective_nd(struct mat4 *dst, float fov_y, float aspect, float z_near, flo
 	const float rad = 0.5f * deg_to_rad(fov_y / 2.f);
 	const float h = cosf(rad) / sinf(rad);
 	const float w = h / aspect;
-
+	
 	memset(dst, 0x0, sizeof(*dst));
-
+	
 	dst->r[0][0] = w;
 	dst->r[1][1] = h;
-	dst->r[3][2] = -(z_far * z_near) / (z_far - z_near);
+	dst->r[2][2] = -(z_far * z_near) / (z_far - z_near);
 	dst->r[2][3] = -1.0f;
 	dst->r[3][2] = -(2.f * z_far * z_near) / (z_far - z_near);
-
+	dst->r[3][3] = 1.f;
+	
 	return dst;
 }
 
@@ -746,13 +747,16 @@ static inline struct mat4 *
 m4_infinite_perspective_rz(struct mat4 *dst, float fov_y, float aspect, float z_near)
 {
 	const float f = 1.f / tanf(deg_to_rad(fov_y) / 2.f);
-
+	
 	memset(dst, 0x0, sizeof(*dst));
-	dst->m[0] = f / aspect;
-	dst->m[5] = f;
-	dst->m[11] = -1.f;
-	dst->m[14] = z_near;
-
+	
+	dst->r[0][0] = f / aspect;
+	dst->r[1][1] = f;
+	dst->r[2][2] = 1.f;
+	dst->r[2][3] = -1.f;
+	dst->r[3][2] = z_near;
+	dst->r[3][3] = 1.f;
+	
 	return dst;
 }
 
@@ -762,30 +766,32 @@ m4_infinite_perspective_rz(struct mat4 *dst, float fov_y, float aspect, float z_
 static inline struct mat4 *
 m4_ortho(struct mat4 *dst, float left, float right, float bottom, float top, float z_near, float z_far)
 {
-	m4_ident(dst);
-
+	memset(dst, 0x0, sizeof(*dst));
+	
 	dst->r[0][0] = 2.f / (right - left);
 	dst->r[1][1] = 2.f / (top - bottom);
 	dst->r[2][2] = 1.f / (z_far - z_near);
 	dst->r[3][0] = -((right + left) / (right - left));
 	dst->r[3][1] = -((top + bottom) / (top - bottom));
 	dst->r[3][2] = -dst->r[2][2] * z_near;
-
+	dst->r[3][3] = 1.f;
+	
 	return dst;
 }
 
 static inline struct mat4 *
 m4_ortho_nd(struct mat4 *dst, float left, float right, float bottom, float top, float z_near, float z_far)
 {
-	m4_ident(dst);
-
+	memset(dst, 0x0, sizeof(*dst));
+	
 	dst->r[0][0] = 2.f / (right - left);
 	dst->r[1][1] = 2.f / (top - bottom);
 	dst->r[2][2] = -2.f / (z_far - z_near);
 	dst->r[3][0] = -((right + left) / (right - left));
 	dst->r[3][1] = -((top + bottom) / (top - bottom));
 	dst->r[3][2] = -((z_far + z_near) / (z_far - z_near));
-
+	dst->r[3][3] = 1.f;
+	
 	return dst;
 }
 

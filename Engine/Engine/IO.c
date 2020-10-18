@@ -35,7 +35,7 @@ E_OpenFile(const char *path, FileOpenMode mode)
 
 	if (!f)
 		Sys_LogEntry(IO_MODULE, LOG_CRITICAL,
-			L"Failed to open file [%s], %s", path,
+			L"Failed to open file [%hs], %hs", path,
 			PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
 
 	return (File)f;

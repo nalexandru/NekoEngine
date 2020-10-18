@@ -35,16 +35,8 @@ static HMODULE _d3d12 = NULL;
 
 struct RenderWorker *Re_Workers = NULL;
 struct RenderWorker Re_MainThreadWorker = { 0 };
-struct RenderFeatures Re_Features = { 0 };
 
 struct GlobalRenderData Re_GlobalRenderData{};
-
-struct RenderInfo Re_RenderInfo =
-{
-	{ L"Direct3D 12" },
-	{ 0x0 },
-	false
-};
 
 struct ResourceDestroyInfo
 {
@@ -76,6 +68,12 @@ static UINT _syncInterval = 0;
 
 static inline void _logDxgiMessages(void);
 
+static bool _Init(void);
+static void _Term(void);
+static void _RenderFrame(void);
+static void _ScreenResized(void);
+static void _WaitIdle(void);
+
 #if ENABLE_AFTERMATH
 static GFSDK_Aftermath_ContextHandle _aftermathContext;
 static void _gpuCrashDumpCallback(const void *crashDump, const uint32_t size, void *user);
@@ -83,8 +81,39 @@ static void _shaderDebugInfoCallback(const void *shaderDebugInfo, const uint32_t
 static void _crashDumpDescriptionCallback(PFN_GFSDK_Aftermath_AddGpuCrashDumpDescription addDescription, void *user);
 #endif
 
+extern "C" __declspec(dllexport) uint32_t Re_ApiVersion = RE_API_VERSION;
+extern "C" __declspec(dllexport) bool
+Re_InitLibrary(void)
+{
+	memset(&Re, 0x0, sizeof(Re));
+
+	Re.Init = _Init;
+	Re.Term = _Term;
+	Re.WaitIdle = _WaitIdle;
+	Re.ScreenResized = _ScreenResized;
+	Re.RenderFrame = _RenderFrame;
+	Re.InitScene = D3D12_InitScene;
+	Re.TermScene = D3D12_TermScene;
+	Re.GetShader = D3D12_GetShader;
+	Re.InitTexture = D3D12_InitTexture;
+	Re.UpdateTexture = D3D12_UpdateTexture;
+	Re.TermTexture = D3D12_TermTexture;
+	Re.InitModel = D3D12_InitModel;
+	Re.TermModel = D3D12_TermModel;
+
+	Re.sceneRenderDataSize = sizeof(struct SceneRenderData);
+	Re.modelRenderDataSize = sizeof(struct ModelRenderData);
+	Re.textureRenderDataSize = sizeof(struct TextureRenderData);
+
+	// The device is initialized with feature level 12.0
+	// https://docs.microsoft.com/en-us/windows/win32/direct3d11/overviews-direct3d-11-devices-downlevel-intro
+	Re.limits.maxTextureSize = 16384;
+
+	return true;
+}
+
 bool
-Re_Init(void)
+_Init(void)
 {
 	_d3d12 = LoadLibrary(L"12on7\\d3d12.dll");
 	if (!_d3d12) {
@@ -212,9 +241,9 @@ Re_Init(void)
 }
 
 void
-Re_Term(void)
+_Term(void)
 {
-	Re_WaitIdle();
+	_WaitIdle();
 
 	_renderPath->Term();
 	delete _renderPath;
@@ -270,14 +299,14 @@ Re_Term(void)
 }
 
 void
-Re_RenderFrame(void)
+_RenderFrame(void)
 {
 	{ // Begin frame
 		SignalFence(&Re_UploadFence, Re_Device.transferQueue);
 
 		D3D12_UpdateSceneData(Scn_ActiveScene);
 
-		if (Re_Features.rayTracing) {
+		if (Re.features.rayTracing) {
 			D3DCHK(Re_MainThreadWorker.rtComputeList->Reset(Re_MainThreadWorker.computeAllocators[Re_Device.frame], NULL));
 			D3D12_BuildBLAS(Re_MainThreadWorker.rtComputeList);
 			D3D12_BuildTLAS(Re_MainThreadWorker.rtComputeList, Scn_ActiveScene);
@@ -338,12 +367,12 @@ Re_RenderFrame(void)
 }
 
 void
-Re_ScreenResized(void)
+_ScreenResized(void)
 {
 	if (!Re_Device.dev)
 		return;
 
-	Re_WaitIdle();
+	_WaitIdle();
 
 	wchar_t *buff = (wchar_t *)Sys_Alloc(64, sizeof(wchar_t), MH_Transient);
 	
@@ -373,7 +402,7 @@ Re_ScreenResized(void)
 }
 
 void
-Re_WaitIdle(void)
+_WaitIdle(void)
 {
 	SignalFence(&Re_UploadFence, Re_Device.transferQueue);
 	WaitForFenceCPU(&Re_UploadFence);
@@ -486,7 +515,7 @@ _InitWorker(int wid, struct RenderWorker *w)
 	D3DCHK(Re_Device.dev->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_COMPUTE, w->computeAllocators[0], NULL, IID_PPV_ARGS(&w->computeList)));
 	w->cmdList->SetName(name);
 
-	if (Re_Features.rayTracing)
+	if (Re.features.rayTracing)
 		w->cmdList->QueryInterface(IID_PPV_ARGS(&w->rtCmdList));
 		w->computeList->QueryInterface(IID_PPV_ARGS(&w->rtComputeList));
 
@@ -515,7 +544,7 @@ _TermWorker(struct RenderWorker *w)
 	w->copyList->Release();
 	w->computeList->Release();
 	
-	if (Re_Features.rayTracing) {
+	if (Re.features.rayTracing) {
 		w->rtCmdList->Release();
 		w->rtComputeList->Release();
 	}

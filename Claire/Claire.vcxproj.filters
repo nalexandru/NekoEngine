@@ -13,12 +13,6 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Deps">
-      <UniqueIdentifier>{faadc1dc-66f4-4233-a88e-5c2b6d620d97}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Deps\LuaJIT">
-      <UniqueIdentifier>{f891eacd-bacf-4783-8bd9-6f48680d1db7}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h">
@@ -32,9 +26,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
-    <None Include="..\Deps\LuaJIT\Bin\x64\lua51.dll">
-      <Filter>Deps\LuaJIT</Filter>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Icon.ico">

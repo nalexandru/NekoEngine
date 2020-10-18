@@ -1,5 +1,5 @@
 #ifndef _E_EVENT_H_
-#define _E_EVENT_H
+#define _E_EVENT_H_
 
 #include <Engine/Types.h>
 

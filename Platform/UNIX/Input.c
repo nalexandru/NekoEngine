@@ -14,7 +14,6 @@
 
 enum Button X11_Keymap[256];
 
-static inline void _deadzone(float *x, float *y, const float max, const float deadzone);
 static inline enum Button _mapKey(const int key);
 
 bool

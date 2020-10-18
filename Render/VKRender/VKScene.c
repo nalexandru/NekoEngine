@@ -25,10 +25,8 @@ struct GetDrawablesArgs
 
 };*/
 
-const size_t Re_SceneRenderDataSize = sizeof(struct SceneRenderData);
-
 bool
-Re_InitScene(struct Scene *scene)
+VK_InitScene(struct Scene *scene)
 {
 	struct SceneRenderData *srd = (struct SceneRenderData *)&scene->renderDataStart;
 	return Rt_InitArray(&srd->instanceData, 10, sizeof(VkAccelerationStructureInstanceKHR));
@@ -37,7 +35,7 @@ Re_InitScene(struct Scene *scene)
 }
 
 void
-Re_TermScene(struct Scene *scene)
+VK_TermScene(struct Scene *scene)
 {
 /*	struct SceneRenderData *srd = (struct SceneRenderData *)&scene->renderDataStart;
 	Rt_TermArray(&srd->drawables);*/

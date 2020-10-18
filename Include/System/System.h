@@ -69,6 +69,10 @@ bool Sys_UniversalWindows(void);
 void Sys_MessageBox(const wchar_t *title, const wchar_t *message, int icon);
 bool Sys_ProcessEvents(void);
 
+void *Sys_LoadLibrary(const char *path);
+void *Sys_GetProcAddress(void *lib, const char *name);
+void Sys_UnloadLibrary(void *lib);
+
 // Compatibility shivs
 void *reallocarray(void *ptr, size_t nmemb, size_t size);
 
@@ -98,7 +102,7 @@ static inline uint64_t strtoull(const char *str, char **endptr, int base)
 }
 #endif
 
-#if defined(_MSC_VER) && (_MSC_VER < 1400)
+#if defined(_MSC_VER) && (_MSC_VER < 1700)
 #define vswprintf _vsnwprintf
 #define swprintf _snwprintf
 #define strtoll strtol

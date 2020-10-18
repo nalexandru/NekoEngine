@@ -8,6 +8,7 @@
 #include <stdbool.h>
 
 #include <System/System.h>
+#include <System/Memory.h>
 #include <Runtime/RtDefs.h>
 
 /**
@@ -23,7 +24,7 @@ typedef struct Array
 	size_t count;
 	size_t size;
 	size_t elem_size;
-	uint32_t align;
+	size_t align;
 } Array;
 
 /**
@@ -62,27 +63,30 @@ Rt_InitArray(Array *a, size_t size, size_t elem_size)
  * @size: initial array size (in elements)
  * @elem_size: size of one array element
  */
-/*static INLINE int
-rt_array_init_align(rt_array *a, size_t size, size_t elem_size, uint32_t align)
+static inline bool
+Rt_InitAlignedArray(Array *a, size_t size, size_t elem_size, size_t alignment)
 {
 	if (!a || !size || !elem_size)
-		return SYS_INVALID_ARGS;
+		return false;
 
-	memset(a, 0x0, sizeof(rt_array));
+	if (alignment == 1)
+		return Rt_InitArray(a, size, elem_size);
+
+	memset(a, 0x0, sizeof(*a));
 
 	// seriously, C++ is retarded for needing this cast
-	a->data = (uint8_t *)calloc(size, elem_size);
+	a->data = (uint8_t *)Sys_AlignedAlloc(size * elem_size, alignment);
 
 	if (!a->data)
-		return SYS_MEMORY;
+		return false;
 
 	a->count = 0;
 	a->size = size;
-	a->elem_size = elem_size;
-	a->align = align;
+	a->elem_size = (elem_size + alignment - 1) & ~(alignment - 1);
+	a->align = alignment;
 
-	return SYS_OK;
-}*/
+	return true;
+}
 
 /**
  * Rt_InitPtrArray - initialize a rt_array structure for pointers
@@ -98,7 +102,7 @@ rt_array_init_align(rt_array *a, size_t size, size_t elem_size, uint32_t align)
  *
  * Return: 0 on success
  */
-static bool
+static inline bool
 Rt_CloneArray(Array *dst, const Array *src)
 {
 	if (!dst || !src)
@@ -520,7 +524,12 @@ Rt_ClearArray(Array *a, bool free_memory)
 		return;
 
 	a->size = 0;
-	free(a->data);
+
+	if (a->align > 1)
+		Sys_AlignedFree(a->data);
+	else
+		free(a->data);
+
 	a->data = NULL;
 }
 

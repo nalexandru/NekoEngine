@@ -32,7 +32,7 @@ struct UIContext
 	Array vertices, indices, draws;
 };
 
-extern struct mat4 UI_Projection;
+ENGINE_API extern struct mat4 UI_Projection;
 
 bool UI_InitUI();
 void UI_TermUI();

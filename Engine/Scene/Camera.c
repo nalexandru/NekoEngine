@@ -39,7 +39,7 @@ Scn_InitCamera(struct Camera *cam, const void **args)
 
 	if (infinite) {
 	} else {
-		if (!Re_RenderInfo.negativeDepth)
+		if (!Re.info.negativeDepth)
 			m4_perspective(&cam->projMatrix, cam->fov, (float)*E_ScreenWidth / (float)*E_ScreenHeight, cam->zNear, cam->zFar);
 		else
 			m4_perspective_nd(&cam->projMatrix, cam->fov, (float)*E_ScreenWidth / (float)*E_ScreenHeight, cam->zNear, cam->zFar);
@@ -66,9 +66,9 @@ Scn_UpdateCamera(void **comp, void *args)
 	struct Transform *xform = comp[0];
 	struct Camera *cam = comp[1];
 
+	struct mat4 m_rot, m_pos;
 	struct quat rot;
 	struct vec3 pos;
-	struct mat4 m_rot, m_pos;
 
 	xform_rotation(xform, &rot);
 	m4_rot_quat(&m_rot, &rot);

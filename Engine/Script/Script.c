@@ -1,5 +1,4 @@
 #include <lua.h>
-#include <luajit.h>
 #include <lualib.h>
 #include <lauxlib.h>
 
@@ -18,9 +17,6 @@ E_CreateVM(bool jit)
 	vm = luaL_newstate();
 	if (!vm)
 		return NULL;
-
-	if (!luaJIT_setmode(vm, 0, LUAJIT_MODE_ENGINE | (jit ? LUAJIT_MODE_ON : LUAJIT_MODE_OFF)))
-		Sys_LogEntry(SCRIPTMOD, LOG_WARNING, L"Failed to set JIT state");
 
 	luaL_openlibs(vm);
 

@@ -1,5 +1,3 @@
-#include <AL/al.h>
-
 #include <Audio/Source.h>
 #include <Engine/Resource.h>
 

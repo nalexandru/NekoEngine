@@ -47,14 +47,13 @@
 #include <Math/vec3.h>
 #include <Math/quat.h>
 
-// fu m$
-#undef near
-#undef far
-
 static inline struct mat4 *
 m4(struct mat4 *dst, const float *m)
 {
-	memcpy(dst->m, m, sizeof(float) * 16);
+	dst->sm[0] = vld1q_f32(&m[0]);
+	dst->sm[1] = vld1q_f32(&m[4]);
+	dst->sm[2] = vld1q_f32(&m[8]);
+	dst->sm[3] = vld1q_f32(&m[12]);
 	return dst;
 }
 
@@ -65,17 +64,21 @@ m4f(struct mat4 *dst,
 	float m8, float m9, float m10, float m11,
 	float m12, float m13, float m14, float m15)
 {
-	dst->sm[0] = _mm_setr_ps(m0, m1, m2, m3);
-	dst->sm[0] = _mm_setr_ps(m4, m5, m6, m7);
-	dst->sm[0] = _mm_setr_ps(m8, m9, m10, m11);
-	dst->sm[0] = _mm_setr_ps(m12, m13, m14, m15);
+	dst->m[0] = m0; dst->m[1] = m1; dst->m[2] = m2; dst->m[3] = m3;
+	dst->m[4] = m4; dst->m[5] = m5; dst->m[6] = m6; dst->m[7] = m7;
+	dst->m[8] = m8; dst->m[9] = m9; dst->m[10] = m10; dst->m[11] = m11;
+	dst->m[12] = m12; dst->m[13] = m13; dst->m[14] = m14; dst->m[15] = m15;
 	return dst;
 }
 
 static inline struct mat4 *
 m4_copy(struct mat4 *dst, const struct mat4 *src)
 {
-	memcpy(dst->m, src->m, sizeof(float) * 16);
+	dst->sm[0] = vld1q_f32(&src->r[0][0]);
+	dst->sm[1] = vld1q_f32(&src->r[1][0]);
+	dst->sm[2] = vld1q_f32(&src->r[2][0]);
+	dst->sm[3] = vld1q_f32(&src->r[3][0]);
+
 	return dst;
 }
 
@@ -88,85 +91,91 @@ m4_ident(struct mat4 *m)
 }
 
 static inline struct mat4 *
-m4_init_m3(struct mat4 *pOut, const struct mat3 *pIn)
+m4_init_m3(struct mat4 *m4, const struct mat3 *m3)
 {
-	m4_ident(pOut);
-
-	pOut->m[0] = pIn->mat[0];
-	pOut->m[1] = pIn->mat[1];
-	pOut->m[2] = pIn->mat[2];
-	pOut->m[3] = 0.0;
-
-	pOut->m[4] = pIn->mat[3];
-	pOut->m[5] = pIn->mat[4];
-	pOut->m[6] = pIn->mat[5];
-	pOut->m[7] = 0.0;
-
-	pOut->m[8] = pIn->mat[6];
-	pOut->m[9] = pIn->mat[7];
-	pOut->m[10] = pIn->mat[8];
-	pOut->m[11] = 0.0;
-
-	return pOut;
+	m4_ident(m4);
+	
+	m4->m[0] = m3->mat[0];
+	m4->m[1] = m3->mat[1];
+	m4->m[2] = m3->mat[2];
+	m4->m[3] = 0.0;
+	
+	m4->m[4] = m3->mat[3];
+	m4->m[5] = m3->mat[4];
+	m4->m[6] = m3->mat[5];
+	m4->m[7] = 0.0;
+	
+	m4->m[8] = m3->mat[6];
+	m4->m[9] = m3->mat[7];
+	m4->m[10] = m3->mat[8];
+	m4->m[11] = 0.0;
+	
+	m4->m[15] = 1.f;
+	
+	return m4;
 }
 
 static inline struct mat4 *
 m4_mul(struct mat4 *dst, const struct mat4 *m1, const struct mat4 *m2)
 {
-	__m128 tmp0 = _mm_mul_ps(_mm_shuffle_ps(m2->sm[0], m2->sm[0x00], 0x00), m1->sm[0]);
-	tmp0 = _mm_add_ps(tmp0, _mm_mul_ps(_mm_shuffle_ps(m2->sm[0], m2->sm[0], 0x55), m1->sm[1]));
-	tmp0 = _mm_add_ps(tmp0, _mm_mul_ps(_mm_shuffle_ps(m2->sm[0], m2->sm[0], 0xAA), m1->sm[2]));
-	tmp0 = _mm_add_ps(tmp0, _mm_mul_ps(_mm_shuffle_ps(m2->sm[0], m2->sm[0], 0xFF), m1->sm[3]));
+    float32x4_t zero = vmovq_n_f32(0.f);
+    float32x4_t r0, r1, r2, r3;
 
-	__m128 tmp1 = _mm_mul_ps(_mm_shuffle_ps(m2->sm[1], m2->sm[1], 0x00), m1->sm[0]);
-	tmp1 = _mm_add_ps(tmp1, _mm_mul_ps(_mm_shuffle_ps(m2->sm[1], m2->sm[1], 0x55), m1->sm[1]));
-	tmp1 = _mm_add_ps(tmp1, _mm_mul_ps(_mm_shuffle_ps(m2->sm[1], m2->sm[1], 0xAA), m1->sm[2]));
-	tmp1 = _mm_add_ps(tmp1, _mm_mul_ps(_mm_shuffle_ps(m2->sm[1], m2->sm[1], 0xFF), m1->sm[3]));
+	// TODO: profile instruction order
+	r0 = vmlaq_f32(zero, vdupq_n_f32(m2->r[0][0]), m1->sm[0]);
+	r1 = vmlaq_f32(zero, vdupq_n_f32(m2->r[1][0]), m1->sm[0]);
+	r2 = vmlaq_f32(zero, vdupq_n_f32(m2->r[2][0]), m1->sm[0]);
+	r3 = vmlaq_f32(zero, vdupq_n_f32(m2->r[3][0]), m1->sm[0]);
 
-	__m128 tmp2 = _mm_mul_ps(_mm_shuffle_ps(m2->sm[2], m2->sm[2], 0x00), m1->sm[0]);
-	tmp2 = _mm_add_ps(tmp2, _mm_mul_ps(_mm_shuffle_ps(m2->sm[2], m2->sm[2], 0x55), m1->sm[1]));
-	tmp2 = _mm_add_ps(tmp2, _mm_mul_ps(_mm_shuffle_ps(m2->sm[2], m2->sm[2], 0xAA), m1->sm[2]));
-	tmp2 = _mm_add_ps(tmp2, _mm_mul_ps(_mm_shuffle_ps(m2->sm[2], m2->sm[2], 0xFF), m1->sm[3]));
-
-	__m128 tmp3 = _mm_mul_ps(_mm_shuffle_ps(m2->sm[3], m2->sm[3], 0x00), m1->sm[0]);
-	tmp3 = _mm_add_ps(tmp3, _mm_mul_ps(_mm_shuffle_ps(m2->sm[3], m2->sm[3], 0x55), m1->sm[1]));
-	tmp3 = _mm_add_ps(tmp3, _mm_mul_ps(_mm_shuffle_ps(m2->sm[3], m2->sm[3], 0xAA), m1->sm[2]));
-	tmp3 = _mm_add_ps(tmp3, _mm_mul_ps(_mm_shuffle_ps(m2->sm[3], m2->sm[3], 0xFF), m1->sm[3]));
-
-	dst->sm[0] = tmp0;
-	dst->sm[1] = tmp1;
-	dst->sm[2] = tmp2;
-	dst->sm[3] = tmp3;
-
+	r0 = vmlaq_f32(r0, vdupq_n_f32(m2->r[0][1]), m1->sm[1]);
+	r1 = vmlaq_f32(r1, vdupq_n_f32(m2->r[1][1]), m1->sm[1]);
+	r2 = vmlaq_f32(r2, vdupq_n_f32(m2->r[2][1]), m1->sm[1]);
+	r3 = vmlaq_f32(r3, vdupq_n_f32(m2->r[3][1]), m1->sm[1]);
+	
+	r0 = vmlaq_f32(r0, vld1q_dup_f32(&m2->r[0][2]), m1->sm[2]);
+	r1 = vmlaq_f32(r1, vld1q_dup_f32(&m2->r[1][2]), m1->sm[2]);
+	r2 = vmlaq_f32(r2, vld1q_dup_f32(&m2->r[2][2]), m1->sm[2]);
+	r3 = vmlaq_f32(r3, vld1q_dup_f32(&m2->r[3][2]), m1->sm[2]);
+	
+	r0 = vmlaq_f32(r0, vld1q_dup_f32(&m2->r[0][3]), m1->sm[3]);
+	r1 = vmlaq_f32(r1, vld1q_dup_f32(&m2->r[1][3]), m1->sm[3]);
+	r2 = vmlaq_f32(r2, vld1q_dup_f32(&m2->r[2][3]), m1->sm[3]);
+	r3 = vmlaq_f32(r3, vld1q_dup_f32(&m2->r[3][3]), m1->sm[3]);
+	
+	dst->sm[0] = r0;
+	dst->sm[1] = r1;
+	dst->sm[2] = r2;
+	dst->sm[3] = r3;
+	
 	return dst;
 }
 
 static inline struct mat4 *
 m4_mul_scalar(struct mat4 *dst, const struct mat4 *m, const float f)
 {
-	__m128 scalar = _mm_set1_ps(f);
+	float32x4_t scalar = vdupq_n_f32(f);
 
-	dst->sm[0] = _mm_mul_ps(m->sm[0], scalar);
-	dst->sm[1] = _mm_mul_ps(m->sm[1], scalar);
-	dst->sm[2] = _mm_mul_ps(m->sm[2], scalar);
-	dst->sm[3] = _mm_mul_ps(m->sm[3], scalar);
-
+	dst->sm[0] = vmulq_f32(m->sm[0], scalar);
+	dst->sm[1] = vmulq_f32(m->sm[1], scalar);
+	dst->sm[2] = vmulq_f32(m->sm[2], scalar);
+	dst->sm[3] = vmulq_f32(m->sm[3], scalar);
+	
 	return dst;
 }
 
 static inline struct mat4 *
 m4_transpose(struct mat4 *dst, const struct mat4 *src)
-{
-	int x, z;
+{	
+	const float32x4_t r0 = vtrn1q_f32(src->sm[0], src->sm[1]);
+	const float32x4_t r1 = vtrn2q_f32(src->sm[0], src->sm[1]);
+	const float32x4_t r2 = vtrn1q_f32(src->sm[2], src->sm[3]);
+	const float32x4_t r3 = vtrn2q_f32(src->sm[2], src->sm[3]);
 
-	for (z = 0; z < 4; ++z)
-		for (x = 0; x < 4; ++x)
-			dst->m[(z * 4) + x] = src->m[(x * 4) + z];
-
-//	TODO: verify
-//	memcpy(dst->m, src->m, sizeof(dst->m));
-//	_MM_TRANSPOSE4_PS(dst->sm[0], dst->sm[1], dst->sm[2], dst->sm[3]);
-
+	dst->sm[0] = vcombine_f32(vget_low_f32(r0), vget_low_f32(r2));
+	dst->sm[1] = vcombine_f32(vget_low_f32(r1), vget_low_f32(r3));
+	dst->sm[2] = vcombine_f32(vget_high_f32(r0), vget_high_f32(r2));
+	dst->sm[3] = vcombine_f32(vget_high_f32(r1), vget_high_f32(r3));
+	
 	return dst;
 }
 
@@ -174,135 +183,135 @@ static inline struct mat4 *
 m4_inverse(struct mat4 *dst, const struct mat4 *src)
 {
 	struct mat4 tmp;
-	float det;
-	int i;
-
-	tmp.m[0] = src->m[5]  * src->m[10] * src->m[15] -
-		src->m[5]  * src->m[11] * src->m[14] -
-		src->m[9]  * src->m[6]  * src->m[15] +
-		src->m[9]  * src->m[7]  * src->m[14] +
-		src->m[13] * src->m[6]  * src->m[11] -
-		src->m[13] * src->m[7]  * src->m[10];
-
-	tmp.m[4] = -src->m[4]  * src->m[10] * src->m[15] +
-		src->m[4]  * src->m[11] * src->m[14] +
-		src->m[8]  * src->m[6]  * src->m[15] -
-		src->m[8]  * src->m[7]  * src->m[14] -
-		src->m[12] * src->m[6]  * src->m[11] +
-		src->m[12] * src->m[7]  * src->m[10];
-
-	tmp.m[8] = src->m[4]  * src->m[9] * src->m[15] -
-		src->m[4]  * src->m[11] * src->m[13] -
-		src->m[8]  * src->m[5] * src->m[15] +
-		src->m[8]  * src->m[7] * src->m[13] +
+	float det = 0.f;
+	int i = 0;
+	
+	tmp.m[0] = src->m[5] * src->m[10] * src->m[15] -
+		src->m[5] * src->m[11] * src->m[14] -
+		src->m[9] * src->m[6] * src->m[15] +
+		src->m[9] * src->m[7] * src->m[14] +
+		src->m[13] * src->m[6] * src->m[11] -
+		src->m[13] * src->m[7] * src->m[10];
+	
+	tmp.m[4] = -src->m[4] * src->m[10] * src->m[15] +
+		src->m[4] * src->m[11] * src->m[14] +
+		src->m[8] * src->m[6] * src->m[15] -
+		src->m[8] * src->m[7] * src->m[14] -
+		src->m[12] * src->m[6] * src->m[11] +
+		src->m[12] * src->m[7] * src->m[10];
+	
+	tmp.m[8] = src->m[4] * src->m[9] * src->m[15] -
+		src->m[4] * src->m[11] * src->m[13] -
+		src->m[8] * src->m[5] * src->m[15] +
+		src->m[8] * src->m[7] * src->m[13] +
 		src->m[12] * src->m[5] * src->m[11] -
 		src->m[12] * src->m[7] * src->m[9];
-
-	tmp.m[12] = -src->m[4]  * src->m[9] * src->m[14] +
-		src->m[4]  * src->m[10] * src->m[13] +
-		src->m[8]  * src->m[5] * src->m[14] -
-		src->m[8]  * src->m[6] * src->m[13] -
+	
+	tmp.m[12] = -src->m[4] * src->m[9] * src->m[14] +
+		src->m[4] * src->m[10] * src->m[13] +
+		src->m[8] * src->m[5] * src->m[14] -
+		src->m[8] * src->m[6] * src->m[13] -
 		src->m[12] * src->m[5] * src->m[10] +
 		src->m[12] * src->m[6] * src->m[9];
-
-	tmp.m[1] = -src->m[1]  * src->m[10] * src->m[15] +
-		src->m[1]  * src->m[11] * src->m[14] +
-		src->m[9]  * src->m[2] * src->m[15] -
-		src->m[9]  * src->m[3] * src->m[14] -
+	
+	tmp.m[1] = -src->m[1] * src->m[10] * src->m[15] +
+		src->m[1] * src->m[11] * src->m[14] +
+		src->m[9] * src->m[2] * src->m[15] -
+		src->m[9] * src->m[3] * src->m[14] -
 		src->m[13] * src->m[2] * src->m[11] +
 		src->m[13] * src->m[3] * src->m[10];
-
-	tmp.m[5] = src->m[0]  * src->m[10] * src->m[15] -
-		src->m[0]  * src->m[11] * src->m[14] -
-		src->m[8]  * src->m[2] * src->m[15] +
-		src->m[8]  * src->m[3] * src->m[14] +
+	
+	tmp.m[5] = src->m[0] * src->m[10] * src->m[15] -
+		src->m[0] * src->m[11] * src->m[14] -
+		src->m[8] * src->m[2] * src->m[15] +
+		src->m[8] * src->m[3] * src->m[14] +
 		src->m[12] * src->m[2] * src->m[11] -
 		src->m[12] * src->m[3] * src->m[10];
-
-	tmp.m[9] = -src->m[0]  * src->m[9] * src->m[15] +
-		src->m[0]  * src->m[11] * src->m[13] +
-		src->m[8]  * src->m[1] * src->m[15] -
-		src->m[8]  * src->m[3] * src->m[13] -
+	
+	tmp.m[9] = -src->m[0] * src->m[9] * src->m[15] +
+		src->m[0] * src->m[11] * src->m[13] +
+		src->m[8] * src->m[1] * src->m[15] -
+		src->m[8] * src->m[3] * src->m[13] -
 		src->m[12] * src->m[1] * src->m[11] +
 		src->m[12] * src->m[3] * src->m[9];
-
-	tmp.m[13] = src->m[0]  * src->m[9] * src->m[14] -
-		src->m[0]  * src->m[10] * src->m[13] -
-		src->m[8]  * src->m[1] * src->m[14] +
-		src->m[8]  * src->m[2] * src->m[13] +
+	
+	tmp.m[13] = src->m[0] * src->m[9] * src->m[14] -
+		src->m[0] * src->m[10] * src->m[13] -
+		src->m[8] * src->m[1] * src->m[14] +
+		src->m[8] * src->m[2] * src->m[13] +
 		src->m[12] * src->m[1] * src->m[10] -
 		src->m[12] * src->m[2] * src->m[9];
-
-	tmp.m[2] = src->m[1]  * src->m[6] * src->m[15] -
-		src->m[1]  * src->m[7] * src->m[14] -
-		src->m[5]  * src->m[2] * src->m[15] +
-		src->m[5]  * src->m[3] * src->m[14] +
+	
+	tmp.m[2] = src->m[1] * src->m[6] * src->m[15] -
+		src->m[1] * src->m[7] * src->m[14] -
+		src->m[5] * src->m[2] * src->m[15] +
+		src->m[5] * src->m[3] * src->m[14] +
 		src->m[13] * src->m[2] * src->m[7] -
 		src->m[13] * src->m[3] * src->m[6];
-
-	tmp.m[6] = -src->m[0]  * src->m[6] * src->m[15] +
-		src->m[0]  * src->m[7] * src->m[14] +
-		src->m[4]  * src->m[2] * src->m[15] -
-		src->m[4]  * src->m[3] * src->m[14] -
+	
+	tmp.m[6] = -src->m[0] * src->m[6] * src->m[15] +
+		src->m[0] * src->m[7] * src->m[14] +
+		src->m[4] * src->m[2] * src->m[15] -
+		src->m[4] * src->m[3] * src->m[14] -
 		src->m[12] * src->m[2] * src->m[7] +
 		src->m[12] * src->m[3] * src->m[6];
-
-	tmp.m[10] = src->m[0]  * src->m[5] * src->m[15] -
-		src->m[0]  * src->m[7] * src->m[13] -
-		src->m[4]  * src->m[1] * src->m[15] +
-		src->m[4]  * src->m[3] * src->m[13] +
+	
+	tmp.m[10] = src->m[0] * src->m[5] * src->m[15] -
+		src->m[0] * src->m[7] * src->m[13] -
+		src->m[4] * src->m[1] * src->m[15] +
+		src->m[4] * src->m[3] * src->m[13] +
 		src->m[12] * src->m[1] * src->m[7] -
 		src->m[12] * src->m[3] * src->m[5];
-
-	tmp.m[14] = -src->m[0]  * src->m[5] * src->m[14] +
-		src->m[0]  * src->m[6] * src->m[13] +
-		src->m[4]  * src->m[1] * src->m[14] -
-		src->m[4]  * src->m[2] * src->m[13] -
+	
+	tmp.m[14] = -src->m[0] * src->m[5] * src->m[14] +
+		src->m[0] * src->m[6] * src->m[13] +
+		src->m[4] * src->m[1] * src->m[14] -
+		src->m[4] * src->m[2] * src->m[13] -
 		src->m[12] * src->m[1] * src->m[6] +
 		src->m[12] * src->m[2] * src->m[5];
-
+	
 	tmp.m[3] = -src->m[1] * src->m[6] * src->m[11] +
 		src->m[1] * src->m[7] * src->m[10] +
 		src->m[5] * src->m[2] * src->m[11] -
 		src->m[5] * src->m[3] * src->m[10] -
 		src->m[9] * src->m[2] * src->m[7] +
 		src->m[9] * src->m[3] * src->m[6];
-
+	
 	tmp.m[7] = src->m[0] * src->m[6] * src->m[11] -
 		src->m[0] * src->m[7] * src->m[10] -
 		src->m[4] * src->m[2] * src->m[11] +
 		src->m[4] * src->m[3] * src->m[10] +
 		src->m[8] * src->m[2] * src->m[7] -
 		src->m[8] * src->m[3] * src->m[6];
-
+	
 	tmp.m[11] = -src->m[0] * src->m[5] * src->m[11] +
 		src->m[0] * src->m[7] * src->m[9] +
 		src->m[4] * src->m[1] * src->m[11] -
 		src->m[4] * src->m[3] * src->m[9] -
 		src->m[8] * src->m[1] * src->m[7] +
 		src->m[8] * src->m[3] * src->m[5];
-
+	
 	tmp.m[15] = src->m[0] * src->m[5] * src->m[10] -
 		src->m[0] * src->m[6] * src->m[9] -
 		src->m[4] * src->m[1] * src->m[10] +
 		src->m[4] * src->m[2] * src->m[9] +
 		src->m[8] * src->m[1] * src->m[6] -
 		src->m[8] * src->m[2] * src->m[5];
-
+	
 	det = src->m[0] *
 		tmp.m[0] + src->m[1] *
 		tmp.m[4] + src->m[2] *
 		tmp.m[8] + src->m[3] *
 		tmp.m[12];
-
+	
 	if (det == 0)
 		return NULL;
-
+	
 	det = 1.f / det;
-
+	
 	for (i = 0; i < 16; i++)
 		dst->m[i] = tmp.m[i] * det;
-
+	
 	return dst;
 }
 
@@ -385,19 +394,20 @@ m4_rot_z(struct mat4 *dst, const float radians)
 }
 
 static inline struct mat4 *
-m4_rot_quat(struct mat4 *dst, const struct quat *pQ)
+m4_rot_quat(struct mat4 *dst, const struct quat *q)
 {
-	float xx = pQ->x * pQ->x;
-	float xy = pQ->x * pQ->y;
-	float xz = pQ->x * pQ->z;
-	float xw = pQ->x * pQ->w;
+	// TODO: vectorize
+	float xx = q->x * q->x;
+	float xy = q->x * q->y;
+	float xz = q->x * q->z;
+	float xw = q->x * q->w;
 	
-	float yy = pQ->y * pQ->y;
-	float yz = pQ->y * pQ->z;
-	float yw = pQ->y * pQ->w;
+	float yy = q->y * q->y;
+	float yz = q->y * q->z;
+	float yw = q->y * q->w;
 	
-	float zz = pQ->z * pQ->z;
-	float zw = pQ->z * pQ->w;
+	float zz = q->z * q->z;
+	float zw = q->z * q->w;
 
 	dst->m[0] = 1.f - 2.f * (yy + zz);
 	dst->m[1] = 2.f * (xy + zw);
@@ -564,15 +574,16 @@ m4_perspective(struct mat4 *dst, float fov_y, float aspect, float near, float fa
 	const float rad = 0.5f * deg_to_rad(fov_y / 2.f);
 	const float h = cosf(rad) / sinf(rad);
 	const float w = h / aspect;
-
+	
 	memset(dst, 0x0, sizeof(*dst));
-
+	
 	dst->r[0][0] = w;
 	dst->r[1][1] = h;
 	dst->r[2][2] = far / (near - far);
 	dst->r[2][3] = -1.0f;
 	dst->r[3][2] = -(far * near) / (far - near);
-
+	dst->r[3][3] = 1.f;
+	
 	return dst;
 }
 
@@ -582,63 +593,68 @@ m4_perspective_nd(struct mat4 *dst, float fov_y, float aspect, float near, float
 	const float rad = 0.5f * deg_to_rad(fov_y / 2.f);
 	const float h = cosf(rad) / sinf(rad);
 	const float w = h / aspect;
-
+	
 	memset(dst, 0x0, sizeof(*dst));
-
+	
 	dst->r[0][0] = w;
 	dst->r[1][1] = h;
-	dst->r[3][2] = -(far * near) / (far - near);
+	dst->r[2][2] = -(far * near) / (far - near);
 	dst->r[2][3] = -1.0f;
 	dst->r[3][2] = -(2.f * far * near) / (far - near);
-
+	dst->r[3][3] = 1.f;
+	
 	return dst;
 }
+
 static inline struct mat4 *
 m4_infinite_perspective_rz(struct mat4 *dst, float fov_y, float aspect, float near)
 {
-	memset(dst, 0x0, sizeof(*dst));
-
 	const float f = 1.f / tanf(deg_to_rad(fov_y) / 2.f);
-
-	dst->m[0] = f / aspect;
-	dst->m[5] = f;
-	dst->m[11] = -1.f;
-	dst->m[14] = near;
-
+	
+	memset(dst, 0x0, sizeof(*dst));
+	
+	dst->r[0][0] = f / aspect;
+	dst->r[1][1] = f;
+	dst->r[2][2] = 1.f;
+	dst->r[2][3] = -1.f;
+	dst->r[3][2] = near;
+	dst->r[3][3] = 1.f;
+	
 	return dst;
 }
 
 static inline struct mat4 *
 m4_ortho(struct mat4 *dst, float left, float right, float bottom, float top, float z_near, float z_far)
 {
-	m4_ident(dst);
-
+	memset(dst, 0x0, sizeof(*dst));
+	
 	dst->r[0][0] = 2.f / (right - left);
 	dst->r[1][1] = 2.f / (top - bottom);
 	dst->r[2][2] = 1.f / (z_far - z_near);
 	dst->r[3][0] = -((right + left) / (right - left));
 	dst->r[3][1] = -((top + bottom) / (top - bottom));
 	dst->r[3][2] = -dst->r[2][2] * z_near;
-
+	dst->r[3][3] = 1.f;
+	
 	return dst;
 }
 
 static inline struct mat4 *
 m4_ortho_nd(struct mat4 *dst, float left, float right, float bottom, float top, float z_near, float z_far)
 {
-	m4_ident(dst);
-
+	memset(dst, 0x0, sizeof(*dst));
+	
 	dst->r[0][0] = 2.f / (right - left);
 	dst->r[1][1] = 2.f / (top - bottom);
 	dst->r[2][2] = -2.f / (z_far - z_near);
 	dst->r[3][0] = -((right + left) / (right - left));
 	dst->r[3][1] = -((top + bottom) / (top - bottom));
 	dst->r[3][2] = -((z_far + z_near) / (z_far - z_near));
-
+	dst->r[3][3] = 1.f;
+	
 	return dst;
 }
 
 #endif
 
 #endif /* _NE_MATH_NEON_MAT4_H_ */
-

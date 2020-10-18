@@ -21,7 +21,7 @@
 extern "C" {
 #endif
 
-extern struct Scene *Scn_ActiveScene;
+ENGINE_API extern struct Scene *Scn_ActiveScene;
 
 bool E_RegisterSystem(const wchar_t *name, const wchar_t *group, const wchar_t **comp, size_t num_comp, ECSysExecProc proc, int32_t priority);
 bool E_RegisterSystemId(const wchar_t *name, const wchar_t *group, const CompTypeId *comp, size_t num_comp, ECSysExecProc proc, int32_t priority);

@@ -57,14 +57,14 @@ _checkExtension(const char *extension)
 		static GLint numExtensions = 0;
 
 		if (!GetStringi) {
-			GetStringi = (PFNGLGETSTRINGIPROC)glXGetProcAddress("glGetStringi");
-			((PFNGLGETINTEGERVPROC)glXGetProcAddress("glGetIntegerv"))(GL_NUM_EXTENSIONS, &numExtensions);
+			GetStringi = (PFNGLGETSTRINGIPROC)glXGetProcAddress((const GLubyte *)"glGetStringi");
+			((PFNGLGETINTEGERVPROC)glXGetProcAddress((const GLubyte *)"glGetIntegerv"))(GL_NUM_EXTENSIONS, &numExtensions);
 		}
 
 		len = strlen(extension);
 
 		for (i = 0; i < numExtensions; ++i)
-			if (!strncmp(GetStringi(GL_EXTENSIONS, i), extension, len))
+			if (!strncmp((const char *)GetStringi(GL_EXTENSIONS, i), extension, len))
 				return true;
 
 		return false;
@@ -72,7 +72,7 @@ _checkExtension(const char *extension)
 		static const char *ext = NULL;
 
 		if (!ext)
-			ext = ((PFNGLGETSTRINGPROC)glXGetProcAddress("glGetString"))(GL_EXTENSIONS);
+			ext = (const char *)((PFNGLGETSTRINGPROC)glXGetProcAddress((const GLubyte *)"glGetString"))(GL_EXTENSIONS);
 
 		return strstr(ext, extension);
 	}
@@ -95,7 +95,7 @@ bool
 GL_InitDevice(void)
 {
 	GLXFBConfig *fbc = NULL;
-	int glXMajor, glXMinor, fbCount, bestFbc, worstFbc, i;
+	int glXMajor, glXMinor, fbCount;
 	PFNGLXCHOOSEFBCONFIGPROC glXChooseFBConfig = NULL;
 	PFNGLXGETVISUALFROMFBCONFIGPROC glXGetVisualFromFBConfig = NULL;
 	PFNGLXGETFBCONFIGATTRIBPROC glXGetFBConfigAttrib = NULL;
@@ -109,7 +109,7 @@ GL_InitDevice(void)
 	glXChooseFBConfig = (PFNGLXCHOOSEFBCONFIGPROC)glXGetProcAddress((const GLubyte*)"glXChooseFBConfig");
 	glXGetVisualFromFBConfig = (PFNGLXGETVISUALFROMFBCONFIGPROC)glXGetProcAddress((const GLubyte*)"glXGetVisualFromFBConfig");
 	glXGetFBConfigAttrib = (PFNGLXGETFBCONFIGATTRIBPROC)glXGetProcAddress((const GLubyte*)"glXGetFBConfigAttrib");
-	glXCreateContextAttribsARB = (PFNGLXCREATECONTEXTATTRIBSARBPROC)glXGetProcAddress("glXCreateContextAttribsARB");
+	glXCreateContextAttribsARB = (PFNGLXCREATECONTEXTATTRIBSARBPROC)glXGetProcAddress((const GLubyte *)"glXCreateContextAttribsARB");
 
 	if (!glXChooseFBConfig || !glXGetVisualFromFBConfig || !glXGetFBConfigAttrib || !glXCreateContextAttribsARB) {
 		//Platform::MessageBox("Fatal Error", "Unable to load required GLX functions", MessageBoxButtons::OK, MessageBoxIcon::Error);
@@ -136,7 +136,8 @@ GL_InitDevice(void)
 	}
 
 	XSync(X11_Display, False);
-	Re_Device.loadLock = Sys_InitAtomicLock();
+	Re_Device.loadLock = Sys_AlignedAlloc(sizeof(*Re_Device.loadLock), 16);
+	Sys_InitAtomicLock(Re_Device.loadLock);
 
 	if (!glXMakeCurrent(X11_Display, (GLXDrawable)E_Screen, (GLXContext)Re_Device.glContext)) {
 		_LogError(L"Failed to activate context");
@@ -144,10 +145,10 @@ GL_InitDevice(void)
 		return false;
 	}
 
-	((PFNGLGETINTEGERVPROC)glXGetProcAddress("glGetIntegerv"))(GL_MAJOR_VERSION, &Re_Device.verMajor);
-	((PFNGLGETINTEGERVPROC)glXGetProcAddress("glGetIntegerv"))(GL_MINOR_VERSION, &Re_Device.verMinor);
+	((PFNGLGETINTEGERVPROC)glXGetProcAddress((const GLubyte *)"glGetIntegerv"))(GL_MAJOR_VERSION, &Re_Device.verMajor);
+	((PFNGLGETINTEGERVPROC)glXGetProcAddress((const GLubyte *)"glGetIntegerv"))(GL_MINOR_VERSION, &Re_Device.verMinor);
 
-	_glXSwapIntervalEXT = (PFNGLXSWAPINTERVALEXTPROC)glXGetProcAddress("glXSwapIntervalEXT");
+	_glXSwapIntervalEXT = (PFNGLXSWAPINTERVALEXTPROC)glXGetProcAddress((const GLubyte *)"glXSwapIntervalEXT");
 
 	return true;
 }
@@ -165,12 +166,18 @@ GL_SwapInterval(int interval)
 		_glXSwapIntervalEXT(X11_Display, (GLXDrawable)E_Screen, interval);
 }
 
+void
+GL_ScreenResized(void)
+{
+	// do nothing
+}
+
 void *
 GL_InitLoadContext(void)
 {
 	void *ctx = NULL;
 	PFNGLXCREATECONTEXTATTRIBSARBPROC glXCreateContextAttribsARB = NULL;
-	glXCreateContextAttribsARB = (PFNGLXCREATECONTEXTATTRIBSARBPROC)glXGetProcAddress("glXCreateContextAttribsARB");
+	glXCreateContextAttribsARB = (PFNGLXCREATECONTEXTATTRIBSARBPROC)glXGetProcAddress((const GLubyte *)"glXCreateContextAttribsARB");
 	if (!glXCreateContextAttribsARB)
 		return NULL;
 
@@ -193,12 +200,11 @@ GL_TermLoadContext(void *ctx)
 	glXDestroyContext(X11_Display, (GLXContext)ctx);
 }
 
-
 void
 GL_TermDevice(void)
 {
 	if (Re_Device.loadLock)
-		Sys_TermAtomicLock(Re_Device.loadLock);
+		Sys_AlignedFree(Re_Device.loadLock);
 
 	glXDestroyContext(X11_Display, (GLXContext)Re_Device.glContext);
 }

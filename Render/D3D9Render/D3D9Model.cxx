@@ -3,14 +3,12 @@
 
 #include "D3D9Render.h"
 
-const size_t Re_ModelRenderDataSize = sizeof(struct ModelRenderData);
-
 #ifdef _XBOX
 #	define D3DLOCK_DISCARD	0
 #endif
 
 bool
-Re_InitModel(const char *name, struct Model *m)
+D3D9_InitModel(const char *name, struct Model *m)
 {
 	struct ModelRenderData *mrd = (struct ModelRenderData *)&m->renderDataStart;
 
@@ -34,7 +32,7 @@ Re_InitModel(const char *name, struct Model *m)
 }
 
 void
-Re_TermModel(struct Model *m)
+D3D9_TermModel(struct Model *m)
 {
 	struct ModelRenderData *mrd = (struct ModelRenderData *)&m->renderDataStart;
 	

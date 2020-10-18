@@ -58,11 +58,11 @@ App_InitApplication(int argc, char *argv[])
 {
 	const wchar_t *comp[] = { TRANSFORM_COMP, L"PlayerMovement" };
 
-	E_RegisterComponent(L"PlayerMovement", sizeof(struct PlayerMovement), (CompInitProc)App_InitPlayerMovement, (CompTermProc)App_TermPlayerMovement);
+	E_RegisterComponent(L"PlayerMovement", sizeof(struct PlayerMovement), 1, (CompInitProc)App_InitPlayerMovement, (CompTermProc)App_TermPlayerMovement);
 	E_RegisterSystem(L"App_PlayerMovement", ECSYS_GROUP_LOGIC, comp, _countof(comp), (ECSysExecProc)App_PlayerMovement, 0);
 
 	comp[0] = UI_CONTEXT_COMP; comp[1] = L"Statistics";
-	E_RegisterComponent(L"Statistics", sizeof(struct Statistics), (CompInitProc)App_InitStatistics, (CompTermProc)App_TermStatistics);
+	E_RegisterComponent(L"Statistics", sizeof(struct Statistics), 1, (CompInitProc)App_InitStatistics, (CompTermProc)App_TermStatistics);
 	E_RegisterSystem(L"App_DrawStatistics", ECSYS_GROUP_LOGIC, comp, _countof(comp), (ECSysExecProc)App_DrawStatistics, 0);
 
 	_sceneLoadedEvt = E_RegisterHandler(EVT_SCENE_LOADED, App_SceneLoaded, NULL);
@@ -116,7 +116,7 @@ App_PlayerMovement(void **comp, void *args)
 
 	v3_copy(&raxis, &xform->right);
 	xform_rotate(xform, (In_Axis(mvmt->rotateVertical) * -1.f) * rot, &raxis);
-
+	
 	xform_move_forward(xform, In_Axis(mvmt->moveForward) * xlate);
 	xform_move_right(xform, In_Axis(mvmt->moveRight) * xlate);
 	xform_move_up(xform, In_Axis(mvmt->moveUp) * -xlate);

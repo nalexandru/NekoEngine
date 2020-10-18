@@ -12,8 +12,8 @@
 static Array _entity_types;
 
 static int _TypeCmp(const void *, const void *);
-static bool _AddComponent(struct Scene *s, struct Entity *, CompTypeId, CompHandle);
-static bool _CreateComponent(struct Scene *s, struct Entity *ent, CompTypeId type, const void **args);
+static inline bool _AddComponent(struct Scene *s, struct Entity *, CompTypeId, CompHandle);
+static inline bool _CreateComponent(struct Scene *s, struct Entity *ent, CompTypeId type, const void **args);
 
 EntityHandle
 E_CreateEntityS(struct Scene *s, const wchar_t *typeName)
@@ -258,7 +258,7 @@ _TypeCmp(const void *item, const void *data)
 	return !(((struct EntityType *)item)->hash == *((uint64_t *)data));
 }
 
-static inline bool
+bool
 _AddComponent(struct Scene *s, struct Entity *ent, CompTypeId type, CompHandle handle)
 {
 	uint8_t i = 0;
@@ -276,7 +276,7 @@ _AddComponent(struct Scene *s, struct Entity *ent, CompTypeId type, CompHandle h
 	return true;
 }
 
-static inline bool
+bool
 _CreateComponent(struct Scene *s, struct Entity *ent, CompTypeId type, const void **args)
 {
 	CompHandle handle = E_CreateComponentIdS(s, type, ent, args);

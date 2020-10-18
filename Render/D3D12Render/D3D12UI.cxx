@@ -109,7 +109,7 @@ D3D12_InitUI(void)
 			{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 16, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 		};
 
-		struct Shader *shader = (struct Shader *)Re_GetShader(Rt_HashStringW(L"UI"));
+		struct Shader *shader = (struct Shader *)Re.GetShader(Rt_HashStringW(L"UI"));
 
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC psDesc = {};
 		psDesc.InputLayout = { inputDesc, _countof(inputDesc) };

@@ -10,13 +10,11 @@
 
 #define VKRMOD	L"VulkanRender"
 
-struct RenderInfo Re_RenderInfo = 
-{
-	{ L"Vulkan" },
-	{ 0x0 },
-	false
-};
-struct RenderFeatures Re_Features = { false, false, false };
+#if defined(_WIN32)
+#	define EXPORT	__declspec(dllexport)
+#else
+#	define EXPORT
+#endif
 
 struct RenderDevice Re_Device = { 0 };
 struct RenderWorker Re_MainThreadWorker = { 0 };
@@ -49,12 +47,44 @@ const char *_validationLayer = "VK_LAYER_KHRONOS_validation";
 // Defined in the platform file
 extern const char *__VK_PlatformSurfaceExtension;
 
+static bool _Init(void);
+static void _Term(void);
+static void _WaitIdle(void);
+static void _ScreenResized(void);
+static void _RenderFrame(void);
 void _InitWorker(int worker, struct RenderWorker *w);
 void _ResetWorker(struct RenderWorker *w);
 void _TermWorker(struct RenderWorker *w);
 
+EXPORT uint32_t Re_ApiVersion = RE_API_VERSION;
+EXPORT bool
+Re_InitLibrary(void)
+{
+	memset(&Re, 0x0, sizeof(Re));
+
+	Re.Init = _Init;
+	Re.Term = _Term;
+	Re.WaitIdle = _WaitIdle;
+	Re.ScreenResized = _ScreenResized;
+	Re.RenderFrame = _RenderFrame;
+	Re.InitScene = VK_InitScene;
+	Re.TermScene = VK_TermScene;
+	Re.GetShader = VK_GetShader;
+	Re.InitTexture = VK_InitTexture;
+	Re.UpdateTexture = VK_UpdateTexture;
+	Re.TermTexture = VK_TermTexture;
+	Re.InitModel = VK_InitModel;
+	Re.TermModel = VK_TermModel;
+
+	Re.sceneRenderDataSize = sizeof(struct SceneRenderData);
+	Re.modelRenderDataSize = sizeof(struct ModelRenderData);
+	Re.textureRenderDataSize = sizeof(struct TextureRenderData);
+
+	return true;
+}
+
 bool
-Re_Init(void)
+_Init(void)
 {
 	uint32_t apiVersion;
 
@@ -115,8 +145,8 @@ Re_Init(void)
 		return false;
 
 	// If these extensions are not present, InitDevice will fail
-	Re_Features.rayTracing = true;
-	Re_Features.meshShading = true;
+	Re.features.rayTracing = true;
+	Re.features.meshShading = true;
 
 	if (!VK_InitTransientHeap())
 		return false;
@@ -153,19 +183,19 @@ Re_Init(void)
 }
 
 void
-Re_WaitIdle(void)
+_WaitIdle(void)
 {
 	vkDeviceWaitIdle(Re_Device.dev);
 }
 
 void
-Re_ScreenResized(void)
+_ScreenResized(void)
 {
 
 }
 
 void
-Re_RenderFrame(void)
+_RenderFrame(void)
 {
 	uint32_t imageId;
 	VkResult rc;
@@ -237,7 +267,7 @@ Re_RenderFrame(void)
 }
 
 void
-Re_Term(void)
+_Term(void)
 {
 	if (VK_Instance == VK_NULL_HANDLE)
 		return;
