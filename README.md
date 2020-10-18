@@ -2,40 +2,49 @@
 
 ## Description
 
-Cross-platform game engine with support for Windows 7+, Xbox One (UWP) & Linux.
+Cross-platform game engine.
+
+Supported platforms:
+* Windows 7 & newer
+* Xbox One UWP
+* Linux on x64_64 & arm64
+* Mac OS X 10.4 - 10.6. Newer versions should work too, however they aren't tested.
 
 Supported rendering APIs:
 * Direct3D 12 with DXR
 * Direct3D 9
-* OpenGL 4.5+
+* OpenGL 1.5 - 4.6
 
 Supported audio APIs:
 * XAudio2
 * OpenAL
 
-Mac OS X & Vulkan support in-progress.
+Vulkan support in-progress.
 
 This repository is a mirror which is not frequently updated.
 
-## Howto
+## Build instructions
 
-### Prerequisites
+### Windows
+
+#### Prerequisites
 * Visual Studio 2019
 * DirectX Shader Compiler from https://github.com/Microsoft/DirectXShaderCompiler. The version included with the Windows 10 SDK (version 19041 as of this writing) doesn't define __DXC_VERSION_RELEASE and will result in a failed build while compiling the shaders.
 * (Optional) Vulkan driver with support for VK_KHR_ray_tracing
 * (Optional) FreeType for building the FontGen tool
 
-### Build instructions
-
-#### Windows
-
+#### Build
 1. Clone the repository
 2. Clone the data repository found at https://github.com/nalexandru/NekoEngineData in SOURCE_DIR\bin\Data
 3. Build NekoEngine.sln
 
-#### Linux
+### Linux
 
-1. Install prerequisites. On Debian based systems you need to install the following packages:
+#### Prerequisites
+* gcc
+* cmake
+* X11 & OpenGL development files
+* On Debian based systems you need to install the following packages:
 	* gcc
 	* libx11-dev
 	* libopenal-dev
@@ -43,18 +52,31 @@ This repository is a mirror which is not frequently updated.
 	* libphysfs-dev
 	* libgl-dev
 	* cmake
-2. Clone the repository
+
+#### Build
+1. Clone the repository
 2. Clone the data repository found at https://github.com/nalexandru/NekoEngineData in SOURCE_DIR\bin\Data
 3. Build the project with CMake
+
+### Mac OS X
+
+#### Prerequisites
+* Xcode; The project is in 2.4-compatible format so that it will work on Mac OS X 10.4.
+
+#### Build
+1. Clone the repository
+2. Clone the data repository found at https://github.com/nalexandru/NekoEngineData in SOURCE_DIR\build\Data
+3. Build NekoEngine.xcodeproj
 
 ### Notes
 * The D3D12 renderer only supports DXR at the moment, so a GPU with HW ray tracing is required.
 * UWP support is experimental and will most likely not work. The Data directory must be copied to SOURCE_DIR\bin\<Configuration>\AppX because of the limitations imposed by the platform.
+* The Mac OS X implementation has been tested on 10.4 PowerPC and 10.6 Intel.
 
 ## 3rd Party libraries
 
 * PhysFS - https://icculus.org/physfs/
-* moonjit - https://github.com/moonjit/moonjit
+* Lua - https://www.lua.org/
 * cgltf - https://github.com/jkuhlmann/cgltf
 * Jsmn - https://github.com/zserge/jsmn
 * stb_image, stb_image_write, stb_vorbis - https://github.com/nothings/stb
