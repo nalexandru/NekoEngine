@@ -7,7 +7,7 @@ Cross-platform game engine.
 Supported platforms:
 * Windows 7 & newer
 * Xbox One UWP
-* Linux on x64_64 & arm64
+* Linux on x86_64 & arm64
 * Mac OS X 10.4 - 10.6. Newer versions should work too, however they aren't tested.
 
 Supported rendering APIs:
