@@ -65,7 +65,7 @@ This repository is a mirror which is not frequently updated.
 3. Build NekoEngine.xcodeproj
 
 ### Notes
-* On Windows the renderer may be selected with the Renderer.sModule option in Engine.ini. The options are: D3D12Render, D3D9Render & GLRender.
+* On Windows the renderer may be selected with the Renderer.sModule option in Engine.ini. The options are: D3D12Render & VKRender.
 * The D3D12 renderer only supports DXR at the moment, so a GPU with HW ray tracing is required.
 * UWP support is experimental and will most likely not work. The Data directory must be copied to SOURCE_DIR\bin\<Configuration>\AppX because of the limitations imposed by the platform.
 
