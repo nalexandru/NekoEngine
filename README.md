@@ -8,18 +8,16 @@ Supported platforms:
 * Windows 7 & newer
 * Xbox One UWP
 * Linux on x86_64 & arm64
-* Mac OS X 10.4 - 10.6. Newer versions should work too, however they aren't tested.
+* macOS 11.0 x86_64
 
 Supported rendering APIs:
 * Direct3D 12 with DXR
-* Direct3D 9
-* OpenGL 1.5 - 4.6
+* Vulkan (in-progress)
+* Metal (in-progress)
 
 Supported audio APIs:
 * XAudio2
 * OpenAL
-
-Vulkan support in-progress.
 
 This repository is a mirror which is not frequently updated.
 
@@ -59,7 +57,7 @@ This repository is a mirror which is not frequently updated.
 ### Mac OS X
 
 #### Prerequisites
-* Xcode; The project is in 2.4-compatible format so that it will work on Mac OS X 10.4.
+* Xcode
 
 #### Build
 1. Clone the repository
@@ -70,7 +68,6 @@ This repository is a mirror which is not frequently updated.
 * On Windows the renderer may be selected with the Renderer.sModule option in Engine.ini. The options are: D3D12Render, D3D9Render & GLRender.
 * The D3D12 renderer only supports DXR at the moment, so a GPU with HW ray tracing is required.
 * UWP support is experimental and will most likely not work. The Data directory must be copied to SOURCE_DIR\bin\<Configuration>\AppX because of the limitations imposed by the platform.
-* The Mac OS X implementation has been tested on 10.4 PowerPC and 10.6 Intel.
 
 ## 3rd Party libraries
 
