@@ -15,7 +15,7 @@ Scn_InitScriptHost(struct ScriptHost *s, const void **args)
 	bool rc = true;
 	const char *file = NULL, *src = NULL;
 
-	for (args; *args; ++args) {
+	for (; *args; ++args) {
 		size_t len;
 		const char *arg;
 		

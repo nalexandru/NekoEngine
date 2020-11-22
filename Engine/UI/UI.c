@@ -27,7 +27,7 @@ UI_InitContext(struct UIContext *ctx, const void **args)
 {
 	uint32_t vertexCount = 64, indexCount = 100, drawCallCount = 10;
 
-	for (args; *args; ++args) {
+	for (; *args; ++args) {
 		const char *arg = *args;
 		size_t len = strlen(arg);
 

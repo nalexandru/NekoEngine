@@ -82,7 +82,7 @@ App_InitPlayerMovement(struct PlayerMovement *comp, const void **args)
 	comp->movementSpeed = 100.f;
 	comp->rotationSpeed = 50.f;
 
-	for (args; *args; ++args) {
+	for (; *args; ++args) {
 		const char *arg = (const char *)*args;
 		size_t len = strlen(arg);
 

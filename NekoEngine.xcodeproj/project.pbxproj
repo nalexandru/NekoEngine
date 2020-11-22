@@ -3,19 +3,15 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 42;
+	objectVersion = 45;
 	objects = {
 
 /* Begin PBXBuildFile section */
 		8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
 		FA3500722521DD1E00CE048F /* Main.m in Sources */ = {isa = PBXBuildFile; fileRef = FA3500712521DD1E00CE048F /* Main.m */; };
-		FA6BDD912522C17300806A2D /* GLModel.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDD8A2522C17300806A2D /* GLModel.c */; };
-		FA6BDD922522C17300806A2D /* GLRender.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDD8B2522C17300806A2D /* GLRender.c */; };
-		FA6BDD932522C17300806A2D /* GLScene.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDD8D2522C17300806A2D /* GLScene.c */; };
-		FA6BDD942522C17300806A2D /* GLShader.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDD8E2522C17300806A2D /* GLShader.c */; };
-		FA6BDD952522C17300806A2D /* GLTexture.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDD8F2522C17300806A2D /* GLTexture.c */; };
-		FA6BDD962522C17300806A2D /* GLUI.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDD902522C17300806A2D /* GLUI.c */; };
-		FA6BDDAE2522C31700806A2D /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FA6BDDAD2522C31700806A2D /* OpenGL.framework */; };
+		FA59C4492569F8240083AA03 /* OALClip.c in Sources */ = {isa = PBXBuildFile; fileRef = FA59C4462569F8240083AA03 /* OALClip.c */; };
+		FA59C44A2569F8240083AA03 /* OALSource.c in Sources */ = {isa = PBXBuildFile; fileRef = FA59C4472569F8240083AA03 /* OALSource.c */; };
+		FA59C44B2569F8240083AA03 /* OALSound.c in Sources */ = {isa = PBXBuildFile; fileRef = FA59C4482569F8240083AA03 /* OALSound.c */; };
 		FA6BDDB22522C32900806A2D /* OpenAL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FA6BDDB12522C32900806A2D /* OpenAL.framework */; };
 		FA6BDE7C2523382100806A2D /* lapi.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE412523382100806A2D /* lapi.c */; };
 		FA6BDE7D2523382100806A2D /* lauxlib.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE432523382100806A2D /* lauxlib.c */; };
@@ -51,9 +47,7 @@
 		FA6BDE9B2523382100806A2D /* lzio.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE7A2523382100806A2D /* lzio.c */; };
 		FA6BDEFA252804E700806A2D /* Render.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDEF9252804E700806A2D /* Render.c */; };
 		FA6BDF042528054E00806A2D /* Claire.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDF032528054E00806A2D /* Claire.c */; };
-		FA7745DA252895F500FED53F /* glad.c in Sources */ = {isa = PBXBuildFile; fileRef = FA7745D8252895F400FED53F /* glad.c */; };
 		FA7745DD2528963200FED53F /* reallocarray.c in Sources */ = {isa = PBXBuildFile; fileRef = FA7745DC2528963200FED53F /* reallocarray.c */; };
-		FA7745E42528CFE500FED53F /* GLMacX.m in Sources */ = {isa = PBXBuildFile; fileRef = FA7745E32528CFE500FED53F /* GLMacX.m */; };
 		FA7D9F7B2528D5E300F51BA0 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FA7D9F7A2528D5E300F51BA0 /* IOKit.framework */; };
 		FA7D9F882528D6D400F51BA0 /* physfs_platform_posix.c in Sources */ = {isa = PBXBuildFile; fileRef = FA7D9F872528D6D400F51BA0 /* physfs_platform_posix.c */; };
 		FA80DCEC2522AFD200E05EE5 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = FA80DCEA2522AFD200E05EE5 /* InfoPlist.strings */; };
@@ -111,14 +105,19 @@
 		FAAF9C922522A81F00F7C24B /* physfs_unicode.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9C822522A81F00F7C24B /* physfs_unicode.c */; };
 		FAAF9C932522A81F00F7C24B /* physfs.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9C832522A81F00F7C24B /* physfs.c */; };
 		FAAF9C962522A89200F7C24B /* physfs_platform_apple.m in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9C942522A89200F7C24B /* physfs_platform_apple.m */; };
-		FAAF9CD62522AB3300F7C24B /* OALClip.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9CD22522AB3300F7C24B /* OALClip.c */; };
-		FAAF9CD72522AB3300F7C24B /* OALSound.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9CD32522AB3300F7C24B /* OALSound.c */; };
-		FAAF9CD82522AB3300F7C24B /* OALSource.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9CD52522AB3300F7C24B /* OALSource.c */; };
-		FAAF9CF22522AD1700F7C24B /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = FAAF9CF12522AD1700F7C24B /* Info.plist */; };
 		FAC4B4B0253BE2E30074EE3C /* Job.c in Sources */ = {isa = PBXBuildFile; fileRef = FAC4B4AF253BE2E30074EE3C /* Job.c */; };
 		FAC4B4B2253BE2F60074EE3C /* AtomicLock.c in Sources */ = {isa = PBXBuildFile; fileRef = FAC4B4B1253BE2F60074EE3C /* AtomicLock.c */; };
 		FAC4B4B5253BE3F40074EE3C /* Thread.m in Sources */ = {isa = PBXBuildFile; fileRef = FAC4B4B4253BE3F40074EE3C /* Thread.m */; };
+		FAD516662569DFB9008FCD04 /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FAD516652569DFB9008FCD04 /* GameController.framework */; };
 		FADD5C0D253D297900606B2A /* Memory.c in Sources */ = {isa = PBXBuildFile; fileRef = FADD5C0C253D297900606B2A /* Memory.c */; };
+		FAE5E1132569BE7D0091893B /* MTLUI.m in Sources */ = {isa = PBXBuildFile; fileRef = FAE5E10D2569BE7D0091893B /* MTLUI.m */; };
+		FAE5E1142569BE7D0091893B /* MTLScene.m in Sources */ = {isa = PBXBuildFile; fileRef = FAE5E10E2569BE7D0091893B /* MTLScene.m */; };
+		FAE5E1152569BE7D0091893B /* MTLModel.m in Sources */ = {isa = PBXBuildFile; fileRef = FAE5E10F2569BE7D0091893B /* MTLModel.m */; };
+		FAE5E1162569BE7D0091893B /* MTLTexture.m in Sources */ = {isa = PBXBuildFile; fileRef = FAE5E1102569BE7D0091893B /* MTLTexture.m */; };
+		FAE5E1172569BE7D0091893B /* MTLShader.m in Sources */ = {isa = PBXBuildFile; fileRef = FAE5E1112569BE7D0091893B /* MTLShader.m */; };
+		FAE5E1182569BE7D0091893B /* MTLRender.m in Sources */ = {isa = PBXBuildFile; fileRef = FAE5E1122569BE7D0091893B /* MTLRender.m */; };
+		FAE5E11F2569BFD60091893B /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FAE5E11E2569BFD60091893B /* Metal.framework */; };
+		FAE5E1212569BFDC0091893B /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FAE5E1202569BFDC0091893B /* QuartzCore.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -128,6 +127,10 @@
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
 		8D1107320486CEB800E47090 /* NekoEngine.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NekoEngine.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		FA3500712521DD1E00CE048F /* Main.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; name = Main.m; path = Platform/MacX/Main.m; sourceTree = "<group>"; };
+		FA59C4452569F8240083AA03 /* OALSound.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OALSound.h; path = Sound/OpenAL/OALSound.h; sourceTree = "<group>"; };
+		FA59C4462569F8240083AA03 /* OALClip.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = OALClip.c; path = Sound/OpenAL/OALClip.c; sourceTree = "<group>"; };
+		FA59C4472569F8240083AA03 /* OALSource.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = OALSource.c; path = Sound/OpenAL/OALSource.c; sourceTree = "<group>"; };
+		FA59C4482569F8240083AA03 /* OALSound.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = OALSound.c; path = Sound/OpenAL/OALSound.c; sourceTree = "<group>"; };
 		FA6BDD022522B75D00806A2D /* aabb2.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = aabb2.h; path = Include/Math/aabb2.h; sourceTree = "<group>"; };
 		FA6BDD032522B75D00806A2D /* aabb3.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = aabb3.h; path = Include/Math/aabb3.h; sourceTree = "<group>"; };
 		FA6BDD042522B75D00806A2D /* defs.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = defs.h; path = Include/Math/defs.h; sourceTree = "<group>"; };
@@ -141,8 +144,6 @@
 		FA6BDD0D2522B75D00806A2D /* vec2.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = vec2.h; path = Include/Math/vec2.h; sourceTree = "<group>"; };
 		FA6BDD0E2522B75D00806A2D /* vec3.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = vec3.h; path = Include/Math/vec3.h; sourceTree = "<group>"; };
 		FA6BDD0F2522B75D00806A2D /* vec4.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = vec4.h; path = Include/Math/vec4.h; sourceTree = "<group>"; };
-		FA6BDD102522B77600806A2D /* mat4_altivec.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = mat4_altivec.h; path = Include/Math/altivec/mat4_altivec.h; sourceTree = "<group>"; };
-		FA6BDD112522B77600806A2D /* vec4_altivec.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = vec4_altivec.h; path = Include/Math/altivec/vec4_altivec.h; sourceTree = "<group>"; };
 		FA6BDD122522B79200806A2D /* mat4_sse.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = mat4_sse.h; path = Include/Math/sse/mat4_sse.h; sourceTree = "<group>"; };
 		FA6BDD132522B79200806A2D /* vec4_sse.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = vec4_sse.h; path = Include/Math/sse/vec4_sse.h; sourceTree = "<group>"; };
 		FA6BDD142522B7A900806A2D /* Codes.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = Codes.h; path = Include/Input/Codes.h; sourceTree = "<group>"; };
@@ -192,13 +193,6 @@
 		FA6BDD402522B83E00806A2D /* Font.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = Font.h; path = Include/UI/Font.h; sourceTree = "<group>"; };
 		FA6BDD412522B83E00806A2D /* Text.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = Text.h; path = Include/UI/Text.h; sourceTree = "<group>"; };
 		FA6BDD422522B83E00806A2D /* UI.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = UI.h; path = Include/UI/UI.h; sourceTree = "<group>"; };
-		FA6BDD8A2522C17300806A2D /* GLModel.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = GLModel.c; path = Render/GLRender/GLModel.c; sourceTree = "<group>"; };
-		FA6BDD8B2522C17300806A2D /* GLRender.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = GLRender.c; path = Render/GLRender/GLRender.c; sourceTree = "<group>"; };
-		FA6BDD8C2522C17300806A2D /* GLRender.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = GLRender.h; path = Render/GLRender/GLRender.h; sourceTree = "<group>"; };
-		FA6BDD8D2522C17300806A2D /* GLScene.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = GLScene.c; path = Render/GLRender/GLScene.c; sourceTree = "<group>"; };
-		FA6BDD8E2522C17300806A2D /* GLShader.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = GLShader.c; path = Render/GLRender/GLShader.c; sourceTree = "<group>"; };
-		FA6BDD8F2522C17300806A2D /* GLTexture.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = GLTexture.c; path = Render/GLRender/GLTexture.c; sourceTree = "<group>"; };
-		FA6BDD902522C17300806A2D /* GLUI.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = GLUI.c; path = Render/GLRender/GLUI.c; sourceTree = "<group>"; };
 		FA6BDDAD2522C31700806A2D /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = /System/Library/Frameworks/OpenGL.framework; sourceTree = "<absolute>"; };
 		FA6BDDB12522C32900806A2D /* OpenAL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenAL.framework; path = /System/Library/Frameworks/OpenAL.framework; sourceTree = "<absolute>"; };
 		FA6BDE412523382100806A2D /* lapi.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = lapi.c; path = Deps/Lua/lapi.c; sourceTree = "<group>"; };
@@ -262,13 +256,9 @@
 		FA6BDE7B2523382100806A2D /* lzio.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = lzio.h; path = Deps/Lua/lzio.h; sourceTree = "<group>"; };
 		FA6BDEF9252804E700806A2D /* Render.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = Render.c; path = Engine/Render/Render.c; sourceTree = "<group>"; };
 		FA6BDF032528054E00806A2D /* Claire.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = Claire.c; path = Claire/Claire.c; sourceTree = "<group>"; };
-		FA7745D8252895F400FED53F /* glad.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = glad.c; path = Render/GLRender/glad.c; sourceTree = "<group>"; };
-		FA7745D9252895F400FED53F /* glad.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = glad.h; path = Render/GLRender/glad.h; sourceTree = "<group>"; };
 		FA7745DC2528963200FED53F /* reallocarray.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = reallocarray.c; path = Engine/System/Compat/reallocarray.c; sourceTree = "<group>"; };
-		FA7745E32528CFE500FED53F /* GLMacX.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; name = GLMacX.m; path = Render/GLRender/GLMacX.m; sourceTree = "<group>"; };
 		FA7D9F7A2528D5E300F51BA0 /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = /System/Library/Frameworks/IOKit.framework; sourceTree = "<absolute>"; };
 		FA7D9F872528D6D400F51BA0 /* physfs_platform_posix.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = physfs_platform_posix.c; path = Deps/PhysFS/physfs_platform_posix.c; sourceTree = "<group>"; };
-		FA80DCEB2522AFD200E05EE5 /* English */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.plist.strings; name = English; path = Platform/MacX/English.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		FAAF9A3F2521DE4800F7C24B /* Input.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; name = Input.m; path = Platform/MacX/Input.m; sourceTree = "<group>"; };
 		FAAF9A412521DE4800F7C24B /* MacXPlatform.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = MacXPlatform.h; path = Platform/MacX/MacXPlatform.h; sourceTree = "<group>"; };
 		FAAF9A432521DE4800F7C24B /* MacX.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; name = MacX.m; path = Platform/MacX/MacX.m; sourceTree = "<group>"; };
@@ -333,17 +323,28 @@
 		FAAF9C832522A81F00F7C24B /* physfs.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = physfs.c; path = Deps/PhysFS/physfs.c; sourceTree = "<group>"; };
 		FAAF9C842522A81F00F7C24B /* physfs.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = physfs.h; path = Deps/PhysFS/physfs.h; sourceTree = "<group>"; };
 		FAAF9C942522A89200F7C24B /* physfs_platform_apple.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; name = physfs_platform_apple.m; path = Deps/PhysFS/physfs_platform_apple.m; sourceTree = "<group>"; };
-		FAAF9CD22522AB3300F7C24B /* OALClip.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = OALClip.c; path = Sound/OALSound/OALClip.c; sourceTree = "<group>"; };
-		FAAF9CD32522AB3300F7C24B /* OALSound.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = OALSound.c; path = Sound/OALSound/OALSound.c; sourceTree = "<group>"; };
-		FAAF9CD42522AB3300F7C24B /* OALSound.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = OALSound.h; path = Sound/OALSound/OALSound.h; sourceTree = "<group>"; };
-		FAAF9CD52522AB3300F7C24B /* OALSource.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = OALSource.c; path = Sound/OALSound/OALSource.c; sourceTree = "<group>"; };
-		FAAF9CF12522AD1700F7C24B /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.xml; name = Info.plist; path = Platform/MacX/Info.plist; sourceTree = "<group>"; };
+		FAAF9CF12522AD1700F7C24B /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.plist.xml; name = Info.plist; path = Platform/MacX/Info.plist; sourceTree = "<group>"; };
 		FAC101A0252FF70000D830E9 /* sanity.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = sanity.h; path = Include/Math/sanity.h; sourceTree = "<group>"; };
 		FAC4B4AF253BE2E30074EE3C /* Job.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = Job.c; path = Engine/Engine/Job.c; sourceTree = "<group>"; };
 		FAC4B4B1253BE2F60074EE3C /* AtomicLock.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = AtomicLock.c; path = Engine/System/AtomicLock.c; sourceTree = "<group>"; };
 		FAC4B4B4253BE3F40074EE3C /* Thread.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; name = Thread.m; path = Platform/MacX/Thread.m; sourceTree = "<group>"; };
 		FAC4B4B8253BE4350074EE3C /* Thread.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = Thread.h; path = Include/System/Thread.h; sourceTree = "<group>"; };
+		FAD516652569DFB9008FCD04 /* GameController.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameController.framework; path = System/Library/Frameworks/GameController.framework; sourceTree = SDKROOT; };
 		FADD5C0C253D297900606B2A /* Memory.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = Memory.c; path = Engine/System/Memory.c; sourceTree = "<group>"; };
+		FAE5E10C2569BE7D0091893B /* MTLRender.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MTLRender.h; path = Render/Metal/MTLRender.h; sourceTree = "<group>"; };
+		FAE5E10D2569BE7D0091893B /* MTLUI.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = MTLUI.m; path = Render/Metal/MTLUI.m; sourceTree = "<group>"; };
+		FAE5E10E2569BE7D0091893B /* MTLScene.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = MTLScene.m; path = Render/Metal/MTLScene.m; sourceTree = "<group>"; };
+		FAE5E10F2569BE7D0091893B /* MTLModel.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = MTLModel.m; path = Render/Metal/MTLModel.m; sourceTree = "<group>"; };
+		FAE5E1102569BE7D0091893B /* MTLTexture.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = MTLTexture.m; path = Render/Metal/MTLTexture.m; sourceTree = "<group>"; };
+		FAE5E1112569BE7D0091893B /* MTLShader.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = MTLShader.m; path = Render/Metal/MTLShader.m; sourceTree = "<group>"; };
+		FAE5E1122569BE7D0091893B /* MTLRender.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = MTLRender.m; path = Render/Metal/MTLRender.m; sourceTree = "<group>"; };
+		FAE5E11B2569BE9D0091893B /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = Platform/MacX/en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		FAE5E11E2569BFD60091893B /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
+		FAE5E1202569BFDC0091893B /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
+		FAE5E1252569C3400091893B /* vec4_neon.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = vec4_neon.h; path = Include/Math/neon/vec4_neon.h; sourceTree = "<group>"; };
+		FAE5E1262569C3400091893B /* mat4_neon.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mat4_neon.h; path = Include/Math/neon/mat4_neon.h; sourceTree = "<group>"; };
+		FAE5E1272569C3550091893B /* debug.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = debug.h; path = Include/Math/debug.h; sourceTree = "<group>"; };
+		FAE5E1282569C3550091893B /* Math.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Math.h; path = Include/Math/Math.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -351,9 +352,11 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FAE5E1212569BFDC0091893B /* QuartzCore.framework in Frameworks */,
 				8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */,
-				FA6BDDAE2522C31700806A2D /* OpenGL.framework in Frameworks */,
+				FAD516662569DFB9008FCD04 /* GameController.framework in Frameworks */,
 				FA6BDDB22522C32900806A2D /* OpenAL.framework in Frameworks */,
+				FAE5E11F2569BFD60091893B /* Metal.framework in Frameworks */,
 				FA7D9F7B2528D5E300F51BA0 /* IOKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -431,6 +434,9 @@
 		29B97323FDCFA39411CA2CEA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				FAD516652569DFB9008FCD04 /* GameController.framework */,
+				FAE5E1202569BFDC0091893B /* QuartzCore.framework */,
+				FAE5E11E2569BFD60091893B /* Metal.framework */,
 				1058C7A0FEA54F0111CA2CBB /* Linked Frameworks */,
 				1058C7A2FEA54F0111CA2CBB /* Other Frameworks */,
 			);
@@ -562,8 +568,10 @@
 		FA6BDCFC2522B70200806A2D /* Math */ = {
 			isa = PBXGroup;
 			children = (
-				FA6BDD012522B73C00806A2D /* altivec */,
+				FAE5E1242569C32E0091893B /* neon */,
 				FA6BDD002522B73300806A2D /* sse */,
+				FAE5E1282569C3550091893B /* Math.h */,
+				FAE5E1272569C3550091893B /* debug.h */,
 				FA6BDD022522B75D00806A2D /* aabb2.h */,
 				FA6BDD032522B75D00806A2D /* aabb3.h */,
 				FA6BDD042522B75D00806A2D /* defs.h */,
@@ -629,15 +637,6 @@
 				FA6BDD132522B79200806A2D /* vec4_sse.h */,
 			);
 			name = sse;
-			sourceTree = "<group>";
-		};
-		FA6BDD012522B73C00806A2D /* altivec */ = {
-			isa = PBXGroup;
-			children = (
-				FA6BDD102522B77600806A2D /* mat4_altivec.h */,
-				FA6BDD112522B77600806A2D /* vec4_altivec.h */,
-			);
-			name = altivec;
 			sourceTree = "<group>";
 		};
 		FAAF9B542521F2AF00F7C24B /* Asset */ = {
@@ -861,10 +860,10 @@
 		FAAF9CD12522AB1800F7C24B /* Sound */ = {
 			isa = PBXGroup;
 			children = (
-				FAAF9CD22522AB3300F7C24B /* OALClip.c */,
-				FAAF9CD32522AB3300F7C24B /* OALSound.c */,
-				FAAF9CD42522AB3300F7C24B /* OALSound.h */,
-				FAAF9CD52522AB3300F7C24B /* OALSource.c */,
+				FA59C4462569F8240083AA03 /* OALClip.c */,
+				FA59C4482569F8240083AA03 /* OALSound.c */,
+				FA59C4452569F8240083AA03 /* OALSound.h */,
+				FA59C4472569F8240083AA03 /* OALSource.c */,
 			);
 			name = Sound;
 			sourceTree = "<group>";
@@ -872,18 +871,24 @@
 		FAAF9CEC2522AB8300F7C24B /* Render */ = {
 			isa = PBXGroup;
 			children = (
-				FA7745E32528CFE500FED53F /* GLMacX.m */,
-				FA7745D8252895F400FED53F /* glad.c */,
-				FA7745D9252895F400FED53F /* glad.h */,
-				FA6BDD8A2522C17300806A2D /* GLModel.c */,
-				FA6BDD8B2522C17300806A2D /* GLRender.c */,
-				FA6BDD8C2522C17300806A2D /* GLRender.h */,
-				FA6BDD8D2522C17300806A2D /* GLScene.c */,
-				FA6BDD8E2522C17300806A2D /* GLShader.c */,
-				FA6BDD8F2522C17300806A2D /* GLTexture.c */,
-				FA6BDD902522C17300806A2D /* GLUI.c */,
+				FAE5E10F2569BE7D0091893B /* MTLModel.m */,
+				FAE5E10C2569BE7D0091893B /* MTLRender.h */,
+				FAE5E1122569BE7D0091893B /* MTLRender.m */,
+				FAE5E10E2569BE7D0091893B /* MTLScene.m */,
+				FAE5E1112569BE7D0091893B /* MTLShader.m */,
+				FAE5E1102569BE7D0091893B /* MTLTexture.m */,
+				FAE5E10D2569BE7D0091893B /* MTLUI.m */,
 			);
 			name = Render;
+			sourceTree = "<group>";
+		};
+		FAE5E1242569C32E0091893B /* neon */ = {
+			isa = PBXGroup;
+			children = (
+				FAE5E1262569C3400091893B /* mat4_neon.h */,
+				FAE5E1252569C3400091893B /* vec4_neon.h */,
+			);
+			name = neon;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -912,14 +917,19 @@
 /* Begin PBXProject section */
 		29B97313FDCFA39411CA2CEA /* Project object */ = {
 			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 1220;
+			};
 			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "NekoEngine" */;
 			compatibilityVersion = "Xcode 2.4";
+			developmentRegion = en;
 			hasScannedForEncodings = 1;
 			knownRegions = (
-				English,
-				Japanese,
-				French,
-				German,
+				en,
+				fr,
+				ja,
+				de,
+				Base,
 			);
 			mainGroup = 29B97314FDCFA39411CA2CEA /* NekoEngine */;
 			projectDirPath = "";
@@ -935,7 +945,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				FAAF9CF22522AD1700F7C24B /* Info.plist in Resources */,
 				FA80DCEC2522AFD200E05EE5 /* InfoPlist.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -947,6 +956,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FA59C4492569F8240083AA03 /* OALClip.c in Sources */,
+				FAE5E1132569BE7D0091893B /* MTLUI.m in Sources */,
 				FA3500722521DD1E00CE048F /* Main.m in Sources */,
 				FAAF9A462521DE4800F7C24B /* Input.m in Sources */,
 				FAAF9A492521DE4800F7C24B /* MacX.m in Sources */,
@@ -990,27 +1001,24 @@
 				FAAF9C862522A81F00F7C24B /* physfs_archiver_dir.c in Sources */,
 				FAAF9C872522A81F00F7C24B /* physfs_archiver_grp.c in Sources */,
 				FAAF9C882522A81F00F7C24B /* physfs_archiver_hog.c in Sources */,
+				FAE5E1142569BE7D0091893B /* MTLScene.m in Sources */,
 				FAAF9C892522A81F00F7C24B /* physfs_archiver_iso9660.c in Sources */,
 				FAAF9C8A2522A81F00F7C24B /* physfs_archiver_mvl.c in Sources */,
 				FAAF9C8B2522A81F00F7C24B /* physfs_archiver_qpak.c in Sources */,
+				FAE5E1152569BE7D0091893B /* MTLModel.m in Sources */,
 				FAAF9C8C2522A81F00F7C24B /* physfs_archiver_slb.c in Sources */,
 				FAAF9C8D2522A81F00F7C24B /* physfs_archiver_unpacked.c in Sources */,
+				FAE5E1182569BE7D0091893B /* MTLRender.m in Sources */,
 				FAAF9C8E2522A81F00F7C24B /* physfs_archiver_vdf.c in Sources */,
 				FAAF9C8F2522A81F00F7C24B /* physfs_archiver_wad.c in Sources */,
 				FAAF9C902522A81F00F7C24B /* physfs_archiver_zip.c in Sources */,
+				FA59C44B2569F8240083AA03 /* OALSound.c in Sources */,
 				FAAF9C912522A81F00F7C24B /* physfs_byteorder.c in Sources */,
+				FAE5E1172569BE7D0091893B /* MTLShader.m in Sources */,
 				FAAF9C922522A81F00F7C24B /* physfs_unicode.c in Sources */,
 				FAAF9C932522A81F00F7C24B /* physfs.c in Sources */,
 				FAAF9C962522A89200F7C24B /* physfs_platform_apple.m in Sources */,
-				FAAF9CD62522AB3300F7C24B /* OALClip.c in Sources */,
-				FAAF9CD72522AB3300F7C24B /* OALSound.c in Sources */,
-				FAAF9CD82522AB3300F7C24B /* OALSource.c in Sources */,
-				FA6BDD912522C17300806A2D /* GLModel.c in Sources */,
-				FA6BDD922522C17300806A2D /* GLRender.c in Sources */,
-				FA6BDD932522C17300806A2D /* GLScene.c in Sources */,
-				FA6BDD942522C17300806A2D /* GLShader.c in Sources */,
-				FA6BDD952522C17300806A2D /* GLTexture.c in Sources */,
-				FA6BDD962522C17300806A2D /* GLUI.c in Sources */,
+				FA59C44A2569F8240083AA03 /* OALSource.c in Sources */,
 				FA6BDE7C2523382100806A2D /* lapi.c in Sources */,
 				FA6BDE7D2523382100806A2D /* lauxlib.c in Sources */,
 				FA6BDE7E2523382100806A2D /* lbaselib.c in Sources */,
@@ -1031,6 +1039,7 @@
 				FA6BDE8D2523382100806A2D /* loadlib.c in Sources */,
 				FA6BDE8E2523382100806A2D /* lobject.c in Sources */,
 				FA6BDE8F2523382100806A2D /* lopcodes.c in Sources */,
+				FAE5E1162569BE7D0091893B /* MTLTexture.m in Sources */,
 				FA6BDE902523382100806A2D /* loslib.c in Sources */,
 				FA6BDE912523382100806A2D /* lparser.c in Sources */,
 				FA6BDE922523382100806A2D /* lstate.c in Sources */,
@@ -1045,9 +1054,7 @@
 				FA6BDE9B2523382100806A2D /* lzio.c in Sources */,
 				FA6BDEFA252804E700806A2D /* Render.c in Sources */,
 				FA6BDF042528054E00806A2D /* Claire.c in Sources */,
-				FA7745DA252895F500FED53F /* glad.c in Sources */,
 				FA7745DD2528963200FED53F /* reallocarray.c in Sources */,
-				FA7745E42528CFE500FED53F /* GLMacX.m in Sources */,
 				FA7D9F882528D6D400F51BA0 /* physfs_platform_posix.c in Sources */,
 				FAC4B4B0253BE2E30074EE3C /* Job.c in Sources */,
 				FAC4B4B2253BE2F60074EE3C /* AtomicLock.c in Sources */,
@@ -1062,7 +1069,7 @@
 		FA80DCEA2522AFD200E05EE5 /* InfoPlist.strings */ = {
 			isa = PBXVariantGroup;
 			children = (
-				FA80DCEB2522AFD200E05EE5 /* English */,
+				FAE5E11B2569BE9D0091893B /* en */,
 			);
 			name = InfoPlist.strings;
 			sourceTree = "<group>";
@@ -1073,13 +1080,17 @@
 		C01FCF4B08A954540054247B /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CODE_SIGN_IDENTITY = "-";
 				COPY_PHASE_STRIP = NO;
 				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_ENABLE_FIX_AND_CONTINUE = YES;
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				INFOPLIST_FILE = Platform/MacX/Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
+				PRODUCT_BUNDLE_IDENTIFIER = xyz.nalexandru.NekoEngine;
 				PRODUCT_NAME = NekoEngine;
 				WRAPPER_EXTENSION = app;
 				ZERO_LINK = YES;
@@ -1089,14 +1100,15 @@
 		C01FCF4C08A954540054247B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = (
-					ppc,
-					i386,
-				);
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CODE_SIGN_IDENTITY = "-";
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_MODEL_TUNING = G5;
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				INFOPLIST_FILE = Platform/MacX/Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
+				PRODUCT_BUNDLE_IDENTIFIER = xyz.nalexandru.NekoEngine;
 				PRODUCT_NAME = NekoEngine;
 				WRAPPER_EXTENSION = app;
 			};
@@ -1105,20 +1117,22 @@
 		C01FCF4F08A954540054247B /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				CLANG_X86_VECTOR_INSTRUCTIONS = avx2;
 				COPY_PHASE_STRIP = NO;
+				ENABLE_TESTABILITY = YES;
 				GCC_ALTIVEC_EXTENSIONS = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_C_LANGUAGE_STANDARD = c11;
 				GCC_ENABLE_SSE3_EXTENSIONS = YES;
 				GCC_ENABLE_SUPPLEMENTAL_SSE3_INSTRUCTIONS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
-					WCSDUP_COMPAT,
 					LUA_USE_MACOSX,
 					_DEBUG,
 				);
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				GCC_USE_GCC3_PFE_SUPPORT = NO;
-				GCC_VERSION = 4.0;
+				GCC_VERSION = "";
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = (
@@ -1126,12 +1140,11 @@
 					Deps,
 					Deps/Lua,
 					Deps/PhysFS,
-					Render/GLRender/Include,
 				);
 				INFOPLIST_FILE = Platform/MacX/Info.plist;
-				MACOSX_DEPLOYMENT_TARGET = 10.4;
-				PREBINDING = NO;
-				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
 				STRIP_INSTALLED_PRODUCT = NO;
 				STRIP_STYLE = "non-global";
 				ZERO_LINK = NO;
@@ -1141,18 +1154,18 @@
 		C01FCF5008A954540054247B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				CLANG_X86_VECTOR_INSTRUCTIONS = avx2;
 				COPY_PHASE_STRIP = NO;
 				GCC_ALTIVEC_EXTENSIONS = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_C_LANGUAGE_STANDARD = c11;
 				GCC_ENABLE_SSE3_EXTENSIONS = YES;
 				GCC_ENABLE_SUPPLEMENTAL_SSE3_INSTRUCTIONS = YES;
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					WCSDUP_COMPAT,
-					LUA_USE_MACOSX,
-				);
+				GCC_OPTIMIZATION_LEVEL = fast;
+				GCC_PREPROCESSOR_DEFINITIONS = LUA_USE_MACOSX;
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				GCC_USE_GCC3_PFE_SUPPORT = NO;
-				GCC_VERSION = 4.0;
+				GCC_VERSION = "";
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = (
@@ -1160,12 +1173,10 @@
 					Deps,
 					Deps/Lua,
 					Deps/PhysFS,
-					Render/GLRender/Include,
 				);
 				INFOPLIST_FILE = Platform/MacX/Info.plist;
-				MACOSX_DEPLOYMENT_TARGET = 10.4;
-				PREBINDING = NO;
-				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				SDKROOT = macosx;
 				STRIP_INSTALLED_PRODUCT = NO;
 				STRIP_STYLE = "non-global";
 			};

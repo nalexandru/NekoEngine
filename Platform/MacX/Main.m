@@ -26,7 +26,7 @@ main(int argc, char *argv[])
 		[a addButtonWithTitle:@"OK"];
 		[a setMessageText:@"Failed to initialize engine. The program will" \
 			" now exit."];
-		[a setAlertStyle:NSCriticalAlertStyle];
+		[a setAlertStyle:NSAlertStyleCritical];
 		[a runModal];
 		[a release];
 		rc = -1;

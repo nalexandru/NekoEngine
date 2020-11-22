@@ -30,7 +30,7 @@ add_subdirectory(Engine)
 
 add_subdirectory(Platform/UNIX)
 
-add_subdirectory(Render/GLRender)
-add_subdirectory(Sound/OALSound)
+add_subdirectory(Render/Vulkan)
+add_subdirectory(Sound/OpenAL)
 
 add_subdirectory(Claire)

@@ -200,8 +200,7 @@ _ThreadProc(void *args)
 static void
 _DispatchWrapper(int worker, struct DispatchArgs *args)
 {
-	int i = 0;
-	for (i; i < args->count; ++i)
+	for (int i; i < args->count; ++i)
 		args->exec(worker, args->args ? args->args[i] : NULL);
 }
 

@@ -1,0 +1,140 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Source Files\Pass">
+      <UniqueIdentifier>{d2dbcdaf-b892-42a8-8ab5-8c96c9070d0b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\RenderPath">
+      <UniqueIdentifier>{7005c3a6-7e75-401b-87d7-0c8f4f3aa5b5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\RenderPath">
+      <UniqueIdentifier>{f695ba52-9d1d-46a9-af82-c2e4a3f896eb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders">
+      <UniqueIdentifier>{013a08d8-543a-4ef2-a3be-74d80418462b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\Metadata">
+      <UniqueIdentifier>{14713356-0a46-4568-80c7-700a360a7a61}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Pass\RayTracingPass.cxx">
+      <Filter>Source Files\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D12Scene.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D12Shader.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D12Staging.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D12Render.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D12Pipeline.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D12Model.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D12Device.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderPath\RtRenderPath.cxx">
+      <Filter>Source Files\RenderPath</Filter>
+    </ClCompile>
+    <ClCompile Include="ShaderBindingTable.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D12Texture.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TransientResources.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderPath\FwdPlusRenderPath.cxx">
+      <Filter>Source Files\RenderPath</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D12UI.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="D3D12Render.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Buffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Fence.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D12Downlevel.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="d3dx12.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderPath.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderPath\RtRenderPath.h">
+      <Filter>Header Files\RenderPath</Filter>
+    </ClInclude>
+    <ClInclude Include="ShaderBindingTable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Shaders\Resources.hlsli">
+      <Filter>Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D12Material.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderPath\FwdPlusRenderPath.h">
+      <Filter>Header Files\RenderPath</Filter>
+    </ClInclude>
+    <ClInclude Include="Shaders\RTUtils.hlsli">
+      <Filter>Shaders</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="Shaders\PathTracer.hlsl">
+      <Filter>Shaders</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Shaders\UIPixel.hlsl">
+      <Filter>Shaders</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Shaders\UIVertex.hlsl">
+      <Filter>Shaders</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Shaders\Random.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\Tonemap.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\PBR.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="Shaders\Metadata\PathTracer.shader">
+      <Filter>Shaders\Metadata</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Shaders\Metadata\UI.shader">
+      <Filter>Shaders\Metadata</Filter>
+    </CopyFileToFolders>
+  </ItemGroup>
+</Project>

@@ -12,6 +12,7 @@
 
 #import <Cocoa/Cocoa.h>
 #import <Carbon/Carbon.h>
+#import <GameController/GameController.h>
 
 #define MACXINMOD	L"MacXInput"
 
@@ -23,9 +24,13 @@ static inline enum Button _mapKey(const int key);
 bool
 In_SysInit(void)
 {
+	//[GCController startWirelessControllerDiscoveryWithCompletionHandler]
+
 	for (uint16_t i = 0; i < 256; ++i)
 		MacX_Keymap[i] = _mapKey(i);
 
+	In_ConnectedControllers = [GCController controllers].count;
+	
 	return true;
 }
 
@@ -37,6 +42,59 @@ In_SysTerm(void)
 void
 In_SysPollControllers(void)
 {
+	NSArray<GCController *> *controllers = [GCController controllers];
+	In_ConnectedControllers = controllers.count;
+	
+	for (NSUInteger i = 0; i < controllers.count; ++i) {
+		GCController *ctl = [controllers objectAtIndex: i];
+		GCExtendedGamepad *gpad = [ctl extendedGamepad];
+		
+		In_ControllerState[i].buttons = 0;
+		
+		GCControllerDirectionPad *dpad = [gpad leftThumbstick];
+		In_ControllerState[i].axis[AXIS_LSTICK_X] = [[dpad xAxis] value];
+		In_ControllerState[i].axis[AXIS_LSTICK_Y] = [[dpad yAxis] value];
+		if ([[dpad down] isPressed])
+			In_ControllerState[i].buttons |= 0x0040;
+
+		dpad = [gpad rightThumbstick];
+		In_ControllerState[i].axis[AXIS_RSTICK_X] = [[dpad xAxis] value];
+		In_ControllerState[i].axis[AXIS_RSTICK_Y] = [[dpad yAxis] value];
+		if ([[dpad down] isPressed])
+			In_ControllerState[i].buttons |= 0x0080;
+		
+		In_ControllerState[i].axis[AXIS_LTRIGGER] = [[gpad leftTrigger] value];
+		In_ControllerState[i].axis[AXIS_RTRIGGER] = [[gpad rightTrigger] value];
+		
+		dpad = [gpad dpad];
+		if ([[dpad up] isPressed])
+			In_ControllerState[i].buttons |= 0x0001;
+		if ([[dpad down] isPressed])
+			In_ControllerState[i].buttons |= 0x0002;
+		if ([[dpad left] isPressed])
+			In_ControllerState[i].buttons |= 0x0004;
+		if ([[dpad right] isPressed])
+			In_ControllerState[i].buttons |= 0x0008;
+		
+		if ([[gpad buttonA] isPressed])
+			In_ControllerState[i].buttons |= 0x1000;
+		if ([[gpad buttonB] isPressed])
+			In_ControllerState[i].buttons |= 0x2000;
+		if ([[gpad buttonX] isPressed])
+			In_ControllerState[i].buttons |= 0x4000;
+		if ([[gpad buttonY] isPressed])
+			In_ControllerState[i].buttons |= 0x8000;
+		
+		if ([[gpad leftShoulder] isPressed])
+			In_ControllerState[i].buttons |= 0x0100;
+		if ([[gpad rightShoulder] isPressed])
+			In_ControllerState[i].buttons |= 0x0200;
+		
+		if ([[gpad buttonHome] isPressed])
+			In_ControllerState[i].buttons |= 0x0010;
+		if ([[gpad buttonMenu] isPressed])
+			In_ControllerState[i].buttons |= 0x0020;
+	}
 }
 
 void
@@ -53,7 +111,7 @@ void
 In_SetPointerPosition(uint16_t x, uint16_t y)
 {
 	NSWindow *win = [[NSApplication sharedApplication] keyWindow];
-	NSPoint pos = [win convertBaseToScreen:NSMakePoint((float)x,
+	NSPoint pos = [win convertPointToScreen:NSMakePoint((float)x,
 						(float)([[win contentView] frame].size.height - y - 1))];
 	
 	CGAssociateMouseAndMouseCursorPosition(false);

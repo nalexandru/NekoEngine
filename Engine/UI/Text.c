@@ -37,7 +37,7 @@ UI_DrawText(struct UIContext *ctx, const wchar_t *text, float px, float py, floa
 	py += size;
 
 	vtxOffset = drawCall.vtxOffset;
-	for (text; *text; ++text) {
+	for (; *text; ++text) {
 		struct Glyph *g = NULL;
 		float x, y, w, h;
 

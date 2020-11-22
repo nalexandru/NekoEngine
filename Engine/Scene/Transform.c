@@ -7,7 +7,7 @@ Scn_InitTransform(struct Transform *xform, const void **args)
 	v3(&xform->scale, 1.f, 1.f, 1.f);
 	quat_ident(&xform->rotation);
 
-	for (args; *args; ++args) {
+	for (; *args; ++args) {
 		const char *arg = *args;
 		size_t len = strlen(arg);
 

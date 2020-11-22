@@ -46,8 +46,7 @@ E_LoadFontAsset(struct Stream *stm, struct Font *fnt)
 		goto error;
 
 	if (Sys_BigEndian()) {
-		uint32_t i = 0;
-		for (i; i < fnt->glyphCount; ++i) {
+		for (uint32_t i; i < fnt->glyphCount; ++i) {
 			fnt->glyphs[i].u = Sys_SwapFloat(fnt->glyphs[i].u);
 			fnt->glyphs[i].v = Sys_SwapFloat(fnt->glyphs[i].v);
 			fnt->glyphs[i].tw = Sys_SwapFloat(fnt->glyphs[i].tw);

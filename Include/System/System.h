@@ -24,9 +24,7 @@ enum MsgBoxIcon
 enum MachineType
 {
 	MT_PC,
-	MT_XBOX_360,
 	MT_XBOX_ONE,
-	MT_PS3,
 	MT_XBOX,
 	MT_SWITCH,
 	MT_WII
@@ -77,57 +75,6 @@ int getopt(int nargc, char *const nargv[], const char *ostr);
 
 extern int opterr, optind, optopt, optreset;
 extern char *optarg;
-
-#ifdef SNPRINTF_COMPAT
-int snprintf(char *, size_t, const char *, /*args*/ ...);
-#endif
-
-#ifdef WCSDUP_COMPAT
-static inline wchar_t *wcsdup(const wchar_t *str)
-{
-	size_t len = wcslen(str) * sizeof(*str);
-	wchar_t *copy = (wchar_t *)calloc(1, len + sizeof(*str));
-	memcpy(copy, str, len);
-	return copy;
-}
-#endif
-
-#ifdef STRTOULL_COMPAT
-static inline uint64_t strtoull(const char *str, char **endptr, int base)
-{
-	return strtoul(str, endptr, base);
-}
-#endif
-
-#if defined(_MSC_VER) && (_MSC_VER < 1700)
-#define vswprintf _vsnwprintf
-#define swprintf _snwprintf
-#define strtoll strtol
-
-static inline float strtof(const char *str, const char **endptr)
-{
-	const char *end = str;
-	bool dot = false;
-
-	if (endptr) {
-		for (end; *end; ++end) {
-			if (*end > 0x2F && *end < 0x3A)	// 0x30 - 0x39 ASCII digits
-				continue;
-
-			if (!dot && *end == '.') {
-				dot = true;
-				continue;
-			}
-
-			break;
-		}
-
-		*endptr = end;
-	}
-
-	return (float)atof(str);
-}
-#endif
 
 #ifdef __cplusplus
 }

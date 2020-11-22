@@ -196,9 +196,9 @@ Sys_MessageBox(const wchar_t *title, const wchar_t *message, int icon)
 	
 	switch (icon) {
 	case MSG_ICON_NONE: break;
-	case MSG_ICON_INFO: [a setAlertStyle: NSInformationalAlertStyle]; break;
-	case MSG_ICON_WARN: [a setAlertStyle: NSWarningAlertStyle]; break;
-	case MSG_ICON_ERROR: [a setAlertStyle: NSCriticalAlertStyle]; break;
+	case MSG_ICON_INFO: [a setAlertStyle: NSAlertStyleInformational]; break;
+	case MSG_ICON_WARN: [a setAlertStyle: NSAlertStyleWarning]; break;
+	case MSG_ICON_ERROR: [a setAlertStyle: NSAlertStyleCritical]; break;
 	}
 	
 	[a runModal];
@@ -209,7 +209,7 @@ bool
 Sys_ProcessEvents(void)
 {
 	while (1) {
-		NSEvent *e = [NSApp nextEventMatchingMask: NSAnyEventMask
+		NSEvent *e = [NSApp nextEventMatchingMask: NSEventMaskAny
 							untilDate: [NSDate distantPast]
 							inMode: NSDefaultRunLoopMode
 							dequeue: true];
@@ -280,10 +280,8 @@ Sys_InitPlatform(void)
 	[NSApplication sharedApplication];
 	[NSApp finishLaunching];
 	
-#if defined(MAC_OS_X_VERSION_10_6) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6
 	[NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
-#endif
-	
+
 	EngineAppDelegate *d = [[EngineAppDelegate alloc] init];
 	[NSApp setDelegate: d];
 	[[NSApplication sharedApplication] setDelegate: d];
@@ -341,38 +339,13 @@ _CpuInfo(void)
 						(processor_info_array_t *)&cpuInfo, &msgCount);
 	
 	fp = popen("/usr/sbin/sysctl -n machdep.cpu.brand_string", "r");
-	if (fgets(buff, sizeof(buff), fp) != NULL) { // Mac OS X 10.6+
-		buff[strlen(buff) - 1] = 0x0;
-		snprintf(_cpuName, sizeof(_cpuName), "%s", buff);
-		
-		pclose(fp);
-		fp = popen("system_profiler SPHardwareDataType | grep 'Processor Speed' | cut -c 24-", "r");
-		fgets(buff, sizeof(buff), fp);
-	} else {
-		pclose(fp);
-		fp = popen("system_profiler SPHardwareDataType | grep 'Processor Name' | cut -c 23-", "r");
-		if (fgets(buff, sizeof(buff), fp) != NULL) { // Mac OS X 10.5
-			buff[strlen(buff) - 1] = 0x0;
-			snprintf(_cpuName, sizeof(_cpuName), "%s", buff);
-			
-			pclose(fp);
-			fp = popen("system_profiler SPHardwareDataType | grep 'Processor Speed' | cut -c 24-", "r");
-			fgets(buff, sizeof(buff), fp);
-		} else { // Mac OS X 10.4, perhaps earlier too but they're not supported. (yet)
-			pclose(fp);
-			fp = popen("system_profiler SPHardwareDataType | grep 'CPU Type' | cut -c 17-", "r");
-			if (fgets(buff, sizeof(buff), fp) != NULL) {
-				buff[strlen(buff) - 1] = 0x0;
-				snprintf(_cpuName, sizeof(_cpuName), "%s", buff);
-				
-				pclose(fp);
-				fp = popen("system_profiler SPHardwareDataType | grep 'CPU Speed' | cut -c 18-", "r");
-				fgets(buff, sizeof(buff), fp);
-			} else {
-				snprintf(_cpuName, sizeof(_cpuName), "Unknown");
-			}
-		}
-	}
+	fgets(buff, sizeof(buff), fp);
+	buff[strlen(buff) - 1] = 0x0;
+	snprintf(_cpuName, sizeof(_cpuName), "%s", buff);
+	pclose(fp);
+	
+	fp = popen("system_profiler SPHardwareDataType | grep 'Processor Speed' | cut -c 24-", "r");
+	fgets(buff, sizeof(buff), fp);
 	pclose(fp);
 	
 	while (*(p++)) {

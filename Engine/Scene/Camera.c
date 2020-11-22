@@ -17,7 +17,7 @@ Scn_InitCamera(struct Camera *cam, const void **args)
 	cam->zFar = 1024.f;
 	cam->aperture = 0.0016f;
 
-	for (args; *args; ++args) {
+	for (; *args; ++args) {
 		const char *arg = *args;
 		size_t len = strlen(arg);
 

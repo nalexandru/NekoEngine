@@ -9,7 +9,7 @@ Au_InitSourceComponent(struct AudioSource *src, const void **args)
 {
 	const char *clip = NULL;
 
-	for (args; *args; ++args) {
+	for (; *args; ++args) {
 		const char *fuckCpp = (const char *)*args; // in sane languages this cast is NOT NEEDED
 		size_t len = strlen(fuckCpp);
 
