@@ -10,7 +10,11 @@
 #include <sys/mman.h>
 #include <sys/sysctl.h>
 #include <sys/utsname.h>
+
+#include <mach/mach.h>
 #include <mach/mach_time.h>
+#include <mach/host_info.h>
+#include <mach/processor_info.h>
 
 #define Handle __EngineHandle
 
@@ -30,7 +34,8 @@
 #define CPU_NAME_LEN	128
 
 static uint64_t _machTimerFreq;
-static int _numCpus = 0;
+static natural_t _numCpus = 0;
+static int32_t _cpuFreq;
 static struct utsname _uname;
 static char _cpuName[CPU_NAME_LEN];
 
@@ -110,38 +115,6 @@ Sys_UnmapFile(const void *ptr, uint64_t size)
 	munmap((void *)ptr, size);
 }
 
-uint32_t
-Sys_TlsAlloc(void)
-{
-	pthread_key_t key;
-	pthread_key_create(&key, NULL);
-	return (uint32_t)key;
-}
-
-void *
-Sys_TlsGet(uint32_t key)
-{
-	return pthread_getspecific((pthread_key_t)key);
-}
-
-void
-Sys_TlsSet(uint32_t key, void *data)
-{
-	pthread_setspecific((pthread_key_t)key, data);
-}
-
-void
-Sys_TlsFree(uint32_t key)
-{
-	pthread_key_delete((pthread_key_t)key);
-}
-
-void
-Sys_Yield(void)
-{
-	sched_yield();
-}
-
 const char *
 Sys_Hostname(void)
 {
@@ -154,9 +127,6 @@ Sys_Hostname(void)
 const char *
 Sys_Machine(void)
 {
-	if (!_uname.sysname[0])
-		uname(&_uname);
-
 	return _uname.machine;
 }
 
@@ -166,10 +136,28 @@ Sys_CpuName(void)
 	return _cpuName;
 }
 
-int
+int32_t
+Sys_CpuFreq(void)
+{
+	return _cpuFreq;
+}
+
+int32_t
 Sys_NumCpus(void)
 {
 	return _numCpus;
+}
+
+const char *
+Sys_OperatingSystem(void)
+{
+	return _uname.sysname;
+}
+
+const char *
+Sys_OperatingSystemVersion(void)
+{
+	return _uname.release;
 }
 
 enum MachineType
@@ -283,12 +271,6 @@ Sys_UnloadLibrary(void *lib)
 bool
 Sys_InitPlatform(void)
 {
-#ifndef _SC_NPROCESSORS_ONLN
-	_numCpus = sysconf(HW_NCPU);
-#else
-	_numCpus = sysconf(_SC_NPROCESSORS_ONLN);
-#endif
-
 	mach_timebase_info_data_t tb;
 	mach_timebase_info(&tb);
 	
@@ -309,14 +291,16 @@ Sys_InitPlatform(void)
 	char dataDir[2048];
 	getcwd(dataDir, 2048);
 	
-	char *p = strrchr(dataDir, '/');
-	*p = 0x0;
+	if (dataDir[strlen(dataDir) - 1] != '/')
+		strncat(dataDir, "/", 1);
 	
 	strncat(dataDir, "/Data", 5);
 	
 	E_SetCVarStr(L"Engine_DataDir", dataDir);
 	
 	_CpuInfo();
+	
+	uname(&_uname);
 	
 	return true;
 }
@@ -326,12 +310,14 @@ Sys_TermPlatform(void)
 {
 }
 
-static inline void
+void
 _CpuInfo(void)
-{
+{	
 	int null;
 	FILE *fp = NULL;
-	char buff[512];
+	char buff[512], *p = buff;
+	bool ghz = false;
+	float f = 0.f;
 	static int sout, serr;
 	
 	// slience stdout, stderr
@@ -348,38 +334,63 @@ _CpuInfo(void)
 	
 	close(null);
 	
+	processor_basic_info_t cpuInfo;
+	mach_msg_type_number_t msgCount;
+	
+	host_processor_info(mach_host_self(), PROCESSOR_BASIC_INFO, &_numCpus,
+						(processor_info_array_t *)&cpuInfo, &msgCount);
+	
 	fp = popen("/usr/sbin/sysctl -n machdep.cpu.brand_string", "r");
 	if (fgets(buff, sizeof(buff), fp) != NULL) { // Mac OS X 10.6+
 		buff[strlen(buff) - 1] = 0x0;
 		snprintf(_cpuName, sizeof(_cpuName), "%s", buff);
+		
+		pclose(fp);
+		fp = popen("system_profiler SPHardwareDataType | grep 'Processor Speed' | cut -c 24-", "r");
+		fgets(buff, sizeof(buff), fp);
 	} else {
 		pclose(fp);
 		fp = popen("system_profiler SPHardwareDataType | grep 'Processor Name' | cut -c 23-", "r");
 		if (fgets(buff, sizeof(buff), fp) != NULL) { // Mac OS X 10.5
 			buff[strlen(buff) - 1] = 0x0;
 			snprintf(_cpuName, sizeof(_cpuName), "%s", buff);
+			
+			pclose(fp);
+			fp = popen("system_profiler SPHardwareDataType | grep 'Processor Speed' | cut -c 24-", "r");
+			fgets(buff, sizeof(buff), fp);
 		} else { // Mac OS X 10.4, perhaps earlier too but they're not supported. (yet)
 			pclose(fp);
-			fp = popen("system_profiler | grep 'CPU Type' | cut -c 17-", "r");
+			fp = popen("system_profiler SPHardwareDataType | grep 'CPU Type' | cut -c 17-", "r");
 			if (fgets(buff, sizeof(buff), fp) != NULL) {
 				buff[strlen(buff) - 1] = 0x0;
 				snprintf(_cpuName, sizeof(_cpuName), "%s", buff);
 				
-				// The most CPUs a Mac running Tiger can have is 8 (MacPro2,1)
-				// However, for some reason sysconf(HW_NCPU) returns 100 on a
-				// PowerBook G4 1.67 GHz (PowerBook5,8); possibly others
-				if (_numCpus > 8) {
-					pclose(fp);
-					fp = popen("system_profiler | grep 'Number Of CPUs' | cut -c 23-", "r");
-					if (fgets(buff, sizeof(buff), fp) != NULL)
-						_numCpus = atoi(buff);
-				}
+				pclose(fp);
+				fp = popen("system_profiler SPHardwareDataType | grep 'CPU Speed' | cut -c 18-", "r");
+				fgets(buff, sizeof(buff), fp);
 			} else {
 				snprintf(_cpuName, sizeof(_cpuName), "Unknown");
 			}
 		}
 	}
 	pclose(fp);
+	
+	while (*(p++)) {
+		if (*p == ',')
+			*p = '.';
+		
+		if (*p != ' ')
+			continue;
+			
+		*p = 0x0;
+		if (*(++p) == 'G')
+			ghz = true;
+			
+		break;
+	}
+	
+	f = atof(buff) * (ghz ? 1000.f : 1.f);
+	_cpuFreq = (int32_t)f;
 	
 	// restore stdout, stderr
 	fflush(stdout);
@@ -389,5 +400,24 @@ _CpuInfo(void)
 	dup2(serr, STDERR_FILENO);
 	
 	if (_cpuName[strlen(_cpuName) - 1] == '\n')
-        _cpuName[strlen(_cpuName) - 1] = 0x0;
+		_cpuName[strlen(_cpuName) - 1] = 0x0;
+}
+
+void *
+Sys_AlignedAlloc(size_t size, size_t alignment)
+{
+	(void)alignment;
+	return malloc(size); // malloc is aligned to 16 bytes
+}
+
+void
+Sys_AlignedFree(void *mem)
+{
+	free(mem);
+}
+
+void
+Sys_ZeroMemory(void *mem, size_t len)
+{
+	memset(mem, 0x0, len);
 }

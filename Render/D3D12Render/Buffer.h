@@ -19,7 +19,8 @@ InitBuffer(struct Buffer *b, UINT64 size, D3D12_RESOURCE_STATES initialState = D
 
 	HRESULT hr;
 	D3D12_HEAP_PROPERTIES hp{ heapType };
-	hr = Re_Device.dev->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &CD3DX12_RESOURCE_DESC::Buffer(b->size), b->state, NULL, IID_PPV_ARGS(&b->res));
+	CD3DX12_RESOURCE_DESC rd = CD3DX12_RESOURCE_DESC::Buffer(b->size);
+	hr = Re_Device.dev->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &rd, b->state, NULL, IID_PPV_ARGS(&b->res));
 
 	if (FAILED(hr))
 		return false;

@@ -1,4 +1,5 @@
 #include <System/Log.h>
+#include <System/Thread.h>
 #include <Scene/Scene.h>
 #include <Render/Render.h>
 #include <Render/Device.h>

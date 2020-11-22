@@ -65,7 +65,8 @@ D3D12_StageUpload(ID3D12Resource *dest, UINT64 size, const void *data, UINT64 al
 	if (slicePitch)
 		srd.SlicePitch = slicePitch;
 
-	D3D12_RESOURCE_ALLOCATION_INFO ai = Re_Device.dev->GetResourceAllocationInfo(0, 1, &dest->GetDesc());
+	D3D12_RESOURCE_DESC rd = dest->GetDesc();
+	D3D12_RESOURCE_ALLOCATION_INFO ai = Re_Device.dev->GetResourceAllocationInfo(0, 1, &rd);
 
 	if (!size)
 		size = ai.SizeInBytes;
@@ -75,7 +76,8 @@ D3D12_StageUpload(ID3D12Resource *dest, UINT64 size, const void *data, UINT64 al
 
 	if (size > * _size) {
 		D3D12_HEAP_PROPERTIES hp = { D3D12_HEAP_TYPE_UPLOAD };
-		D3DCHK(Re_Device.dev->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &CD3DX12_RESOURCE_DESC::Buffer(size, D3D12_RESOURCE_FLAG_NONE, alignment),
+		rd = CD3DX12_RESOURCE_DESC::Buffer(size, D3D12_RESOURCE_FLAG_NONE, alignment);
+		D3DCHK(Re_Device.dev->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &rd,
 			D3D12_RESOURCE_STATE_COPY_DEST, NULL, IID_PPV_ARGS(&staging)));
 	} else {
 		_offset = ROUND_UP(_offset, alignment);
@@ -162,7 +164,8 @@ D3D12_BuildBLAS(ID3D12GraphicsCommandList4 *cmdList)
 		struct ASBuildInfo *bi = (ASBuildInfo *)Rt_ArrayGet(&_blasBuildInfo, i);
 		bi->buildDesc.Inputs.pGeometryDescs = &bi->geomDesc;
 		cmdList->BuildRaytracingAccelerationStructure(&bi->buildDesc, 0, NULL);
-		Rt_ArrayAdd(&_blasBarriers, &CD3DX12_RESOURCE_BARRIER::UAV(bi->as));
+		D3D12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::UAV(bi->as);
+		Rt_ArrayAdd(&_blasBarriers, &barrier);
 	}
 
 	// https://www.gdcvault.com/play/1026721/RTX-Ray-Tracing-Best-Practices

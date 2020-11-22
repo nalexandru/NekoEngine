@@ -10,7 +10,6 @@ extern "C" {
 enum MemoryHeap
 {
 	MH_Transient = 0,
-	MH_Scene,
 	MH_Persistent,
 	MH_Secure
 };
@@ -20,6 +19,7 @@ void Sys_Free(void *mem);
 
 void *Sys_AlignedAlloc(size_t size, size_t alignment);
 void Sys_AlignedFree(void *mem);
+void Sys_ZeroMemory(void *mem, size_t size);
 
 bool Sys_InitMemory(void);
 void Sys_ResetHeap(enum MemoryHeap heap);

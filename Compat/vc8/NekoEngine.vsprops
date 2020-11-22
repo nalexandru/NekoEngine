@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<VisualStudioPropertySheet
+	ProjectType="Visual C++"
+	Version="8.00"
+	Name="NekoEngine"
+	OutputDirectory="$(SolutionDir)..\..\Bin\$(ConfigurationName)\"
+	IntermediateDirectory="$(SolutionDir)..\..\Build\$(ConfigurationName)\$(ProjectName)\"
+	>
+	<Tool
+		Name="VCCLCompilerTool"
+		AdditionalIncludeDirectories="&quot;$(SolutionDir)Include&quot;;&quot;$(SolutionDir)..\..\Include&quot;;&quot;$(SolutionDir)..\..\Deps&quot;;&quot;$(SolutionDir)..\..\Deps\Lua&quot;;&quot;$(SolutionDir)..\..\Deps\PhysFS&quot;"
+		PreprocessorDefinitions="_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;WCSDUP_COMPAT;SNPRINTF_COMPAT;STRTOULL_COMPAT;inline=__inline;_WIN32_WINNT=0x0501"
+		EnableEnhancedInstructionSet="1"
+		FloatingPointModel="2"
+	/>
+	<Tool
+		Name="VCLinkerTool"
+		AdditionalLibraryDirectories="$(SolutionDir)..\..\Bin\$(ConfigurationName)\"
+		SubSystem="2"
+	/>
+</VisualStudioPropertySheet>

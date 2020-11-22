@@ -21,6 +21,39 @@
 #	include <mach/thread_policy.h>
 #endif
 
+
+uint32_t
+Sys_TlsAlloc(void)
+{
+	pthread_key_t key;
+	pthread_key_create(&key, NULL);
+	return (uint32_t)key;
+}
+
+void *
+Sys_TlsGet(uint32_t key)
+{
+	return pthread_getspecific((pthread_key_t)key);
+}
+
+void
+Sys_TlsSet(uint32_t key, void *data)
+{
+	pthread_setspecific((pthread_key_t)key, data);
+}
+
+void
+Sys_TlsFree(uint32_t key)
+{
+	pthread_key_delete((pthread_key_t)key);
+}
+
+void
+Sys_Yield(void)
+{
+	sched_yield();
+}
+
 bool
 Sys_InitThread(Thread *t, const wchar_t *name, void (*proc)(void *), void *args)
 {
@@ -234,7 +267,7 @@ Sys_AtomicSub64(volatile int64_t *i, int64_t v)
 #	if defined(_ARCH_PPC) && !defined(_ARCH_PPC64)
 		return OSAtomicAdd32Barrier((int32_t)-v, (int32_t *)i);
 #	else
-		return OSAtomicAdd32Barrier(-v, (int64_t *)i);
+		return OSAtomicAdd64Barrier(-v, (int64_t *)i);
 #	endif
 #elif defined(USE_STDC)
 	return atomic_fetch_add(i, -v);

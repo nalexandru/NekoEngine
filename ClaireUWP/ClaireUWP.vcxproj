@@ -86,7 +86,7 @@
       <ExceptionHandling>false</ExceptionHandling>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>lua51.lib;luajit.lib;XA2Sound.lib;D3D12Render.lib;Engine.lib;d3d12.lib;dxgi.lib;dxguid.lib;WindowsApp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>XA2Sound.lib;D3D12Render.lib;Engine.lib;d3d12.lib;dxgi.lib;dxguid.lib;WindowsApp.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_ASAN|x64'">

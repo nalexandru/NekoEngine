@@ -96,7 +96,9 @@ E_Init(int argc, char *argv[])
 	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Starting up...");
 
 	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Host: %hs", Sys_Hostname());
+	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Platform: %hs %hs", Sys_OperatingSystem(), Sys_OperatingSystemVersion());
 	Sys_LogEntry(EMOD, LOG_INFORMATION, L"CPU: %hs", Sys_CpuName());
+	Sys_LogEntry(EMOD, LOG_INFORMATION, L"\tFrequency: %d MHz", Sys_CpuFreq());
 	Sys_LogEntry(EMOD, LOG_INFORMATION, L"\tCount: %d", Sys_NumCpus());
 	Sys_LogEntry(EMOD, LOG_INFORMATION, L"\tArchitecture: %hs", Sys_Machine());
 	Sys_LogEntry(EMOD, LOG_INFORMATION, L"\tBig Endian: %hs", Sys_BigEndian() ? "True" : "False");

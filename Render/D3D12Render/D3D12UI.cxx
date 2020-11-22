@@ -192,7 +192,8 @@ D3D12_RenderUI(struct Scene *s, ID3D12Resource *output, D3D12_RESOURCE_STATES st
 	struct DrawUIContextArgs drawArgs = { cmdList, cpuHandle };
 	E_ExecuteSystemS(s, DRAW_UI_CONTEXT, &drawArgs);
 
-	cmdList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(output, D3D12_RESOURCE_STATE_RENDER_TARGET, endState));
+	D3D12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(output, D3D12_RESOURCE_STATE_RENDER_TARGET, endState);
+	cmdList->ResourceBarrier(1, &barrier);
 
 	SignalFence(&Re_UploadFence, Re_Device.transferQueue);
 }
@@ -214,10 +215,12 @@ D3D12_DrawUIContext(void **comp, struct DrawUIContextArgs *args)
 	const UINT64 vtxSize = sizeof(UIVertex) * ctx->vertices.count;
 	const UINT64 idxSize = sizeof(uint16_t) * ctx->indices.count;
 
-	ID3D12Resource *vtxBuffer = D3D12_CreateTransientResource(&CD3DX12_RESOURCE_DESC::Buffer(vtxSize), D3D12_RESOURCE_STATE_COPY_DEST, NULL);
+	CD3DX12_RESOURCE_DESC rd = CD3DX12_RESOURCE_DESC::Buffer(vtxSize);
+	ID3D12Resource *vtxBuffer = D3D12_CreateTransientResource(&rd, D3D12_RESOURCE_STATE_COPY_DEST, NULL);
 	vtxBuffer->SetName(L"UI Vertex Buffer");
 
-	ID3D12Resource *idxBuffer = D3D12_CreateTransientResource(&CD3DX12_RESOURCE_DESC::Buffer(idxSize), D3D12_RESOURCE_STATE_COPY_DEST, NULL);
+	rd = CD3DX12_RESOURCE_DESC::Buffer(idxSize);
+	ID3D12Resource *idxBuffer = D3D12_CreateTransientResource(&rd, D3D12_RESOURCE_STATE_COPY_DEST, NULL);
 	idxBuffer->SetName(L"UI Index Buffer");
 
 	D3D12_StageUpload(vtxBuffer, vtxSize, ctx->vertices.data);

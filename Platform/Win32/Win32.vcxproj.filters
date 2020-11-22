@@ -30,16 +30,16 @@
     <ClCompile Include="..\..\Deps\PhysFS\physfs_platform_windows.c">
       <Filter>Source Files\Deps\PhysFS</Filter>
     </ClCompile>
-    <ClCompile Include="Memory.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Thread.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Win32.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="W32Input.c">
+    <ClCompile Include="Win32Compat.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Win32Input.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

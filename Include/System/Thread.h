@@ -3,6 +3,17 @@
 
 #include <Engine/Types.h>
 
+#ifdef __cplusplus
+extern "C"  {
+#endif
+
+uint32_t Sys_TlsAlloc(void);
+void *Sys_TlsGet(uint32_t key);
+void Sys_TlsSet(uint32_t key, void *data);
+void Sys_TlsFree(uint32_t key);
+
+void Sys_Yield(void);
+
 bool Sys_InitThread(Thread *t, const wchar_t *name, void (*proc)(void *), void *args);
 void Sys_SetThreadAffinity(Thread t, int cpu);
 void Sys_JoinThread(Thread t);
@@ -36,5 +47,9 @@ int64_t Sys_AtomicSub64(volatile int64_t *i, int64_t v);
 int64_t Sys_AtomicCompareAndSwap64(volatile int64_t *i, int64_t e, int64_t c);
 int64_t Sys_AtomicIncrement64(volatile int64_t *i);
 int64_t Sys_AtomicDecrement64(volatile int64_t *i);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _SYS_THREAD_H_ */

@@ -1,0 +1,139 @@
+NAME CLAIRE
+EXPORTS
+	Re DATA
+	E_Screen DATA
+	E_ScreenWidth DATA
+	E_ScreenHeight DATA
+	UI_Projection DATA
+	Scn_ActiveCamera DATA
+	Scn_ActiveScene DATA
+
+	reallocarray
+	snprintf
+
+	E_Shutdown
+
+	E_ResourcePtr
+
+	E_CreateComponentS
+	E_CreateComponentIdS
+	E_DestroyComponentS
+	E_ComponentPtrS
+	E_ComponentHandle
+	E_ComponentTypeS
+	E_ComponentTypeId
+	E_ComponentCountS
+	E_ComponentOwnerS
+	E_SetComponentOwnerS
+	E_GetAllComponentsS
+	E_RegisterComponent
+
+	E_GetCVarStr
+	E_GetCVarI32
+	E_GetCVarU32
+	E_GetCVarU64
+	E_GetCVarFlt
+	E_GetCVarBln
+	E_SetCVarStr
+	E_SetCVarI32
+	E_SetCVarU32
+	E_SetCVarU64
+	E_SetCVarFlt
+	E_SetCVarBln
+
+	E_RegisterSystem
+	E_RegisterSystemId
+
+	E_ExecuteSystemS
+	E_ExecuteSystemGroupS
+
+	E_Broadcast
+	E_RegisterHandler
+	E_UnregisterHandler
+
+	E_OpenFile
+	E_MapFile
+	E_UnmapFile
+	E_ReadFile
+	E_ReadFileBlob
+	E_ReadFileText
+	E_FGets
+	E_WriteFile
+	E_FTell
+	E_FSeek
+	E_FileLength
+	E_FEof
+	E_FileExists
+	E_CloseFile
+	E_Mount
+	E_ListFiles
+	E_IsDirectory
+	E_FreeFileList
+	E_ProcessFiles
+	E_FileStream
+	E_MemoryStream
+	E_CloseStream
+
+	E_JobWorkerThreads
+	E_ExecuteJob
+	E_DispatchJobs
+
+	Sys_Time
+	Sys_MapFile
+	Sys_UnmapFile
+	Sys_TlsAlloc
+	Sys_TlsGet
+	Sys_TlsSet
+	Sys_TlsFree
+	Sys_Yield
+	Sys_Hostname
+	Sys_Machine
+	Sys_CpuName
+	Sys_NumCpus
+	Sys_MachineType
+	Sys_Capabilities
+	Sys_ScreenVisible
+	Sys_UniversalWindows
+	Sys_MessageBox
+	Sys_ProcessEvents
+
+	Sys_Alloc
+	Sys_Free
+	Sys_AlignedAlloc
+	Sys_AlignedFree
+
+	Sys_LogEntry
+
+	Sys_InitAtomicLock
+	Sys_AtomicLockRead
+	Sys_AtomicUnlockRead
+	Sys_AtomicLockWrite
+	Sys_AtomicUnlockWrite
+
+	Sys_InitThread
+	Sys_SetThreadAffinity
+	Sys_JoinThread
+	Sys_TermThread
+	
+	Sys_InitMutex
+	Sys_LockMutex
+	Sys_UnlockMutex
+	Sys_TermMutex
+	
+	Sys_InitFutex
+	Sys_LockFutex
+	Sys_UnlockFutex
+	Sys_TermFutex
+	
+	Sys_InitConditionVariable
+	Sys_Signal
+	Sys_Broadcast
+	Sys_WaitMutex
+	Sys_WaitFutex
+	Sys_TermConditionVariable
+	
+	Sys_AtomicAdd
+	Sys_AtomicSub
+	Sys_AtomicCompareAndSwap
+	Sys_AtomicIncrement
+	Sys_AtomicDecrement

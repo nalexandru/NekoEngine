@@ -10,10 +10,28 @@
 #include <Input/Input.h>
 
 #undef Handle
+
 #import "EngineView.h"
 #include "MacXPlatform.h"
 
+#if defined(MAC_OS_X_VERSION_10_11) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_11
+#import <Metal/Metal.h>
+#import <QuartzCore/CAMetalLayer.h>
+#endif
+
 @implementation EngineView
+
+#if defined(MAC_OS_X_VERSION_10_11) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_11
++ (Class)layerClass
+{
+	return [CAMetalLayer class];
+}
+
+- (CALayer *)makeBackingLayer
+{
+	return [CAMetalLayer layer];
+}
+#endif
 
 - (void)keyUp:(NSEvent *)e
 {

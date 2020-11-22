@@ -26,7 +26,7 @@ Au_InitLib(void)
 	if (FAILED(hr))
 		return false;
 
-	DWORD channelMask;
+/*	DWORD channelMask;
 	_masterVoice->GetChannelMask(&channelMask);
 
 	X3DAudioInitialize(channelMask, X3DAUDIO_SPEED_OF_SOUND, _au3DAudio);
@@ -39,7 +39,7 @@ Au_InitLib(void)
 
 	_auDSPSettings.SrcChannelCount = 1;
 	_auDSPSettings.DstChannelCount = voiceDetails.InputChannels;
-	_auDSPSettings.pMatrixCoefficients = (FLOAT32 *)calloc(voiceDetails.InputChannels, sizeof(*_auDSPSettings.pMatrixCoefficients));
+	_auDSPSettings.pMatrixCoefficients = (FLOAT32 *)calloc(voiceDetails.InputChannels, sizeof(*_auDSPSettings.pMatrixCoefficients));*/
 
 	return true;
 }

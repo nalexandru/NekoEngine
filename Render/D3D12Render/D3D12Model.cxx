@@ -41,15 +41,18 @@ D3D12_InitModel(const char *name, struct Model *m)
 
 	{ // Create resources
 		D3D12_HEAP_PROPERTIES hp{ D3D12_HEAP_TYPE_DEFAULT };
+		CD3DX12_RESOURCE_DESC rd;
 
-		if (HRESULT hr = Re_Device.dev->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &CD3DX12_RESOURCE_DESC::Buffer(vertexSize),
+		rd = CD3DX12_RESOURCE_DESC::Buffer(vertexSize);
+		if (HRESULT hr = Re_Device.dev->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &rd,
 				D3D12_RESOURCE_STATE_COPY_DEST, NULL, IID_PPV_ARGS(&mrd->vtxBuffer)); FAILED(hr))
 			return false;
 
 		swprintf(buff, 512, L"%hs Vertex Buffer", name);
 		mrd->vtxBuffer->SetName(buff);
 
-		if (HRESULT hr = Re_Device.dev->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &CD3DX12_RESOURCE_DESC::Buffer(indexSize),
+		rd = CD3DX12_RESOURCE_DESC::Buffer(indexSize);
+		if (HRESULT hr = Re_Device.dev->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &rd,
 				D3D12_RESOURCE_STATE_COPY_DEST, NULL, IID_PPV_ARGS(&mrd->idxBuffer)); FAILED(hr))
 			return false;
 
@@ -62,16 +65,16 @@ D3D12_InitModel(const char *name, struct Model *m)
 				return false;
 
 			for (uint32_t i = 0; i < m->numMeshes; ++i) {
-				if (HRESULT hr = Re_Device.dev->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE,
-						&CD3DX12_RESOURCE_DESC::Buffer(scratchSize, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS),
+				rd = CD3DX12_RESOURCE_DESC::Buffer(scratchSize, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+				if (HRESULT hr = Re_Device.dev->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &rd,
 						D3D12_RESOURCE_STATE_UNORDERED_ACCESS, NULL, IID_PPV_ARGS(&mrd->structures[i].scratchBuffer)); FAILED(hr))
 					return false;
 
 				swprintf(buff, 512, L"%hs Scratch Buffer", name);
 				mrd->structures[i].scratchBuffer->SetName(buff);
 
-				if (HRESULT hr = Re_Device.dev->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE,
-						&CD3DX12_RESOURCE_DESC::Buffer(resultSize, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS),
+				rd = CD3DX12_RESOURCE_DESC::Buffer(resultSize, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+				if (HRESULT hr = Re_Device.dev->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &rd,
 						D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, NULL, IID_PPV_ARGS(&mrd->structures[i].asBuffer)); FAILED(hr))
 					return false;
 

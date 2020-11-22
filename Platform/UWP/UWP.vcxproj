@@ -21,13 +21,12 @@
   <ItemGroup>
     <ClCompile Include="..\..\Deps\PhysFS\physfs_platform_windows.cpp" />
     <ClCompile Include="..\..\Deps\PhysFS\physfs_platform_winrt.cpp" />
-    <ClCompile Include="AtomicLock.cxx" />
     <ClCompile Include="EngineView.cxx" />
     <ClCompile Include="Input.cxx" />
     <ClCompile Include="Job.cxx" />
     <ClCompile Include="Main.cxx" />
-    <ClCompile Include="Memory.cxx" />
-    <ClCompile Include="System.cxx" />
+    <ClCompile Include="Thread.cxx" />
+    <ClCompile Include="UWP.cxx" />
     <ClCompile Include="Window.cxx" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

@@ -18,7 +18,7 @@ static NSOpenGLPixelFormatAttribute _pfAttribs[] =
 	NSOpenGLPFADoubleBuffer,
 	NSOpenGLPFAAccelerated,
 	NSOpenGLPFADepthSize, 24,
-	0, 0, 0, 0,
+	0, 0, 0, 0, 0,
 	0, 0,
 	0
 };
@@ -28,13 +28,23 @@ GL_InitDevice(void)
 {
 	NSOpenGLContext *ctx;
 
+	NSOpenGLPixelFormatAttribute *aptr = &_pfAttribs[4];
+
 #if defined(MAC_OS_X_VERSION_10_9) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_9
-	_pfAttribs[8] = NSOpenGLPFAOpenGLProfile;
-	_pfAttribs[9] = NSOpenGLProfileVersion4_1Core;
+	*aptr++ = NSOpenGLPFAOpenGLProfile;
+	*aptr++ = NSOpenGLProfileVersion4_1Core;
 #elif defined(MAC_OS_X_VERSION_10_7) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7
-	_pfAttribs[8] = NSOpenGLPFAOpenGLProfile;
-	_pfAttribs[9] = NSOpenGLProfileVersion3_2Core;
+	*aptr++ = NSOpenGLPFAOpenGLProfile;
+	*aptr++ = NSOpenGLProfileVersion3_2Core;
 #endif
+	
+	if (CVAR_BOOL(L"Render_Multisampling")) {
+		*aptr++ = NSOpenGLPFAMultisample;
+		*aptr++ = NSOpenGLPFASampleBuffers;
+		*aptr++ = 1;
+		*aptr++ = NSOpenGLPFASamples;
+		*aptr++ = CVAR_INT32(L"Render_Samples");
+	}
 	
 	_pf = [[NSOpenGLPixelFormat alloc] initWithAttributes: _pfAttribs];
 	if (!_pf)

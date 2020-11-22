@@ -1,4 +1,4 @@
-#include <Windows.h>
+#include "Win32Platform.h"
 #include <Xinput.h>
 
 #include <math.h>
@@ -10,6 +10,10 @@
 #include "Win32Platform.h"
 
 #define W32INMOD	L"Win32Input"
+
+#ifndef MAPVK_VSC_TO_VK_EX
+#define MAPVK_VSC_TO_VK_EX	3
+#endif
 
 #define READ_AXIS(cs, srcx, srcy, dstx, dsty, m, dz)	\
 {														\
@@ -26,12 +30,20 @@ static DWORD _lastPacket[IN_MAX_CONTROLLERS];
 static inline void _deadzone(float *x, float *y, const float max, const float deadzone);
 static inline enum Button _mapKey(const int key);
 
+// XInput
+static HMODULE _XInput;
+static DWORD (WINAPI *_XInputGetState)(DWORD, XINPUT_STATE *);
+static DWORD (WINAPI *_XInputSetState)(DWORD, XINPUT_VIBRATION *);
+static DWORD (WINAPI *_XInputGetCapabilities)(DWORD, DWORD, XINPUT_CAPABILITIES *);
+static DWORD (WINAPI *_XInputGetBatteryInformation)(DWORD, BYTE, XINPUT_BATTERY_INFORMATION *);
+
 bool
 In_SysInit(void)
 {
+	uint16_t i;
 	RAWINPUTDEVICE rid[2];
 
-	for (uint16_t i = 0; i < 256; ++i)
+	for (i = 0; i < 256; ++i)
 		_keymap[i] = _mapKey(i);
 
 	rid[0].usUsagePage = 0x01;
@@ -49,6 +61,24 @@ In_SysInit(void)
 		return false;
 	}
 
+	// XInput
+	{
+		_XInput = LoadLibraryW(L"XInput1_4.dll");
+
+		if (!_XInput)
+			_XInput = LoadLibraryW(L"XInput1_3.dll");
+		
+		if (!_XInput)
+			_XInput = LoadLibraryW(L"XInput9_1_0.dll");
+
+		if (_XInput) {
+			_XInputGetState = (DWORD (WINAPI *)(DWORD, XINPUT_STATE *))GetProcAddress(_XInput, "XInputGetState");
+			_XInputSetState = (DWORD (WINAPI *)(DWORD, XINPUT_VIBRATION *))GetProcAddress(_XInput, "XInputSetState");
+			_XInputGetCapabilities = (DWORD (WINAPI *)(DWORD, DWORD, XINPUT_CAPABILITIES *))GetProcAddress(_XInput, "XInputGetCapabilities");
+			_XInputGetBatteryInformation = (DWORD (WINAPI *)(DWORD, BYTE, XINPUT_BATTERY_INFORMATION *))GetProcAddress(_XInput, "XInputGetBatteryInformation");
+		}
+	}
+
 	UpdateControllers();
 
 	return true;
@@ -57,30 +87,34 @@ In_SysInit(void)
 void
 In_SysTerm(void)
 {
+	if (_XInput)
+		FreeLibrary(_XInput);
 }
 
 void
 In_SysPollControllers(void)
 {
-	uint8_t i;
-	XINPUT_STATE xi;
-	struct ControllerState *cs;
+	if (_XInputGetState) {
+		uint8_t i;
+		XINPUT_STATE xi;
+		struct ControllerState *cs;
 
-	for (i = 0; i < In_ConnectedControllers; ++i) {
-		XInputGetState(i, &xi);
+		for (i = 0; i < In_ConnectedControllers; ++i) {
+			_XInputGetState(i, &xi);
 
-		if (_lastPacket[i] == xi.dwPacketNumber)
-			continue;
+			if (_lastPacket[i] == xi.dwPacketNumber)
+				continue;
 
-		cs = &In_ControllerState[i];
+			cs = &In_ControllerState[i];
 
-		cs->buttons = xi.Gamepad.wButtons;
+			cs->buttons = xi.Gamepad.wButtons;
 
-		READ_AXIS(cs, xi.Gamepad.sThumbLX, xi.Gamepad.sThumbLY, AXIS_LSTICK_X, AXIS_LSTICK_Y, 32767.f, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
-		READ_AXIS(cs, xi.Gamepad.sThumbRX, xi.Gamepad.sThumbRY, AXIS_RSTICK_X, AXIS_RSTICK_Y, 32767.f, XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE);
-		READ_AXIS(cs, xi.Gamepad.bLeftTrigger, xi.Gamepad.bRightTrigger, AXIS_LTRIGGER, AXIS_RTRIGGER, 255.f, XINPUT_GAMEPAD_TRIGGER_THRESHOLD);
+			READ_AXIS(cs, xi.Gamepad.sThumbLX, xi.Gamepad.sThumbLY, AXIS_LSTICK_X, AXIS_LSTICK_Y, 32767.f, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
+			READ_AXIS(cs, xi.Gamepad.sThumbRX, xi.Gamepad.sThumbRY, AXIS_RSTICK_X, AXIS_RSTICK_Y, 32767.f, XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE);
+			READ_AXIS(cs, xi.Gamepad.bLeftTrigger, xi.Gamepad.bRightTrigger, AXIS_LTRIGGER, AXIS_RTRIGGER, 255.f, XINPUT_GAMEPAD_TRIGGER_THRESHOLD);
 
-		_lastPacket[i] = xi.dwPacketNumber;
+			_lastPacket[i] = xi.dwPacketNumber;
+		}
 	}
 }
 
@@ -126,13 +160,16 @@ In_ShowPointer(bool show)
 void
 UpdateControllers(void)
 {
-	XINPUT_STATE xi;
+	if (_XInputGetState) {
+		uint32_t i;
+		XINPUT_STATE xi;
 
-	In_ConnectedControllers = 0;
+		In_ConnectedControllers = 0;
 
-	for (uint32_t i = 0; i < IN_MAX_CONTROLLERS; ++i)
-		if (XInputGetState(i, &xi) == ERROR_SUCCESS)
-			++In_ConnectedControllers;
+		for (i = 0; i < IN_MAX_CONTROLLERS; ++i)
+			if (_XInputGetState(i, &xi) == ERROR_SUCCESS)
+				++In_ConnectedControllers;
+	}
 }
 
 void

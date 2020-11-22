@@ -15,6 +15,8 @@
 
 #ifdef _XBOX
 #	define D3DCREATE_MULTITHREADED	0
+#else
+#pragma comment(lib, "d3d9.lib")
 #endif
 
 struct RenderDevice Re_Device = { 0 };

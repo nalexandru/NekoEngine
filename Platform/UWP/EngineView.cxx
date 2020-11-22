@@ -154,7 +154,7 @@ EngineView::OnWindowSizeChanged(CoreWindow ^sender, WindowSizeChangedEventArgs ^
 	*E_ScreenWidth = (uint32_t)args->Size.Width;
 	*E_ScreenHeight = (uint32_t)args->Size.Height;
 
-	Re_ScreenResized();
+	Re.ScreenResized();
 }
 
 void

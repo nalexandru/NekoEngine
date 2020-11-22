@@ -49,17 +49,14 @@ uint64_t Sys_Time(void);
 bool Sys_MapFile(const char *path, bool write, void **ptr, uint64_t *size);
 void Sys_UnmapFile(const void *ptr, uint64_t size);
 
-uint32_t Sys_TlsAlloc(void);
-void *Sys_TlsGet(uint32_t key);
-void Sys_TlsSet(uint32_t key, void *data);
-void Sys_TlsFree(uint32_t key);
-
-void Sys_Yield(void);
-
 const char *Sys_Hostname(void);
 const char *Sys_Machine(void);
 const char *Sys_CpuName(void);
-int Sys_NumCpus(void);
+int32_t Sys_CpuFreq(void);
+int32_t Sys_NumCpus(void);
+
+const char *Sys_OperatingSystem(void);
+const char *Sys_OperatingSystemVersion(void);
 
 enum MachineType Sys_MachineType(void);
 uint32_t Sys_Capabilities(void);

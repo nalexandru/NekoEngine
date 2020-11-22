@@ -47,7 +47,8 @@ D3D12_BuildSBT(struct ShaderBindingTable *sbt, ID3D12StateObjectProperties *prop
 
 	const UINT64 size = sbt->rayGenSectionSize + sbt->missSectionSize + sbt->hitGroupSectionSize;
 	D3D12_HEAP_PROPERTIES hp{ D3D12_HEAP_TYPE_UPLOAD };
-	hr = Re_Device.dev->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &CD3DX12_RESOURCE_DESC::Buffer(size),
+	CD3DX12_RESOURCE_DESC rd = CD3DX12_RESOURCE_DESC::Buffer(size);
+	hr = Re_Device.dev->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &rd,
 		D3D12_RESOURCE_STATE_GENERIC_READ, NULL, IID_PPV_ARGS(&sbt->res));
 	if (FAILED(hr))
 		return false;

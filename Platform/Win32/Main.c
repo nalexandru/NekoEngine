@@ -1,4 +1,4 @@
-#include <Windows.h>
+#include "Win32Platform.h"
 #include <crtdbg.h>
 
 #include <Engine/Engine.h>

@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-#include <Windows.h>
+#include "Win32Platform.h"
 #include <Dbt.h>
 
 #include <System/Window.h>
@@ -78,24 +78,22 @@ Sys_CreateWindow(void)
 	DWORD exStyle = WS_EX_APPWINDOW | WS_EX_WINDOWEDGE;
 	uint16_t x = 0, y = 0;
 
-	WNDCLASS wincl =
-	{
-		.style = CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS,
-		.lpfnWndProc = _WndProc,
-		.hInstance = GetModuleHandle(NULL),
-		.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH),
-		.lpszClassName = WND_CLASS_NAME,
-		.hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(300))
-	};
+	WNDCLASSW wincl = { 0 };
+	wincl.style = CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;
+	wincl.lpfnWndProc = _WndProc;
+	wincl.hInstance = GetModuleHandle(NULL);
+	wincl.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+	wincl.lpszClassName = WND_CLASS_NAME;
+	wincl.hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(300));
 
 	if (!WM_SHOWCURSOR)
-		WM_SHOWCURSOR = RegisterWindowMessage(WM_SHOWCURSOR_MSG_GUID);
+		WM_SHOWCURSOR = RegisterWindowMessageW(WM_SHOWCURSOR_MSG_GUID);
 
 	if (!WM_HIDECURSOR)
-		WM_HIDECURSOR = RegisterWindowMessage(WM_HIDECURSOR_MSG_GUID);
+		WM_HIDECURSOR = RegisterWindowMessageW(WM_HIDECURSOR_MSG_GUID);
 
-	if (!RegisterClass(&wincl)) {
-		MessageBox(HWND_DESKTOP, L"Failed to register window class. The program will now exit.", L"FATAL ERROR", MB_OK | MB_ICONERROR);
+	if (!RegisterClassW(&wincl)) {
+		MessageBoxW(HWND_DESKTOP, L"Failed to register window class. The program will now exit.", L"FATAL ERROR", MB_OK | MB_ICONERROR);
 		return -1;
 	}
 
@@ -108,7 +106,7 @@ Sys_CreateWindow(void)
 	x = (GetSystemMetrics(SM_CXSCREEN) - *E_ScreenWidth) / 2;
     y = (GetSystemMetrics(SM_CYSCREEN) - *E_ScreenHeight) / 2;
 
-	_window = CreateWindowEx(exStyle, WND_CLASS_NAME,
+	_window = CreateWindowExW(exStyle, WND_CLASS_NAME,
 		L"NekoEngine", style, x, y, rc.right - rc.left, rc.bottom - rc.top,
 		HWND_DESKTOP, NULL, GetModuleHandle(NULL), NULL);
 
@@ -128,7 +126,7 @@ Sys_CreateWindow(void)
 void
 Sys_SetWindowTitle(const wchar_t *name)
 {
-	SetWindowText(_window, name);
+	SetWindowTextW(_window, name);
 }
 
 void

@@ -1,13 +1,12 @@
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include <assert.h>
-#include <strings.h>
-
-#include <unistd.h>
 
 #include <Engine/Config.h>
 #include <System/Log.h>
 #include <System/Memory.h>
+#include <System/AtomicLock.h>
 
 #define MMOD L"MemoryManager"
 #define MAGIC 0xB15B00B5
@@ -23,9 +22,9 @@ struct Allocation
 };
 
 static uint8_t *_transientHeap, *_transientHeapPtr;
-//static uint8_t *_sceneHeap, *_sceneHeapPtr;
 static uint64_t *_transientHeapSize;
 static uint64_t _transientHeapPeak = 0;
+struct AtomicLock _lock;
 
 void *
 Sys_Alloc(size_t size, size_t count, enum MemoryHeap heap)
@@ -38,13 +37,17 @@ Sys_Alloc(size_t size, size_t count, enum MemoryHeap heap)
 
 	switch (heap) {
 	case MH_Transient: {
+		Sys_AtomicLockWrite(&_lock);
+
 		totalSize = ROUND_UP(totalSize, 4);
-		if ((_transientHeapPtr - _transientHeap) + totalSize > *_transientHeapSize) {
+		if ((_transientHeapPtr - _transientHeap) + totalSize > * _transientHeapSize) {
 			assert(!"Out of transient memory");
 			break;
 		}
 		ret = _transientHeapPtr;
 		_transientHeapPtr += totalSize;
+
+		Sys_AtomicUnlockWrite(&_lock);
 	} break;
 	case MH_Persistent:
 	case MH_Secure: {
@@ -79,31 +82,17 @@ Sys_Free(void *mem)
 	}
 
 	if (alloc->heap == MH_Secure) {
-		bzero(alloc, alloc->size); // FIXME: this should be explicit_bzero
+		Sys_ZeroMemory(alloc, alloc->size);
 		alloc->heap = MH_Persistent;
 	}
 
 	switch (alloc->heap) {
 	case MH_Persistent:
 		free(alloc);
-	break;
+		break;
 	}
 
 	// check end
-	// free
-}
-
-void *
-Sys_AlignedAlloc(size_t size, size_t alignment)
-{
-	(void)alignment;
-	return malloc(size); // malloc is aligned to 16 bytes
-}
-
-void
-Sys_AlignedFree(void *mem)
-{
-	free(mem);
 }
 
 bool
@@ -111,7 +100,9 @@ Sys_InitMemory(void)
 {
 	_transientHeapSize = &E_GetCVarU64(L"Engine_TransientHeapSize", 6 * 1024 * 1024)->u64;
 
-	_transientHeap = calloc(1, *_transientHeapSize);
+	_transientHeap = Sys_AlignedAlloc((size_t)*_transientHeapSize, 16);
+	memset(_transientHeap, 0x0, (size_t)*_transientHeapSize);
+	
 	if (!_transientHeap)
 		return false;
 
@@ -123,13 +114,17 @@ Sys_InitMemory(void)
 void
 Sys_ResetHeap(enum MemoryHeap heap)
 {
+	Sys_AtomicLockWrite(&_lock);
+
 	switch (heap) {
 	case MH_Transient:
 		_transientHeapPeak = MAX(_transientHeapPeak, (size_t)(_transientHeapPtr - _transientHeap));
 
 		_transientHeapPtr = _transientHeap;
-	break;
+		break;
 	}
+
+	Sys_AtomicUnlockWrite(&_lock);
 }
 
 void
@@ -138,5 +133,5 @@ Sys_TermMemory(void)
 	Sys_LogEntry(MMOD, LOG_DEBUG, L"Transient heap peak: %u/%u B (%.02f%%)", _transientHeapPeak, *_transientHeapSize,
 		((double)_transientHeapPeak / (double)*_transientHeapSize) * 100.0);
 
-	free(_transientHeap);
+	Sys_AlignedFree(_transientHeap);
 }

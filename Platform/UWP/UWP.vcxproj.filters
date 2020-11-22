@@ -33,9 +33,6 @@
     <ClCompile Include="Main.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="System.cxx">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Window.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -48,13 +45,13 @@
     <ClCompile Include="Input.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="AtomicLock.cxx">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Memory.cxx">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Job.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="UWP.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Thread.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

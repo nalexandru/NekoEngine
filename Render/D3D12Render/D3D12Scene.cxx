@@ -90,7 +90,8 @@ D3D12_UpdateSceneData(struct Scene *scene)
 	struct TextureRenderData *trd = (struct TextureRenderData *)&((struct Texture *)E_ResourcePtr(scene->environmentMap))->renderDataStart;
 	srd->shaderData.environmentMap = (uint32_t)trd->id;
 
-	srd->dataBuffer = D3D12_CreateTransientResource(&CD3DX12_RESOURCE_DESC::Buffer(sizeof(srd->shaderData)), D3D12_RESOURCE_STATE_COPY_DEST);
+	D3D12_RESOURCE_DESC rd = CD3DX12_RESOURCE_DESC::Buffer(sizeof(srd->shaderData));
+	srd->dataBuffer = D3D12_CreateTransientResource(&rd, D3D12_RESOURCE_STATE_COPY_DEST);
 	srd->dataBuffer->SetName(L"Scene Data Buffer");
 	D3D12_StageUpload(srd->dataBuffer, sizeof(srd->shaderData), &srd->shaderData, D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT);
 }
@@ -135,11 +136,11 @@ D3D12_BuildTLAS(ID3D12GraphicsCommandList4 *cmdList, struct Scene *scene)
 		idxHandle.ptr += _descIncrement;
 	}
 
+	D3D12_RESOURCE_DESC rd = CD3DX12_RESOURCE_DESC::Buffer(max(srd->materialBufferSize,
+		D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT), D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
 	const UINT64 materialSize = srd->materialData.elem_size * srd->materialData.count;
 	srd->materialBufferSize = ROUND_UP(materialSize, D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT);
-	srd->materialBuffer = D3D12_CreateTransientResource(&CD3DX12_RESOURCE_DESC::Buffer(
-		max(srd->materialBufferSize, D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT), D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS),
-		D3D12_RESOURCE_STATE_COPY_DEST);
+	srd->materialBuffer = D3D12_CreateTransientResource(&rd, D3D12_RESOURCE_STATE_COPY_DEST);
 	srd->materialBuffer->SetName(L"Scene Material Buffer");
 
 	D3D12_StageUpload(srd->materialBuffer, materialSize, srd->materialData.data, D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT);
@@ -158,12 +159,12 @@ D3D12_BuildTLAS(ID3D12GraphicsCommandList4 *cmdList, struct Scene *scene)
 	info.ScratchDataSizeInBytes = ROUND_UP(info.ScratchDataSizeInBytes, D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT);
 	UINT64 instDescSize = ROUND_UP(Rt_ArrayByteSize(&srd->instanceData), D3D12_RAYTRACING_INSTANCE_DESCS_BYTE_ALIGNMENT);
 
-	scratch = D3D12_CreateTransientResource(&CD3DX12_RESOURCE_DESC::Buffer(info.ScratchDataSizeInBytes, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS),
-		D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	rd = CD3DX12_RESOURCE_DESC::Buffer(info.ScratchDataSizeInBytes, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+	scratch = D3D12_CreateTransientResource(&rd, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 	scratch->SetName(L"Scene Scratch Buffer");
 
-	tlas = D3D12_CreateTransientResource(&CD3DX12_RESOURCE_DESC::Buffer(info.ResultDataMaxSizeInBytes, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS),
-		D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE);
+	rd = CD3DX12_RESOURCE_DESC::Buffer(info.ResultDataMaxSizeInBytes, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+	tlas = D3D12_CreateTransientResource(&rd, D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE);
 	tlas->SetName(L"Scene TLAS Buffer");
 
 	D3D12_GPU_VIRTUAL_ADDRESS instPtr;
@@ -177,7 +178,9 @@ D3D12_BuildTLAS(ID3D12GraphicsCommandList4 *cmdList, struct Scene *scene)
 	desc.ScratchAccelerationStructureData = scratch->GetGPUVirtualAddress();
 
 	cmdList->BuildRaytracingAccelerationStructure(&desc, 0, NULL);
-	cmdList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(tlas));
+
+	D3D12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::UAV(tlas);
+	cmdList->ResourceBarrier(1, &barrier);
 
 	srd->asBuffer = tlas;
 }

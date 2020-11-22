@@ -93,7 +93,7 @@ _LogError(const wchar_t *message)
 {
 	LPWSTR buffer;
 
-	FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+	FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
 		NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR)&buffer, 0, NULL);
 
 	Sys_LogEntry(GLRMOD, LOG_CRITICAL, L"%s: %s", message, buffer);
@@ -110,7 +110,7 @@ GL_InitDevice(void)
 	PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB = NULL;
 	PFNWGLCHOOSEPIXELFORMATARBPROC wglChoosePixelFormatARB = NULL;
 
-	_libGL = LoadLibrary(L"opengl32");
+	_libGL = LoadLibraryW(L"opengl32");
 	if (!_libGL)
 		return false;
 

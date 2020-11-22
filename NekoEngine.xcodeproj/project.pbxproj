@@ -58,7 +58,6 @@
 		FA7D9F882528D6D400F51BA0 /* physfs_platform_posix.c in Sources */ = {isa = PBXBuildFile; fileRef = FA7D9F872528D6D400F51BA0 /* physfs_platform_posix.c */; };
 		FA80DCEC2522AFD200E05EE5 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = FA80DCEA2522AFD200E05EE5 /* InfoPlist.strings */; };
 		FAAF9A462521DE4800F7C24B /* Input.m in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9A3F2521DE4800F7C24B /* Input.m */; };
-		FAAF9A482521DE4800F7C24B /* Memory.m in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9A422521DE4800F7C24B /* Memory.m */; };
 		FAAF9A492521DE4800F7C24B /* MacX.m in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9A432521DE4800F7C24B /* MacX.m */; };
 		FAAF9A4A2521DE4800F7C24B /* Window.m in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9A442521DE4800F7C24B /* Window.m */; };
 		FAAF9AC02521EA8100F7C24B /* EngineView.m in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9ABF2521EA8100F7C24B /* EngineView.m */; };
@@ -119,6 +118,7 @@
 		FAC4B4B0253BE2E30074EE3C /* Job.c in Sources */ = {isa = PBXBuildFile; fileRef = FAC4B4AF253BE2E30074EE3C /* Job.c */; };
 		FAC4B4B2253BE2F60074EE3C /* AtomicLock.c in Sources */ = {isa = PBXBuildFile; fileRef = FAC4B4B1253BE2F60074EE3C /* AtomicLock.c */; };
 		FAC4B4B5253BE3F40074EE3C /* Thread.m in Sources */ = {isa = PBXBuildFile; fileRef = FAC4B4B4253BE3F40074EE3C /* Thread.m */; };
+		FADD5C0D253D297900606B2A /* Memory.c in Sources */ = {isa = PBXBuildFile; fileRef = FADD5C0C253D297900606B2A /* Memory.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -271,7 +271,6 @@
 		FA80DCEB2522AFD200E05EE5 /* English */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.plist.strings; name = English; path = Platform/MacX/English.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		FAAF9A3F2521DE4800F7C24B /* Input.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; name = Input.m; path = Platform/MacX/Input.m; sourceTree = "<group>"; };
 		FAAF9A412521DE4800F7C24B /* MacXPlatform.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = MacXPlatform.h; path = Platform/MacX/MacXPlatform.h; sourceTree = "<group>"; };
-		FAAF9A422521DE4800F7C24B /* Memory.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; name = Memory.m; path = Platform/MacX/Memory.m; sourceTree = "<group>"; };
 		FAAF9A432521DE4800F7C24B /* MacX.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; name = MacX.m; path = Platform/MacX/MacX.m; sourceTree = "<group>"; };
 		FAAF9A442521DE4800F7C24B /* Window.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; name = Window.m; path = Platform/MacX/Window.m; sourceTree = "<group>"; };
 		FAAF9ABE2521EA8100F7C24B /* EngineView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EngineView.h; path = Platform/MacX/EngineView.h; sourceTree = "<group>"; };
@@ -344,6 +343,7 @@
 		FAC4B4B1253BE2F60074EE3C /* AtomicLock.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = AtomicLock.c; path = Engine/System/AtomicLock.c; sourceTree = "<group>"; };
 		FAC4B4B4253BE3F40074EE3C /* Thread.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; name = Thread.m; path = Platform/MacX/Thread.m; sourceTree = "<group>"; };
 		FAC4B4B8253BE4350074EE3C /* Thread.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = Thread.h; path = Include/System/Thread.h; sourceTree = "<group>"; };
+		FADD5C0C253D297900606B2A /* Memory.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = Memory.c; path = Engine/System/Memory.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -443,7 +443,6 @@
 				FAC4B4B4253BE3F40074EE3C /* Thread.m */,
 				FAAF9A3F2521DE4800F7C24B /* Input.m */,
 				FAAF9A412521DE4800F7C24B /* MacXPlatform.h */,
-				FAAF9A422521DE4800F7C24B /* Memory.m */,
 				FAAF9A432521DE4800F7C24B /* MacX.m */,
 				FAAF9A442521DE4800F7C24B /* Window.m */,
 				FA3500712521DD1E00CE048F /* Main.m */,
@@ -677,6 +676,7 @@
 		FAAF9B742521F38100F7C24B /* System */ = {
 			isa = PBXGroup;
 			children = (
+				FADD5C0C253D297900606B2A /* Memory.c */,
 				FAC4B4B1253BE2F60074EE3C /* AtomicLock.c */,
 				FAAF9BAF2521F48400F7C24B /* Compat */,
 				FAAF9BB02521F49C00F7C24B /* Log.c */,
@@ -949,7 +949,6 @@
 			files = (
 				FA3500722521DD1E00CE048F /* Main.m in Sources */,
 				FAAF9A462521DE4800F7C24B /* Input.m in Sources */,
-				FAAF9A482521DE4800F7C24B /* Memory.m in Sources */,
 				FAAF9A492521DE4800F7C24B /* MacX.m in Sources */,
 				FAAF9A4A2521DE4800F7C24B /* Window.m in Sources */,
 				FAAF9AC02521EA8100F7C24B /* EngineView.m in Sources */,
@@ -1053,6 +1052,7 @@
 				FAC4B4B0253BE2E30074EE3C /* Job.c in Sources */,
 				FAC4B4B2253BE2F60074EE3C /* AtomicLock.c in Sources */,
 				FAC4B4B5253BE3F40074EE3C /* Thread.m in Sources */,
+				FADD5C0D253D297900606B2A /* Memory.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1080,13 +1080,6 @@
 				GCC_OPTIMIZATION_LEVEL = 0;
 				INFOPLIST_FILE = Platform/MacX/Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(LIBRARY_SEARCH_PATHS_QUOTED_FOR_TARGET_1)",
-					"$(LIBRARY_SEARCH_PATHS_QUOTED_FOR_TARGET_2)",
-				);
-				LIBRARY_SEARCH_PATHS_QUOTED_FOR_TARGET_1 = "\"$(SRCROOT)/Deps/Lua/lib\"";
-				LIBRARY_SEARCH_PATHS_QUOTED_FOR_TARGET_2 = "\"$(SRCROOT)/Deps/Lua/Lib\"";
 				PRODUCT_NAME = NekoEngine;
 				WRAPPER_EXTENSION = app;
 				ZERO_LINK = YES;
@@ -1102,15 +1095,8 @@
 				);
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_MODEL_TUNING = G5;
-				INFOPLIST_FILE = Platform/Info.plist;
+				INFOPLIST_FILE = Platform/MacX/Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(LIBRARY_SEARCH_PATHS_QUOTED_FOR_TARGET_1)",
-					"$(LIBRARY_SEARCH_PATHS_QUOTED_FOR_TARGET_2)",
-				);
-				LIBRARY_SEARCH_PATHS_QUOTED_FOR_TARGET_1 = "\"$(SRCROOT)/Deps/Lua/lib\"";
-				LIBRARY_SEARCH_PATHS_QUOTED_FOR_TARGET_2 = "\"$(SRCROOT)/Deps/Lua/Lib\"";
 				PRODUCT_NAME = NekoEngine;
 				WRAPPER_EXTENSION = app;
 			};
@@ -1158,12 +1144,15 @@
 				COPY_PHASE_STRIP = NO;
 				GCC_ALTIVEC_EXTENSIONS = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_ENABLE_SSE3_EXTENSIONS = YES;
+				GCC_ENABLE_SUPPLEMENTAL_SSE3_INSTRUCTIONS = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					WCSDUP_COMPAT,
 					LUA_USE_MACOSX,
 				);
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				GCC_USE_GCC3_PFE_SUPPORT = NO;
+				GCC_VERSION = 4.0;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = (

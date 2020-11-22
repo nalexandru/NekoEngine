@@ -197,6 +197,7 @@
     <ClCompile Include="System\Compat\getopt.c" />
     <ClCompile Include="System\Compat\reallocarray.c" />
     <ClCompile Include="System\Log.c" />
+    <ClCompile Include="System\Memory.c" />
     <ClCompile Include="System\System.c" />
     <ClCompile Include="UI\Text.c" />
     <ClCompile Include="UI\UI.c" />

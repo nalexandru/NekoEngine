@@ -14,6 +14,18 @@
 
 #include "stb_image.h"
 
+struct Image
+{
+	uint64_t hash;
+	int channels;
+	enum TextureFormat format;
+};
+
+#define ADD_IMAGE(name, channels, fmt) {						\
+	struct Image img = { Rt_HashString(name), channels, fmt };	\
+	Rt_ArrayAdd(&images, &img);									\
+}
+
 static void *_gltfAlloc(void *user, cgltf_size size);
 static void _gltfFree(void *user, void *ptr);
 static cgltf_result _gltfRead(const struct cgltf_memory_options* memory_options, const struct cgltf_file_options* file_options, const char* path, cgltf_size* size, void** data);
@@ -28,7 +40,7 @@ E_LoadglTFAsset(const char *baseDir, struct Stream *stm, struct Model *m)
 {
 	cgltf_options opt = { 0 };
 	cgltf_data *gltf = NULL;
-	Array vertices = { 0 }, indices = { 0 }, meshes = { 0 }, materials = { 0 };
+	Array vertices = { 0 }, indices = { 0 }, meshes = { 0 }, materials = { 0 }, images = { 0 };
 	uint32_t i = 0, j = 0;
 
 	opt.memory.alloc = _gltfAlloc;
@@ -59,6 +71,7 @@ E_LoadglTFAsset(const char *baseDir, struct Stream *stm, struct Model *m)
 	Rt_InitArray(&vertices, vertices.size, sizeof(struct Vertex));
 	Rt_InitArray(&indices, indices.size, sizeof(uint32_t));
 	Rt_InitPtrArray(&materials, meshes.size);
+	Rt_InitArray(&images, 10, sizeof(struct Image));
 
 	for (i = 0; i < gltf->meshes_count; ++i)
 		_LoadMesh(&gltf->meshes[i], &vertices, &indices, &meshes, &materials);
@@ -72,55 +85,6 @@ E_LoadglTFAsset(const char *baseDir, struct Stream *stm, struct Model *m)
 	m->meshes = (struct Mesh *)meshes.data;
 	m->numMeshes = (uint32_t)meshes.count;
 	m->materialNames = (wchar_t **)materials.data;
-
-	for (i = 0; i < gltf->images_count; ++i) {
-		int x = 0, y = 0, comp = 0;
-		const cgltf_image *img = &gltf->images[i];
-		stbi_uc *imageData = NULL;
-		struct TextureCreateInfo tci =
-		{
-			0, 0, 1,
-			TT_2D,
-			TF_R8G8B8A8_UNORM,
-			NULL,
-			0,
-			false
-		};
-
-		if (img->buffer_view->buffer->data)
-			imageData = stbi_load_from_memory((uint8_t *)img->buffer_view->buffer->data + img->buffer_view->offset, (int)img->buffer_view->buffer->size, &x, &y, &comp, 4);
-
-		if (!imageData) {
-			continue;
-		}
-
-		tci.width = x;
-		tci.height = y;
-		tci.data = imageData;
-		tci.dataSize = sizeof(stbi_uc) * x * y * 4;
-
-		/*if (comp == 3) {
-			tci.dataSize = sizeof(stbi_uc) * x * y * 4;
-			tci.data = calloc(1, tci.dataSize);
-
-			int k = 0, l = 0;
-			for (int j = 0; j < x * y; ++j) {
-				((uint8_t *)tci.data)[k++] = data[l++]; l++; l++; l++;
-				((uint8_t *)tci.data)[k++] = 0x00;//data[l++];
-				((uint8_t *)tci.data)[k++] = 0x00;//data[l++];
-				((uint8_t *)tci.data)[k++] = 0xFF;
-			}
-
-			free(data);
-		} else if (comp == 2) {
-			tci.format = TF_R8G8_UNORM;
-		} else if (comp == 1) {
-			tci.format = TF_R8_UNORM;
-		}*/
-
-		E_CreateResource(img->name, RES_TEXTURE, &tci);
-		free(tci.data);
-	}
 
 	for (i = 0; i < gltf->materials_count; ++i) {
 		struct MaterialProperties props;
@@ -137,24 +101,35 @@ E_LoadglTFAsset(const char *baseDir, struct Stream *stm, struct Model *m)
 		props.alphaCutoff = mat->alpha_cutoff;
 		memcpy(&props.emissive, mat->emissive_factor, sizeof(props.emissive));
 
-		if (mat->normal_texture.texture)
+		if (mat->normal_texture.texture) {
 			textures[MAP_NORMAL] = mat->normal_texture.texture->image->name;
+			ADD_IMAGE(textures[MAP_NORMAL], 4, TF_R8G8B8A8_UNORM);
+		}
 
-		if (mat->emissive_texture.texture)
+		if (mat->emissive_texture.texture) {
 			textures[MAP_EMISSIVE] = mat->emissive_texture.texture->image->name;
+			ADD_IMAGE(textures[MAP_EMISSIVE], 4, TF_R8G8B8A8_UNORM);
+		}
 
-		if (mat->occlusion_texture.texture)
+		if (mat->occlusion_texture.texture) {
 			textures[MAP_AO] = mat->occlusion_texture.texture->image->name;
+			ADD_IMAGE(textures[MAP_AO], 1, TF_R8_UNORM);
+		}
 
 		if (mat->has_pbr_metallic_roughness) {
 			props.roughness = mat->pbr_metallic_roughness.roughness_factor;
 			props.metallic = mat->pbr_metallic_roughness.metallic_factor;
 
 			memcpy(&props.color.a, mat->pbr_metallic_roughness.base_color_factor, sizeof(props.color));
-			if (mat->pbr_metallic_roughness.base_color_texture.texture)
+			if (mat->pbr_metallic_roughness.base_color_texture.texture) {
 				textures[MAP_DIFFUSE] = mat->pbr_metallic_roughness.base_color_texture.texture->image->name;
-			if (mat->pbr_metallic_roughness.metallic_roughness_texture.texture)
+				ADD_IMAGE(textures[MAP_DIFFUSE], 4, TF_R8G8B8A8_UNORM);
+			}
+
+			if (mat->pbr_metallic_roughness.metallic_roughness_texture.texture) {
 				textures[MAP_METALLIC_ROUGHNESS] = mat->pbr_metallic_roughness.metallic_roughness_texture.texture->image->name;
+				ADD_IMAGE(textures[MAP_METALLIC_ROUGHNESS], 2, TF_R8G8_UNORM);
+			}
 		} else if (mat->has_pbr_specular_glossiness) {
 		}
 
@@ -183,6 +158,54 @@ E_LoadglTFAsset(const char *baseDir, struct Stream *stm, struct Model *m)
 		mbstowcs(name, mat->name, strlen(mat->name));
 
 		Re_CreateMaterial(name, L"Default", &props, textures); 
+	}
+
+	for (i = 0; i < gltf->images_count; ++i) {
+		size_t j = 0;
+		uint64_t hash = 0;
+		int x = 0, y = 0, comp = 0;
+		const cgltf_image *img = &gltf->images[i];
+		struct Image *imgInfo = NULL, *iiData = (struct Image *)images.data;
+		stbi_uc *imageData = NULL;
+		struct TextureCreateInfo tci =
+		{
+			0, 0, 1,
+			TT_2D,
+			TF_R8G8B8A8_UNORM,
+			NULL,
+			0,
+			false
+		};
+
+		if (!img->buffer_view->buffer->data)
+			continue;
+
+		hash = Rt_HashString(img->name);
+		for (j = 0; j < images.count; ++j) {
+			if (iiData[j].hash != hash)
+				continue;
+
+			imgInfo = &iiData[j];
+			break;
+		}
+
+		if (!imgInfo)
+			continue;
+
+		imageData = stbi_load_from_memory((uint8_t *)img->buffer_view->buffer->data + img->buffer_view->offset, (int)img->buffer_view->buffer->size, &x, &y, &comp, imgInfo->channels);
+
+		if (!imageData) {
+			continue;
+		}
+
+		tci.width = x;
+		tci.height = y;
+		tci.data = imageData;
+		tci.dataSize = sizeof(stbi_uc) * x * y * imgInfo->channels;
+		tci.format = imgInfo->format;
+
+		E_CreateResource(img->name, RES_TEXTURE, &tci);
+		free(tci.data);
 	}
 
 	cgltf_free(gltf);

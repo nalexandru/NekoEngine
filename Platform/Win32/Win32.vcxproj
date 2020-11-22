@@ -16,11 +16,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Deps\PhysFS\physfs_platform_windows.c" />
-    <ClCompile Include="W32Input.c" />
+    <ClCompile Include="Win32Input.c" />
     <ClCompile Include="Main.c" />
-    <ClCompile Include="Memory.c" />
     <ClCompile Include="Win32.c" />
     <ClCompile Include="Thread.c" />
+    <ClCompile Include="Win32Compat.c" />
     <ClCompile Include="Window.c" />
   </ItemGroup>
   <ItemGroup>
@@ -99,6 +99,7 @@
       <PrecompiledHeaderFile />
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <ExceptionHandling>false</ExceptionHandling>
+      <DisableSpecificWarnings>4996</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -118,6 +119,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <ExceptionHandling>false</ExceptionHandling>
+      <DisableSpecificWarnings>4996</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -142,6 +144,7 @@
       <OmitFramePointers>true</OmitFramePointers>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <FloatingPointModel>Fast</FloatingPointModel>
+      <DisableSpecificWarnings>4996</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>

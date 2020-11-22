@@ -131,8 +131,8 @@ App_SceneLoaded(void *user, void *args)
 void
 App_DrawStatistics(void **comp, void *args)
 {
-	struct UIContext *ctx = comp[0];
-	struct Statistics *stats = comp[1];
+	struct UIContext *ctx = (struct UIContext *)comp[0];
+	struct Statistics *stats = (struct Statistics *)comp[1];
 	double delta = E_Time() - stats->time;
 
 	++stats->frames;

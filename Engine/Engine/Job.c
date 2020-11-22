@@ -61,7 +61,7 @@ E_InitJobSystem(void)
 	_jobQueue.head = 0;
 	_jobQueue.tail = 0;
 	_jobQueue.size = 1000;
-	_jobQueue.jobs = calloc(_jobQueue.size, sizeof(*_jobQueue.jobs));
+	_jobQueue.jobs = calloc((size_t)_jobQueue.size, sizeof(*_jobQueue.jobs));
 
 	if (!_jobQueue.jobs)
 		return false;
@@ -102,6 +102,7 @@ E_ExecuteJob(JobProc proc, void *args, void (*completed)(uint64_t))
 uint64_t
 E_DispatchJobs(uint64_t count, JobProc proc, void **args, void (*completed)(uint64_t))
 {
+	int i;
 	uint64_t dispatches = 0, id = 0;
 	uint64_t jobs = 0, extraJobs = 0, next_start = 0;
 	
@@ -115,7 +116,7 @@ E_DispatchJobs(uint64_t count, JobProc proc, void **args, void (*completed)(uint
 		extraJobs = count - ((uint64_t)jobs * _numThreads);
 	}
 	
-	for (int i = 0; i < dispatches; ++i) {
+	for (i = 0; i < dispatches; ++i) {
 		struct DispatchArgs *dargs = Sys_Alloc(sizeof(*dargs), 1, MH_Transient);
 
 		dargs->exec = proc;
@@ -199,7 +200,8 @@ _ThreadProc(void *args)
 static void
 _DispatchWrapper(int worker, struct DispatchArgs *args)
 {
-	for (int i = 0; i < args->count; ++i)
+	int i = 0;
+	for (i; i < args->count; ++i)
 		args->exec(worker, args->args ? args->args[i] : NULL);
 }
 
@@ -207,10 +209,11 @@ static inline bool
 _JQ_Push(struct JobQueue *jq, JobProc exec, void *args, void (*completed)(uint64_t), uint64_t *id)
 {
 	bool ret = false;
+	uint64_t next;
 
 	Sys_LockFutex(jq->lock);
 
-	uint64_t next = (jq->head + 1) % jq->size;
+	next = (jq->head + 1) % jq->size;
 	if (next != jq->tail) {
 		jq->jobs[jq->head].id = _submittedJobs;
 		jq->jobs[jq->head].args = args;

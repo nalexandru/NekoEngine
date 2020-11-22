@@ -644,6 +644,9 @@
     <ClCompile Include="System\AtomicLock.c">
       <Filter>Source Files\System</Filter>
     </ClCompile>
+    <ClCompile Include="System\Memory.c">
+      <Filter>Source Files\System</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
