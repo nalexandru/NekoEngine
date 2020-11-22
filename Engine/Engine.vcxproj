@@ -112,6 +112,7 @@
     <ClInclude Include="..\Include\UI\Font.h" />
     <ClInclude Include="..\Include\UI\Text.h" />
     <ClInclude Include="..\Include\UI\UI.h" />
+    <ClInclude Include="..\Platform\Win32\Win32Platform.h" />
     <ClInclude Include="Engine\ECS.h" />
   </ItemGroup>
   <ItemGroup>
@@ -161,7 +162,14 @@
     <ClCompile Include="..\Deps\PhysFS\physfs_archiver_wad.c" />
     <ClCompile Include="..\Deps\PhysFS\physfs_archiver_zip.c" />
     <ClCompile Include="..\Deps\PhysFS\physfs_byteorder.c" />
+    <ClCompile Include="..\Deps\PhysFS\physfs_platform_windows.c" />
     <ClCompile Include="..\Deps\PhysFS\physfs_unicode.c" />
+    <ClCompile Include="..\Platform\Win32\Main.c" />
+    <ClCompile Include="..\Platform\Win32\Thread.c" />
+    <ClCompile Include="..\Platform\Win32\Win32.c" />
+    <ClCompile Include="..\Platform\Win32\Win32Compat.c" />
+    <ClCompile Include="..\Platform\Win32\Win32Input.c" />
+    <ClCompile Include="..\Platform\Win32\Window.c" />
     <ClCompile Include="Asset\Font.c" />
     <ClCompile Include="Asset\glTF.c" />
     <ClCompile Include="Asset\Image.c" />

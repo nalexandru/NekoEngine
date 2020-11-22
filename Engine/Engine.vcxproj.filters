@@ -91,6 +91,12 @@
     <Filter Include="Source Files\Deps\Lua">
       <UniqueIdentifier>{566e4675-9095-4403-a72f-11a929c7ae3a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Platform">
+      <UniqueIdentifier>{38fe000a-e350-462e-96db-098f404cb7fb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Platform">
+      <UniqueIdentifier>{ce4b597f-789f-4727-b4cb-12188844bf11}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Include\System\System.h">
@@ -387,6 +393,9 @@
     <ClInclude Include="..\Include\System\Thread.h">
       <Filter>Header Files\System</Filter>
     </ClInclude>
+    <ClInclude Include="..\Platform\Win32\Win32Platform.h">
+      <Filter>Header Files\Platform</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="System\System.c">
@@ -646,6 +655,27 @@
     </ClCompile>
     <ClCompile Include="System\Memory.c">
       <Filter>Source Files\System</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Platform\Win32\Main.c">
+      <Filter>Source Files\Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Platform\Win32\Thread.c">
+      <Filter>Source Files\Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Platform\Win32\Win32.c">
+      <Filter>Source Files\Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Platform\Win32\Win32Compat.c">
+      <Filter>Source Files\Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Platform\Win32\Win32Input.c">
+      <Filter>Source Files\Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Platform\Win32\Window.c">
+      <Filter>Source Files\Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Deps\PhysFS\physfs_platform_windows.c">
+      <Filter>Source Files\Deps\PhysFS</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
