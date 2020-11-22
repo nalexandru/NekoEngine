@@ -153,7 +153,7 @@
     <ProjectReference Include="..\Platform\Win32\Win32.vcxproj">
       <Project>{f2861881-6c76-4a99-b3de-f3170b04eb12}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\Sound\XA2Sound\XA2Sound.vcxproj">
+    <ProjectReference Include="..\Sound\XAudio2\XA2Sound.vcxproj">
       <Project>{ffd4e8ef-7864-4b93-8d85-c3106a258143}</Project>
     </ProjectReference>
   </ItemGroup>
