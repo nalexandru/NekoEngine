@@ -159,7 +159,7 @@ void __PHYSFS_platformDetectAvailableCDs(PHYSFS_StringCallback cb, void *data)
 {
 #if !defined(PHYSFS_NO_CDROM_SUPPORT)
     const char *devPrefix = "/dev/";
-    const int prefixLen = strlen(devPrefix);
+    const int prefixLen = (int)strlen(devPrefix);
     mach_port_t masterPort = 0;
     struct statfs *mntbufp;
     int i, mounts;

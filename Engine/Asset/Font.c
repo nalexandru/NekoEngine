@@ -5,8 +5,8 @@
 #include <Engine/Asset.h>
 #include <Engine/Config.h>
 #include <Engine/Resource.h>
-#include <Render/Render.h>
-#include <Render/Texture.h>
+//#include <Render/Render.h>
+//#include <Render/Texture.h>
 #include <System/Endian.h>
 
 #define FNT_MAGIC	0xB00B5000
@@ -21,7 +21,7 @@ struct FontHeader
 bool
 E_LoadFontAsset(struct Stream *stm, struct Font *fnt)
 {
-	void *texData = NULL;
+/*	void *texData = NULL;
 	uint32_t texDataSize;
 	struct FontHeader hdr;
 	struct TextureCreateInfo tci;
@@ -46,7 +46,7 @@ E_LoadFontAsset(struct Stream *stm, struct Font *fnt)
 		goto error;
 
 	if (Sys_BigEndian()) {
-		for (uint32_t i; i < fnt->glyphCount; ++i) {
+		for (uint32_t i = 0; i < fnt->glyphCount; ++i) {
 			fnt->glyphs[i].u = Sys_SwapFloat(fnt->glyphs[i].u);
 			fnt->glyphs[i].v = Sys_SwapFloat(fnt->glyphs[i].v);
 			fnt->glyphs[i].tw = Sys_SwapFloat(fnt->glyphs[i].tw);
@@ -78,25 +78,25 @@ E_LoadFontAsset(struct Stream *stm, struct Font *fnt)
 		goto error;
 
 	tci.width = texSize;
-	tci.height = texSize,
-	tci.depth = 1,
-	tci.type = TT_2D,
-	tci.format = TF_ALPHA,
-	tci.data = texData,
-	tci.dataSize = texDataSize,
+	tci.height = texSize;
+	tci.depth = 1;
+	tci.type = TT_2D;
+	tci.format = TF_ALPHA;
+	tci.data = texData;
+	tci.dataSize = texDataSize;
 	tci.keepData = false;
 
 	fnt->texture = E_CreateResource("__SysFont_Texture", RES_TEXTURE, &tci);
 	if (fnt->texture == E_INVALID_HANDLE)
-		goto error;
+		goto error;*/
 
 	return true;
 
-error:
+/*error:
 	free(texData);
 	free(fnt->glyphs);
 
 	memset(fnt, 0x0, sizeof(*fnt));
 
-	return false;
+	return false;*/
 }

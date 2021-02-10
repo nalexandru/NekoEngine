@@ -34,8 +34,8 @@ struct UIContext
 
 ENGINE_API extern struct mat4 UI_Projection;
 
-bool UI_InitUI();
-void UI_TermUI();
+bool UI_InitUI(void);
+void UI_TermUI(void);
 
 bool UI_InitContext(struct UIContext *ctx, const void **);
 void UI_TermContext(struct UIContext *ctx);

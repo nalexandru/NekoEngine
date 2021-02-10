@@ -12,8 +12,8 @@ bool E_LoadNMeshAsset(struct Stream *stm, struct Model *m);
 bool E_LoadglTFAsset(const char *baseDir, struct Stream *stm, struct Model *m);
 
 // Textures
-bool E_LoadImageAsset(struct Stream *stm, struct Texture *tex);
-bool E_LoadTGAAsset(struct Stream *stm, struct Texture *tex);
+bool E_LoadImageAsset(struct Stream *stm, struct TextureCreateInfo *tex);
+bool E_LoadTGAAsset(struct Stream *stm, struct TextureCreateInfo *tex);
 
 bool E_LoadOggAsset(struct Stream *stm, struct AudioClip *clip);
 bool E_LoadWaveAsset(struct Stream *stm, struct AudioClip *clip);

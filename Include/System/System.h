@@ -60,13 +60,16 @@ enum MachineType Sys_MachineType(void);
 uint32_t Sys_Capabilities(void);
 
 bool Sys_ScreenVisible(void);
-bool Sys_UniversalWindows(void);
 void Sys_MessageBox(const wchar_t *title, const wchar_t *message, int icon);
 bool Sys_ProcessEvents(void);
 
 void *Sys_LoadLibrary(const char *path);
 void *Sys_GetProcAddress(void *lib, const char *name);
 void Sys_UnloadLibrary(void *lib);
+
+void Sys_Sleep(uint32_t sec);
+void Sys_MSleep(uint32_t msec);
+void Sys_USleep(uint32_t usec);
 
 // Compatibility shivs
 void *reallocarray(void *ptr, size_t nmemb, size_t size);

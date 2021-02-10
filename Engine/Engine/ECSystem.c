@@ -15,11 +15,8 @@ bool E_RegisterSystems(void);
 static Array _systems;
 static Array _filteredEntities;
 
-static void _ecsys_comp_update_proc(void *);
-static void _ecsys_entity_update_proc(void *);
-
-static int _ecsys_insert_cmp(const void *item, const void *data);
-static inline void _sys_exec(struct Scene *s, struct ECSystem *sys, void *args);
+static int _ecsysInsertCmp(const void *item, const void *data);
+static inline void _sysExec(struct Scene *s, struct ECSystem *sys, void *args);
 static inline void _filterEntities(struct Scene *s, Array *ent, CompTypeId *comp_types, size_t type_count);
 
 bool
@@ -68,7 +65,7 @@ E_RegisterSystemId(const wchar_t *name, const wchar_t *group,
 	sys.exec = proc;
 	sys.priority = priority;
 
-	pos = Rt_ArrayFindId(&_systems, &priority, _ecsys_insert_cmp);
+	pos = Rt_ArrayFindId(&_systems, &priority, _ecsysInsertCmp);
 	if (pos == RT_NOT_FOUND)
 		pos = _systems.count;
 
@@ -97,7 +94,7 @@ E_ExecuteSystemS(struct Scene *s, const wchar_t *name, void *args)
 	if (!sys)
 		return;
 
-	_sys_exec(s, sys, args);
+	_sysExec(s, sys, args);
 }
 
 void
@@ -113,7 +110,7 @@ E_ExecuteSystemGroupS(struct Scene *s, const wchar_t *name)
 		if (sys->group_hash != hash)
 			continue;
 
-		_sys_exec(s, sys, NULL);
+		_sysExec(s, sys, NULL);
 	}
 }
 
@@ -142,7 +139,7 @@ E_TermECSystems(void)
 }
 
 static int
-_ecsys_insert_cmp(const void *item, const void *data)
+_ecsysInsertCmp(const void *item, const void *data)
 {
 	const struct ECSystem *sys = item;
 	int32_t priority = *(int32_t *)data;
@@ -156,7 +153,7 @@ _ecsys_insert_cmp(const void *item, const void *data)
 }
 
 static inline void
-_sys_exec(struct Scene *s, struct ECSystem *sys, void *args)
+_sysExec(struct Scene *s, struct ECSystem *sys, void *args)
 {
 	size_t i = 0, j = 0;
 	void *ptr = NULL;

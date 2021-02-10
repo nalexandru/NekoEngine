@@ -8,8 +8,8 @@
 #include <Engine/Events.h>
 #include <Scene/Scene.h>
 #include <Scene/Camera.h>
-#include <Render/Render.h>
-#include <Render/Texture.h>
+//#include <Render/Render.h>
+//#include <Render/Texture.h>
 #include <System/System.h>
 #include <System/Memory.h>
 #include <Runtime/Runtime.h>
@@ -29,7 +29,7 @@ static inline void _ReadEntity(struct Scene *s, struct Stream *stm, char *data, 
 struct Scene *
 Scn_CreateScene(const wchar_t *name)
 {
-	struct Scene *s = Sys_Alloc(RE_APPEND_DATA_SIZE(struct Scene, Re.sceneRenderDataSize), 1, MH_Persistent);
+	/*struct Scene *s = Sys_Alloc(RE_APPEND_DATA_SIZE(struct Scene, Re.sceneRenderDataSize), 1, MH_Persistent);
 	if (!s)
 		return NULL;
 
@@ -40,13 +40,14 @@ Scn_CreateScene(const wchar_t *name)
 		return NULL;
 	}
 
-	return s;
+	return s;*/
+	return NULL;
 }
 
 struct Scene *
 Scn_StartSceneLoad(const char *path)
 {
-	struct Scene *s = Sys_Alloc(RE_APPEND_DATA_SIZE(struct Scene, Re.sceneRenderDataSize), 1, MH_Persistent);
+	/*struct Scene *s = Sys_Alloc(RE_APPEND_DATA_SIZE(struct Scene, Re.sceneRenderDataSize), 1, MH_Persistent);
 	if (!s)
 		return NULL;
 
@@ -60,9 +61,9 @@ Scn_StartSceneLoad(const char *path)
 	if (E_GetCVarBln(L"Engine_SingleThreadSceneLoad", false))
 		_LoadJob(0, s);
 	else
-		E_ExecuteJob((JobProc)_LoadJob, s, NULL);
+		E_ExecuteJob((JobProc)_LoadJob, s, NULL);*/
 
-	return s;
+	return NULL;
 }
 
 void
@@ -70,7 +71,7 @@ Scn_UnloadScene(struct Scene *s)
 {
 	E_TermSceneEntities(s);
 	E_TermSceneComponents(s);
-	Re.TermScene(s);
+//	Re.TermScene(s);
 
 	Sys_Free(s);
 }
@@ -92,8 +93,8 @@ _InitScene(struct Scene *s)
 	if (!E_InitSceneComponents(s) || !E_InitSceneEntities(s))
 		goto error;
 
-	if (!Re.InitScene(s))
-		goto error;
+//	if (!Re.InitScene(s))
+//		goto error;
 	
 	return true;
 
@@ -168,7 +169,7 @@ _ReadSceneInfo(struct Scene *s, struct Stream *stm, char *data, wchar_t *buff)
 			mbstowcs(s->name, type, sizeof(s->name) / sizeof(wchar_t));
 		} else if (!strncmp(line, "EnvironmentMap", 14)) {
 			char *file = strchr(line, '=') + 1;
-			s->environmentMap = E_LoadResource(file, RES_TEXTURE);
+//			s->environmentMap = E_LoadResource(file, RES_TEXTURE);
 		} else if (!strncmp(line, "EndSceneInfo", len)) {
 			break;
 		}

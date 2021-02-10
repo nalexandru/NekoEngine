@@ -9,7 +9,7 @@
 #include <System/Window.h>
 #include <System/Memory.h>
 #include <Engine/Engine.h>
-#include <Render/Render.h>
+//#include <Render/Render.h>
 
 #include "MacXPlatform.h"
 

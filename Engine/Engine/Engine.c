@@ -8,6 +8,7 @@
 #include <Engine/Engine.h>
 #include <Engine/Config.h>
 #include <System/Log.h>
+#include <System/Thread.h>
 #include <System/Endian.h>
 #include <System/Memory.h>
 #include <System/System.h>
@@ -15,8 +16,8 @@
 #include <Scene/Scene.h>
 #include <Scene/Camera.h>
 #include <Render/Render.h>
-#include <Render/Model.h>
-#include <Render/Material.h>
+#include <Render/Device.h>
+//#include <Render/Material.h>
 #include <Engine/Event.h>
 #include <Engine/Entity.h>
 #include <Engine/Version.h>
@@ -27,8 +28,8 @@
 #include <Script/Script.h>
 #include <UI/UI.h>
 
-#include <Render/Texture.h>
-#include <Render/ModelRender.h>
+//#include <Render/Texture.h>
+//#include <Render/Components/ModelRender.h>
 
 #include "ECS.h"
 
@@ -44,11 +45,11 @@ double E_DeltaTime = 0.0;
 static bool _shutdown;
 static double _startTime, _prevTime;
 #include <Math/sanity.h>
+
 bool
 E_Init(int argc, char *argv[])
 {
 	int opt;
-	wchar_t titleBuff[256];
 	const char *configFile = E_CONFIG_FILE;
 	const char *logFile = NULL;
 	const char *dataDir = NULL;
@@ -115,33 +116,45 @@ E_Init(int argc, char *argv[])
 
 	E_InitResourceSystem();
 
-	Re_Init();
-	Sys_LogEntry(EMOD, LOG_INFORMATION, L"GPU: %ls", Re.info.device);
-	Sys_LogEntry(EMOD, LOG_INFORMATION, L"\tRendering API: %ls", Re.info.name);
+	Re_InitRender();
 
-	E_RegisterResourceType(RES_MODEL, RE_APPEND_DATA_SIZE(struct Model, Re.modelRenderDataSize),
-		(ResourceCreateProc)Re_CreateModel, (ResourceLoadProc)Re_LoadModel, (ResourceUnloadProc)Re_UnloadModel);
-	E_RegisterResourceType(RES_TEXTURE, RE_APPEND_DATA_SIZE(struct Texture, Re.textureRenderDataSize),
-		(ResourceCreateProc)Re_CreateTexture, (ResourceLoadProc)Re_LoadTexture, (ResourceUnloadProc)Re_UnloadTexture);
+//	E_RegisterResourceType(RES_MODEL, RE_APPEND_DATA_SIZE(struct Model, Re.modelRenderDataSize),
+//		(ResourceCreateProc)Re_CreateModel, (ResourceLoadProc)Re_LoadModel, (ResourceUnloadProc)Re_UnloadModel);
+//	E_RegisterResourceType(RES_TEXTURE, RE_APPEND_DATA_SIZE(struct Texture, Re.textureRenderDataSize),
+//		(ResourceCreateProc)Re_CreateTexture, (ResourceLoadProc)Re_LoadTexture, (ResourceUnloadProc)Re_UnloadTexture);
 
-	Re_LoadMaterials();
+//	Re_LoadMaterials();
 
 	Au_Init();
 
 	In_InitInput();
 	UI_InitUI();
+	
+#ifdef _DEBUG
+	wchar_t titleBuff[256];
+	
+	swprintf(titleBuff, sizeof(titleBuff) / sizeof(wchar_t), L"%ls v%u.%u.%u", App_ApplicationInfo.name,
+		App_ApplicationInfo.version.major, App_ApplicationInfo.version.minor, App_ApplicationInfo.version.build);
 
 	if (App_ApplicationInfo.version.revision)
-		swprintf(titleBuff, 256, L"%ls v%u.%u.%u.%u - %ls - %ls", App_ApplicationInfo.name,
-			App_ApplicationInfo.version.major, App_ApplicationInfo.version.minor, App_ApplicationInfo.version.build,
-			App_ApplicationInfo.version.revision, Re.info.device, Re.info.name);
-	else
-		swprintf(titleBuff, 256, L"%ls v%u.%u.%u - %ls - %ls", App_ApplicationInfo.name,
-			App_ApplicationInfo.version.major, App_ApplicationInfo.version.minor, App_ApplicationInfo.version.build,
-			Re.info.device, Re.info.name);
-
+		swprintf(titleBuff + wcslen(titleBuff), sizeof(titleBuff) / sizeof(wchar_t) - wcslen(titleBuff),
+			L".%u", App_ApplicationInfo.version.revision);
+	
+	swprintf(titleBuff + wcslen(titleBuff), sizeof(titleBuff) / sizeof(wchar_t) - wcslen(titleBuff),
+		L" - NekoEngine v%u.%u.%u", E_VER_MAJOR, E_VER_MINOR, E_VER_BUILD);
+	
+	if (E_VER_REVISION)
+		swprintf(titleBuff + wcslen(titleBuff), sizeof(titleBuff) / sizeof(wchar_t) - wcslen(titleBuff),
+			L".%u", E_VER_REVISION);
+	
+	swprintf(titleBuff + wcslen(titleBuff), sizeof(titleBuff) / sizeof(wchar_t) - wcslen(titleBuff),
+		L" - GPU: %hs", Re_DeviceInfo.deviceName);
+	
 	Sys_SetWindowTitle(titleBuff);
-
+#else
+	Sys_SetWindowTitle(App_ApplicationInfo.name);
+#endif
+	
 	E_InitScriptSystem();
 
 	_startTime = (double)Sys_Time();
@@ -175,12 +188,12 @@ E_Term(void)
 	E_TermEntities();
 	E_TermComponents();
 
-	Re_UnloadMaterials();
+//	Re_UnloadMaterials();
 
 	E_PurgeResources();
 
 	Au_Term();
-	Re_Term();
+	Re_TermRender();
 
 	E_TermResourceSystem();
 
@@ -235,7 +248,7 @@ E_Frame(void)
 	E_ExecuteSystemGroupS(Scn_ActiveScene, ECSYS_GROUP_POST_LOGIC);
 
 	E_ExecuteSystemGroupS(Scn_ActiveScene, ECSYS_GROUP_PRE_RENDER);
-	Re.RenderFrame();
+	//Re.RenderFrame();
 	E_ExecuteSystemGroupS(Scn_ActiveScene, ECSYS_GROUP_POST_RENDER);
 
 	In_Update();

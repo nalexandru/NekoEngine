@@ -112,7 +112,7 @@ _LoadCompressed(uint8_t *dst, const uint8_t *src, const struct TGAHeader *hdr)
 }
 
 bool
-E_LoadTGAAsset(struct Stream *stm, struct Texture *tex)
+E_LoadTGAAsset(struct Stream *stm, struct TextureCreateInfo *tci)
 {
 	uint8_t *data = NULL;
 	uint32_t imgSize, size, dataSize;
@@ -123,7 +123,7 @@ E_LoadTGAAsset(struct Stream *stm, struct Texture *tex)
 
 	dataSize = (uint32_t)E_StreamLength(stm) - (uint32_t)sizeof(hdr) - hdr.identSize;
 
-	tex->levels = 1;
+	tci->desc.mipLevels = tci->desc.arrayLayers = 1;
 
 	if (hdr.imageType != IT_COMPRESSED && hdr.imageType != IT_UNCOMPRESSED && hdr.imageType != IT_UNCOMPRESSED_BW)
 		return false;
@@ -148,16 +148,16 @@ E_LoadTGAAsset(struct Stream *stm, struct Texture *tex)
 	if (size < imgSize)
 		return false;
 
-	tex->dataSize = (size + 7) / 8;
-	tex->data = calloc(sizeof(uint8_t), tex->dataSize);
-	if (!tex->data)
+	tci->dataSize = (size + 7) / 8;
+	tci->data = calloc(sizeof(uint8_t), tci->dataSize);
+	if (!tci->data)
 		return false;
 
 	data = stm->ptr;
 	if (!data) {
 		data = Sys_Alloc(sizeof(uint8_t), dataSize, MH_Transient);
 		if (!data) {
-			free(tex->data);
+			free(tci->data);
 			return false;
 		}
 
@@ -165,13 +165,13 @@ E_LoadTGAAsset(struct Stream *stm, struct Texture *tex)
 	}
 
 	if (hdr.imageType == IT_COMPRESSED)
-		_LoadCompressed(tex->data, data, &hdr);
+		_LoadCompressed(tci->data, data, &hdr);
 	else
-		_LoadUncompressed(tex->data, data, &hdr);
+		_LoadUncompressed(tci->data, data, &hdr);
 
-	tex->width = hdr.width;
-	tex->height = hdr.height;
-	tex->format = hdr.bits == 8 ? TF_R8_UNORM : TF_R8G8B8A8_UNORM;
+	tci->desc.width = hdr.width;
+	tci->desc.height = hdr.height;
+	tci->desc.format = hdr.bits == 8 ? TF_R8_UNORM : TF_R8G8B8A8_UNORM;
 
 	return true;
 }

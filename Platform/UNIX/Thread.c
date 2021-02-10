@@ -2,6 +2,7 @@
 #define _GNU_SOURCE
 
 #include <stdlib.h>
+#include <stdatomic.h>
 
 #include <sched.h>
 #include <pthread.h>
@@ -9,15 +10,6 @@
 #include <System/Thread.h>
 
 #include "UNIXPlatform.h"
-
-#if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__)
-#	define STDC_ATOMICS
-#	include <stdatomic.h>
-#elif defined(__GNUC__)
-#	define GCC_ATOMICS
-#else
-#	error "You must implement atomic operations for this platform (Platform/UNIX/Thread.c)"
-#endif
 
 bool
 Sys_InitThread(Thread *t, const wchar_t *name, void (*proc)(void *), void *args)
@@ -157,104 +149,4 @@ Sys_TermConditionVariable(ConditionVariable cv)
 {
 	pthread_cond_destroy((pthread_cond_t *)cv);
 	free(cv);
-}
-
-int32_t
-Sys_AtomicAdd(volatile int32_t *i, int32_t v)
-{
-#if defined(STDC_ATOMICS)
-	return atomic_fetch_add(i, v);
-#elif defined(GCC_ATOMICS)
-	return __sync_add_and_fetch(i, v);
-#endif
-}
-
-int32_t
-Sys_AtomicSub(volatile int32_t *i, int32_t v)
-{
-#if defined(STDC_ATOMICS)
-	return atomic_fetch_add(i, -v);
-#elif defined(GCC_ATOMICS)
-	return __sync_add_and_fetch(i, -v);
-#endif
-}
-
-int32_t
-Sys_AtomicCompareAndSwap(volatile int32_t *i, int32_t e, int32_t c)
-{
-#if defined(STDC_ATOMICS)
-	return atomic_compare_exchange_strong(i, &c, e);
-#elif defined(GCC_ATOMICS)
-	return __sync_val_compare_and_swap(i, c, e);
-#endif
-}
-
-int32_t
-Sys_AtomicIncrement(volatile int32_t *i)
-{
-#if defined(STDC_ATOMICS)
-	return atomic_fetch_add(i, 1);
-#elif defined(GCC_ATOMICS)
-	return __sync_add_and_fetch(i, 1);
-#endif
-}
-
-int32_t
-Sys_AtomicDecrement(volatile int32_t *i)
-{
-#if defined(STDC_ATOMICS)
-	return atomic_fetch_add(i, -1);
-#elif defined(GCC_ATOMICS)
-	return __sync_add_and_fetch(i, -1);
-#endif
-}
-
-int64_t
-Sys_AtomicAdd64(volatile int64_t *i, int64_t v)
-{
-#if defined(STDC_ATOMICS)
-	return atomic_fetch_add(i, v);
-#elif defined(GCC_ATOMICS)
-	return __sync_add_and_fetch(i, v);
-#endif
-}
-
-int64_t
-Sys_AtomicSub64(volatile int64_t *i, int64_t v)
-{
-#if defined(STDC_ATOMICS)
-	return atomic_fetch_add(i, -v);
-#elif defined(GCC_ATOMICS)
-	return __sync_add_and_fetch(i, -v);
-#endif
-}
-
-int64_t
-Sys_AtomicCompareAndSwap64(volatile int64_t *i, int64_t e, int64_t c)
-{
-#if defined(STDC_ATOMICS)
-	return atomic_compare_exchange_strong(i, &e, c);
-#elif defined(GCC_ATOMICS)
-	return __sync_val_compare_and_swap(i, c, e);
-#endif
-}
-
-int64_t
-Sys_AtomicIncrement64(volatile int64_t *i)
-{
-#if defined(STDC_ATOMICS)
-	return atomic_fetch_add(i, 1);
-#elif defined(GCC_ATOMICS)
-	return __sync_add_and_fetch(i, 1);
-#endif
-}
-
-int64_t
-Sys_AtomicDecrement64(volatile int64_t *i)
-{
-#if defined(STDC_ATOMICS)
-	return atomic_fetch_add(i, -1);
-#elif defined(GCC_ATOMICS)
-	return __sync_add_and_fetch(i, -1);
-#endif
 }

@@ -1,6 +1,8 @@
 #ifndef _SYS_ATOMIC_LOCK_H_
 #define _SYS_ATOMIC_LOCK_H_
 
+#include <stdatomic.h>
+
 #include <Engine/Types.h>
 
 #ifdef __cplusplus
@@ -9,7 +11,7 @@ extern "C" {
 
 struct AtomicLock
 {
-	ALIGN(16) volatile int32_t read, write;
+	ALIGN(16) _Atomic int32_t read, write;
 };
 
 void Sys_InitAtomicLock(struct AtomicLock *lock);

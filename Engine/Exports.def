@@ -1,6 +1,4 @@
-NAME CLAIRE
 EXPORTS
-	Re DATA
 	E_Screen DATA
 	E_ScreenWidth DATA
 	E_ScreenHeight DATA
@@ -92,7 +90,6 @@ EXPORTS
 	Sys_MachineType
 	Sys_Capabilities
 	Sys_ScreenVisible
-	Sys_UniversalWindows
 	Sys_MessageBox
 	Sys_ProcessEvents
 
@@ -130,15 +127,3 @@ EXPORTS
 	Sys_WaitMutex
 	Sys_WaitFutex
 	Sys_TermConditionVariable
-	
-	Sys_AtomicAdd
-	Sys_AtomicSub
-	Sys_AtomicCompareAndSwap
-	Sys_AtomicIncrement
-	Sys_AtomicDecrement
-	
-	Sys_AtomicAdd64
-	Sys_AtomicSub64
-	Sys_AtomicCompareAndSwap64
-	Sys_AtomicIncrement64
-	Sys_AtomicDecrement64

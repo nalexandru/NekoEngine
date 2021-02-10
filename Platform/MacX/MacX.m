@@ -23,6 +23,7 @@
 #include <System/Memory.h>
 #include <Engine/Engine.h>
 #include <Engine/Config.h>
+#include <Engine/Application.h>
 
 #include "MacXPlatform.h"
 
@@ -268,6 +269,24 @@ Sys_UnloadLibrary(void *lib)
 		dlclose(lib);
 }
 
+void
+Sys_Sleep(uint32_t sec)
+{
+	sleep(sec);
+}
+
+void
+Sys_MSleep(uint32_t msec)
+{
+	usleep(msec * 1000);
+}
+
+void
+Sys_USleep(uint32_t usec)
+{
+	usleep(usec);
+}
+
 bool
 Sys_InitPlatform(void)
 {
@@ -275,6 +294,8 @@ Sys_InitPlatform(void)
 	mach_timebase_info(&tb);
 	
 	_machTimerFreq = tb.numer / tb.denom;
+
+	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
 	
 	NSApplicationLoad();
 	[NSApplication sharedApplication];
@@ -287,6 +308,7 @@ Sys_InitPlatform(void)
 	[[NSApplication sharedApplication] setDelegate: d];
 
 	char dataDir[2048];
+	wchar_t wDir[2048];
 	getcwd(dataDir, 2048);
 	
 	if (dataDir[strlen(dataDir) - 1] != '/')
@@ -296,10 +318,31 @@ Sys_InitPlatform(void)
 	
 	E_SetCVarStr(L"Engine_DataDir", dataDir);
 	
+	
+	NSArray<NSURL *> *urls = [[NSFileManager defaultManager] URLsForDirectory: NSApplicationSupportDirectory
+																	inDomains: NSUserDomainMask];
+	
+	const char *appSupport = [[[urls objectAtIndex: 0] path] UTF8String];
+	
+	swprintf(wDir, sizeof(wDir) / sizeof(wchar_t), L"%hs/%ls", appSupport, App_ApplicationInfo.name);
+	NSString *appSupportPath = [[NSString alloc] initWithBytes: wDir
+														length: wcslen(wDir) * sizeof(wchar_t)
+													  encoding: NSUTF32LittleEndianStringEncoding];
+	if (![[NSFileManager defaultManager] fileExistsAtPath: appSupportPath])
+		[[NSFileManager defaultManager] createDirectoryAtPath: appSupportPath
+								  withIntermediateDirectories: TRUE
+												   attributes: nil
+														error: nil];
+	
+	appSupportPath = [appSupportPath stringByAppendingPathComponent: @"Engine.log"];
+	E_SetCVarStr(L"Engine_LogFile", [appSupportPath UTF8String]);
+	
 	_CpuInfo();
 	
 	uname(&_uname);
 	
+	[pool drain];
+
 	return true;
 }
 

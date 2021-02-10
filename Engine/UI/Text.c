@@ -5,7 +5,7 @@
 #include <Engine/Config.h>
 #include <Engine/Resource.h>
 #include <UI/UI.h>
-#include <Render/Texture.h>
+//#include <Render/Texture.h>
 #include <Runtime/Runtime.h>
 
 static struct Font _sysFont;

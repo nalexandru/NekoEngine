@@ -8,7 +8,6 @@
 #include <Render/Texture.h>
 
 #define STBI_NO_STDIO
-#define STBI_NO_THREAD_LOCALS
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
@@ -19,7 +18,7 @@ static int _stbiEof(void *user);
 static stbi_io_callbacks _cb = { _stbiRead, _stbiSkip, _stbiEof };
 
 bool
-E_LoadImageAsset(struct Stream *stm, struct Texture *tex)
+E_LoadImageAsset(struct Stream *stm, struct TextureCreateInfo *tci)
 {
 	int x, y, comp;
 	stbi_uc *image = stbi_load_from_callbacks(&_cb, stm, &x, &y, &comp, 4);
@@ -27,12 +26,12 @@ E_LoadImageAsset(struct Stream *stm, struct Texture *tex)
 	if (!image)
 		return false;
 
-	tex->width = (uint16_t)x;
-	tex->height = (uint16_t)y;
-	tex->levels = 1;
-	tex->data = image;
-	tex->dataSize = sizeof(stbi_uc) * comp * x * y;
-	tex->format = TF_R8G8B8A8_UNORM;
+	tci->desc.format = TF_R8G8B8A8_UNORM;
+	tci->desc.width = (uint16_t)x;
+	tci->desc.height = (uint16_t)y;
+	tci->desc.mipLevels = tci->desc.arrayLayers = 1;
+	tci->data = image;
+	tci->dataSize = sizeof(stbi_uc) * comp * x * y;
 
 	return true;
 }

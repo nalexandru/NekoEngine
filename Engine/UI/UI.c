@@ -1,17 +1,17 @@
 #include <UI/UI.h>
 #include <Math/Math.h>
 #include <Engine/Engine.h>
-#include <Render/Render.h>
+//#include <Render/Render.h>
 
 struct mat4 UI_Projection;
 
 bool
 UI_InitUI(void)
 {
-	if (!Re.info.negativeDepth)
-		m4_ortho(&UI_Projection, 0.f, (float)*E_ScreenWidth, (float)*E_ScreenHeight, 0.f, 0.f, 1.f);
-	else
-		m4_ortho_nd(&UI_Projection, 0.f, (float)*E_ScreenWidth, (float)*E_ScreenHeight, 0.f, 0.f, 1.f);
+//	if (!Re.info.negativeDepth)
+//		m4_ortho(&UI_Projection, 0.f, (float)*E_ScreenWidth, (float)*E_ScreenHeight, 0.f, 0.f, 1.f);
+//	else
+//		m4_ortho_nd(&UI_Projection, 0.f, (float)*E_ScreenWidth, (float)*E_ScreenHeight, 0.f, 0.f, 1.f);
 
 	return UI_InitText();
 }

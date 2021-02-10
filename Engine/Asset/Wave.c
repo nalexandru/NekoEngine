@@ -79,7 +79,8 @@ E_LoadWaveAsset(struct Stream *stm, struct AudioClip *ac)
 	E_ReadStream(stm, ac->data, size);
 	ac->byteSize = size;
 
-	if (Sys_BigEndian() && Sys_MachineType() != MT_PS3) {
+	//if (Sys_BigEndian() && Sys_MachineType() != MT_PS3) {
+	if (Sys_BigEndian()) {
 		uint32_t i;
 		for (i = 0; i < ac->byteSize / 2; ++i)
 			ac->data[i] = Sys_SwapUint16(ac->data[i]);

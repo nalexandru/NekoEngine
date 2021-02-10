@@ -36,7 +36,7 @@ Sys_LogEntry(const wchar_t *module, uint8_t severity, const wchar_t *format, ...
 		return;
 
 	if (!_logFile) {
-		_logFile = E_GetCVarStr(L"Engine_LogFile", "Claire.log")->str;
+		_logFile = E_GetCVarStr(L"Engine_LogFile", "Engine.log")->str;
 		_minLogSeverity = &E_GetCVarU32(L"Engine_MinLogSeverity", LOG_WARNING)->u32;
 	}
 
@@ -75,7 +75,7 @@ Sys_LogEntry(const wchar_t *module, uint8_t severity, const wchar_t *format, ...
 	t = time(0);
 	tm = localtime(&t);
 
-	fwprintf(fp, L"%d-%d-%d-%d:%d:%d [%ls][%ls]: %ls",
+	fwprintf(fp, L"%04d-%02d-%02d %02d:%02d:%02d [%ls][%ls]: %ls",
 		tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
 		tm->tm_hour, tm->tm_min, tm->tm_sec,
 		module, _logSeverityStr[severity], buff);

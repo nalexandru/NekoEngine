@@ -9,10 +9,22 @@ extern "C" {
 
 #define RES_AUDIO_CLIP	"AudioClip"
 
+enum AudioFormat
+{
+	AF_INT_16,
+	AF_INT_32,
+	AF_FLOAT_32,
+	AF_FLOAT_64
+};
+
 struct AudioClip
 {
 	uint16_t *data;
 	uint32_t byteSize;
+	uint32_t bitsPerSample;
+	uint32_t sampleRate;
+	uint32_t channels;
+	enum AudioFormat format;
 	uint8_t soundSystemData;
 };
 

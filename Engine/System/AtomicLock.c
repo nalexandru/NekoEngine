@@ -14,21 +14,22 @@ Sys_AtomicLockRead(struct AtomicLock *lock)
 	while (lock->write != 0)
 		Sys_Yield();
 
-	Sys_AtomicIncrement(&lock->read);
+	atomic_fetch_add(&lock->read, 1);
 }
 
 void
 Sys_AtomicUnlockRead(struct AtomicLock *lock)
 {
-	Sys_AtomicDecrement(&lock->read);
+	atomic_fetch_sub(&lock->read, 1);
 }
 
 void
 Sys_AtomicLockWrite(struct AtomicLock *lock)
 {
-	while (Sys_AtomicCompareAndSwap(&lock->write, 1, 0))
+	int expected = 0;
+	while (atomic_compare_exchange_strong(&lock->write, &expected, 1))
 		;
-
+	
 	while (lock->read != 0)
 		Sys_Yield();
 }
@@ -36,6 +37,6 @@ Sys_AtomicLockWrite(struct AtomicLock *lock)
 void
 Sys_AtomicUnlockWrite(struct AtomicLock *lock)
 {
-	Sys_AtomicDecrement(&lock->write);
+	atomic_fetch_sub(&lock->write, 1);
 }
 

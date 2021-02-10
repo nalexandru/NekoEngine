@@ -12,8 +12,8 @@
 static HWND _window;
 
 #define WND_CLASS_NAME				L"LightWindowClass"
-#define WM_SHOWCURSOR_MSG_GUID		L"CLAIRE_WM_SHOWCURSOR_{916fcbf2-b4be-4df8-884b-f0dc086e03ad}"
-#define WM_HIDECURSOR_MSG_GUID		L"CLAIRE_WM_HIDECURSOR_{916fcbf2-b4be-4df8-884b-f0dc086e03ad}"
+#define WM_SHOWCURSOR_MSG_GUID		L"NE_WM_SHOWCURSOR_{916fcbf2-b4be-4df8-884b-f0dc086e03ad}"
+#define WM_HIDECURSOR_MSG_GUID		L"NE_WM_HIDECURSOR_{916fcbf2-b4be-4df8-884b-f0dc086e03ad}"
 
 UINT WM_SHOWCURSOR = 0;
 UINT WM_HIDECURSOR = 0;
@@ -53,8 +53,8 @@ _WndProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
 		*E_ScreenWidth = LOWORD(lparam);
 		*E_ScreenHeight = HIWORD(lparam);
 
-		if (Re.ScreenResized)
-			Re.ScreenResized();
+//		if (Re.ScreenResized)
+	//		Re.ScreenResized();
 	} break;
 	default: {
 		if (umsg == WM_SHOWCURSOR) {

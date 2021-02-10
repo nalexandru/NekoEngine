@@ -61,7 +61,7 @@ E_InitConfig(const char *file)
 			switch (key[0]) {
 			case 's': E_GetCVarStr(name, ptr); break;
 			case 'i': E_GetCVarI32(name, atoi(ptr)); break;
-			case 'u': E_GetCVarU32(name, strtoul(ptr, NULL, 10)); break;
+			case 'u': E_GetCVarU32(name, (uint32_t)strtoul(ptr, NULL, 10)); break;
 			case 'l': E_GetCVarU64(name, strtoull(ptr, NULL, 10)); break;
 			case 'f': E_GetCVarFlt(name, strtof(ptr, NULL)); break;
 			case 'b': E_GetCVarBln(name, !strncmp(ptr, "true", strlen(ptr))); break;

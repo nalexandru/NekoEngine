@@ -2,12 +2,9 @@
 #define _RE_TEXTURE_H_
 
 #include <Engine/Types.h>
+#include <Render/Device.h>
 
-#define RES_TEXTURE "Texture"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+// one large texture set
 
 enum TextureType
 {
@@ -18,73 +15,50 @@ enum TextureType
 
 enum TextureFormat
 {
-	TF_R8G8B8A8_UNORM = 0,
+	TF_R8G8B8A8_UNORM,
 	TF_R8G8B8A8_UNORM_SRGB,
 	TF_B8G8R8A8_UNORM,
 	TF_B8G8R8A8_UNORM_SRGB,
-	TF_B8G8R8X8_UNORM,
-	TF_B8G8R8X8_UNORM_SRGB,
 	TF_R16G16B16A16_SFLOAT,
-	TF_R16G16B16A16_UNORM,
 	TF_R32G32B32A32_SFLOAT,
-	TF_R32G32B32A32_UINT,
+	
 	TF_R10G10B10A2_UNORM,
-	TF_R32G32B32_SFLOAT,
-	TF_R32G32B32_UINT,
+	
 	TF_R8G8_UNORM,
-	TF_R16G16_SFLOAT,
-	TF_R16G16_UNORM,
-	TF_R32G32_SFLOAT,
-	TF_R32G32_UINT,
+	
 	TF_R8_UNORM,
-	TF_R16_SFLOAT,
-	TF_R16_UNORM,
-	TF_R32_SFLOAT,
-	TF_R32_UINT,
-	TF_BC1_UNORM,
-	TF_BC1_UNORM_SRGB,
-	TF_BC2_UNORM,
-	TF_BC2_UNORM_SRGB,
-	TF_BC3_UNORM,
-	TF_BC3_UNORM_SRGB,
-	TF_BC4_UNORM,
-	TF_BC4_SNORM,
+	
 	TF_BC5_UNORM,
 	TF_BC5_SNORM,
 	TF_BC6H_UF16,
 	TF_BC6H_SF16,
 	TF_BC7_UNORM,
 	TF_BC7_UNORM_SRGB,
-	TF_ALPHA
+	
+	TF_COUNT
 };
 
-struct Texture
+struct TextureDesc
 {
-	uint16_t width, height, depth, levels;
+	uint32_t width, height, depth;
 	enum TextureType type;
 	enum TextureFormat format;
-	void *data;
-	uint32_t dataSize;
-	uint8_t renderDataStart;
+	uint32_t arrayLayers, mipLevels;
 };
 
 struct TextureCreateInfo
 {
-	uint16_t width, height, depth;
-	enum TextureType type;
-	enum TextureFormat format;
+	struct TextureDesc desc;
 	void *data;
-	uint32_t dataSize;
+	uint64_t dataSize;
 	bool keepData;
 };
 
-// shared resource handling
-bool Re_CreateTexture(const char *name, const struct TextureCreateInfo *ci, struct Texture *tex, Handle h);
-bool Re_LoadTexture(struct ResourceLoadInfo *li, const char *args, struct Texture *tex, Handle h);
-void Re_UnloadTexture(struct Texture *tex, Handle h);
+static inline struct Texture *Re_CreateTexture(struct RenderDevice *dev, const struct TextureCreateInfo *tci) { return Re_DeviceProcs.CreateTexture(dev, tci); };
+static inline void Re_DestroyTexture(struct RenderDevice *dev, struct Texture *tex) { Re_DeviceProcs.DestroyTexture(dev, tex); }
 
-#ifdef __cplusplus
-}
-#endif
+//static inline void Re_UpdateTexture(struct Texture *tex, uint64_t offset, uint64_t size, void *data);
+
+static inline const struct TextureDesc *Re_TextureDesc(const struct Texture *tex) { return NULL; }
 
 #endif /* _RE_TEXTURE_H_ */

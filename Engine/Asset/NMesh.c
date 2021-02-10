@@ -1,6 +1,6 @@
 #include <Engine/IO.h>
 #include <Engine/Asset.h>
-#include <Render/Model.h>
+//#include <Render/Model.h>
 #include <Runtime/Array.h>
 
 #define MESH_3_HEADER	"NMESH3 "
@@ -45,9 +45,9 @@ E_LoadNMeshAsset(struct Stream *stm, struct Model *m)
 	return false;
 }
 
-static inline bool
-_load_nmesh_3(const uint8_t *data, uint64_t dataSize, uint64_t *posPtr, struct Model *m)
-{
+//static inline bool
+//_load_nmesh_3(const uint8_t *data, uint64_t dataSize, uint64_t *posPtr, struct Model *m)
+//{
 	/*uint64_t pos = *posPtr;
 	uint64_t size = 0;
 	uint64_t count = 0;
@@ -60,5 +60,5 @@ _load_nmesh_3(const uint8_t *data, uint64_t dataSize, uint64_t *posPtr, struct M
 	memcpy(m->vertices, data, size);
 	data += size; pos += size;*/
 
-	return false;
-}
+//	return false;
+//}

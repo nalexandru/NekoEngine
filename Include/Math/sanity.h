@@ -8,6 +8,22 @@
 static inline void
 __MathDbg_SanityTest(void)
 {
+	Sys_LogEntry(MSMOD, LOG_DEBUG, L"Instruction set: %ls",
+#if defined(USE_AVX2)
+		L"AVX2"
+#elif defined(USE_AVX)
+		L"AVX"
+#elif defined(USE_SSE)
+		L"SSE"
+#elif defined(USE_ALTIVEC)
+		L"Altivec"
+#elif defined(USE_NEON)
+		L"NEON"
+#else
+		L"none"
+#endif
+	);
+
 	{ // vec4
 		struct mat4 m;
 		struct vec4 a, b, c;

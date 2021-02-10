@@ -84,13 +84,17 @@
     <ClInclude Include="..\Include\Math\vec2.h" />
     <ClInclude Include="..\Include\Math\vec3.h" />
     <ClInclude Include="..\Include\Math\vec4.h" />
+    <ClInclude Include="..\Include\Render\AccelerationStructure.h" />
+    <ClInclude Include="..\Include\Render\Buffer.h" />
+    <ClInclude Include="..\Include\Render\Context.h" />
     <ClInclude Include="..\Include\Render\Device.h" />
+    <ClInclude Include="..\Include\Render\Driver.h" />
     <ClInclude Include="..\Include\Render\Material.h" />
-    <ClInclude Include="..\Include\Render\Model.h" />
-    <ClInclude Include="..\Include\Render\ModelRender.h" />
+    <ClInclude Include="..\Include\Render\Pipeline.h" />
     <ClInclude Include="..\Include\Render\Render.h" />
-    <ClInclude Include="..\Include\Render\Shader.h" />
+    <ClInclude Include="..\Include\Render\ShaderBindingTable.h" />
     <ClInclude Include="..\Include\Render\Texture.h" />
+    <ClInclude Include="..\Include\Render\TransientResources.h" />
     <ClInclude Include="..\Include\Runtime\Array.h" />
     <ClInclude Include="..\Include\Runtime\RtDefs.h" />
     <ClInclude Include="..\Include\Runtime\Runtime.h" />
@@ -112,6 +116,8 @@
     <ClInclude Include="..\Include\UI\Font.h" />
     <ClInclude Include="..\Include\UI\Text.h" />
     <ClInclude Include="..\Include\UI\UI.h" />
+    <ClInclude Include="..\Platform\Win32\Compat\stdatomic.h" />
+    <ClInclude Include="..\Platform\Win32\Win32Platform.h" />
     <ClInclude Include="Engine\ECS.h" />
   </ItemGroup>
   <ItemGroup>
@@ -161,7 +167,14 @@
     <ClCompile Include="..\Deps\PhysFS\physfs_archiver_wad.c" />
     <ClCompile Include="..\Deps\PhysFS\physfs_archiver_zip.c" />
     <ClCompile Include="..\Deps\PhysFS\physfs_byteorder.c" />
+    <ClCompile Include="..\Deps\PhysFS\physfs_platform_windows.c" />
     <ClCompile Include="..\Deps\PhysFS\physfs_unicode.c" />
+    <ClCompile Include="..\Platform\Win32\Compat\stdatomic.c" />
+    <ClCompile Include="..\Platform\Win32\Main.c" />
+    <ClCompile Include="..\Platform\Win32\Thread.c" />
+    <ClCompile Include="..\Platform\Win32\Win32.c" />
+    <ClCompile Include="..\Platform\Win32\Win32Input.c" />
+    <ClCompile Include="..\Platform\Win32\Window.c" />
     <ClCompile Include="Asset\Font.c" />
     <ClCompile Include="Asset\glTF.c" />
     <ClCompile Include="Asset\Image.c" />
@@ -183,11 +196,7 @@
     <ClCompile Include="Engine\Job.c" />
     <ClCompile Include="Engine\Resource.c" />
     <ClCompile Include="Input\Input.c" />
-    <ClCompile Include="Render\Material.c" />
-    <ClCompile Include="Render\Model.c" />
-    <ClCompile Include="Render\ModelRender.c" />
     <ClCompile Include="Render\Render.c" />
-    <ClCompile Include="Render\Texture.c" />
     <ClCompile Include="Scene\Camera.c" />
     <ClCompile Include="Scene\Scene.c" />
     <ClCompile Include="Scene\ScriptHost.c" />
@@ -252,21 +261,21 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(SolutionDir)Include;$(SolutionDir)Deps;$(SolutionDir)Deps\PhysFS;$(SolutionDir)Deps\Lua;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)Include;$(SolutionDir)Deps;$(SolutionDir)Deps\PhysFS;$(SolutionDir)Deps\Lua;$(SolutionDir)Platform\Win32\Compat;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)\bin\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\build\$(Configuration)\$(ProjectName)\</IntDir>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_ASAN|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(SolutionDir)Include;$(SolutionDir)Deps;$(SolutionDir)Deps\PhysFS;$(SolutionDir)Deps\Lua;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)Include;$(SolutionDir)Deps;$(SolutionDir)Deps\PhysFS;$(SolutionDir)Deps\Lua;$(SolutionDir)Platform\Win32\Compat;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)\bin\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\build\$(Configuration)\$(ProjectName)\</IntDir>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)Include;$(SolutionDir)Deps;$(SolutionDir)Deps\PhysFS;$(SolutionDir)Deps\Lua;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)Include;$(SolutionDir)Deps;$(SolutionDir)Deps\PhysFS;$(SolutionDir)Deps\Lua;$(SolutionDir)Platform\Win32\Compat;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)\bin\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\build\$(Configuration)\$(ProjectName)\</IntDir>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>

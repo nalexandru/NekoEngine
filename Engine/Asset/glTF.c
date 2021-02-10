@@ -1,9 +1,9 @@
 #include <Engine/IO.h>
 #include <Engine/Asset.h>
 #include <Engine/Resource.h>
-#include <Render/Model.h>
-#include <Render/Texture.h>
-#include <Render/Material.h>
+//#include <Render/Model.h>
+//#include <Render/Texture.h>
+//#include <Render/Material.h>
 #include <Runtime/Array.h>
 #include <System/System.h>
 #include <System/Memory.h>
@@ -18,7 +18,7 @@ struct Image
 {
 	uint64_t hash;
 	int channels;
-	enum TextureFormat format;
+//	enum TextureFormat format;
 };
 
 #define ADD_IMAGE(name, channels, fmt) {						\
@@ -38,7 +38,7 @@ static inline void _LoadMesh(const cgltf_mesh *mesh, Array *vertices, Array *ind
 bool
 E_LoadglTFAsset(const char *baseDir, struct Stream *stm, struct Model *m)
 {
-	cgltf_options opt = { 0 };
+	/*cgltf_options opt = { 0 };
 	cgltf_data *gltf = NULL;
 	Array vertices = { 0 }, indices = { 0 }, meshes = { 0 }, materials = { 0 }, images = { 0 };
 	uint32_t i = 0, j = 0;
@@ -208,7 +208,7 @@ E_LoadglTFAsset(const char *baseDir, struct Stream *stm, struct Model *m)
 		free(tci.data);
 	}
 
-	cgltf_free(gltf);
+	cgltf_free(gltf);*/
 
 	return true;
 }
@@ -265,7 +265,7 @@ _gltfRelease(const struct cgltf_memory_options *memoryOptions, const struct cglt
 void
 _LoadMesh(const cgltf_mesh *mesh, Array *vertices, Array *indices, Array *meshes, Array *materials)
 {
-	float *positions = NULL, *normals = NULL, *tangents = NULL, *texcoords = NULL;
+/*	float *positions = NULL, *normals = NULL, *tangents = NULL, *texcoords = NULL;
 	uint32_t i, j;
 
 	for (i = 0; i < mesh->primitives_count; ++i) {
@@ -389,6 +389,6 @@ _LoadMesh(const cgltf_mesh *mesh, Array *vertices, Array *indices, Array *meshes
 				}
 			}
 		}
-	}
+	}*/
 }
 

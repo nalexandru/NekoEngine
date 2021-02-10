@@ -2,19 +2,7 @@
 
 #if defined(_M_AMD64) || defined(_M_IX86) && _MSC_VER >= 1400
 #	include <intrin.h>
-#else
-#	define IASM_IMPL
-	static inline void __cpuid(int dst[4], int code);
-	static inline uint64_t __rdtsc(void);
 #endif
-
-#if _MSC_VER < 1400 // This *will* break
-#	define _aligned_malloc(x, y) malloc(x)
-#	define _aligned_free(x) free(x)
-#endif
-
-// Not defined due to _WIN32_WINNT being set to 0x0500
-#define WM_INPUT	0x00FF
 
 #include <System/System.h>
 #include <Engine/Engine.h>
@@ -33,25 +21,16 @@ static char _hostname[MAX_COMPUTERNAME_LENGTH + 1], _cpu[50], _osName[128], _osV
 static inline void _LoadOSInfo(void);
 static inline void _CalcCPUFreq(void);
 
-static BOOL (WINAPI *k32_IsDebuggerPresent)(void) = NULL;
-static BOOL (WINAPI *k32_FreeConsole)(void) = NULL;
-static BOOL (WINAPI *k32_AllocConsole)(void) = NULL;
-static BOOL (WINAPI *k32_AttachConsole)(DWORD) = NULL;
-static BOOL (WINAPI *k32_GetFileSizeEx)(HANDLE, PLARGE_INTEGER) = NULL;
-
 bool
 Sys_InitDbgOut(void)
 {
 	CONSOLE_SCREEN_BUFFER_INFO csbi;
 
-	if (!k32_IsDebuggerPresent)
-		return true;
-
-	if (!k32_IsDebuggerPresent() && Sys_MachineType() == MT_PC) {
-		if (k32_AttachConsole) {
-			k32_FreeConsole();
-			k32_AllocConsole();
-			k32_AttachConsole(GetCurrentProcessId());
+	if (!IsDebuggerPresent() && Sys_MachineType() == MT_PC) {
+		if (AttachConsole) {
+			FreeConsole();
+			AllocConsole();
+			AttachConsole(GetCurrentProcessId());
 		}
 
 		(void)freopen("CON", "w", stdout);
@@ -72,14 +51,9 @@ Sys_InitDbgOut(void)
 void
 Sys_DbgOut(int color, const wchar_t *module, const wchar_t *severity, const wchar_t *text)
 {
-	if (!k32_IsDebuggerPresent) {
-		fwprintf(stdout, L"[%ls][%ls]: %ls\n", module, severity, text);
-		return;
-	}
-
 	SetConsoleTextAttribute(_stdout, _colors[color]);
 
-	if (k32_IsDebuggerPresent()) {
+	if (IsDebuggerPresent()) {
 		wchar_t buff[4096];
 		swprintf(buff, 4096, L"[%ls][%ls]: %ls\n", module, severity, text);
 		OutputDebugStringW(buff);
@@ -130,15 +104,9 @@ Sys_MapFile(const char *path, bool write, void **ptr, uint64_t *size)
 	if (file == INVALID_HANDLE_VALUE)
 		return false;
 
-	if (k32_GetFileSizeEx) {
-		LARGE_INTEGER sz;
-		k32_GetFileSizeEx(file, &sz);
-		*size = sz.QuadPart;
-	} else {
-		DWORD sz;
-		GetFileSize(file, &sz);
-		*size = sz;
-	}
+	LARGE_INTEGER sz;
+	GetFileSizeEx(file, &sz);
+	*size = sz.QuadPart;
 
 	map = CreateFileMappingA(file, NULL, protect, 0, 0, NULL);
 	if (!map) {
@@ -272,12 +240,6 @@ Sys_ScreenVisible(void)
 	return !IsIconic(E_Screen);
 }
 
-bool
-Sys_UniversalWindows(void)
-{
-	return false;
-}
-
 void
 Sys_MessageBox(const wchar_t *title, const wchar_t *message, int icon)
 {
@@ -342,57 +304,22 @@ bool
 Sys_InitPlatform(void)
 {
 	SYSTEM_INFO si = { 0 };
-	void (WINAPI *_GetSystemInfo)(LPSYSTEM_INFO) = NULL;
 
 	_k32 = LoadLibraryW(L"kernel32");
 	if (!_k32)
 		return false;
 
-	_GetSystemInfo = (void (WINAPI *)(LPSYSTEM_INFO))GetProcAddress(_k32, "GetNativeSystemInfo");
-	if (!_GetSystemInfo)
-		_GetSystemInfo = (void (WINAPI *)(LPSYSTEM_INFO))GetProcAddress(_k32, "GetSystemInfo");
-
-	_GetSystemInfo(&si);
+	GetNativeSystemInfo(&si);
 	_numCpus = si.dwNumberOfProcessors;
 	_cpuArch = si.wProcessorArchitecture;
 
 	_LoadOSInfo();
 	_CalcCPUFreq();
 
-	k32_IsDebuggerPresent = (BOOL (WINAPI *)(void))GetProcAddress(_k32, "IsDebuggerPresent");
-	k32_FreeConsole = (BOOL (WINAPI *)(void))GetProcAddress(_k32, "FreeConsole");
-	k32_AllocConsole = (BOOL (WINAPI *)(void))GetProcAddress(_k32, "AllocConsole");
-	k32_AttachConsole = (BOOL (WINAPI *)(DWORD))GetProcAddress(_k32, "AttachConsole");
-	k32_GetFileSizeEx = (BOOL (WINAPI *)(HANDLE, PLARGE_INTEGER))GetProcAddress(_k32, "GetFileSizeEx");
-
 	if (FAILED(CoInitializeEx(NULL, COINIT_MULTITHREADED)))
 		return false;
 
 	k32_SetThreadDescription = (HRESULT (WINAPI *)(HANDLE, PCWSTR))GetProcAddress(_k32, "SetThreadDescription");
-	k32_InitializeSRWLock = (void (WINAPI *)(PSRWLOCK))GetProcAddress(_k32, "InitializeSRWLock");
-	k32_AcquireSRWLockExclusive = (void (WINAPI *)(PSRWLOCK))GetProcAddress(_k32, "AcquireSRWLockExclusive");
-	k32_ReleaseSRWLockExclusive = (void (WINAPI *)(PSRWLOCK))GetProcAddress(_k32, "ReleaseSRWLockExclusive");
-
-	k32_InitializeConditionVariable = (void (WINAPI *)(PCONDITION_VARIABLE))GetProcAddress(_k32, "InitializeConditionVariable");
-
-	if (k32_InitializeConditionVariable) {
-		k32_SleepConditionVariableSRW = (BOOL (WINAPI *)(PCONDITION_VARIABLE, PSRWLOCK, DWORD, ULONG))GetProcAddress(_k32, "SleepConditionVariableSRW");
-		k32_SleepConditionVariableCS = (BOOL (WINAPI *)(PCONDITION_VARIABLE, PCRITICAL_SECTION, DWORD))GetProcAddress(_k32, "SleepConditionVariableCS");
-		k32_WakeAllConditionVariable = (void (WINAPI *)(PCONDITION_VARIABLE))GetProcAddress(_k32, "WakeAllConditionVariable");
-		k32_WakeConditionVariable = (void (WINAPI *)(PCONDITION_VARIABLE))GetProcAddress(_k32, "WakeConditionVariable");
-	} else {
-		k32_ConditionVariableSize = sizeof(struct Win32CompatCV);
-		k32_InitializeConditionVariable = win32Compat_InitializeConditionVariable;
-		k32_SleepConditionVariableSRW = win32Compat_SleepConditionVariableSRW;
-		k32_SleepConditionVariableCS = win32Compat_SleepConditionVariableCS;
-		k32_WakeAllConditionVariable = win32Compat_WakeAllConditionVariable;
-		k32_WakeConditionVariable = win32Compat_WakeConditionVariable;
-		k32_DeleteConditionVariable = win32Compat_DeleteConditionVariable;
-	}
-
-#if WINVER < 0x0501
-	SecureZeroMemory = (void (WINAPI *)(PVOID, SIZE_T))GetProcAddress(_k32, )
-#endif
 
 	return true;
 }
@@ -420,14 +347,25 @@ Sys_AlignedFree(void *mem)
 void
 Sys_ZeroMemory(void *mem, size_t size)
 {
-#if WINVER >= 0x0501
 	SecureZeroMemory(mem, size);
-#else
-	// This branch is taken only when compiling with an SDK older than Windows XP / Server 2003,
-	// because SecureZeroMemory is inlined. See:
-	// https://docs.microsoft.com/en-us/previous-versions/windows/desktop/legacy/aa366877(v=vs.85)
-	ZeroMemory(mem, size);
-#endif
+}
+
+void
+Sys_Sleep(uint32_t sec)
+{
+	Sleep(sec * 1000);
+}
+
+void
+Sys_MSleep(uint32_t msec)
+{
+	Sleep(msec);
+}
+
+void
+Sys_USleep(uint32_t usec)
+{
+	Sleep(usec / 1000);
 }
 
 void
@@ -447,9 +385,9 @@ _LoadOSInfo(void)
 			server = true;
 
 		if (osvi.wServicePackMinor)
-			(void)snprintf(spStr, sizeof(spStr), "Service Pack %d.%d", osvi.wServicePackMajor, osvi.wServicePackMinor);
+			(void)snprintf(spStr, sizeof(spStr), " Service Pack %d.%d", osvi.wServicePackMajor, osvi.wServicePackMinor);
 		else if (osvi.wServicePackMajor)
-			(void)snprintf(spStr, sizeof(spStr), "Service Pack %d", osvi.wServicePackMajor);
+			(void)snprintf(spStr, sizeof(spStr), " Service Pack %d", osvi.wServicePackMajor);
 	} else {
 		osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOA);
 		GetVersionExA((LPOSVERSIONINFOA)&osvi);
@@ -502,54 +440,20 @@ _LoadOSInfo(void)
 void
 _CalcCPUFreq(void)
 {
-	DWORD winFSB, winRes;
+	ULONGLONG winFSB, winRes;
 	double cpuFSB, cpuRes, freq;
 
 	cpuFSB = (double)__rdtsc();
-	winFSB = GetTickCount();
+	winFSB = GetTickCount64();
 
 	Sleep(300);
 
 	cpuRes = (double)__rdtsc();
-	winRes = GetTickCount();
+	winRes = GetTickCount64();
 
 	freq = cpuRes - cpuFSB;
 	freq /= winRes - winFSB;
 
 	_cpuFreq = (uint32_t)(freq / 1000);
 }
-
-#ifdef IASM_IMPL
-void
-__cpuid(int dst[4], int code)
-{
-	__asm {
-		mov eax, code;
-		cpuid;
-		mov dst[0], eax
-		mov dst[4], ebx
-		mov dst[8], ecx
-		mov dst[12], edx
-	}
-}
-
-uint64_t
-__rdtsc(void)
-{
-	unsigned long a, b;
-	uint64_t ret;
-
-	__asm {
-		RDTSC
-		mov [a], eax
-		mov [b], edx
-	}
-
-	ret = b;
-	ret *= 0x100000000;
-	ret += a;
-
-	return ret;
-}
-#endif
 

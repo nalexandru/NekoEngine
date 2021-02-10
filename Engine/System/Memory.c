@@ -90,6 +90,8 @@ Sys_Free(void *mem)
 	case MH_Persistent:
 		free(alloc);
 		break;
+	default:
+		break;
 	}
 
 	// check end
@@ -121,6 +123,8 @@ Sys_ResetHeap(enum MemoryHeap heap)
 		_transientHeapPeak = MAX(_transientHeapPeak, (size_t)(_transientHeapPtr - _transientHeap));
 
 		_transientHeapPtr = _transientHeap;
+		break;
+	default:
 		break;
 	}
 

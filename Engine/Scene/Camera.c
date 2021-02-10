@@ -1,14 +1,14 @@
 #include <Scene/Camera.h>
 #include <Scene/Transform.h>
 #include <Engine/Engine.h>
-#include <Render/Render.h>
+//#include <Render/Render.h>
 
 struct Camera *Scn_ActiveCamera = NULL;
 
 bool
 Scn_InitCamera(struct Camera *cam, const void **args)
 {
-	bool infinite = false;
+/*	bool infinite = false;
 
 	m4_ident(&cam->viewMatrix);
 
@@ -43,7 +43,7 @@ Scn_InitCamera(struct Camera *cam, const void **args)
 			m4_perspective(&cam->projMatrix, cam->fov, (float)*E_ScreenWidth / (float)*E_ScreenHeight, cam->zNear, cam->zFar);
 		else
 			m4_perspective_nd(&cam->projMatrix, cam->fov, (float)*E_ScreenWidth / (float)*E_ScreenHeight, cam->zNear, cam->zFar);
-	}
+	}*/
 
 	return true;
 }

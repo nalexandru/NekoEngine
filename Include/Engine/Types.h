@@ -32,13 +32,35 @@ struct Scene;
 struct Model;
 struct Stream;
 struct Camera;
-struct Texture;
 struct UIContext;
 struct AudioClip;
 struct AtomicLock;
 struct ResourceLoadInfo;
 struct ModelCreateInfo;
+
+struct Buffer;
+struct BufferDesc;
+struct BufferCreateInfo;
+
+struct Texture;
+struct TextureDesc;
 struct TextureCreateInfo;
+
+struct AccelerationStructure;
+struct AccelerationStructureDesc;
+struct AccelerationStructureCreateInfo;
+
+struct Shader;
+struct Pipeline;
+struct ShaderBindingTable;
+struct BlendAttachmentDesc;
+
+struct RenderDevice;
+struct RenderDeviceInfo;
+struct RenderDeviceProcs;
+
+struct RenderContext;
+struct RenderContextProcs;
 
 struct Version
 {

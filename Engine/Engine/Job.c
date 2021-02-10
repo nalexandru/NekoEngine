@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdatomic.h>
 
 #include <Engine/Job.h>
 #include <System/System.h>
@@ -168,8 +169,8 @@ E_TermJobSystem(void)
 static void
 _ThreadProc(void *args)
 {
-	static volatile int32_t workerId = -1;
-	int32_t id = Sys_AtomicIncrement(&workerId);
+	static _Atomic int32_t workerId = -1;
+	int32_t id = atomic_fetch_add(&workerId, 1);
 	struct Job job = { 0, 0 };
 
 	while (!_shutdown) {
@@ -200,7 +201,7 @@ _ThreadProc(void *args)
 static void
 _DispatchWrapper(int worker, struct DispatchArgs *args)
 {
-	for (int i; i < args->count; ++i)
+	for (int i = 0; i < args->count; ++i)
 		args->exec(worker, args->args ? args->args[i] : NULL);
 }
 

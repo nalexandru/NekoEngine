@@ -9,13 +9,6 @@
 #include <mach/thread_act.h>
 #include <mach/thread_policy.h>
 
-//#if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__)
-//#	include <stdatomic.h>
-//#	define USE_STDC
-//#elif MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_3
-#include <libkern/OSAtomic.h>
-#define USE_OSATOMIC
-
 uint32_t
 Sys_TlsAlloc(void)
 {
@@ -63,7 +56,8 @@ void
 Sys_SetThreadAffinity(Thread t, int cpu)
 {
 	thread_affinity_policy_data_t pd = { cpu };
-	thread_policy_set(&t, THREAD_AFFINITY_POLICY, (thread_policy_t)&pd, THREAD_AFFINITY_POLICY_COUNT);
+	mach_port_t machThread = pthread_mach_thread_np((pthread_t)t);
+	thread_policy_set(machThread, THREAD_AFFINITY_POLICY, (thread_policy_t)&pd, THREAD_AFFINITY_POLICY_COUNT);
 }
 
 void
@@ -174,74 +168,4 @@ Sys_TermConditionVariable(ConditionVariable cv)
 {
 	pthread_cond_destroy((pthread_cond_t *)cv);
 	free(cv);
-}
-
-int32_t
-Sys_AtomicAdd(volatile int32_t *i, int32_t v)
-{
-	return OSAtomicAdd32Barrier(v, (int32_t *)i);
-	//return atomic_fetch_add(i, v);
-}
-
-int32_t
-Sys_AtomicSub(volatile int32_t *i, int32_t v)
-{
-	return OSAtomicAdd32Barrier(-v, (int32_t *)i);
-	//return atomic_fetch_add(i, -v);
-}
-
-int32_t
-Sys_AtomicCompareAndSwap(volatile int32_t *i, int32_t e, int32_t c)
-{
-	return OSAtomicCompareAndSwap32Barrier(c, e, (int32_t *)i);
-	//return atomic_compare_exchange_strong(i, &e, c);
-}
-
-int32_t
-Sys_AtomicIncrement(volatile int32_t *i)
-{
-	return OSAtomicIncrement32Barrier((int32_t *)i);
-	//return atomic_fetch_add(i, 1);
-}
-
-int32_t
-Sys_AtomicDecrement(volatile int32_t *i)
-{
-	return OSAtomicDecrement32Barrier((int32_t *)i);
-//	return atomic_fetch_add(i, -1);
-}
-
-int64_t
-Sys_AtomicAdd64(volatile int64_t *i, int64_t v)
-{
-	return OSAtomicAdd64Barrier(v, (int64_t *)i);
-//	return atomic_fetch_add(i, v);
-}
-
-int64_t
-Sys_AtomicSub64(volatile int64_t *i, int64_t v)
-{
-	return OSAtomicAdd64Barrier(-v, (int64_t *)i);
-//	return atomic_fetch_add(i, -v);
-}
-
-int64_t
-Sys_AtomicCompareAndSwap64(volatile int64_t *i, int64_t e, int64_t c)
-{
-	return OSAtomicCompareAndSwap64Barrier(c, e, (int64_t *)i);
-//	return atomic_compare_exchange_strong(i, &c, e);
-}
-
-int64_t
-Sys_AtomicIncrement64(volatile int64_t *i)
-{
-	return OSAtomicIncrement64Barrier((int64_t *)i);
-//	return atomic_fetch_add(i, 1);
-}
-
-int64_t
-Sys_AtomicDecrement64(volatile int64_t *i)
-{
-	return OSAtomicDecrement64Barrier((int64_t *)i);
-//	return atomic_fetch_add(i, -1);
 }

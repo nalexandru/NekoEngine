@@ -91,6 +91,12 @@
     <Filter Include="Source Files\Deps\Lua">
       <UniqueIdentifier>{566e4675-9095-4403-a72f-11a929c7ae3a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Platform">
+      <UniqueIdentifier>{e9afc5ab-56db-4f11-9633-c329f46ce180}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Platform\Compat">
+      <UniqueIdentifier>{b9897578-dcbb-4891-b8d9-cc7cbed3f392}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Include\System\System.h">
@@ -147,17 +153,11 @@
     <ClInclude Include="..\Include\System\Log.h">
       <Filter>Header Files\System</Filter>
     </ClInclude>
-    <ClInclude Include="..\Include\Render\Shader.h">
-      <Filter>Header Files\Render</Filter>
-    </ClInclude>
     <ClInclude Include="..\Include\Engine\Resource.h">
       <Filter>Header Files\Engine</Filter>
     </ClInclude>
     <ClInclude Include="..\Include\Engine\IO.h">
       <Filter>Header Files\Engine</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Render\Model.h">
-      <Filter>Header Files\Render</Filter>
     </ClInclude>
     <ClInclude Include="..\Include\Scene\Scene.h">
       <Filter>Header Files\Scene</Filter>
@@ -173,9 +173,6 @@
     </ClInclude>
     <ClInclude Include="..\Include\Math\Math.h">
       <Filter>Header Files\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Render\ModelRender.h">
-      <Filter>Header Files\Render</Filter>
     </ClInclude>
     <ClInclude Include="..\Include\Scene\Transform.h">
       <Filter>Header Files\Scene</Filter>
@@ -387,6 +384,33 @@
     <ClInclude Include="..\Include\System\Thread.h">
       <Filter>Header Files\System</Filter>
     </ClInclude>
+    <ClInclude Include="..\Platform\Win32\Win32Platform.h">
+      <Filter>Source Files\Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Render\Context.h">
+      <Filter>Header Files\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Render\Driver.h">
+      <Filter>Header Files\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Platform\Win32\Compat\stdatomic.h">
+      <Filter>Source Files\Platform\Compat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Render\AccelerationStructure.h">
+      <Filter>Header Files\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Render\Buffer.h">
+      <Filter>Header Files\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Render\Pipeline.h">
+      <Filter>Header Files\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Render\ShaderBindingTable.h">
+      <Filter>Header Files\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Render\TransientResources.h">
+      <Filter>Header Files\Render</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="System\System.c">
@@ -473,23 +497,11 @@
     <ClCompile Include="Asset\NMesh.c">
       <Filter>Source Files\Asset</Filter>
     </ClCompile>
-    <ClCompile Include="Render\Model.c">
-      <Filter>Source Files\Render</Filter>
-    </ClCompile>
-    <ClCompile Include="Render\ModelRender.c">
-      <Filter>Source Files\Render</Filter>
-    </ClCompile>
     <ClCompile Include="Scene\Transform.c">
       <Filter>Source Files\Scene</Filter>
     </ClCompile>
-    <ClCompile Include="Render\Texture.c">
-      <Filter>Source Files\Render</Filter>
-    </ClCompile>
     <ClCompile Include="Asset\TGA.c">
       <Filter>Source Files\Asset</Filter>
-    </ClCompile>
-    <ClCompile Include="Render\Material.c">
-      <Filter>Source Files\Render</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Config.c">
       <Filter>Source Files\Engine</Filter>
@@ -646,6 +658,27 @@
     </ClCompile>
     <ClCompile Include="System\Memory.c">
       <Filter>Source Files\System</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Platform\Win32\Main.c">
+      <Filter>Source Files\Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Platform\Win32\Thread.c">
+      <Filter>Source Files\Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Platform\Win32\Win32.c">
+      <Filter>Source Files\Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Platform\Win32\Win32Input.c">
+      <Filter>Source Files\Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Platform\Win32\Window.c">
+      <Filter>Source Files\Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Deps\PhysFS\physfs_platform_windows.c">
+      <Filter>Source Files\Deps\PhysFS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Platform\Win32\Compat\stdatomic.c">
+      <Filter>Source Files\Platform\Compat</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -10,7 +10,7 @@
 
 #define WIDTH		600
 #define HEIGHT		400
-#define CLASSNAME	L"ClaireDbgLoggerWnd"
+#define CLASSNAME	L"NekoEngineDbgLoggerWnd"
 
 static HWND _logEditView = NULL;
 static HINSTANCE _instance = INVALID_HANDLE_VALUE;
@@ -140,7 +140,7 @@ _HandleCommand(HWND wnd, WPARAM wParam, LPARAM lParam)
 		ofn.hInstance = _instance;
 		ofn.lpstrFilter = L"Log Files (*.log)|*.log";
 		ofn.lpstrTitle = L"Save Log File";
-		ofn.lpstrFile = L"Claire.log";
+		ofn.lpstrFile = L"Engine.log";
 
 		GetSaveFileName(&ofn);
 	} break;
