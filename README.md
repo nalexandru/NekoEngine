@@ -1,5 +1,11 @@
 # NekoEngine
 
+## Build Status
+
+| Windows |
+|---------|
+|[![Build status](https://ci.appveyor.com/api/projects/status/t8pace9glsyigisd/branch/master?svg=true)](https://ci.appveyor.com/project/nalexandru/nekoengine/branch/master)|
+
 ## Description
 
 Cross-platform game engine.
