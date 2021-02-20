@@ -31,6 +31,7 @@ This repository is a mirror which is not frequently updated.
 
 #### Prerequisites
 * Visual Studio 2019
+* Vulkan SDK
 * (Optional) Vulkan driver with support for VK_KHR_ray_tracing
 * (Optional) FreeType for building the FontGen tool
 
