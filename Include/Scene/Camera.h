@@ -5,10 +5,6 @@
 #include <Engine/Types.h>
 #include <Engine/Component.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 enum ProjectionType
 {
 	PT_Perspective,
@@ -26,7 +22,7 @@ struct Camera
 	enum ProjectionType projection;
 };
 
-ENGINE_API extern struct Camera *Scn_ActiveCamera;
+ENGINE_API extern struct Camera *Scn_activeCamera;
 
 bool Scn_InitCamera(struct Camera *cam, const void **args);
 void Scn_TermCamera(struct Camera *cam);
@@ -34,9 +30,5 @@ void Scn_TermCamera(struct Camera *cam);
 void Scn_ActivateCamera(struct Camera *cam);
 
 void Scn_UpdateCamera(void **comp, void *args);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* _SCN_CAMERA_H_ */

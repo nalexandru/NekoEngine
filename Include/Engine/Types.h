@@ -1,5 +1,5 @@
-#ifndef _E_TYPE_H_
-#define _E_TYPE_H_
+#ifndef _E_TYPES_H_
+#define _E_TYPES_H_
 
 #include <wchar.h>
 #include <stdint.h>
@@ -41,26 +41,41 @@ struct ModelCreateInfo;
 struct Buffer;
 struct BufferDesc;
 struct BufferCreateInfo;
-
 struct Texture;
 struct TextureDesc;
 struct TextureCreateInfo;
-
 struct AccelerationStructure;
 struct AccelerationStructureDesc;
 struct AccelerationStructureCreateInfo;
-
 struct Shader;
 struct Pipeline;
+struct PipelineLayout;
+struct PipelineLayoutDesc;
+struct Framebuffer;
+struct FramebufferDesc;
 struct ShaderBindingTable;
 struct BlendAttachmentDesc;
-
 struct RenderDevice;
 struct RenderDeviceInfo;
 struct RenderDeviceProcs;
-
 struct RenderContext;
 struct RenderContextProcs;
+struct RenderPass;
+struct RenderPassDesc;
+struct AttachmentDesc;
+struct FramebufferAttachmentDesc;
+struct DescriptorSet;
+struct DescriptorWrite;
+struct DescriptorSetLayout;
+struct DescriptorSetLayoutDesc;
+struct DescriptorBinding;
+struct BufferBindInfo;
+struct TextureBindInfo;
+struct AccelerationStructureBindInfo;
+struct Semaphore;
+
+typedef void *Swapchain;
+typedef void *Surface;
 
 struct Version
 {
@@ -69,6 +84,8 @@ struct Version
 	uint8_t build;
 	uint8_t revision;
 };
+
+enum GPUMemoryFlags;
 
 typedef void *File;
 typedef void *Mutex;
@@ -98,4 +115,4 @@ struct mat4;
 #	define Atribute(...)
 #endif*/
 
-#endif /* _E_TYPE_H_ */
+#endif /* _E_TYPES_H_ */

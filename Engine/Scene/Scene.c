@@ -20,7 +20,7 @@
 #define SCNMOD	L"Scene"
 #define BUFF_SZ	512
 
-struct Scene *Scn_ActiveScene = NULL;
+struct Scene *Scn_activeScene = NULL;
 static inline bool _InitScene(struct Scene *s);
 static void _LoadJob(int worker, struct Scene *scn);
 static inline void _ReadSceneInfo(struct Scene *s, struct Stream *stm, char *data, wchar_t *buff);
@@ -47,7 +47,7 @@ Scn_CreateScene(const wchar_t *name)
 struct Scene *
 Scn_StartSceneLoad(const char *path)
 {
-	/*struct Scene *s = Sys_Alloc(RE_APPEND_DATA_SIZE(struct Scene, Re.sceneRenderDataSize), 1, MH_Persistent);
+	struct Scene *s = Sys_Alloc(sizeof(struct Scene), 1, MH_Persistent);
 	if (!s)
 		return NULL;
 
@@ -61,9 +61,9 @@ Scn_StartSceneLoad(const char *path)
 	if (E_GetCVarBln(L"Engine_SingleThreadSceneLoad", false))
 		_LoadJob(0, s);
 	else
-		E_ExecuteJob((JobProc)_LoadJob, s, NULL);*/
+		E_ExecuteJob((JobProc)_LoadJob, s, NULL);
 
-	return NULL;
+	return s;
 }
 
 void
@@ -71,7 +71,6 @@ Scn_UnloadScene(struct Scene *s)
 {
 	E_TermSceneEntities(s);
 	E_TermSceneComponents(s);
-//	Re.TermScene(s);
 
 	Sys_Free(s);
 }
@@ -82,7 +81,7 @@ Scn_ActivateScene(struct Scene *s)
 	if (!s->loaded)
 		return false;
 
-	Scn_ActiveScene = s;
+	Scn_activeScene = s;
 
 	return true;
 }
@@ -92,9 +91,6 @@ _InitScene(struct Scene *s)
 {
 	if (!E_InitSceneComponents(s) || !E_InitSceneEntities(s))
 		goto error;
-
-//	if (!Re.InitScene(s))
-//		goto error;
 	
 	return true;
 
@@ -168,7 +164,7 @@ _ReadSceneInfo(struct Scene *s, struct Stream *stm, char *data, wchar_t *buff)
 			char *type = strchr(line, '=') + 1;
 			mbstowcs(s->name, type, sizeof(s->name) / sizeof(wchar_t));
 		} else if (!strncmp(line, "EnvironmentMap", 14)) {
-			char *file = strchr(line, '=') + 1;
+//			char *file = strchr(line, '=') + 1;
 //			s->environmentMap = E_LoadResource(file, RES_TEXTURE);
 		} else if (!strncmp(line, "EndSceneInfo", len)) {
 			break;

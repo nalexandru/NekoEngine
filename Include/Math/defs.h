@@ -250,4 +250,3 @@ struct plane
 #define M_180_PI			57.29577951308232087684f
 
 #endif /* _NE_MATH_DEFS_H_ */
-

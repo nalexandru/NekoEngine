@@ -1,0 +1,146 @@
+#include <Runtime/Runtime.h>
+#include <Render/Pipeline.h>
+
+#define P_GRAPHICS		0
+#define P_COMPUTE		1
+#define P_RAY_TRACING	2
+
+static struct Array _pipelines;
+
+struct PipelineInfo
+{
+	uint32_t type;
+	union {
+		struct {
+			struct Shader *sh;
+			uint64_t flags;
+			struct BlendAttachmentDesc *at;
+			uint32_t atCount;
+		} graphics;
+		struct {
+			struct Shader *sh;
+		} compute;
+		struct {
+			struct ShaderBindingTable *sbt;
+		} rayTracing;
+	};
+	struct Pipeline *pipeline;
+};
+
+bool
+Re_InitPipelines(void)
+{
+	if (!Rt_InitArray(&_pipelines, 10, sizeof(struct PipelineInfo)))
+		return false;
+	
+	Re_deviceProcs.LoadPipelineCache(Re_device);
+	
+	return true;
+}
+
+struct Pipeline *Re_GraphicsPipeline(struct Shader *sh, uint64_t flags, struct BlendAttachmentDesc *at, uint32_t atCount)
+{
+	struct PipelineInfo *pi;
+	Rt_ArrayForEach(pi, &_pipelines) {
+		if (pi->type != P_GRAPHICS ||
+				pi->graphics.sh != sh ||
+				pi->graphics.flags != flags ||
+				pi->graphics.atCount != atCount)
+			continue;
+		
+		bool ok = true;
+		for (uint32_t i = 0; i < atCount; ++i)
+			if (memcmp(&at[i], &pi->graphics.at[i], sizeof(*at)))
+				ok = false;
+		
+		if (!ok)
+			continue;
+		
+		return pi->pipeline;
+	}
+	
+	struct BlendAttachmentDesc *newAt = calloc(atCount, sizeof(*newAt));
+	if (!newAt)
+		return NULL;
+	
+	memcpy(newAt, at, atCount * sizeof(*newAt));
+	
+	struct PipelineInfo new =
+	{
+		.type = P_GRAPHICS,
+		.graphics.sh = sh,
+		.graphics.flags = flags,
+		.graphics.at = newAt,
+		.graphics.atCount = atCount,
+		.pipeline = Re_deviceProcs.GraphicsPipeline(Re_device, sh, flags, at, atCount)
+	};
+	
+	if (!new.pipeline)
+		return NULL;
+	
+	Rt_ArrayAdd(&_pipelines, &new);
+	
+	return new.pipeline;
+}
+
+struct Pipeline *Re_ComputePipeline(struct Shader *sh)
+{
+	struct PipelineInfo *pi;
+	Rt_ArrayForEach(pi, &_pipelines) {
+		if (pi->type != P_GRAPHICS || pi->compute.sh != sh)
+			continue;
+		
+		return pi->pipeline;
+	}
+	
+	struct PipelineInfo new =
+	{
+		.type = P_COMPUTE,
+		.compute.sh = sh,
+		.pipeline = Re_deviceProcs.ComputePipeline(Re_device, sh)
+	};
+	
+	if (!new.pipeline)
+		return NULL;
+	
+	Rt_ArrayAdd(&_pipelines, &new);
+	
+	return new.pipeline;
+}
+
+struct Pipeline *Re_RayTracingPipeline(struct ShaderBindingTable *sbt)
+{
+	struct PipelineInfo *pi;
+	Rt_ArrayForEach(pi, &_pipelines) {
+		if (pi->type != P_RAY_TRACING || pi->rayTracing.sbt != sbt)
+			continue;
+		
+		return pi->pipeline;
+	}
+	
+	struct PipelineInfo new =
+	{
+		.type = P_RAY_TRACING,
+		.rayTracing.sbt = sbt,
+		.pipeline = Re_deviceProcs.RayTracingPipeline(Re_device, sbt)
+	};
+	
+	if (!new.pipeline)
+		return NULL;
+	
+	Rt_ArrayAdd(&_pipelines, &new);
+	
+	return new.pipeline;
+}
+
+void
+Re_TermPipelines(void)
+{
+	struct PipelineInfo *pi;
+	Rt_ArrayForEach(pi, &_pipelines)
+		if (pi->type == P_GRAPHICS)
+			free(pi->graphics.at);
+	
+	Re_deviceProcs.SavePipelineCache(Re_device);
+	Rt_TermArray(&_pipelines);
+}

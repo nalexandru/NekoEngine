@@ -1,6 +1,6 @@
 #include "AVSound.h"
 
-size_t Au_SourceSize = sizeof(AVAudioPCMBuffer *);
+size_t Au_sourceSize = sizeof(AVAudioPCMBuffer *);
 
 void
 Au_SetClip(struct AudioSource *src, __EngineHandle clip)

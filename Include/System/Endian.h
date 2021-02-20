@@ -1,10 +1,6 @@
 #ifndef _SYS_ENDIAN_H_
 #define _SYS_ENDIAN_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdint.h>
 
 static inline bool
@@ -67,8 +63,4 @@ Sys_SwapFloat(float val)
 	return val;
 }
 
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* _SYS_ENDIANG_H_ */
+#endif /* _SYS_ENDIAN_H_ */

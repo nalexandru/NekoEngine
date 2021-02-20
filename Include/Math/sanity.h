@@ -119,4 +119,3 @@ __MathDbg_SanityTest(void)
 }
 
 #endif /* _MATH_SANITY_H_ */
-

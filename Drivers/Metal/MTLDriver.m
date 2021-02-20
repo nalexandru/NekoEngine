@@ -14,18 +14,17 @@
 static bool _Init(void);
 static void _Term(void);
 static bool _EnumerateDevices(uint32_t *, struct RenderDeviceInfo *);
-static struct RenderDevice *_CreateDevice(struct RenderDeviceInfo *info,
-										  struct RenderDeviceProcs *devProcs,
-										  struct RenderContextProcs *ctxProcs);
 
 static struct RenderDriver _drv =
 {
 	NE_RENDER_DRIVER_ID,
 	NE_RENDER_DRIVER_API,
+	L"Metal",
 	_Init,
 	_Term,
 	_EnumerateDevices,
-	_CreateDevice
+	MTL_CreateDevice,
+	(void(*)(struct RenderDevice *))MTL_DestroyDevice
 };
 
 #ifdef RENDER_DRIVER_BUILTIN
@@ -44,6 +43,8 @@ static void
 _Term(void)
 {
 }
+
+#if TARGET_OS_OSX
 
 static bool
 _EnumerateDevices(uint32_t *count, struct RenderDeviceInfo *info)
@@ -67,12 +68,14 @@ _EnumerateDevices(uint32_t *count, struct RenderDeviceInfo *info)
 		
 		info[i].features.meshShading = false;
 		info[i].features.rayTracing = [dev supportsRaytracing];
+		info[i].features.indirectRayTracing = false;
 		info[i].features.unifiedMemory = [dev hasUnifiedMemory];
 		info[i].features.discrete = ![dev isLowPower];
 		info[i].features.canPresent = ![dev isHeadless];
-		
 		info[i].limits.maxTextureSize = [dev supportsFamily: MTLGPUFamilyApple3]
 						|| [dev supportsFamily: MTLGPUFamilyMac1] ? 16384 : 8192;
+		info[i].features.drawIndirectCount = false;
+		info[i].features.textureCompression = true;
 		
 		info[i].private = (void *)devices[i];
 	}
@@ -82,28 +85,38 @@ _EnumerateDevices(uint32_t *count, struct RenderDeviceInfo *info)
 	return true;
 }
 
-static struct RenderDevice *
-_CreateDevice(struct RenderDeviceInfo *info,
-			  struct RenderDeviceProcs *devProcs,
-			  struct RenderContextProcs *ctxProcs)
+#else
+
+static bool
+_EnumerateDevices(uint32_t *count, struct RenderDeviceInfo *info)
 {
-	devProcs->Init = (bool(*)(struct RenderDevice *))MTL_InitDevice;
-	devProcs->Term = (void(*)(struct RenderDevice *))MTL_TermDevice;
+	if (!count)
+		return false;
 	
-	devProcs->CreateContext = (struct RenderContext *(*)(struct RenderDevice *))MTL_CreateContext;
-	devProcs->DestroyContext = (void(*)(struct RenderDevice *, struct RenderContext *))MTL_DestroyContext;
+	if (!*count || !info) {
+		*count = 1;
+		return true;
+	}
 	
-	devProcs->CreateSurface = (void *(*)(struct RenderDevice *, void *))MTL_CreateSurface;
-	devProcs->DestroySurface = (void(*)(struct RenderDevice *, void *))MTL_DestroySurface;
+	id<MTLDevice> dev = MTLCreateSystemDefaultDevice();
 	
-	devProcs->CreateSwapchain = (void *(*)(struct RenderDevice *, void *))MTL_CreateSwapchain;
-	devProcs->DestroySwapchain = (void(*)(struct RenderDevice *, void *))MTL_DestroySwapchain;
+	snprintf(info->deviceName, sizeof(info->deviceName), "%s", [[dev name] UTF8String]);
+	info->localMemorySize = 1024 * 1024 * 1024;
+		
+	info->features.meshShading = false;
+	info->features.rayTracing = [dev supportsRaytracing];
+	info->features.indirectRayTracing = false;
+	info->features.unifiedMemory = [dev hasUnifiedMemory];
+	info->features.discrete = false;
+	info->features.canPresent = true;
+	info->features.drawIndirectCount = false;
+	info->features.textureCompression = false;
+	info->limits.maxTextureSize = [dev supportsFamily: MTLGPUFamilyApple3]
+					|| [dev supportsFamily: MTLGPUFamilyMac1] ? 16384 : 8192;
+		
+	info->private = dev;
 	
-	devProcs->AcquireNextImage = (void *(*)(struct RenderDevice *, void *))MTL_AcquireNextImage;
-	devProcs->Present = (bool(*)(struct RenderDevice *, void *, void *))MTL_Present;
-	
-	devProcs->LoadPipelineCache = (void(*)(struct RenderDevice *, struct Stream *))MTL_LoadPipelineCache;
-	devProcs->SavePipelineCache = (void(*)(struct RenderDevice *, struct Stream *))MTL_LoadPipelineCache;
-	
-	return info->private;
+	return true;
 }
+
+#endif

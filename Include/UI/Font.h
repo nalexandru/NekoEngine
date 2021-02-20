@@ -25,4 +25,3 @@ struct Font
 };
 
 #endif /* _UI_FONT_H_ */
-

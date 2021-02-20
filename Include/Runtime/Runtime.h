@@ -9,10 +9,6 @@
 #include <Runtime/RtDefs.h>
 #include <Runtime/Array.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 static inline wchar_t *
 Rt_MbsToWcs(const char *str)
 {
@@ -35,9 +31,5 @@ Rt_SkipWhitespace(char *str)
 	}
 	return str;
 }
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* _RT_RUNTIME_H_ */

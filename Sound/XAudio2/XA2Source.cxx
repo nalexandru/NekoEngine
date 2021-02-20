@@ -6,12 +6,9 @@
 
 #include <x3daudio.h>
 
-#include <Audio/Source.h>
-#include <Engine/Resource.h>
-
 #include "XA2Sound.h"
 
-size_t Au_SourceSize = sizeof(struct AudioSource);
+size_t Au_sourceSize = sizeof(struct AudioSource);
 
 // https://docs.microsoft.com/en-us/previous-versions/dd757713(v=vs.85)?redirectedfrom=MSDN
 static WAVEFORMATEX _auWaveFormat = 

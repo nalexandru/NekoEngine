@@ -25,4 +25,3 @@
 #include <Math/debug.h>
 
 #endif /* _NE_MATH_H_ */
-

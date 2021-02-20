@@ -3,10 +3,6 @@
 
 #include <Engine/Types.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define CONF_PATH_SIZE	256
 #define CVAR_MAX_NAME	64
 
@@ -59,9 +55,5 @@ void E_SetCVarU32(const wchar_t *name, uint32_t u32);
 void E_SetCVarU64(const wchar_t *name, uint64_t u64);
 void E_SetCVarFlt(const wchar_t *name, float flt);
 void E_SetCVarBln(const wchar_t *name, bool bln);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* _E_CONFIG_H_ */

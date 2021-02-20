@@ -579,6 +579,4 @@ __miwa_array_insert(Array *a, const void *data, size_t pos, bool ordered)
 	return true;
 }
 
-
 #endif /* _MIWA_RUNTIME_ARRAY_H_ */
-

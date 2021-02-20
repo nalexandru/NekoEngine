@@ -79,4 +79,3 @@ lerp(float x, float y, float t)
 }
 
 #endif /* _NE_MATH_FUNC_H_ */
-

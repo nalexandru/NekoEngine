@@ -6,10 +6,6 @@
 
 #include <Engine/Types.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef enum FileOpenMode
 {
 	IO_READ,
@@ -178,9 +174,4 @@ E_EndOfStream(const struct Stream *stm)
 		return true;
 }
 
-#ifdef __cplusplus
-}
-#endif
-
 #endif /* _E_IO_H_ */
-

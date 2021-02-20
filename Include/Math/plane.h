@@ -337,4 +337,3 @@ plane_intersect(
 }
 
 #endif /* _NE_MATH_PLANE_H_ */
-

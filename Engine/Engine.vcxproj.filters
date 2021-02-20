@@ -411,6 +411,18 @@
     <ClInclude Include="..\Include\Render\TransientResources.h">
       <Filter>Header Files\Render</Filter>
     </ClInclude>
+    <ClInclude Include="..\Include\Render\Framebuffer.h">
+      <Filter>Header Files\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Render\Memory.h">
+      <Filter>Header Files\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Render\RenderPass.h">
+      <Filter>Header Files\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Render\Swapchain.h">
+      <Filter>Header Files\Render</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="System\System.c">
@@ -679,6 +691,12 @@
     </ClCompile>
     <ClCompile Include="..\Platform\Win32\Compat\stdatomic.c">
       <Filter>Source Files\Platform\Compat</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Pipeline.c">
+      <Filter>Source Files\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Frame.c">
+      <Filter>Source Files\Render</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -8,10 +8,6 @@
 
 #include <wchar.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define IN_MAX_CONTROLLERS	4
 
 struct ControllerState
@@ -20,12 +16,12 @@ struct ControllerState
 	float axis[CONTROLLER_AXIS_COUNT];
 };
 
-extern bool In_PointerVisible;
-extern bool In_PointerCaptured;
-extern bool In_ButtonState[BTN_STATE_COUNT];
-extern float In_MouseAxis[3];
-extern uint8_t In_ConnectedControllers;
-extern struct ControllerState In_ControllerState[IN_MAX_CONTROLLERS];
+extern bool In_pointerVisible;
+extern bool In_pointerCaptured;
+extern bool In_buttonState[BTN_STATE_COUNT];
+extern float In_mouseAxis[3];
+extern uint8_t In_connectedControllers;
+extern struct ControllerState In_controllerState[IN_MAX_CONTROLLERS];
 
 bool In_InitInput(void);
 void In_TermInput(void);
@@ -62,9 +58,5 @@ void In_PointerPosition(uint16_t *x, uint16_t *y);
 void In_SetPointerPosition(uint16_t x, uint16_t y);
 void In_CapturePointer(bool capture);
 void In_ShowPointer(bool show);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* _IN_INPUT_H_ */

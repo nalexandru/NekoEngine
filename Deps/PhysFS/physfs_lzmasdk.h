@@ -694,7 +694,7 @@ static int x86cpuid_GetFirm(const Cx86cpuid *p);
 #define x86cpuid_GetModel(ver)  (((ver >> 12) &  0xF0) | ((ver >> 4) & 0xF))
 #define x86cpuid_GetStepping(ver) (ver & 0xF)
 
-static Bool CPU_Is_InOrder();
+static Bool CPU_Is_InOrder(void);
 
 #endif
 
@@ -1554,7 +1554,7 @@ static int x86cpuid_GetFirm(const Cx86cpuid *p)
   return -1;
 }
 
-static Bool CPU_Is_InOrder()
+static Bool CPU_Is_InOrder(void)
 {
   Cx86cpuid p;
   int firm;

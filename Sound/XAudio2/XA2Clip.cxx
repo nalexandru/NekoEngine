@@ -1,8 +1,6 @@
-#include <Audio/Clip.h>
-
 #include "XA2Sound.h"
 
-size_t Au_AudioClipDataSize = sizeof(XAUDIO2_BUFFER);
+size_t Au_audioClipDataSize = sizeof(XAUDIO2_BUFFER);
 
 bool
 Au_InitClip(struct AudioClip *ac)

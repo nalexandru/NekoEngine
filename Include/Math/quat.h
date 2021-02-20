@@ -623,4 +623,3 @@ quat_rot_between_v3(struct quat *q,
 }
 
 #endif /* _NE_MATH_QUATERNION_H_ */
-

@@ -3,10 +3,6 @@
 
 #include <Engine/Types.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define RES_AUDIO_CLIP	"AudioClip"
 
 enum AudioFormat
@@ -34,7 +30,7 @@ struct AudioClipCreateInfo
 	uint32_t sampleCount;
 };
 
-extern size_t Au_AudioClipDataSize;
+extern size_t Au_audioClipDataSize;
 
 // Shared resource handling
 bool Au_CreateClip(const char *name, const struct AudioClipCreateInfo *ci, struct AudioClip *data, Handle h);
@@ -44,9 +40,5 @@ void Au_UnloadClip(struct AudioClip *model, Handle h);
 // Implemented in the sound library
 bool Au_InitClip(struct AudioClip *clip);
 void Au_TermClip(struct AudioClip *clip);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* _AU_CLIP_H_ */

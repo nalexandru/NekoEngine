@@ -5,10 +5,6 @@
 
 #include <lua.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 lua_State *E_CreateVM(bool jit);
 
 bool E_LoadScript(lua_State *vm, const char *source);
@@ -18,9 +14,5 @@ void E_DestroyVM(lua_State *vm);
 
 bool E_InitScriptSystem(void);
 void E_TermScriptSystem(void);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* _E_SCRIPT_H_ */

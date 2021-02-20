@@ -7,10 +7,6 @@
 
 #define RES_SCENE	"Scene"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct Scene
 {
 	wchar_t name[64];
@@ -18,20 +14,14 @@ struct Scene
 	bool loaded;
 	Array entities, compData, compHandle;
 	Handle environmentMap;
-	uint8_t renderDataStart;
 };
 
-ENGINE_API extern struct Scene *Scn_ActiveScene;
-ENGINE_API extern struct Scene *Scn_LoadingScene;
+ENGINE_API extern struct Scene *Scn_activeScene;
 
 struct Scene *Scn_CreateScene(const wchar_t *name);
 struct Scene *Scn_StartSceneLoad(const char *path);
 void Scn_UnloadScene(struct Scene *scn);
 
 bool Scn_ActivateScene(struct Scene *scn);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* _SCN_SCENE_H_ */

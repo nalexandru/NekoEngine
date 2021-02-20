@@ -4,6 +4,7 @@
 #include <System/Log.h>
 #include <System/System.h>
 #include <Engine/IO.h>
+#include <Engine/Job.h>
 #include <Engine/Config.h>
 #include <Engine/Engine.h>
 #include <Render/Render.h>
@@ -11,18 +12,19 @@
 #include <Render/Device.h>
 #include <Render/Context.h>
 #include <Render/Pipeline.h>
+#include <Render/Swapchain.h>
 
 #define RE_MOD L"Render"
 
-struct RenderDevice *Re_Device;
-struct RenderDeviceInfo Re_DeviceInfo = { 0 };
-struct RenderDeviceProcs Re_DeviceProcs = { 0 };
-struct RenderContextProcs Re_ContextProcs = { 0 };
+struct RenderDevice *Re_device;
+struct RenderDeviceInfo Re_deviceInfo = { 0 };
+struct RenderDeviceProcs Re_deviceProcs = { 0 };
+struct RenderContextProcs Re_contextProcs = { 0 };
 
-void *Re_Surface = NULL;
-void *Re_Swapchain = NULL;
-
-static const struct RenderDriver *_drv = NULL;
+void *Re_surface = NULL;
+void *Re_swapchain = NULL;
+struct RenderContext **Re_contexts = NULL;
+const struct RenderDriver *Re_driver = NULL;
 
 #ifndef RENDER_DRIVER_BUILTIN
 static void *_drvModule = NULL;
@@ -35,7 +37,7 @@ Re_InitRender(void)
 	struct RenderDeviceInfo *info = NULL, *selected = NULL;
 
 #ifdef RENDER_DRIVER_BUILTIN
-	_drv = Re_LoadBuiltinDriver();
+	Re_driver = Re_LoadBuiltinDriver();
 #else
 	ReLoadDriverProc loadDriver;
 	const char *drvPath = E_GetCVarStr(L"Render_Driver", "VulkanDriver")->str;
@@ -51,44 +53,44 @@ Re_InitRender(void)
 		return false;
 	}
 
-	_drv = loadDriver();
+	Re_driver = loadDriver();
 #endif
 	
-	if (!_drv) {
+	if (!Re_driver) {
 		Sys_LogEntry(RE_MOD, LOG_CRITICAL, L"Failed to load driver");
 		return false;
 	}
 	
-	if (_drv->identifier != NE_RENDER_DRIVER_ID) {
+	if (Re_driver->identifier != NE_RENDER_DRIVER_ID) {
 		Sys_LogEntry(RE_MOD, LOG_CRITICAL, L"The library is not a valid driver");
 		return false;
 	}
 	
-	if (_drv->apiVersion != NE_RENDER_DRIVER_API) {
+	if (Re_driver->apiVersion != NE_RENDER_DRIVER_API) {
 		Sys_LogEntry(RE_MOD, LOG_CRITICAL, L"Driver version mismatch");
 		return false;
 	}
 	
-	if (!_drv->Init()) {
+	if (!Re_driver->Init()) {
 		Sys_LogEntry(RE_MOD, LOG_CRITICAL, L"Failed to initialize driver");
 		return false;
 	}
 	
-	if (!_drv->EnumerateDevices(&devCount, NULL)) {
+	if (!Re_driver->EnumerateDevices(&devCount, NULL)) {
 		Sys_LogEntry(RE_MOD, LOG_CRITICAL, L"Failed to enumerate devices");
 		return false;
 	}
 	
 	info = calloc(sizeof(*info), devCount);
-	if (!_drv->EnumerateDevices(&devCount, info)) {
+	if (!Re_driver->EnumerateDevices(&devCount, info)) {
 		Sys_LogEntry(RE_MOD, LOG_CRITICAL, L"Failed to enumerate devices");
 		return false;
 	}
 	
 	uint64_t vramSize = 0;
-	bool haveRt;
+	bool haveRt = false;
 	for (uint32_t i = 0; i < devCount; ++i) {
-		if (!info[i].features.canPresent || !info[i].features.discrete)
+		if (!info[i].features.canPresent)
 			continue;
 		
 		if (info[i].features.rayTracing) {
@@ -112,46 +114,42 @@ Re_InitRender(void)
 		return false;
 	}
 	
-	memcpy(&Re_DeviceInfo, selected, sizeof(Re_DeviceInfo));
+	memcpy(&Re_deviceInfo, selected, sizeof(Re_deviceInfo));
 	free(info);
 	
-	Re_Device = _drv->CreateDevice(info, &Re_DeviceProcs, &Re_ContextProcs);
-	if (!Re_Device) {
+	Re_device = Re_driver->CreateDevice(&Re_deviceInfo, &Re_deviceProcs, &Re_contextProcs);
+	if (!Re_device) {
 		Sys_LogEntry(RE_MOD, LOG_CRITICAL, L"Failed to create device");
 		return false;
 	}
 	
-	// Device initialization
+	Sys_LogEntry(RE_MOD, LOG_INFORMATION, L"GPU: %hs (%ls)", Re_deviceInfo.deviceName, Re_driver->driverName);
+	Sys_LogEntry(RE_MOD, LOG_INFORMATION, L"\tMemory: %llu MB", Re_deviceInfo.localMemorySize / 1024 / 1024);
+	Sys_LogEntry(RE_MOD, LOG_INFORMATION, L"\tRay Tracing: %ls", Re_deviceInfo.features.rayTracing ? L"yes" : L"no");
+	Sys_LogEntry(RE_MOD, LOG_INFORMATION, L"\tMesh Shading: %ls", Re_deviceInfo.features.rayTracing ? L"yes" : L"no");
+	Sys_LogEntry(RE_MOD, LOG_INFORMATION, L"\tUnified Memory: %ls", Re_deviceInfo.features.unifiedMemory ? L"yes" : L"no");
 	
-	if (!Re_InitDevice()) {
-		Sys_LogEntry(RE_MOD, LOG_CRITICAL, L"Failed to initialize device");
-		return false;
-	}
-	
-	Sys_LogEntry(RE_MOD, LOG_INFORMATION, L"GPU: %hs", Re_DeviceInfo.deviceName);
-	Sys_LogEntry(RE_MOD, LOG_INFORMATION, L"\tMemory: %llu MB", Re_DeviceInfo.localMemorySize / 1024 / 1024);
-	Sys_LogEntry(RE_MOD, LOG_INFORMATION, L"\tRay Tracing: %ls", Re_DeviceInfo.features.rayTracing ? L"yes" : L"no");
-	Sys_LogEntry(RE_MOD, LOG_INFORMATION, L"\tMesh Shading: %ls", Re_DeviceInfo.features.rayTracing ? L"yes" : L"no");
-	Sys_LogEntry(RE_MOD, LOG_INFORMATION, L"\tUnified Memory: %ls", Re_DeviceInfo.features.unifiedMemory ? L"yes" : L"no");
-	
-	Re_Surface = Re_CreateSurface(Re_Device, E_Screen);
-	if (!Re_Surface) {
+	Re_surface = Re_CreateSurface(E_screen);
+	if (!Re_surface) {
 		Sys_LogEntry(RE_MOD, LOG_CRITICAL, L"Failed to create surface");
 		return false;
 	}
 	
-	Re_Swapchain = Re_CreateSwapchain(Re_Device, Re_Surface);
-	if (!Re_Swapchain) {
+	Re_swapchain = Re_CreateSwapchain(Re_surface);
+	if (!Re_swapchain) {
 		Sys_LogEntry(RE_MOD, LOG_CRITICAL, L"Failed to create swapchain");
 		return false;
 	}
 	
-	struct Stream stm;
-	const char *cacheFile = E_GetCVarStr(L"Render_PipelineCachePath", "/UserData/Pipeline.cache")->str;
-	if (E_FileStream(cacheFile, IO_READ, &stm)) {
-		Re_LoadPipelineCache(&stm);
-		E_CloseStream(&stm);
-	}
+	Re_InitPipelines();
+	
+	Re_contexts = calloc(1, sizeof(*Re_contexts));
+	
+	Re_contexts[0] = Re_CreateContext();
+	
+	//for (uint32_t i = 0; i < E_JobWorkerThreads() + 1; ++i) {
+
+	//}
 	
 	return true;
 }
@@ -159,20 +157,20 @@ Re_InitRender(void)
 void
 Re_TermRender(void)
 {
-	struct Stream stm;
-	const char *cacheFile = E_GetCVarStr(L"Render_PipelineCachePath", "/UserData/Pipeline.cache")->str;
-	if (E_FileStream(cacheFile, IO_WRITE, &stm)) {
-		Re_SavePipelineCache(&stm);
-		E_CloseStream(&stm);
-	}
+	Re_WaitIdle();
+
+	Re_DestroyContext(Re_contexts[0]);
+	free(Re_contexts);
 	
-	Re_DestroySwapchain(Re_Device, Re_Swapchain);
-	Re_DestroySurface(Re_Device, Re_Surface);
-	Re_TermDevice();
-	_drv->Term();
+	Re_TermPipelines();
+	
+	Re_DestroySwapchain(Re_swapchain);
+	Re_DestroySurface(Re_surface);
+
+	Re_driver->DestroyDevice(Re_device);
+	Re_driver->Term();
 
 #ifndef RENDER_DRIVER_BUILTIN
 	Sys_UnloadLibrary(_drvModule);
 #endif
 }
-

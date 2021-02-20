@@ -3,10 +3,6 @@
 
 #include <Engine/Types.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define NE_RENDER_DRIVER_ID		0xB15B00B5
 #define NE_RENDER_DRIVER_API	1
 
@@ -14,6 +10,7 @@ struct RenderDriver
 {
 	uint32_t identifier;
 	uint32_t apiVersion;
+	wchar_t driverName[64];
 	
 	bool (*Init)(void);
 	void (*Term)(void);
@@ -22,14 +19,14 @@ struct RenderDriver
 	struct RenderDevice *(*CreateDevice)(struct RenderDeviceInfo *info,
 										 struct RenderDeviceProcs *devProcs,
 										 struct RenderContextProcs *ctxProcs);
+	void (*DestroyDevice)(struct RenderDevice *dev);
 };
 
 #ifdef RENDER_DRIVER_BUILTIN
 const struct RenderDriver *Re_LoadBuiltinDriver(void);
 #endif
 typedef const struct RenderDriver *(*ReLoadDriverProc)(void);
-#ifdef __cplusplus
-}
-#endif
+
+ENGINE_API extern const struct RenderDriver *Re_driver;
 
 #endif

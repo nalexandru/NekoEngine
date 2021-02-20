@@ -108,12 +108,21 @@ struct BlendAttachmentDesc
 };
 // TODO: is independent blend supported in Metal/D3D12 ?
 
-static inline void Re_LoadPipelineCache(struct Stream *stm) { Re_DeviceProcs.LoadPipelineCache(Re_Device, stm); }
-static inline void Re_SavePipelineCache(struct Stream *stm) { Re_DeviceProcs.SavePipelineCache(Re_Device, stm); }
+struct PipelineLayoutDesc
+{
+	uint32_t setLayoutCount;
+	const struct DescriptorSetLayoutDesc *setLayouts;
+	uint32_t pushConstantSize;
+};
 
-static inline struct Pipeline *Re_GraphicsPipeline(struct Shader *sh, uint64_t flags, struct BlendAttachmentDesc *at, uint32_t atCount)
-{ return Re_DeviceProcs.GraphicsPipeline(Re_Device, sh, flags, at, atCount); }
-static inline struct Pipeline *Re_ComputePipeline(struct Shader *sh) { return Re_DeviceProcs.ComputePipeline(Re_Device, sh); }
-static inline struct Pipeline *Re_RayTracingPipeline(struct ShaderBindingTable *sbt) { return Re_DeviceProcs.RayTracingPipeline(Re_Device, sbt); }
+static inline struct PipelineLayout *Re_CreatePipelineLayout(const struct PipelineLayoutDesc *desc) { return Re_deviceProcs.CreatePipelineLayout(Re_device, desc); }
+static inline void Re_DestroyPipelineLayout(struct PipelineLayout *layout) { Re_deviceProcs.DestroyPipelineLayout(Re_device, layout); }
+
+struct Pipeline *Re_GraphicsPipeline(struct Shader *sh, uint64_t flags, struct BlendAttachmentDesc *at, uint32_t atCount);
+struct Pipeline *Re_ComputePipeline(struct Shader *sh);
+struct Pipeline *Re_RayTracingPipeline(struct ShaderBindingTable *sbt);
+
+bool Re_InitPipelines(void);
+void Re_TermPipelines(void);
 
 #endif /* _RE_PIPELINE_H_ */

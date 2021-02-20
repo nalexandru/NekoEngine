@@ -6,10 +6,6 @@
 #include <stdarg.h>
 #include <stdbool.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define LOG_DEBUG			0
 #define LOG_INFORMATION		1
 #define LOG_WARNING			2
@@ -19,9 +15,4 @@ extern "C" {
 
 void Sys_LogEntry(const wchar_t *module, uint8_t severity, const wchar_t *format, ...);
 
-#ifdef __cplusplus
-}
-#endif
-
 #endif /* _SYSTEM_LOG_H_ */
-

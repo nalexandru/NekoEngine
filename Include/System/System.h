@@ -9,10 +9,6 @@
 
 #include <Engine/Types.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 enum MsgBoxIcon
 {
 	MSG_ICON_NONE = 0,
@@ -27,7 +23,8 @@ enum MachineType
 	MT_XBOX_ONE,
 	MT_XBOX,
 	MT_SWITCH,
-	MT_WII
+	MT_WII,
+	MT_MOBILE
 };
 
 enum SystemCapabilityFlags
@@ -78,9 +75,5 @@ int getopt(int nargc, char *const nargv[], const char *ostr);
 
 extern int opterr, optind, optopt, optreset;
 extern char *optarg;
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* _SYS_SYSTEM_H_ */

@@ -3,12 +3,26 @@
 
 #include <Engine/Types.h>
 #include <Render/Device.h>
+#include <Render/Memory.h>
 
 struct AccelerationStructure;
 
-struct AccelerationStructureDesc
+enum AccelerationStructureLevel
+{
+	AS_TOP_LEVEL,
+	AS_BOTTOM_LEVEL
+};
+
+struct AccelerationStructureGeometryDesc
 {
 	void *a;
+};
+
+struct AccelerationStructureDesc
+{
+	enum AccelerationStructureLevel level;
+	struct AccelerationStructureGeometryDesc geometryDesc;
+	enum GPUMemoryType memoryType;
 };
 
 struct AccelerationStructureCreateInfo
@@ -16,8 +30,9 @@ struct AccelerationStructureCreateInfo
 	struct AccelerationStructureDesc desc;
 };
 
-static inline struct Texture *Re_CreateAccelerationStructure(struct RenderDevice *dev, const struct AccelerationStructureCreateInfo *aci) { return Re_DeviceProcs.CreateAccelerationStructure(dev, aci); };
-static inline void Re_DestroyAccelerationStructure(struct RenderDevice *dev, struct AccelerationStructure *as) { Re_DeviceProcs.DestroyAccelerationStructure(dev, as); }
+static inline struct AccelerationStructure *Re_CreateAccelerationStructure(struct RenderDevice *dev, const struct AccelerationStructureCreateInfo *aci)
+	{ return Re_deviceProcs.CreateAccelerationStructure(dev, aci); };
+static inline void Re_DestroyAccelerationStructure(struct RenderDevice *dev, struct AccelerationStructure *as) { Re_deviceProcs.DestroyAccelerationStructure(dev, as); }
 
 //static inline void Re_UpdateTexture(struct Texture *tex, uint64_t offset, uint64_t size, void *data);
 

@@ -42,12 +42,12 @@ In_SysInit(void)
 	rid[0].usUsagePage = 0x01;
 	rid[0].usUsage = 0x02;
 	rid[0].dwFlags = 0; // set this only in fullscreen RIDEV_NOLEGACY;
-	rid[0].hwndTarget = (HWND)E_Screen;
+	rid[0].hwndTarget = (HWND)E_screen;
 
 	rid[1].usUsagePage = 0x01;
 	rid[1].usUsage = 0x06;
 	rid[1].dwFlags = RIDEV_NOLEGACY;
-	rid[1].hwndTarget = (HWND)E_Screen;
+	rid[1].hwndTarget = (HWND)E_screen;
 
 	if (!RegisterRawInputDevices(rid, 2, sizeof(rid[0]))) {
 		Sys_LogEntry(W32INMOD, LOG_CRITICAL, L"Failed to register raw input devices");
@@ -72,13 +72,13 @@ In_SysPollControllers(void)
 		XINPUT_STATE xi;
 		struct ControllerState *cs;
 
-		for (i = 0; i < In_ConnectedControllers; ++i) {
+		for (i = 0; i < In_connectedControllers; ++i) {
 			XInputGetState(i, &xi);
 
 			if (_lastPacket[i] == xi.dwPacketNumber)
 				continue;
 
-			cs = &In_ControllerState[i];
+			cs = &In_controllerState[i];
 
 			cs->buttons = xi.Gamepad.wButtons;
 
@@ -97,7 +97,7 @@ In_PointerPosition(uint16_t *x, uint16_t *y)
 	POINT pt;
 	
 	GetCursorPos(&pt);
-	ScreenToClient((HWND)E_Screen, &pt);
+	ScreenToClient((HWND)E_screen, &pt);
 
 	*x = (uint16_t)pt.x;
 	*y = (uint16_t)pt.y;
@@ -108,7 +108,7 @@ In_SetPointerPosition(uint16_t x, uint16_t y)
 {
 	POINT pt = { x, y };
 
-	ClientToScreen((HWND)E_Screen, &pt);
+	ClientToScreen((HWND)E_screen, &pt);
 	SetCursorPos(pt.x, pt.y);
 }
 
@@ -116,18 +116,18 @@ void
 In_CapturePointer(bool capture)
 {
 	if (capture)
-		SetCapture((HWND)E_Screen);
+		SetCapture((HWND)E_screen);
 	else
 		ReleaseCapture();
 
-	In_PointerCaptured = capture;
+	In_pointerCaptured = capture;
 }
 
 void
 In_ShowPointer(bool show)
 {
-	PostMessage((HWND)E_Screen, show ? WM_SHOWCURSOR : WM_HIDECURSOR, 0, 0);
-	In_PointerVisible = show;
+	PostMessage((HWND)E_screen, show ? WM_SHOWCURSOR : WM_HIDECURSOR, 0, 0);
+	In_pointerVisible = show;
 }
 
 void
@@ -137,11 +137,11 @@ UpdateControllers(void)
 		uint32_t i;
 		XINPUT_STATE xi;
 
-		In_ConnectedControllers = 0;
+		In_connectedControllers = 0;
 
 		for (i = 0; i < IN_MAX_CONTROLLERS; ++i)
 			if (XInputGetState(i, &xi) == ERROR_SUCCESS)
-				++In_ConnectedControllers;
+				++In_connectedControllers;
 	}
 }
 
@@ -195,21 +195,21 @@ HandleInput(HWND wnd, LPARAM lParam, WPARAM wParam)
 		default: key_code = _keymap[raw->data.keyboard.VKey]; break;
 		}
 
-		In_ButtonState[key_code] = !(raw->data.keyboard.Flags & RI_KEY_BREAK);
+		In_buttonState[key_code] = !(raw->data.keyboard.Flags & RI_KEY_BREAK);
 	} else if (raw->header.dwType == RIM_TYPEMOUSE) {
 		uint16_t btn = raw->data.mouse.usButtonFlags;
 
-		In_ButtonState[BTN_MOUSE_LMB] = btn & RI_MOUSE_BUTTON_1_DOWN;
-		In_ButtonState[BTN_MOUSE_RMB] = btn & RI_MOUSE_BUTTON_2_DOWN;
-		In_ButtonState[BTN_MOUSE_MMB] = btn & RI_MOUSE_BUTTON_3_DOWN;
-		In_ButtonState[BTN_MOUSE_BTN4] = btn & RI_MOUSE_BUTTON_4_DOWN;
-		In_ButtonState[BTN_MOUSE_BTN5] = btn & RI_MOUSE_BUTTON_5_DOWN;
+		In_buttonState[BTN_MOUSE_LMB] = btn & RI_MOUSE_BUTTON_1_DOWN;
+		In_buttonState[BTN_MOUSE_RMB] = btn & RI_MOUSE_BUTTON_2_DOWN;
+		In_buttonState[BTN_MOUSE_MMB] = btn & RI_MOUSE_BUTTON_3_DOWN;
+		In_buttonState[BTN_MOUSE_BTN4] = btn & RI_MOUSE_BUTTON_4_DOWN;
+		In_buttonState[BTN_MOUSE_BTN5] = btn & RI_MOUSE_BUTTON_5_DOWN;
 
-		In_MouseAxis[0] = (float)raw->data.mouse.lLastX / (float)(*E_ScreenWidth / 2);
-		In_MouseAxis[1] = (float)raw->data.mouse.lLastY / (float)(*E_ScreenHeight / 2);
+		In_mouseAxis[0] = (float)raw->data.mouse.lLastX / (float)(*E_screenWidth / 2);
+		In_mouseAxis[1] = (float)raw->data.mouse.lLastY / (float)(*E_screenHeight / 2);
 
 		if ((raw->data.mouse.usButtonFlags & RI_MOUSE_WHEEL) == RI_MOUSE_WHEEL)
-			In_MouseAxis[2] = (float)(short)raw->data.mouse.usButtonData / WHEEL_DELTA;
+			In_mouseAxis[2] = (float)(short)raw->data.mouse.usButtonData / WHEEL_DELTA;
 	}
 
 	DefRawInputProc(&raw, 1, sizeof(RAWINPUTHEADER));

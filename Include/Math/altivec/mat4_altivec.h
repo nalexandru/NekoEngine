@@ -681,4 +681,3 @@ m4_ortho_nd(struct mat4 *dst, float left, float right, float bottom, float top, 
 #endif
 
 #endif /* _NE_MATH_ALTIVEC_MAT4_H_ */
-

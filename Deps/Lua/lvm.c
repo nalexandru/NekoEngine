@@ -900,7 +900,7 @@ void luaV_finishOp (lua_State *L) {
 ** with two register operands.
 */
 #define op_arithf_aux(L,v1,v2,fop) {  \
-  lua_Number n1; lua_Number n2;  \
+  lua_Number n1 = 0; lua_Number n2 = 0;  \
   if (tonumberns(v1, n1) && tonumberns(v2, n2)) {  \
     pc++; setfltvalue(s2v(ra), fop(L, n1, n2));  \
   }}
@@ -1486,7 +1486,7 @@ void luaV_execute (lua_State *L, CallInfo *ci) {
       }
       vmcase(OP_UNM) {
         TValue *rb = vRB(i);
-        lua_Number nb;
+        lua_Number nb = 0;
         if (ttisinteger(rb)) {
           lua_Integer ib = ivalue(rb);
           setivalue(s2v(ra), intop(-, 0, ib));

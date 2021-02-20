@@ -1,10 +1,11 @@
 EXPORTS
-	E_Screen DATA
-	E_ScreenWidth DATA
-	E_ScreenHeight DATA
-	UI_Projection DATA
-	Scn_ActiveCamera DATA
-	Scn_ActiveScene DATA
+	E_screen DATA
+	E_screenWidth DATA
+	E_screenHeight DATA
+	UI_projection DATA
+	Scn_activeCamera DATA
+	Scn_activeScene DATA
+	Re_frameId DATA
 
 	reallocarray
 

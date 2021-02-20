@@ -3,10 +3,6 @@
 
 #include <Engine/Types.h>
 
-#ifdef __cplusplus
-extern "C"  {
-#endif
-
 uint32_t Sys_TlsAlloc(void);
 void *Sys_TlsGet(uint32_t key);
 void Sys_TlsSet(uint32_t key, void *data);
@@ -35,9 +31,5 @@ void Sys_Broadcast(ConditionVariable cv);
 bool Sys_WaitMutex(ConditionVariable cv, Mutex mtx);
 bool Sys_WaitFutex(ConditionVariable cv, Futex ftx);
 void Sys_TermConditionVariable(ConditionVariable cv);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* _SYS_THREAD_H_ */

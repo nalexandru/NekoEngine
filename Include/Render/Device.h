@@ -2,6 +2,7 @@
 #define _RE_DEVICE_H_
 
 #include <Engine/Types.h>
+#include <Render/Context.h>
 
 struct RenderDeviceInfo
 {
@@ -11,9 +12,12 @@ struct RenderDeviceInfo
 	struct {
 		bool unifiedMemory;
 		bool rayTracing;
+		bool indirectRayTracing;
 		bool meshShading;
 		bool discrete;
 		bool canPresent;
+		bool drawIndirectCount;
+		bool textureCompression;
 	} features;
 	
 	struct {
@@ -25,60 +29,76 @@ struct RenderDeviceInfo
 
 struct RenderDeviceProcs
 {
-	struct Pipeline *(*GraphicsPipeline)(struct RenderDevice *dev, struct Shader *sh, uint64_t flags, struct BlendAttachmentDesc *at, uint32_t atCount);
+	struct Pipeline *(*GraphicsPipeline)(struct RenderDevice *dev, struct Shader *sh, uint64_t flags, const struct BlendAttachmentDesc *at, uint32_t atCount);
 	struct Pipeline *(*ComputePipeline)(struct RenderDevice *dev, struct Shader *sh);
 	struct Pipeline *(*RayTracingPipeline)(struct RenderDevice *dev, struct ShaderBindingTable *sbt);
 	
-	void *(*AcquireNextImage)(struct RenderDevice *dev, void *swapchain);
-	bool (*Present)(struct RenderDevice *dev, void *swapchain, void *image);
+	void (*SetAttachment)(struct Framebuffer *fb, uint32_t pos, struct Texture *tex);
+	
+	struct PipelineLayout *(*CreatePipelineLayout)(struct RenderDevice *dev, const struct PipelineLayoutDesc *desc);
+	void (*DestroyPipelineLayout)(struct RenderDevice *dev, struct PipelineLayout *layout);
+	
+	void *(*AcquireNextImage)(struct RenderDevice *dev, Swapchain swapchain);
+	struct Texture *(*SwapchainTexture)(Swapchain swapchain, void *image);
+	enum TextureFormat (*SwapchainFormat)(Swapchain swapchain);
+	bool (*Present)(struct RenderDevice *dev, struct RenderContext *ctx, Swapchain swapchain, void *image);
+
+	bool (*Execute)(struct RenderDevice *dev, struct RenderContext *ctx, bool wait);
 	
 	struct Texture *(*CreateTexture)(struct RenderDevice *dev, const struct TextureCreateInfo *tci);
+	const struct TextureDesc *(*TextureDesc)(const struct Texture *tex);
 	void (*DestroyTexture)(struct RenderDevice *dev, struct Texture *tex);
 	
-	struct Texture *(*CreateBuffer)(struct RenderDevice *dev, const struct BufferCreateInfo *bci);
+	struct Buffer *(*CreateBuffer)(struct RenderDevice *dev, const struct BufferCreateInfo *bci);
+	void (*UpdateBuffer)(struct RenderDevice *dev, struct Buffer *buff, uint64_t offset, void *data, uint64_t size);
+	const struct BufferDesc *(*BufferDesc)(const struct Buffer *buff);
 	void (*DestroyBuffer)(struct RenderDevice *dev, struct Buffer *buff);
 	
 	struct AccelerationStructure *(*CreateAccelerationStructure)(struct RenderDevice *dev, const struct AccelerationStructureCreateInfo *aci);
 	void (*DestroyAccelerationStructure)(struct RenderDevice *dev, struct AccelerationStructure *as);
 	
-	void (*LoadPipelineCache)(struct RenderDevice *dev, struct Stream *stm);
-	void (*SavePipelineCache)(struct RenderDevice *dev, struct Stream *stm);
+	struct DescriptorSetLayout *(*CreateDescriptorSetLayout)(struct RenderDevice *dev, const struct DescriptorSetLayoutDesc *desc);
+	void (*DestroyDescriptorSetLayout)(struct RenderDevice *dev, struct DescriptorSetLayout *dsl);
 	
-	bool (*Init)(struct RenderDevice *dev);
-	void (*Term)(struct RenderDevice *dev);
+	struct DescriptorSet *(*CreateDescriptorSet)(struct RenderDevice *dev, const struct DescriptorSetLayout *layout);
+	void (*WriteDescriptorSet)(struct RenderDevice *dev, struct DescriptorSet *ds, const struct DescriptorWrite *writes, uint32_t writeCount);
+	void (*DestroyDescriptorSet)(struct RenderDevice *dev, struct DescriptorSet *ds);
+	
+	struct Framebuffer *(*CreateFramebuffer)(struct RenderDevice *dev, const struct FramebufferDesc *desc);
+	void (*DestroyFramebuffer)(struct RenderDevice *dev, struct Framebuffer *fb);
+	
+	struct RenderPass *(*CreateRenderPass)(struct RenderDevice *dev, const struct RenderPassDesc *desc);
+	void (*DestroyRenderPass)(struct RenderDevice *dev, struct RenderPass *fb);
+	
+	void (*LoadPipelineCache)(struct RenderDevice *dev);
+	void (*SavePipelineCache)(struct RenderDevice *dev);
 	
 	struct RenderContext *(*CreateContext)(struct RenderDevice *dev);
 	void (*DestroyContext)(struct RenderDevice *dev, struct RenderContext *ctx);
 	
-	void *(*CreateSurface)(struct RenderDevice *dev, void *window);
-	void (*DestroySurface)(struct RenderDevice *dev, void *surface);
+	Surface (*CreateSurface)(struct RenderDevice *dev, void *window);
+	void (*DestroySurface)(struct RenderDevice *dev, Surface surface);
 	
-	void *(*CreateSwapchain)(struct RenderDevice *dev, void *surface);
-	void (*DestroySwapchain)(struct RenderDevice *dev, void *swapchain);
+	Swapchain (*CreateSwapchain)(struct RenderDevice *dev, Surface surface);
+	void (*DestroySwapchain)(struct RenderDevice *dev, Swapchain swapchain);
+
+	void (*WaitIdle)(struct RenderDevice *dev);
 };
 
-extern struct RenderDevice *Re_Device;
-extern struct RenderDeviceInfo Re_DeviceInfo;
-extern struct RenderDeviceProcs Re_DeviceProcs;
+extern struct RenderDevice *Re_device;
+extern struct RenderDeviceInfo Re_deviceInfo;
+extern struct RenderDeviceProcs Re_deviceProcs;
 
-static inline bool Re_InitDevice(void) { return Re_DeviceProcs.Init(Re_Device); }
+static inline struct RenderContext *Re_CreateContext(void) { return Re_deviceProcs.CreateContext(Re_device); }
+static inline void Re_DestroyContext(struct RenderContext *ctx) { Re_deviceProcs.DestroyContext(Re_device, ctx); }
 
-static inline void *Re_AcquireNextImage(struct RenderDevice *dev, void *swapchain) { return Re_DeviceProcs.AcquireNextImage(dev, swapchain); }
-static inline bool Present(struct RenderDevice *dev, void *swapchain, void *image) { return Re_DeviceProcs.Present(dev, swapchain, image); }
+static inline Surface Re_CreateSurface(void *window) { return Re_deviceProcs.CreateSurface(Re_device, window); }
+static inline void Re_DestroySurface(Surface surface) { Re_deviceProcs.DestroySurface(Re_device, surface); }
 
-static inline struct RenderContext *Re_CreateContext(struct RenderDevice *dev) { return Re_DeviceProcs.CreateContext(dev); }
-static inline void Re_DestroyContext(struct RenderDevice *dev, struct RenderContext *ctx) { Re_DeviceProcs.DestroyContext(dev, ctx); }
+static inline void Re_WaitIdle(void) { Re_deviceProcs.WaitIdle(Re_device); }
 
-static inline void *Re_CreateSurface(struct RenderDevice *dev, void *window) { return Re_DeviceProcs.CreateSurface(dev, window); }
-static inline void Re_DestroySurface(struct RenderDevice *dev, void *surface) { Re_DeviceProcs.DestroySurface(dev, surface); }
-
-static inline void *Re_CreateSwapchain(struct RenderDevice *dev, void *surface) { return Re_DeviceProcs.CreateSwapchain(dev, surface); }
-static inline void Re_DestroySwapchain(struct RenderDevice *dev, void *swapchain) { Re_DeviceProcs.DestroySwapchain(dev, swapchain); }
-
-//static inline bool Re_InitDevice(struct RenderDevice *dev) { return Re_DeviceProcs.Init(dev); }
-//static inline bool Re_InitDevice(struct RenderDevice *dev) { return Re_DeviceProcs.Init(dev); }
-//static inline bool Re_InitDevice(struct RenderDevice *dev) { return Re_DeviceProcs.Init(dev); }
-
-static inline void Re_TermDevice(void) { Re_DeviceProcs.Term(Re_Device); }
+//static inline bool Re_InitDevice(struct RenderDevice *dev) { return Re_deviceProcs.Init(dev); }
+//static inline bool Re_InitDevice(struct RenderDevice *dev) { return Re_deviceProcs.Init(dev); }
+//static inline bool Re_InitDevice(struct RenderDevice *dev) { return Re_deviceProcs.Init(dev); }
 
 #endif /* _RE_DEVICE_H_ */

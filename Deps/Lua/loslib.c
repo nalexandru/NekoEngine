@@ -145,7 +145,7 @@ struct tm *localtime_r(const time_t *, struct tm *);
 
 
 static int os_execute (lua_State *L) {
-#if !defined(__PS3__)
+#if !defined(__PS3__) && !defined(LUA_IOS)
   const char *cmd = luaL_optstring(L, 1, NULL);
   int stat;
   errno = 0;

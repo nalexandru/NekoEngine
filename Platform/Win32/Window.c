@@ -50,8 +50,8 @@ _WndProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
 		UpdateControllers();
 	} break;
 	case WM_SIZE: {
-		*E_ScreenWidth = LOWORD(lparam);
-		*E_ScreenHeight = HIWORD(lparam);
+		*E_screenWidth = LOWORD(lparam);
+		*E_screenHeight = HIWORD(lparam);
 
 //		if (Re.ScreenResized)
 	//		Re.ScreenResized();
@@ -98,13 +98,13 @@ Sys_CreateWindow(void)
 	}
 
 	rc.left = rc.top = 0;
-	rc.right = *E_ScreenWidth;
-	rc.bottom = *E_ScreenHeight;
+	rc.right = *E_screenWidth;
+	rc.bottom = *E_screenHeight;
 
 	AdjustWindowRectEx(&rc, style, FALSE, exStyle);
 
-	x = (GetSystemMetrics(SM_CXSCREEN) - *E_ScreenWidth) / 2;
-    y = (GetSystemMetrics(SM_CYSCREEN) - *E_ScreenHeight) / 2;
+	x = (GetSystemMetrics(SM_CXSCREEN) - *E_screenWidth) / 2;
+    y = (GetSystemMetrics(SM_CYSCREEN) - *E_screenHeight) / 2;
 
 	_window = CreateWindowExW(exStyle, WND_CLASS_NAME,
 		L"NekoEngine", style, x, y, rc.right - rc.left, rc.bottom - rc.top,
@@ -118,7 +118,7 @@ Sys_CreateWindow(void)
 	SetForegroundWindow(_window);
 	SetActiveWindow(_window);
 
-	E_Screen = _window;
+	E_screen = _window;
 
 	return 0;
 }

@@ -17,6 +17,7 @@
 #include <Scene/Camera.h>
 #include <Render/Render.h>
 #include <Render/Device.h>
+#include <Render/Driver.h>
 //#include <Render/Material.h>
 #include <Engine/Event.h>
 #include <Engine/Entity.h>
@@ -37,10 +38,10 @@
 
 #define E_CONFIG_FILE	"Data/Config/Engine.ini"
 
-void *E_Screen = NULL;
-uint32_t *E_ScreenWidth = NULL;
-uint32_t *E_ScreenHeight = NULL;
-double E_DeltaTime = 0.0;
+void *E_screen = NULL;
+uint32_t *E_screenWidth = NULL;
+uint32_t *E_screenHeight = NULL;
+double E_deltaTime = 0.0;
 
 static bool _shutdown;
 static double _startTime, _prevTime;
@@ -81,19 +82,19 @@ E_Init(int argc, char *argv[])
 	if (dataDir)
 		E_SetCVarStr(L"Engine_DataDir", dataDir);
 	
-	E_ScreenWidth = &E_GetCVarU32(L"Engine_ScreenWidth", 1280)->u32;
-	E_ScreenHeight = &E_GetCVarU32(L"Engine_ScreenHeight", 720)->u32;
+	E_screenWidth = &E_GetCVarU32(L"Engine_ScreenWidth", 1280)->u32;
+	E_screenHeight = &E_GetCVarU32(L"Engine_ScreenHeight", 720)->u32;
 	
-	if (App_ApplicationInfo.version.revision)
-		Sys_LogEntry(EMOD, LOG_INFORMATION, L"%ls v%d.%d.%d.%d", App_ApplicationInfo.name, App_ApplicationInfo.version.major,
-			App_ApplicationInfo.version.minor, App_ApplicationInfo.version.build, App_ApplicationInfo.version.revision);
+	if (App_applicationInfo.version.revision)
+		Sys_LogEntry(EMOD, LOG_INFORMATION, L"%ls v%d.%d.%d.%d", App_applicationInfo.name, App_applicationInfo.version.major,
+			App_applicationInfo.version.minor, App_applicationInfo.version.build, App_applicationInfo.version.revision);
 	else
-		Sys_LogEntry(EMOD, LOG_INFORMATION, L"%ls v%d.%d.%d", App_ApplicationInfo.name, App_ApplicationInfo.version.major,
-			App_ApplicationInfo.version.minor, App_ApplicationInfo.version.build);
-	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Copyright \u00A9 %ls", App_ApplicationInfo.copyright);
+		Sys_LogEntry(EMOD, LOG_INFORMATION, L"%ls v%d.%d.%d", App_applicationInfo.name, App_applicationInfo.version.major,
+			App_applicationInfo.version.minor, App_applicationInfo.version.build);
+	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Copyright \u00C2\u00A9 %ls", App_applicationInfo.copyright);
 
 	Sys_LogEntry(EMOD, LOG_INFORMATION, L"%ls \"%ls\" v%ls", E_PGM_NAME, E_CODENAME, E_VER_STR);
-	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Copyright \u00A9 %ls", E_CPY_STR);
+	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Copyright \u00C2\u00A9 %ls", E_CPY_STR);
 	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Starting up...");
 
 	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Host: %hs", Sys_Hostname());
@@ -128,17 +129,17 @@ E_Init(int argc, char *argv[])
 	Au_Init();
 
 	In_InitInput();
-	UI_InitUI();
+//	UI_InitUI();
 	
 #ifdef _DEBUG
 	wchar_t titleBuff[256];
 	
-	swprintf(titleBuff, sizeof(titleBuff) / sizeof(wchar_t), L"%ls v%u.%u.%u", App_ApplicationInfo.name,
-		App_ApplicationInfo.version.major, App_ApplicationInfo.version.minor, App_ApplicationInfo.version.build);
+	swprintf(titleBuff, sizeof(titleBuff) / sizeof(wchar_t), L"%ls v%u.%u.%u", App_applicationInfo.name,
+		App_applicationInfo.version.major, App_applicationInfo.version.minor, App_applicationInfo.version.build);
 
-	if (App_ApplicationInfo.version.revision)
+	if (App_applicationInfo.version.revision)
 		swprintf(titleBuff + wcslen(titleBuff), sizeof(titleBuff) / sizeof(wchar_t) - wcslen(titleBuff),
-			L".%u", App_ApplicationInfo.version.revision);
+			L".%u", App_applicationInfo.version.revision);
 	
 	swprintf(titleBuff + wcslen(titleBuff), sizeof(titleBuff) / sizeof(wchar_t) - wcslen(titleBuff),
 		L" - NekoEngine v%u.%u.%u", E_VER_MAJOR, E_VER_MINOR, E_VER_BUILD);
@@ -148,7 +149,7 @@ E_Init(int argc, char *argv[])
 			L".%u", E_VER_REVISION);
 	
 	swprintf(titleBuff + wcslen(titleBuff), sizeof(titleBuff) / sizeof(wchar_t) - wcslen(titleBuff),
-		L" - GPU: %hs", Re_DeviceInfo.deviceName);
+		L" - GPU: %hs (%ls)", Re_deviceInfo.deviceName, Re_driver->driverName);
 	
 	Sys_SetWindowTitle(titleBuff);
 #else
@@ -176,12 +177,12 @@ E_Term(void)
 
 	App_TermApplication();
 
-	if (Scn_ActiveScene)
-		Scn_UnloadScene(Scn_ActiveScene);
+	if (Scn_activeScene)
+		Scn_UnloadScene(Scn_activeScene);
 
 	E_TermScriptSystem();
 
-	UI_TermUI();
+//	UI_TermUI();
 	In_TermInput();
 
 	E_TermECSystems();
@@ -233,23 +234,24 @@ void
 E_Frame(void)
 {
 	double now = E_Time();
-	E_DeltaTime = now - _prevTime;
+	E_deltaTime = now - _prevTime;
 	_prevTime = now;
 
-	if (!Scn_ActiveScene || !Scn_ActiveCamera) {
+	if (!Scn_activeScene || !Scn_activeCamera) {
 		E_ProcessEvents();
+		Re_RenderFrame();
 		return;
 	}
 
-	E_ExecuteSystemGroupS(Scn_ActiveScene, ECSYS_GROUP_LOGIC);
+	E_ExecuteSystemGroupS(Scn_activeScene, ECSYS_GROUP_LOGIC);
 
 	E_ProcessEvents();
 
-	E_ExecuteSystemGroupS(Scn_ActiveScene, ECSYS_GROUP_POST_LOGIC);
+	E_ExecuteSystemGroupS(Scn_activeScene, ECSYS_GROUP_POST_LOGIC);
 
-	E_ExecuteSystemGroupS(Scn_ActiveScene, ECSYS_GROUP_PRE_RENDER);
-	//Re.RenderFrame();
-	E_ExecuteSystemGroupS(Scn_ActiveScene, ECSYS_GROUP_POST_RENDER);
+	E_ExecuteSystemGroupS(Scn_activeScene, ECSYS_GROUP_PRE_RENDER);
+	Re_RenderFrame();
+	E_ExecuteSystemGroupS(Scn_activeScene, ECSYS_GROUP_POST_RENDER);
 
 	In_Update();
 

@@ -41,10 +41,12 @@ UI_DrawText(struct UIContext *ctx, const wchar_t *text, float px, float py, floa
 		struct Glyph *g = NULL;
 		float x, y, w, h;
 
-	/*	g = bsearch(text, _glyphs, _glyphCount, sizoef(*_glyphs), _compre)
+		//
+		g = bsearch(text, font->glyphs, font->glyphCount, sizeof(*font->glyphs), _compare);
 
 		if (!g)
-			g = &_glyphs[*text - 0x20]; */
+			g = &font->glyphs[*text - 0x20];
+		//
 
 		if (*text > 127)
 			g = &font->glyphs[95];
@@ -122,7 +124,7 @@ UI_TermText(void)
 int
 _compare(const void *key, const void *elem)
 {
-return 0;
+	return 0;
 //	return *(uint8_t *)key - 
 }
 

@@ -1,9 +1,6 @@
 #include <xaudio2.h>
 #include <x3daudio.h>
 
-#include <Audio/Audio.h>
-#include <Engine/Resource.h>
-
 #include "XA2Sound.h"
 
 IXAudio2 *_auAudio;

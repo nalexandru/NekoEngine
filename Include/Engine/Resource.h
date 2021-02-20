@@ -4,10 +4,6 @@
 #include <Engine/IO.h>
 #include <Engine/Types.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct ResourceLoadInfo
 {
 	struct Stream stm;
@@ -38,9 +34,5 @@ void	E_PurgeResources(void);
 
 bool	E_InitResourceSystem(void);
 void	E_TermResourceSystem(void);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* _E_RESOURCE_H_ */

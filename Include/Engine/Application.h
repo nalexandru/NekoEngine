@@ -1,10 +1,6 @@
 #ifndef _E_APPLICATION_H_
 #define _E_APPLICATION_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <Engine/Types.h>
 
 struct ApplicationInfo
@@ -14,13 +10,10 @@ struct ApplicationInfo
 	struct Version version;
 };
 
-ENGINE_API extern struct ApplicationInfo App_ApplicationInfo;
+ENGINE_API extern struct ApplicationInfo App_applicationInfo;
 
 bool App_InitApplication(int argc, char *argv[]);
+void App_Render(uint32_t frameId);
 void App_TermApplication(void);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* _E_APPLICATION_H_ */

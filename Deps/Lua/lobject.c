@@ -100,7 +100,7 @@ int luaO_rawarith (lua_State *L, int op, const TValue *p1, const TValue *p2,
       else return 0;  /* fail */
     }
     case LUA_OPDIV: case LUA_OPPOW: {  /* operate only on floats */
-      lua_Number n1; lua_Number n2;
+      lua_Number n1 = 0; lua_Number n2 = 0;
       if (tonumberns(p1, n1) && tonumberns(p2, n2)) {
         setfltvalue(res, numarith(L, op, n1, n2));
         return 1;
@@ -108,7 +108,7 @@ int luaO_rawarith (lua_State *L, int op, const TValue *p1, const TValue *p2,
       else return 0;  /* fail */
     }
     default: {  /* other operations */
-      lua_Number n1; lua_Number n2;
+	  lua_Number n1 = 0; lua_Number n2 = 0;
       if (ttisinteger(p1) && ttisinteger(p2)) {
         setivalue(res, intarith(L, op, ivalue(p1), ivalue(p2)));
         return 1;

@@ -1,10 +1,6 @@
 #ifndef _SYS_MEMORY_H_
 #define _SYS_MEMORY_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdbool.h>
 
 enum MemoryHeap
@@ -25,8 +21,4 @@ bool Sys_InitMemory(void);
 void Sys_ResetHeap(enum MemoryHeap heap);
 void Sys_TermMemory(void);
 
-#ifdef __cplusplus
-}
-#endif
-
-#endif
+#endif /* _SYS_MEMORY_H_ */

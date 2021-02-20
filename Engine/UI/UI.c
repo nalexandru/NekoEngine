@@ -3,15 +3,15 @@
 #include <Engine/Engine.h>
 //#include <Render/Render.h>
 
-struct mat4 UI_Projection;
+struct mat4 UI_projection;
 
 bool
 UI_InitUI(void)
 {
 //	if (!Re.info.negativeDepth)
-//		m4_ortho(&UI_Projection, 0.f, (float)*E_ScreenWidth, (float)*E_ScreenHeight, 0.f, 0.f, 1.f);
+//		m4_ortho(&UI_projection, 0.f, (float)*E_screenWidth, (float)*E_screenHeight, 0.f, 0.f, 1.f);
 //	else
-//		m4_ortho_nd(&UI_Projection, 0.f, (float)*E_ScreenWidth, (float)*E_ScreenHeight, 0.f, 0.f, 1.f);
+//		m4_ortho_nd(&UI_projection, 0.f, (float)*E_screenWidth, (float)*E_screenHeight, 0.f, 0.f, 1.f);
 
 	return UI_InitText();
 }

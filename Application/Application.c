@@ -19,7 +19,7 @@
 #	define _countof(array) (sizeof(array) / sizeof(array[0]))
 #endif
 
-struct ApplicationInfo App_ApplicationInfo =
+struct ApplicationInfo App_applicationInfo =
 {
 	A_PGM_NAME,
 	A_CPY_STR,
@@ -111,8 +111,8 @@ App_PlayerMovement(void **comp, void *args)
 	struct vec3 raxis = { 0.f, -1.f, 0.f };
 	float xlate, rot;
 
-	xlate = mvmt->movementSpeed * (float)E_DeltaTime;
-	rot = mvmt->rotationSpeed * (float)E_DeltaTime;
+	xlate = mvmt->movementSpeed * (float)E_deltaTime;
+	rot = mvmt->rotationSpeed * (float)E_deltaTime;
 
 	xform_rotate(xform, In_Axis(mvmt->rotateHorizontal) * rot, &raxis);
 

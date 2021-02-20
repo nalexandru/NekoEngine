@@ -500,4 +500,3 @@ static const struct vec3 KM_VEC3_POS_X = { 1, 0, 0 };
 static const struct vec3 KM_VEC3_ZERO = { 0, 0, 0 };
 
 #endif /* _NE_MATH_VEC3_H_ */
-

@@ -333,4 +333,3 @@ static const struct vec2 v2_neg_x = { -1.f,  0.f };
 static const struct vec2 v2_pos_x = {  1.f,  0.f };
 
 #endif /* _NE_MATH_VEC2_H_ */
-

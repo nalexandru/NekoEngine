@@ -214,4 +214,3 @@ r3_intersect_aabb3(
 }
 
 #endif /* _NE_MATH_RAY3_H_ */
-

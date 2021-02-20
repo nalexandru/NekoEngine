@@ -1,6 +1,6 @@
 #include "AVSound.h"
 
-size_t Au_AudioClipDataSize = sizeof(struct AudioClipData);
+size_t Au_audioClipDataSize = sizeof(struct AudioClipData);
 
 bool
 Au_InitClip(struct AudioClip *ac)

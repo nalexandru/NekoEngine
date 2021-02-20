@@ -1,10 +1,6 @@
 #ifndef _E_ASSET_H_
 #define _E_ASSET_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <Engine/Types.h>
 
 // Models
@@ -19,9 +15,5 @@ bool E_LoadOggAsset(struct Stream *stm, struct AudioClip *clip);
 bool E_LoadWaveAsset(struct Stream *stm, struct AudioClip *clip);
 
 bool E_LoadFontAsset(struct Stream *stm, struct Font *font);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* _E_ASSET_H_ */

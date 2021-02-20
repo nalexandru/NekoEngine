@@ -1,9 +1,9 @@
 #include <Engine/IO.h>
 #include <Engine/Asset.h>
 #include <Engine/Resource.h>
-//#include <Render/Model.h>
-//#include <Render/Texture.h>
-//#include <Render/Material.h>
+#include <Render/Model.h>
+#include <Render/Texture.h>
+#include <Render/Material.h>
 #include <Runtime/Array.h>
 #include <System/System.h>
 #include <System/Memory.h>
@@ -18,7 +18,7 @@ struct Image
 {
 	uint64_t hash;
 	int channels;
-//	enum TextureFormat format;
+	enum TextureFormat format;
 };
 
 #define ADD_IMAGE(name, channels, fmt) {						\
@@ -38,7 +38,7 @@ static inline void _LoadMesh(const cgltf_mesh *mesh, Array *vertices, Array *ind
 bool
 E_LoadglTFAsset(const char *baseDir, struct Stream *stm, struct Model *m)
 {
-	/*cgltf_options opt = { 0 };
+	cgltf_options opt = { 0 };
 	cgltf_data *gltf = NULL;
 	Array vertices = { 0 }, indices = { 0 }, meshes = { 0 }, materials = { 0 }, images = { 0 };
 	uint32_t i = 0, j = 0;
@@ -77,16 +77,16 @@ E_LoadglTFAsset(const char *baseDir, struct Stream *stm, struct Model *m)
 		_LoadMesh(&gltf->meshes[i], &vertices, &indices, &meshes, &materials);
 
 	m->vertices = (struct Vertex *)vertices.data;
-	m->numVertices = (uint32_t)vertices.count;
+	m->vertexCount = (uint32_t)vertices.count;
 
 	m->indices = (uint32_t *)indices.data;
-	m->numIndices = (uint32_t)indices.count;
+	m->indexCount = (uint32_t)indices.count;
 
 	m->meshes = (struct Mesh *)meshes.data;
-	m->numMeshes = (uint32_t)meshes.count;
-	m->materialNames = (wchar_t **)materials.data;
+	m->meshCount = (uint32_t)meshes.count;
+//	m->materialNames = (wchar_t **)materials.data;
 
-	for (i = 0; i < gltf->materials_count; ++i) {
+/*	for (i = 0; i < gltf->materials_count; ++i) {
 		struct MaterialProperties props;
 		const cgltf_material *mat = &gltf->materials[i];
 		const char *textures[RE_MAX_TEXTURES] = { 0 };
@@ -158,7 +158,7 @@ E_LoadglTFAsset(const char *baseDir, struct Stream *stm, struct Model *m)
 		mbstowcs(name, mat->name, strlen(mat->name));
 
 		Re_CreateMaterial(name, L"Default", &props, textures); 
-	}
+	}*/
 
 	for (i = 0; i < gltf->images_count; ++i) {
 		size_t j = 0;
@@ -169,14 +169,20 @@ E_LoadglTFAsset(const char *baseDir, struct Stream *stm, struct Model *m)
 		stbi_uc *imageData = NULL;
 		struct TextureCreateInfo tci =
 		{
-			0, 0, 1,
-			TT_2D,
-			TF_R8G8B8A8_UNORM,
-			NULL,
-			0,
-			false
+			.desc =
+			{
+				.width = 0, .height = 0, .depth = 1,
+				.type = TT_2D, .format = TF_R8G8B8A8_UNORM,
+				.usage = TU_SAMPLED,
+				.arrayLayers = 1, .mipLevels = 1,
+				.gpuOptimalTiling = true,
+				.memoryType = MT_GPU_LOCAL
+			},
+			.data = NULL,
+			.dataSize = 0,
+			.keepData = false
 		};
-
+		
 		if (!img->buffer_view->buffer->data)
 			continue;
 
@@ -198,17 +204,17 @@ E_LoadglTFAsset(const char *baseDir, struct Stream *stm, struct Model *m)
 			continue;
 		}
 
-		tci.width = x;
-		tci.height = y;
+		tci.desc.width = x;
+		tci.desc.height = y;
 		tci.data = imageData;
 		tci.dataSize = sizeof(stbi_uc) * x * y * imgInfo->channels;
-		tci.format = imgInfo->format;
+		tci.desc.format = imgInfo->format;
 
-		E_CreateResource(img->name, RES_TEXTURE, &tci);
+		//E_CreateResource(img->name, RES_TEXTURE, &tci);
 		free(tci.data);
 	}
 
-	cgltf_free(gltf);*/
+	cgltf_free(gltf);
 
 	return true;
 }
@@ -265,7 +271,7 @@ _gltfRelease(const struct cgltf_memory_options *memoryOptions, const struct cglt
 void
 _LoadMesh(const cgltf_mesh *mesh, Array *vertices, Array *indices, Array *meshes, Array *materials)
 {
-/*	float *positions = NULL, *normals = NULL, *tangents = NULL, *texcoords = NULL;
+	float *positions = NULL, *normals = NULL, *tangents = NULL, *texcoords = NULL;
 	uint32_t i, j;
 
 	for (i = 0; i < mesh->primitives_count; ++i) {
@@ -288,8 +294,8 @@ _LoadMesh(const cgltf_mesh *mesh, Array *vertices, Array *indices, Array *meshes
 
 		Rt_ArrayAddPtr(materials, name);
 
-		dst->firstVertex = (uint32_t)vertices->count;
-		dst->firstIndex = (uint32_t)indices->count;
+		dst->vertexOffset = (uint32_t)vertices->count;
+		dst->indexOffset = (uint32_t)indices->count;
 
 		dst->indexCount = (uint32_t)prim->indices->count;
 
@@ -389,6 +395,5 @@ _LoadMesh(const cgltf_mesh *mesh, Array *vertices, Array *indices, Array *meshes
 				}
 			}
 		}
-	}*/
+	}
 }
-

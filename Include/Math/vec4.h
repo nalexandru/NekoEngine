@@ -339,4 +339,3 @@ v4_mul_m4(struct vec4 *dst, const struct vec4 *v, const struct mat4 *m)
 #endif
 
 #endif /* _NE_MATH_VEC4_H_ */
-

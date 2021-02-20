@@ -3,7 +3,7 @@
 #include <Engine/Engine.h>
 //#include <Render/Render.h>
 
-struct Camera *Scn_ActiveCamera = NULL;
+struct Camera *Scn_activeCamera = NULL;
 
 bool
 Scn_InitCamera(struct Camera *cam, const void **args)
@@ -40,9 +40,9 @@ Scn_InitCamera(struct Camera *cam, const void **args)
 	if (infinite) {
 	} else {
 		if (!Re.info.negativeDepth)
-			m4_perspective(&cam->projMatrix, cam->fov, (float)*E_ScreenWidth / (float)*E_ScreenHeight, cam->zNear, cam->zFar);
+			m4_perspective(&cam->projMatrix, cam->fov, (float)*E_screenWidth / (float)*E_screenHeight, cam->zNear, cam->zFar);
 		else
-			m4_perspective_nd(&cam->projMatrix, cam->fov, (float)*E_ScreenWidth / (float)*E_ScreenHeight, cam->zNear, cam->zFar);
+			m4_perspective_nd(&cam->projMatrix, cam->fov, (float)*E_screenWidth / (float)*E_screenHeight, cam->zNear, cam->zFar);
 	}*/
 
 	return true;
@@ -57,7 +57,7 @@ Scn_TermCamera(struct Camera *cam)
 void
 Scn_ActivateCamera(struct Camera *cam)
 {
-	Scn_ActiveCamera = cam;
+	Scn_activeCamera = cam;
 }
 
 void

@@ -6,8 +6,14 @@
 #include <Engine/Types.h>
 #include <Engine/Component.h>
 
+extern "C" {
+
+#include <Audio/Audio.h>
 #include <Audio/Clip.h>
 #include <Audio/Source.h>
+#include <Engine/Resource.h>
+
+}
 
 struct AudioSource
 {

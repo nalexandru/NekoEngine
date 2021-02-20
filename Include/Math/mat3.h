@@ -523,4 +523,3 @@ m3_right(
 }
 
 #endif /* _NE_MATH_MAT3_H_ */
-

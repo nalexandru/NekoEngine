@@ -17,23 +17,15 @@
 #define	ECSYS_PRI_CAM_VIEW	-20000
 #define ECSYS_PRI_DRAW		0
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-ENGINE_API extern struct Scene *Scn_ActiveScene;
+ENGINE_API extern struct Scene *Scn_activeScene;
 
 bool E_RegisterSystem(const wchar_t *name, const wchar_t *group, const wchar_t **comp, size_t num_comp, ECSysExecProc proc, int32_t priority);
 bool E_RegisterSystemId(const wchar_t *name, const wchar_t *group, const CompTypeId *comp, size_t num_comp, ECSysExecProc proc, int32_t priority);
 
 void E_ExecuteSystemS(struct Scene *s, const wchar_t *name, void *args);
-static inline void E_ExecuteSystem(const wchar_t *name, void *args) { E_ExecuteSystemS(Scn_ActiveScene, name, args); }
+static inline void E_ExecuteSystem(const wchar_t *name, void *args) { E_ExecuteSystemS(Scn_activeScene, name, args); }
 
 void E_ExecuteSystemGroupS(struct Scene *s, const wchar_t *name);
-static inline void E_ExecuteSystemGroup(const wchar_t *name) { E_ExecuteSystemGroupS(Scn_ActiveScene, name); }
-
-#ifdef __cplusplus
-}
-#endif
+static inline void E_ExecuteSystemGroup(const wchar_t *name) { E_ExecuteSystemGroupS(Scn_activeScene, name); }
 
 #endif /* _E_ECSYSTEM_H_ */

@@ -13,7 +13,7 @@ int APIENTRY
 WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nCmdShow)
 {
 #if 1
-//	_crtBreakAlloc = 1923;
+//	_crtBreakAlloc = 391;
 	int flag = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG);
 	flag |= _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF;
 	_CrtSetDbgFlag(flag);

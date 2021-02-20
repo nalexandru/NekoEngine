@@ -3,13 +3,9 @@
 
 #include <Engine/Types.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct AudioSource;
 
-extern size_t Au_SourceSize;
+extern size_t Au_sourceSize;
 
 // Shared component handling
 bool Au_InitSourceComponent(struct AudioSource *src, const void **);
@@ -22,9 +18,5 @@ void Au_TermSource(struct AudioSource *src);
 void Au_SetClip(struct AudioSource *src, Handle clip);
 void Au_Play(struct AudioSource *src);
 void Au_Gain(struct AudioSource *src, float gain);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* _AU_SOURCE_H_ */

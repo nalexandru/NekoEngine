@@ -10,7 +10,130 @@
 		8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
 		FA1A7EF025CF0FAF003B4259 /* MTLDriver.m in Sources */ = {isa = PBXBuildFile; fileRef = FA1A7EEF25CF0FAF003B4259 /* MTLDriver.m */; };
 		FA1A7EF425CF13E9003B4259 /* Render.c in Sources */ = {isa = PBXBuildFile; fileRef = FA1A7EF325CF13E9003B4259 /* Render.c */; };
-		FA3500722521DD1E00CE048F /* Main.m in Sources */ = {isa = PBXBuildFile; fileRef = FA3500712521DD1E00CE048F /* Main.m */; };
+		FA24C1AA25D99324003D590F /* MTLDescriptorSet.m in Sources */ = {isa = PBXBuildFile; fileRef = FA24C1A925D99324003D590F /* MTLDescriptorSet.m */; };
+		FA24C1AB25D99324003D590F /* MTLDescriptorSet.m in Sources */ = {isa = PBXBuildFile; fileRef = FA24C1A925D99324003D590F /* MTLDescriptorSet.m */; };
+		FA4CFEA225D771E100B37A5B /* Main.m in Sources */ = {isa = PBXBuildFile; fileRef = FAB14FBA25D74BE4009C5450 /* Main.m */; };
+		FA4CFEBA25D7733700B37A5B /* EngineView.m in Sources */ = {isa = PBXBuildFile; fileRef = FAB14FA425D74A58009C5450 /* EngineView.m */; };
+		FA4CFEBB25D7733700B37A5B /* EngineAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = FAB14FAB25D74AF1009C5450 /* EngineAppDelegate.m */; };
+		FA4CFEBC25D7733700B37A5B /* EngineViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = FAB14F9F25D74A36009C5450 /* EngineViewController.m */; };
+		FA4CFECF25D774B900B37A5B /* Window.m in Sources */ = {isa = PBXBuildFile; fileRef = FAB1504025D750D8009C5450 /* Window.m */; };
+		FA4CFED225D774C100B37A5B /* iOS.m in Sources */ = {isa = PBXBuildFile; fileRef = FAB1504425D751F0009C5450 /* iOS.m */; };
+		FA4CFED525D774C400B37A5B /* Input.m in Sources */ = {isa = PBXBuildFile; fileRef = FAB1506025D753B5009C5450 /* Input.m */; };
+		FA4CFED825D774D200B37A5B /* Application.c in Sources */ = {isa = PBXBuildFile; fileRef = FAA9108725D3D85D005FCDA2 /* Application.c */; };
+		FA4CFEDB25D774D800B37A5B /* glTF.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B562521F2D600F7C24B /* glTF.c */; };
+		FA4CFEDC25D774D800B37A5B /* Font.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B552521F2D600F7C24B /* Font.c */; };
+		FA4CFEDD25D774D800B37A5B /* Image.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B572521F2D600F7C24B /* Image.c */; };
+		FA4CFEDE25D774D800B37A5B /* Ogg.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B592521F2D600F7C24B /* Ogg.c */; };
+		FA4CFEDF25D774D800B37A5B /* NMesh.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B582521F2D600F7C24B /* NMesh.c */; };
+		FA4CFEE025D774D800B37A5B /* TGA.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B5A2521F2D600F7C24B /* TGA.c */; };
+		FA4CFEE125D774D800B37A5B /* Wave.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B5B2521F2D600F7C24B /* Wave.c */; };
+		FA4CFEE425D774DD00B37A5B /* Source.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B7F2521F3C500F7C24B /* Source.c */; };
+		FA4CFEE525D774DD00B37A5B /* Audio.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B7D2521F3C500F7C24B /* Audio.c */; };
+		FA4CFEE625D774DD00B37A5B /* Clip.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B7E2521F3C500F7C24B /* Clip.c */; };
+		FA4CFEE925D774E600B37A5B /* Job.c in Sources */ = {isa = PBXBuildFile; fileRef = FAC4B4AF253BE2E30074EE3C /* Job.c */; };
+		FA4CFEEA25D774E600B37A5B /* Entity.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B892521F3D700F7C24B /* Entity.c */; };
+		FA4CFEEB25D774E600B37A5B /* ECSInit.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B862521F3D700F7C24B /* ECSInit.c */; };
+		FA4CFEEC25D774E600B37A5B /* IO.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B8B2521F3D700F7C24B /* IO.c */; };
+		FA4CFEED25D774E600B37A5B /* Config.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B842521F3D700F7C24B /* Config.c */; };
+		FA4CFEEE25D774E600B37A5B /* Engine.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B882521F3D700F7C24B /* Engine.c */; };
+		FA4CFEEF25D774E600B37A5B /* Component.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B832521F3D700F7C24B /* Component.c */; };
+		FA4CFEF025D774E600B37A5B /* Resource.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B8C2521F3D700F7C24B /* Resource.c */; };
+		FA4CFEF125D774E600B37A5B /* Event.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B8A2521F3D700F7C24B /* Event.c */; };
+		FA4CFEF225D774E600B37A5B /* ECSystem.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B872521F3D700F7C24B /* ECSystem.c */; };
+		FA4CFEF525D774EA00B37A5B /* Input.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B962521F3EB00F7C24B /* Input.c */; };
+		FA4CFEF825D774EE00B37A5B /* Render.c in Sources */ = {isa = PBXBuildFile; fileRef = FA1A7EF325CF13E9003B4259 /* Render.c */; };
+		FA4CFEF925D774EE00B37A5B /* Pipeline.c in Sources */ = {isa = PBXBuildFile; fileRef = FAFEF85225D7015E00D8D1FB /* Pipeline.c */; };
+		FA4CFEFC25D774F300B37A5B /* Transform.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9BA42521F42000F7C24B /* Transform.c */; };
+		FA4CFEFD25D774F300B37A5B /* Camera.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9BA12521F42000F7C24B /* Camera.c */; };
+		FA4CFEFE25D774F300B37A5B /* ScriptHost.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9BA32521F42000F7C24B /* ScriptHost.c */; };
+		FA4CFEFF25D774F300B37A5B /* Scene.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9BA22521F42000F7C24B /* Scene.c */; };
+		FA4CFF0225D774F700B37A5B /* Script.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9BA92521F46A00F7C24B /* Script.c */; };
+		FA4CFF0525D774FB00B37A5B /* AtomicLock.c in Sources */ = {isa = PBXBuildFile; fileRef = FAC4B4B1253BE2F60074EE3C /* AtomicLock.c */; };
+		FA4CFF0625D774FB00B37A5B /* Memory.c in Sources */ = {isa = PBXBuildFile; fileRef = FADD5C0C253D297900606B2A /* Memory.c */; };
+		FA4CFF0925D774FF00B37A5B /* reallocarray.c in Sources */ = {isa = PBXBuildFile; fileRef = FA7745DC2528963200FED53F /* reallocarray.c */; };
+		FA4CFF0A25D774FF00B37A5B /* Log.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9BB02521F49C00F7C24B /* Log.c */; };
+		FA4CFF0B25D774FF00B37A5B /* System.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9BB12521F49C00F7C24B /* System.c */; };
+		FA4CFF0E25D7750500B37A5B /* Text.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9BAB2521F47D00F7C24B /* Text.c */; };
+		FA4CFF0F25D7750500B37A5B /* UI.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9BAC2521F47D00F7C24B /* UI.c */; };
+		FA4CFF1225D7750D00B37A5B /* AVClip.m in Sources */ = {isa = PBXBuildFile; fileRef = FABF18EE25BECE85005C1329 /* AVClip.m */; };
+		FA4CFF1325D7750D00B37A5B /* AVSource.m in Sources */ = {isa = PBXBuildFile; fileRef = FABF18ED25BECE85005C1329 /* AVSource.m */; };
+		FA4CFF1425D7750D00B37A5B /* AVSound.m in Sources */ = {isa = PBXBuildFile; fileRef = FABF18EB25BECE85005C1329 /* AVSound.m */; };
+		FA4CFF1A25D7753A00B37A5B /* ldblib.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE4B2523382100806A2D /* ldblib.c */; };
+		FA4CFF1B25D7753A00B37A5B /* lfunc.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE512523382100806A2D /* lfunc.c */; };
+		FA4CFF1C25D7753A00B37A5B /* lzio.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE7A2523382100806A2D /* lzio.c */; };
+		FA4CFF1D25D7753A00B37A5B /* lbaselib.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE452523382100806A2D /* lbaselib.c */; };
+		FA4CFF1E25D7753A00B37A5B /* lctype.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE492523382100806A2D /* lctype.c */; };
+		FA4CFF1F25D7753A00B37A5B /* lmathlib.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE5B2523382100806A2D /* lmathlib.c */; };
+		FA4CFF2025D7753A00B37A5B /* ltm.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE702523382100806A2D /* ltm.c */; };
+		FA4CFF2125D7753A00B37A5B /* loslib.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE642523382100806A2D /* loslib.c */; };
+		FA4CFF2225D7753A00B37A5B /* lstate.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE682523382100806A2D /* lstate.c */; };
+		FA4CFF2325D7753A00B37A5B /* lauxlib.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE432523382100806A2D /* lauxlib.c */; };
+		FA4CFF2425D7753A00B37A5B /* ltablib.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE6F2523382100806A2D /* ltablib.c */; };
+		FA4CFF2525D7753A00B37A5B /* lvm.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE782523382100806A2D /* lvm.c */; };
+		FA4CFF2625D7753A00B37A5B /* lapi.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE412523382100806A2D /* lapi.c */; };
+		FA4CFF2725D7753A00B37A5B /* lutf8lib.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE772523382100806A2D /* lutf8lib.c */; };
+		FA4CFF2825D7753A00B37A5B /* lmem.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE5C2523382100806A2D /* lmem.c */; };
+		FA4CFF2925D7753A00B37A5B /* ldebug.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE4C2523382100806A2D /* ldebug.c */; };
+		FA4CFF2A25D7753A00B37A5B /* ldump.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE502523382100806A2D /* ldump.c */; };
+		FA4CFF2B25D7753A00B37A5B /* lparser.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE652523382100806A2D /* lparser.c */; };
+		FA4CFF2C25D7753A00B37A5B /* lstrlib.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE6C2523382100806A2D /* lstrlib.c */; };
+		FA4CFF2D25D7753A00B37A5B /* llex.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE582523382100806A2D /* llex.c */; };
+		FA4CFF2E25D7753A00B37A5B /* ldo.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE4E2523382100806A2D /* ldo.c */; };
+		FA4CFF2F25D7753A00B37A5B /* lobject.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE5F2523382100806A2D /* lobject.c */; };
+		FA4CFF3025D7753A00B37A5B /* loadlib.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE5E2523382100806A2D /* loadlib.c */; };
+		FA4CFF3125D7753A00B37A5B /* lgc.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE532523382100806A2D /* lgc.c */; };
+		FA4CFF3225D7753A00B37A5B /* lcode.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE462523382100806A2D /* lcode.c */; };
+		FA4CFF3325D7753A00B37A5B /* linit.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE552523382100806A2D /* linit.c */; };
+		FA4CFF3425D7753A00B37A5B /* ltable.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE6D2523382100806A2D /* ltable.c */; };
+		FA4CFF3525D7753A00B37A5B /* lopcodes.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE612523382100806A2D /* lopcodes.c */; };
+		FA4CFF3625D7753A00B37A5B /* lundump.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE752523382100806A2D /* lundump.c */; };
+		FA4CFF3725D7753A00B37A5B /* lcorolib.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE482523382100806A2D /* lcorolib.c */; };
+		FA4CFF3825D7753A00B37A5B /* liolib.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE562523382100806A2D /* liolib.c */; };
+		FA4CFF3925D7753A00B37A5B /* lstring.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE6A2523382100806A2D /* lstring.c */; };
+		FA4CFF3C25D7754700B37A5B /* physfs_platform_posix.c in Sources */ = {isa = PBXBuildFile; fileRef = FA7D9F872528D6D400F51BA0 /* physfs_platform_posix.c */; };
+		FA4CFF3D25D7754700B37A5B /* physfs_archiver_hog.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9C732522A81F00F7C24B /* physfs_archiver_hog.c */; };
+		FA4CFF3E25D7754700B37A5B /* physfs_unicode.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9C822522A81F00F7C24B /* physfs_unicode.c */; };
+		FA4CFF3F25D7754700B37A5B /* physfs.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9C832522A81F00F7C24B /* physfs.c */; };
+		FA4CFF4025D7754700B37A5B /* physfs_archiver_mvl.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9C752522A81F00F7C24B /* physfs_archiver_mvl.c */; };
+		FA4CFF4125D7754700B37A5B /* physfs_archiver_unpacked.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9C782522A81F00F7C24B /* physfs_archiver_unpacked.c */; };
+		FA4CFF4225D7754700B37A5B /* physfs_byteorder.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9C7C2522A81F00F7C24B /* physfs_byteorder.c */; };
+		FA4CFF4325D7754700B37A5B /* physfs_archiver_slb.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9C772522A81F00F7C24B /* physfs_archiver_slb.c */; };
+		FA4CFF4425D7754700B37A5B /* physfs_archiver_wad.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9C7A2522A81F00F7C24B /* physfs_archiver_wad.c */; };
+		FA4CFF4525D7754700B37A5B /* physfs_archiver_qpak.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9C762522A81F00F7C24B /* physfs_archiver_qpak.c */; };
+		FA4CFF4625D7754700B37A5B /* physfs_archiver_7z.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9C702522A81F00F7C24B /* physfs_archiver_7z.c */; };
+		FA4CFF4725D7754700B37A5B /* physfs_archiver_dir.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9C712522A81F00F7C24B /* physfs_archiver_dir.c */; };
+		FA4CFF4825D7754700B37A5B /* physfs_archiver_zip.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9C7B2522A81F00F7C24B /* physfs_archiver_zip.c */; };
+		FA4CFF4925D7754700B37A5B /* physfs_archiver_iso9660.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9C742522A81F00F7C24B /* physfs_archiver_iso9660.c */; };
+		FA4CFF4A25D7754700B37A5B /* physfs_archiver_vdf.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9C792522A81F00F7C24B /* physfs_archiver_vdf.c */; };
+		FA4CFF4B25D7754700B37A5B /* physfs_archiver_grp.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9C722522A81F00F7C24B /* physfs_archiver_grp.c */; };
+		FA4CFF4C25D7754700B37A5B /* physfs_platform_apple.m in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9C942522A89200F7C24B /* physfs_platform_apple.m */; };
+		FA4CFF5525D7758600B37A5B /* MTLShaderBindingTable.m in Sources */ = {isa = PBXBuildFile; fileRef = FAFEF83B25D5A0D900D8D1FB /* MTLShaderBindingTable.m */; };
+		FA4CFF5625D7758600B37A5B /* MTLTexture.m in Sources */ = {isa = PBXBuildFile; fileRef = FAFEF83125D5A08500D8D1FB /* MTLTexture.m */; };
+		FA4CFF5725D7758600B37A5B /* MTLAccelerationStructure.m in Sources */ = {isa = PBXBuildFile; fileRef = FAFEF82E25D5A01B00D8D1FB /* MTLAccelerationStructure.m */; };
+		FA4CFF5825D7758600B37A5B /* MTLBuffer.m in Sources */ = {isa = PBXBuildFile; fileRef = FAFEF84125D5A11300D8D1FB /* MTLBuffer.m */; };
+		FA4CFF5925D7758600B37A5B /* MTLDriver.m in Sources */ = {isa = PBXBuildFile; fileRef = FA1A7EEF25CF0FAF003B4259 /* MTLDriver.m */; };
+		FA4CFF5A25D7758600B37A5B /* MTLContext.m in Sources */ = {isa = PBXBuildFile; fileRef = FADBC14025CF70CE00085E38 /* MTLContext.m */; };
+		FA4CFF5B25D7758600B37A5B /* MTLDevice.m in Sources */ = {isa = PBXBuildFile; fileRef = FADBC13725CF613F00085E38 /* MTLDevice.m */; };
+		FA4CFF5C25D7758600B37A5B /* MTLSwapchain.m in Sources */ = {isa = PBXBuildFile; fileRef = FAFEF82B25D59F9500D8D1FB /* MTLSwapchain.m */; };
+		FA4CFF5D25D7758600B37A5B /* MTLTransientResources.m in Sources */ = {isa = PBXBuildFile; fileRef = FAFEF83E25D5A0ED00D8D1FB /* MTLTransientResources.m */; };
+		FA4CFF5E25D7758600B37A5B /* MTLPipeline.m in Sources */ = {isa = PBXBuildFile; fileRef = FA8A94DA25D41935008B5823 /* MTLPipeline.m */; };
+		FA4CFF5F25D7758600B37A5B /* MTLFramebuffer.m in Sources */ = {isa = PBXBuildFile; fileRef = FAFEF84925D5CA4800D8D1FB /* MTLFramebuffer.m */; };
+		FA4CFF7825D8361400B37A5B /* Frame.c in Sources */ = {isa = PBXBuildFile; fileRef = FA4CFF7725D8361400B37A5B /* Frame.c */; };
+		FA4CFF7925D8361400B37A5B /* Frame.c in Sources */ = {isa = PBXBuildFile; fileRef = FA4CFF7725D8361400B37A5B /* Frame.c */; };
+		FA4CFF8A25D8453200B37A5B /* MTLRenderPass.m in Sources */ = {isa = PBXBuildFile; fileRef = FA4CFF8925D8453200B37A5B /* MTLRenderPass.m */; };
+		FA4CFF8B25D8453200B37A5B /* MTLRenderPass.m in Sources */ = {isa = PBXBuildFile; fileRef = FA4CFF8925D8453200B37A5B /* MTLRenderPass.m */; };
+		FA4CFFB025D8D9C800B37A5B /* macOS.m in Sources */ = {isa = PBXBuildFile; fileRef = FA4CFFA725D8D9C800B37A5B /* macOS.m */; };
+		FA4CFFB125D8D9C800B37A5B /* EngineAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = FA4CFFAA25D8D9C800B37A5B /* EngineAppDelegate.m */; };
+		FA4CFFB225D8D9C800B37A5B /* EngineView.m in Sources */ = {isa = PBXBuildFile; fileRef = FA4CFFAB25D8D9C800B37A5B /* EngineView.m */; };
+		FA4CFFB325D8D9C800B37A5B /* Input.m in Sources */ = {isa = PBXBuildFile; fileRef = FA4CFFAC25D8D9C800B37A5B /* Input.m */; };
+		FA4CFFB425D8D9C800B37A5B /* Main.m in Sources */ = {isa = PBXBuildFile; fileRef = FA4CFFAE25D8D9C800B37A5B /* Main.m */; };
+		FA4CFFB525D8D9C800B37A5B /* Window.m in Sources */ = {isa = PBXBuildFile; fileRef = FA4CFFAF25D8D9C800B37A5B /* Window.m */; };
+		FA4CFFC925D8DA7900B37A5B /* Darwin.m in Sources */ = {isa = PBXBuildFile; fileRef = FA4CFFC725D8DA7900B37A5B /* Darwin.m */; };
+		FA4CFFCA25D8DA7900B37A5B /* Darwin.m in Sources */ = {isa = PBXBuildFile; fileRef = FA4CFFC725D8DA7900B37A5B /* Darwin.m */; };
+		FA4CFFCB25D8DA7900B37A5B /* Thread.m in Sources */ = {isa = PBXBuildFile; fileRef = FA4CFFC825D8DA7900B37A5B /* Thread.m */; };
+		FA4CFFCC25D8DA7900B37A5B /* Thread.m in Sources */ = {isa = PBXBuildFile; fileRef = FA4CFFC825D8DA7900B37A5B /* Thread.m */; };
+		FA4CFFCF25D8DABC00B37A5B /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FA4CFFC225D8DA2700B37A5B /* Images.xcassets */; };
+		FA4CFFD225D8DACA00B37A5B /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FA4CFFC225D8DA2700B37A5B /* Images.xcassets */; };
 		FA6BDE7C2523382100806A2D /* lapi.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE412523382100806A2D /* lapi.c */; };
 		FA6BDE7D2523382100806A2D /* lauxlib.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE432523382100806A2D /* lauxlib.c */; };
 		FA6BDE7E2523382100806A2D /* lbaselib.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE452523382100806A2D /* lbaselib.c */; };
@@ -46,15 +169,8 @@
 		FA7745DD2528963200FED53F /* reallocarray.c in Sources */ = {isa = PBXBuildFile; fileRef = FA7745DC2528963200FED53F /* reallocarray.c */; };
 		FA7D9F7B2528D5E300F51BA0 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FA7D9F7A2528D5E300F51BA0 /* IOKit.framework */; };
 		FA7D9F882528D6D400F51BA0 /* physfs_platform_posix.c in Sources */ = {isa = PBXBuildFile; fileRef = FA7D9F872528D6D400F51BA0 /* physfs_platform_posix.c */; };
-		FA80DCEC2522AFD200E05EE5 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = FA80DCEA2522AFD200E05EE5 /* InfoPlist.strings */; };
 		FA8A94DB25D41935008B5823 /* MTLPipeline.m in Sources */ = {isa = PBXBuildFile; fileRef = FA8A94DA25D41935008B5823 /* MTLPipeline.m */; };
-		FA8E732325D1BBC70048A01F /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FA8E732225D1BBC70048A01F /* Images.xcassets */; };
 		FAA9108825D3D85D005FCDA2 /* Application.c in Sources */ = {isa = PBXBuildFile; fileRef = FAA9108725D3D85D005FCDA2 /* Application.c */; };
-		FAAF9A462521DE4800F7C24B /* Input.m in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9A3F2521DE4800F7C24B /* Input.m */; };
-		FAAF9A492521DE4800F7C24B /* MacX.m in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9A432521DE4800F7C24B /* MacX.m */; };
-		FAAF9A4A2521DE4800F7C24B /* Window.m in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9A442521DE4800F7C24B /* Window.m */; };
-		FAAF9AC02521EA8100F7C24B /* EngineView.m in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9ABF2521EA8100F7C24B /* EngineView.m */; };
-		FAAF9AC32521EA9700F7C24B /* EngineAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9AC22521EA9700F7C24B /* EngineAppDelegate.m */; };
 		FAAF9B5C2521F2D600F7C24B /* Font.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B552521F2D600F7C24B /* Font.c */; };
 		FAAF9B5D2521F2D600F7C24B /* glTF.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B562521F2D600F7C24B /* glTF.c */; };
 		FAAF9B5E2521F2D600F7C24B /* Image.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B572521F2D600F7C24B /* Image.c */; };
@@ -106,13 +222,20 @@
 		FABF18F725BECFD0005C1329 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FABF18F625BECFD0005C1329 /* AVFoundation.framework */; };
 		FAC4B4B0253BE2E30074EE3C /* Job.c in Sources */ = {isa = PBXBuildFile; fileRef = FAC4B4AF253BE2E30074EE3C /* Job.c */; };
 		FAC4B4B2253BE2F60074EE3C /* AtomicLock.c in Sources */ = {isa = PBXBuildFile; fileRef = FAC4B4B1253BE2F60074EE3C /* AtomicLock.c */; };
-		FAC4B4B5253BE3F40074EE3C /* Thread.m in Sources */ = {isa = PBXBuildFile; fileRef = FAC4B4B4253BE3F40074EE3C /* Thread.m */; };
 		FAD516662569DFB9008FCD04 /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FAD516652569DFB9008FCD04 /* GameController.framework */; };
 		FADBC13825CF613F00085E38 /* MTLDevice.m in Sources */ = {isa = PBXBuildFile; fileRef = FADBC13725CF613F00085E38 /* MTLDevice.m */; };
 		FADBC14125CF70CE00085E38 /* MTLContext.m in Sources */ = {isa = PBXBuildFile; fileRef = FADBC14025CF70CE00085E38 /* MTLContext.m */; };
 		FADD5C0D253D297900606B2A /* Memory.c in Sources */ = {isa = PBXBuildFile; fileRef = FADD5C0C253D297900606B2A /* Memory.c */; };
 		FAE5E11F2569BFD60091893B /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FAE5E11E2569BFD60091893B /* Metal.framework */; };
 		FAE5E1212569BFDC0091893B /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FAE5E1202569BFDC0091893B /* QuartzCore.framework */; };
+		FAFEF82C25D59F9500D8D1FB /* MTLSwapchain.m in Sources */ = {isa = PBXBuildFile; fileRef = FAFEF82B25D59F9500D8D1FB /* MTLSwapchain.m */; };
+		FAFEF82F25D5A01B00D8D1FB /* MTLAccelerationStructure.m in Sources */ = {isa = PBXBuildFile; fileRef = FAFEF82E25D5A01B00D8D1FB /* MTLAccelerationStructure.m */; };
+		FAFEF83225D5A08500D8D1FB /* MTLTexture.m in Sources */ = {isa = PBXBuildFile; fileRef = FAFEF83125D5A08500D8D1FB /* MTLTexture.m */; };
+		FAFEF83C25D5A0D900D8D1FB /* MTLShaderBindingTable.m in Sources */ = {isa = PBXBuildFile; fileRef = FAFEF83B25D5A0D900D8D1FB /* MTLShaderBindingTable.m */; };
+		FAFEF83F25D5A0ED00D8D1FB /* MTLTransientResources.m in Sources */ = {isa = PBXBuildFile; fileRef = FAFEF83E25D5A0ED00D8D1FB /* MTLTransientResources.m */; };
+		FAFEF84225D5A11300D8D1FB /* MTLBuffer.m in Sources */ = {isa = PBXBuildFile; fileRef = FAFEF84125D5A11300D8D1FB /* MTLBuffer.m */; };
+		FAFEF84A25D5CA4800D8D1FB /* MTLFramebuffer.m in Sources */ = {isa = PBXBuildFile; fileRef = FAFEF84925D5CA4800D8D1FB /* MTLFramebuffer.m */; };
+		FAFEF85325D7015E00D8D1FB /* Pipeline.c in Sources */ = {isa = PBXBuildFile; fileRef = FAFEF85225D7015E00D8D1FB /* Pipeline.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -125,7 +248,29 @@
 		FA1A7EEC25CF0D34003B4259 /* Driver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Driver.h; path = Include/Render/Driver.h; sourceTree = "<group>"; };
 		FA1A7EEF25CF0FAF003B4259 /* MTLDriver.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = MTLDriver.m; path = Drivers/Metal/MTLDriver.m; sourceTree = "<group>"; };
 		FA1A7EF325CF13E9003B4259 /* Render.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = Render.c; path = Engine/Render/Render.c; sourceTree = "<group>"; };
-		FA3500712521DD1E00CE048F /* Main.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; name = Main.m; path = Platform/MacX/Main.m; sourceTree = "<group>"; };
+		FA24C19E25D95DDA003D590F /* vec4_altivec.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = vec4_altivec.h; path = Include/Math/altivec/vec4_altivec.h; sourceTree = "<group>"; };
+		FA24C19F25D95DDA003D590F /* mat4_altivec.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mat4_altivec.h; path = Include/Math/altivec/mat4_altivec.h; sourceTree = "<group>"; };
+		FA24C1A225D972A7003D590F /* DescriptorSet.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = DescriptorSet.h; path = Include/Render/DescriptorSet.h; sourceTree = "<group>"; };
+		FA24C1A925D99324003D590F /* MTLDescriptorSet.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = MTLDescriptorSet.m; path = Drivers/Metal/MTLDescriptorSet.m; sourceTree = "<group>"; };
+		FA24C1B025D9A0BF003D590F /* Shader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Shader.h; path = Include/Render/Shader.h; sourceTree = "<group>"; };
+		FA4CFE8525D771AF00B37A5B /* NekoEngine iOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "NekoEngine iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		FA4CFF7725D8361400B37A5B /* Frame.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = Frame.c; path = Engine/Render/Frame.c; sourceTree = "<group>"; };
+		FA4CFF8925D8453200B37A5B /* MTLRenderPass.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = MTLRenderPass.m; path = Drivers/Metal/MTLRenderPass.m; sourceTree = "<group>"; };
+		FA4CFF9025D85B2000B37A5B /* Swapchain.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Swapchain.h; path = Include/Render/Swapchain.h; sourceTree = "<group>"; };
+		FA4CFFA025D8D4A600B37A5B /* Model.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Model.h; path = Include/Render/Model.h; sourceTree = "<group>"; };
+		FA4CFFA725D8D9C800B37A5B /* macOS.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = macOS.m; path = Platform/macOS/macOS.m; sourceTree = "<group>"; };
+		FA4CFFA825D8D9C800B37A5B /* EngineAppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EngineAppDelegate.h; path = Platform/macOS/EngineAppDelegate.h; sourceTree = "<group>"; };
+		FA4CFFA925D8D9C800B37A5B /* EngineView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EngineView.h; path = Platform/macOS/EngineView.h; sourceTree = "<group>"; };
+		FA4CFFAA25D8D9C800B37A5B /* EngineAppDelegate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = EngineAppDelegate.m; path = Platform/macOS/EngineAppDelegate.m; sourceTree = "<group>"; };
+		FA4CFFAB25D8D9C800B37A5B /* EngineView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = EngineView.m; path = Platform/macOS/EngineView.m; sourceTree = "<group>"; };
+		FA4CFFAC25D8D9C800B37A5B /* Input.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = Input.m; path = Platform/macOS/Input.m; sourceTree = "<group>"; };
+		FA4CFFAD25D8D9C800B37A5B /* macOSPlatform.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = macOSPlatform.h; path = Platform/macOS/macOSPlatform.h; sourceTree = "<group>"; };
+		FA4CFFAE25D8D9C800B37A5B /* Main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = Main.m; path = Platform/macOS/Main.m; sourceTree = "<group>"; };
+		FA4CFFAF25D8D9C800B37A5B /* Window.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = Window.m; path = Platform/macOS/Window.m; sourceTree = "<group>"; };
+		FA4CFFB825D8D9E800B37A5B /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = Platform/macOS/Info.plist; sourceTree = "<group>"; };
+		FA4CFFC225D8DA2700B37A5B /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Platform/macOS/Images.xcassets; sourceTree = "<group>"; };
+		FA4CFFC725D8DA7900B37A5B /* Darwin.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = Darwin.m; path = Platform/macOS/Darwin.m; sourceTree = "<group>"; };
+		FA4CFFC825D8DA7900B37A5B /* Thread.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = Thread.m; path = Platform/macOS/Thread.m; sourceTree = "<group>"; };
 		FA5D333425CFE7FD001EB5E2 /* Material.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Material.h; path = Include/Render/Material.h; sourceTree = "<group>"; };
 		FA5D333525CFE859001EB5E2 /* Texture.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Texture.h; path = Include/Render/Texture.h; sourceTree = "<group>"; };
 		FA6BDD022522B75D00806A2D /* aabb2.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = aabb2.h; path = Include/Math/aabb2.h; sourceTree = "<group>"; };
@@ -183,7 +328,6 @@
 		FA6BDD402522B83E00806A2D /* Font.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = Font.h; path = Include/UI/Font.h; sourceTree = "<group>"; };
 		FA6BDD412522B83E00806A2D /* Text.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = Text.h; path = Include/UI/Text.h; sourceTree = "<group>"; };
 		FA6BDD422522B83E00806A2D /* UI.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = UI.h; path = Include/UI/UI.h; sourceTree = "<group>"; };
-		FA6BDDAD2522C31700806A2D /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = /System/Library/Frameworks/OpenGL.framework; sourceTree = "<absolute>"; };
 		FA6BDDB12522C32900806A2D /* OpenAL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenAL.framework; path = /System/Library/Frameworks/OpenAL.framework; sourceTree = "<absolute>"; };
 		FA6BDE412523382100806A2D /* lapi.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = lapi.c; path = Deps/Lua/lapi.c; sourceTree = "<group>"; };
 		FA6BDE422523382100806A2D /* lapi.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = lapi.h; path = Deps/Lua/lapi.h; sourceTree = "<group>"; };
@@ -248,7 +392,6 @@
 		FA7D9F7A2528D5E300F51BA0 /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = /System/Library/Frameworks/IOKit.framework; sourceTree = "<absolute>"; };
 		FA7D9F872528D6D400F51BA0 /* physfs_platform_posix.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = physfs_platform_posix.c; path = Deps/PhysFS/physfs_platform_posix.c; sourceTree = "<group>"; };
 		FA8A94DA25D41935008B5823 /* MTLPipeline.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = MTLPipeline.m; path = Drivers/Metal/MTLPipeline.m; sourceTree = "<group>"; };
-		FA8E732225D1BBC70048A01F /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Platform/MacX/Images.xcassets; sourceTree = "<group>"; };
 		FA8E732825D323960048A01F /* Pipeline.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Pipeline.h; path = Include/Render/Pipeline.h; sourceTree = "<group>"; };
 		FAA9108725D3D85D005FCDA2 /* Application.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = Application.c; path = Application/Application.c; sourceTree = "<group>"; };
 		FAA9108A25D3D886005FCDA2 /* TestApplication.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TestApplication.h; path = Application/TestApplication.h; sourceTree = "<group>"; };
@@ -256,14 +399,6 @@
 		FAA9108E25D3ECCE005FCDA2 /* ShaderBindingTable.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = ShaderBindingTable.h; path = Include/Render/ShaderBindingTable.h; sourceTree = "<group>"; };
 		FAA9108F25D3ECDC005FCDA2 /* Buffer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Buffer.h; path = Include/Render/Buffer.h; sourceTree = "<group>"; };
 		FAA9109125D3ED3C005FCDA2 /* TransientResources.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = TransientResources.h; path = Include/Render/TransientResources.h; sourceTree = "<group>"; };
-		FAAF9A3F2521DE4800F7C24B /* Input.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; name = Input.m; path = Platform/MacX/Input.m; sourceTree = "<group>"; };
-		FAAF9A412521DE4800F7C24B /* MacXPlatform.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = MacXPlatform.h; path = Platform/MacX/MacXPlatform.h; sourceTree = "<group>"; };
-		FAAF9A432521DE4800F7C24B /* MacX.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; name = MacX.m; path = Platform/MacX/MacX.m; sourceTree = "<group>"; };
-		FAAF9A442521DE4800F7C24B /* Window.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; name = Window.m; path = Platform/MacX/Window.m; sourceTree = "<group>"; };
-		FAAF9ABE2521EA8100F7C24B /* EngineView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EngineView.h; path = Platform/MacX/EngineView.h; sourceTree = "<group>"; };
-		FAAF9ABF2521EA8100F7C24B /* EngineView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = EngineView.m; path = Platform/MacX/EngineView.m; sourceTree = "<group>"; };
-		FAAF9AC12521EA9700F7C24B /* EngineAppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EngineAppDelegate.h; path = Platform/MacX/EngineAppDelegate.h; sourceTree = "<group>"; };
-		FAAF9AC22521EA9700F7C24B /* EngineAppDelegate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = EngineAppDelegate.m; path = Platform/MacX/EngineAppDelegate.m; sourceTree = "<group>"; };
 		FAAF9B552521F2D600F7C24B /* Font.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = Font.c; path = Engine/Asset/Font.c; sourceTree = "<group>"; };
 		FAAF9B562521F2D600F7C24B /* glTF.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = glTF.c; path = Engine/Asset/glTF.c; sourceTree = "<group>"; };
 		FAAF9B572521F2D600F7C24B /* Image.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = Image.c; path = Engine/Asset/Image.c; sourceTree = "<group>"; };
@@ -316,7 +451,17 @@
 		FAAF9C832522A81F00F7C24B /* physfs.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = physfs.c; path = Deps/PhysFS/physfs.c; sourceTree = "<group>"; };
 		FAAF9C842522A81F00F7C24B /* physfs.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = physfs.h; path = Deps/PhysFS/physfs.h; sourceTree = "<group>"; };
 		FAAF9C942522A89200F7C24B /* physfs_platform_apple.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; name = physfs_platform_apple.m; path = Deps/PhysFS/physfs_platform_apple.m; sourceTree = "<group>"; };
-		FAAF9CF12522AD1700F7C24B /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.plist.xml; name = Info.plist; path = Platform/MacX/Info.plist; sourceTree = "<group>"; };
+		FAB14F9625D749DA009C5450 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = Platform/iOS/Info.plist; sourceTree = "<group>"; };
+		FAB14F9E25D74A36009C5450 /* EngineViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EngineViewController.h; path = Platform/iOS/EngineViewController.h; sourceTree = "<group>"; };
+		FAB14F9F25D74A36009C5450 /* EngineViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = EngineViewController.m; path = Platform/iOS/EngineViewController.m; sourceTree = "<group>"; };
+		FAB14FA325D74A58009C5450 /* EngineView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = EngineView.h; path = Platform/iOS/EngineView.h; sourceTree = "<group>"; };
+		FAB14FA425D74A58009C5450 /* EngineView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = EngineView.m; path = Platform/iOS/EngineView.m; sourceTree = "<group>"; };
+		FAB14FAA25D74AF1009C5450 /* EngineAppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EngineAppDelegate.h; path = Platform/iOS/EngineAppDelegate.h; sourceTree = "<group>"; };
+		FAB14FAB25D74AF1009C5450 /* EngineAppDelegate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = EngineAppDelegate.m; path = Platform/iOS/EngineAppDelegate.m; sourceTree = "<group>"; };
+		FAB14FBA25D74BE4009C5450 /* Main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = Main.m; path = Platform/iOS/Main.m; sourceTree = "<group>"; };
+		FAB1504025D750D8009C5450 /* Window.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = Window.m; path = Platform/iOS/Window.m; sourceTree = "<group>"; };
+		FAB1504425D751F0009C5450 /* iOS.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = iOS.m; path = Platform/iOS/iOS.m; sourceTree = "<group>"; };
+		FAB1506025D753B5009C5450 /* Input.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = Input.m; path = Platform/iOS/Input.m; sourceTree = "<group>"; };
 		FABF18EB25BECE85005C1329 /* AVSound.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = AVSound.m; path = Sound/AVAudio/AVSound.m; sourceTree = "<group>"; };
 		FABF18EC25BECE85005C1329 /* AVSound.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AVSound.h; path = Sound/AVAudio/AVSound.h; sourceTree = "<group>"; };
 		FABF18ED25BECE85005C1329 /* AVSource.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = AVSource.m; path = Sound/AVAudio/AVSource.m; sourceTree = "<group>"; };
@@ -325,7 +470,6 @@
 		FAC101A0252FF70000D830E9 /* sanity.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = sanity.h; path = Include/Math/sanity.h; sourceTree = "<group>"; };
 		FAC4B4AF253BE2E30074EE3C /* Job.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = Job.c; path = Engine/Engine/Job.c; sourceTree = "<group>"; };
 		FAC4B4B1253BE2F60074EE3C /* AtomicLock.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = AtomicLock.c; path = Engine/System/AtomicLock.c; sourceTree = "<group>"; };
-		FAC4B4B4253BE3F40074EE3C /* Thread.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; name = Thread.m; path = Platform/MacX/Thread.m; sourceTree = "<group>"; };
 		FAC4B4B8253BE4350074EE3C /* Thread.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = Thread.h; path = Include/System/Thread.h; sourceTree = "<group>"; };
 		FAD516652569DFB9008FCD04 /* GameController.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameController.framework; path = System/Library/Frameworks/GameController.framework; sourceTree = SDKROOT; };
 		FADBC13525CF57C500085E38 /* Device.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Device.h; path = Include/Render/Device.h; sourceTree = "<group>"; };
@@ -334,13 +478,23 @@
 		FADBC13E25CF6ADA00085E38 /* Context.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Context.h; path = Include/Render/Context.h; sourceTree = "<group>"; };
 		FADBC14025CF70CE00085E38 /* MTLContext.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = MTLContext.m; path = Drivers/Metal/MTLContext.m; sourceTree = "<group>"; };
 		FADD5C0C253D297900606B2A /* Memory.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = Memory.c; path = Engine/System/Memory.c; sourceTree = "<group>"; };
-		FAE5E11B2569BE9D0091893B /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = Platform/MacX/en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		FAE5E11E2569BFD60091893B /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
 		FAE5E1202569BFDC0091893B /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
 		FAE5E1252569C3400091893B /* vec4_neon.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = vec4_neon.h; path = Include/Math/neon/vec4_neon.h; sourceTree = "<group>"; };
 		FAE5E1262569C3400091893B /* mat4_neon.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mat4_neon.h; path = Include/Math/neon/mat4_neon.h; sourceTree = "<group>"; };
 		FAE5E1272569C3550091893B /* debug.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = debug.h; path = Include/Math/debug.h; sourceTree = "<group>"; };
 		FAE5E1282569C3550091893B /* Math.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Math.h; path = Include/Math/Math.h; sourceTree = "<group>"; };
+		FAFEF82B25D59F9500D8D1FB /* MTLSwapchain.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = MTLSwapchain.m; path = Drivers/Metal/MTLSwapchain.m; sourceTree = "<group>"; };
+		FAFEF82E25D5A01B00D8D1FB /* MTLAccelerationStructure.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = MTLAccelerationStructure.m; path = Drivers/Metal/MTLAccelerationStructure.m; sourceTree = "<group>"; };
+		FAFEF83125D5A08500D8D1FB /* MTLTexture.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = MTLTexture.m; path = Drivers/Metal/MTLTexture.m; sourceTree = "<group>"; };
+		FAFEF83B25D5A0D900D8D1FB /* MTLShaderBindingTable.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = MTLShaderBindingTable.m; path = Drivers/Metal/MTLShaderBindingTable.m; sourceTree = "<group>"; };
+		FAFEF83E25D5A0ED00D8D1FB /* MTLTransientResources.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = MTLTransientResources.m; path = Drivers/Metal/MTLTransientResources.m; sourceTree = "<group>"; };
+		FAFEF84125D5A11300D8D1FB /* MTLBuffer.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = MTLBuffer.m; path = Drivers/Metal/MTLBuffer.m; sourceTree = "<group>"; };
+		FAFEF84525D5B87300D8D1FB /* Memory.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Memory.h; path = Include/Render/Memory.h; sourceTree = "<group>"; };
+		FAFEF84725D5C79700D8D1FB /* Framebuffer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Framebuffer.h; path = Include/Render/Framebuffer.h; sourceTree = "<group>"; };
+		FAFEF84925D5CA4800D8D1FB /* MTLFramebuffer.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = MTLFramebuffer.m; path = Drivers/Metal/MTLFramebuffer.m; sourceTree = "<group>"; };
+		FAFEF84D25D5CBF100D8D1FB /* RenderPass.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = RenderPass.h; path = Include/Render/RenderPass.h; sourceTree = "<group>"; };
+		FAFEF85225D7015E00D8D1FB /* Pipeline.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = Pipeline.c; path = Engine/Render/Pipeline.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -357,6 +511,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		FA4CFE8225D771AF00B37A5B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -365,7 +526,6 @@
 			children = (
 				FA7D9F7A2528D5E300F51BA0 /* IOKit.framework */,
 				FA6BDDB12522C32900806A2D /* OpenAL.framework */,
-				FA6BDDAD2522C31700806A2D /* OpenGL.framework */,
 				1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */,
 			);
 			name = "Linked Frameworks";
@@ -385,6 +545,7 @@
 			isa = PBXGroup;
 			children = (
 				8D1107320486CEB800E47090 /* NekoEngine.app */,
+				FA4CFE8525D771AF00B37A5B /* NekoEngine iOS.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -421,9 +582,9 @@
 		29B97317FDCFA39411CA2CEA /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				FA8E732225D1BBC70048A01F /* Images.xcassets */,
-				FA80DCEA2522AFD200E05EE5 /* InfoPlist.strings */,
-				FAAF9CF12522AD1700F7C24B /* Info.plist */,
+				FAB14F9525D749C9009C5450 /* iOS */,
+				FAB14F9425D749C1009C5450 /* macOS */,
+				FA4CFFC225D8DA2700B37A5B /* Images.xcassets */,
 			);
 			name = Resources;
 			sourceTree = "<group>";
@@ -457,23 +618,34 @@
 				FADBC13C25CF616E00085E38 /* MTLDriver.h */,
 				FADBC14025CF70CE00085E38 /* MTLContext.m */,
 				FA8A94DA25D41935008B5823 /* MTLPipeline.m */,
+				FAFEF82B25D59F9500D8D1FB /* MTLSwapchain.m */,
+				FAFEF82E25D5A01B00D8D1FB /* MTLAccelerationStructure.m */,
+				FAFEF83125D5A08500D8D1FB /* MTLTexture.m */,
+				FAFEF83B25D5A0D900D8D1FB /* MTLShaderBindingTable.m */,
+				FAFEF83E25D5A0ED00D8D1FB /* MTLTransientResources.m */,
+				FAFEF84125D5A11300D8D1FB /* MTLBuffer.m */,
+				FAFEF84925D5CA4800D8D1FB /* MTLFramebuffer.m */,
+				FA4CFF8925D8453200B37A5B /* MTLRenderPass.m */,
+				FA24C1A925D99324003D590F /* MTLDescriptorSet.m */,
 			);
 			name = Metal;
+			sourceTree = "<group>";
+		};
+		FA24C19D25D95DBD003D590F /* altivec */ = {
+			isa = PBXGroup;
+			children = (
+				FA24C19F25D95DDA003D590F /* mat4_altivec.h */,
+				FA24C19E25D95DDA003D590F /* vec4_altivec.h */,
+			);
+			name = altivec;
 			sourceTree = "<group>";
 		};
 		FA3500692521DC6A00CE048F /* Platform */ = {
 			isa = PBXGroup;
 			children = (
-				FAC4B4B4253BE3F40074EE3C /* Thread.m */,
-				FAAF9A3F2521DE4800F7C24B /* Input.m */,
-				FAAF9A412521DE4800F7C24B /* MacXPlatform.h */,
-				FAAF9A432521DE4800F7C24B /* MacX.m */,
-				FAAF9A442521DE4800F7C24B /* Window.m */,
-				FA3500712521DD1E00CE048F /* Main.m */,
-				FAAF9ABE2521EA8100F7C24B /* EngineView.h */,
-				FAAF9ABF2521EA8100F7C24B /* EngineView.m */,
-				FAAF9AC12521EA9700F7C24B /* EngineAppDelegate.h */,
-				FAAF9AC22521EA9700F7C24B /* EngineAppDelegate.m */,
+				FAB1504B25D75371009C5450 /* Shared */,
+				FAB14F7025D74841009C5450 /* iOS */,
+				FAB14F6F25D74839009C5450 /* macOS */,
 			);
 			name = Platform;
 			sourceTree = "<group>";
@@ -584,6 +756,13 @@
 				FAA9108E25D3ECCE005FCDA2 /* ShaderBindingTable.h */,
 				FAA9108F25D3ECDC005FCDA2 /* Buffer.h */,
 				FAA9109125D3ED3C005FCDA2 /* TransientResources.h */,
+				FAFEF84525D5B87300D8D1FB /* Memory.h */,
+				FAFEF84725D5C79700D8D1FB /* Framebuffer.h */,
+				FAFEF84D25D5CBF100D8D1FB /* RenderPass.h */,
+				FA4CFF9025D85B2000B37A5B /* Swapchain.h */,
+				FA4CFFA025D8D4A600B37A5B /* Model.h */,
+				FA24C1A225D972A7003D590F /* DescriptorSet.h */,
+				FA24C1B025D9A0BF003D590F /* Shader.h */,
 			);
 			name = Render;
 			sourceTree = "<group>";
@@ -591,6 +770,7 @@
 		FA6BDCFC2522B70200806A2D /* Math */ = {
 			isa = PBXGroup;
 			children = (
+				FA24C19D25D95DBD003D590F /* altivec */,
 				FAE5E1242569C32E0091893B /* neon */,
 				FA6BDD002522B73300806A2D /* sse */,
 				FAE5E1282569C3550091893B /* Math.h */,
@@ -730,6 +910,8 @@
 			isa = PBXGroup;
 			children = (
 				FA1A7EF325CF13E9003B4259 /* Render.c */,
+				FAFEF85225D7015E00D8D1FB /* Pipeline.c */,
+				FA4CFF7725D8361400B37A5B /* Frame.c */,
 			);
 			name = Render;
 			sourceTree = "<group>";
@@ -887,6 +1069,64 @@
 			name = Sound;
 			sourceTree = "<group>";
 		};
+		FAB14F6F25D74839009C5450 /* macOS */ = {
+			isa = PBXGroup;
+			children = (
+				FA4CFFA825D8D9C800B37A5B /* EngineAppDelegate.h */,
+				FA4CFFAA25D8D9C800B37A5B /* EngineAppDelegate.m */,
+				FA4CFFA925D8D9C800B37A5B /* EngineView.h */,
+				FA4CFFAB25D8D9C800B37A5B /* EngineView.m */,
+				FA4CFFAC25D8D9C800B37A5B /* Input.m */,
+				FA4CFFA725D8D9C800B37A5B /* macOS.m */,
+				FA4CFFAD25D8D9C800B37A5B /* macOSPlatform.h */,
+				FA4CFFAE25D8D9C800B37A5B /* Main.m */,
+				FA4CFFAF25D8D9C800B37A5B /* Window.m */,
+			);
+			name = macOS;
+			sourceTree = "<group>";
+		};
+		FAB14F7025D74841009C5450 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				FAB14FBA25D74BE4009C5450 /* Main.m */,
+				FAB14FAA25D74AF1009C5450 /* EngineAppDelegate.h */,
+				FAB14FAB25D74AF1009C5450 /* EngineAppDelegate.m */,
+				FAB14F9E25D74A36009C5450 /* EngineViewController.h */,
+				FAB14F9F25D74A36009C5450 /* EngineViewController.m */,
+				FAB14FA325D74A58009C5450 /* EngineView.h */,
+				FAB14FA425D74A58009C5450 /* EngineView.m */,
+				FAB1504025D750D8009C5450 /* Window.m */,
+				FAB1504425D751F0009C5450 /* iOS.m */,
+				FAB1506025D753B5009C5450 /* Input.m */,
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
+		FAB14F9425D749C1009C5450 /* macOS */ = {
+			isa = PBXGroup;
+			children = (
+				FA4CFFB825D8D9E800B37A5B /* Info.plist */,
+			);
+			name = macOS;
+			sourceTree = "<group>";
+		};
+		FAB14F9525D749C9009C5450 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				FAB14F9625D749DA009C5450 /* Info.plist */,
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
+		FAB1504B25D75371009C5450 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				FA4CFFC725D8DA7900B37A5B /* Darwin.m */,
+				FA4CFFC825D8DA7900B37A5B /* Thread.m */,
+			);
+			name = Shared;
+			sourceTree = "<group>";
+		};
 		FAE5E1242569C32E0091893B /* neon */ = {
 			isa = PBXGroup;
 			children = (
@@ -917,6 +1157,23 @@
 			productReference = 8D1107320486CEB800E47090 /* NekoEngine.app */;
 			productType = "com.apple.product-type.application";
 		};
+		FA4CFE8425D771AF00B37A5B /* NekoEngine iOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FA4CFE9B25D771B100B37A5B /* Build configuration list for PBXNativeTarget "NekoEngine iOS" */;
+			buildPhases = (
+				FA4CFE8125D771AF00B37A5B /* Sources */,
+				FA4CFE8225D771AF00B37A5B /* Frameworks */,
+				FA4CFE8325D771AF00B37A5B /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "NekoEngine iOS";
+			productName = "NekoEngine iOS";
+			productReference = FA4CFE8525D771AF00B37A5B /* NekoEngine iOS.app */;
+			productType = "com.apple.product-type.application";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -924,6 +1181,11 @@
 			isa = PBXProject;
 			attributes = {
 				LastUpgradeCheck = 1230;
+				TargetAttributes = {
+					FA4CFE8425D771AF00B37A5B = {
+						CreatedOnToolsVersion = 12.4;
+					};
+				};
 			};
 			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "NekoEngine" */;
 			compatibilityVersion = "Xcode 2.4";
@@ -941,6 +1203,7 @@
 			projectRoot = "";
 			targets = (
 				8D1107260486CEB800E47090 /* NekoEngine */,
+				FA4CFE8425D771AF00B37A5B /* NekoEngine iOS */,
 			);
 		};
 /* End PBXProject section */
@@ -950,8 +1213,15 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				FA80DCEC2522AFD200E05EE5 /* InfoPlist.strings in Resources */,
-				FA8E732325D1BBC70048A01F /* Images.xcassets in Resources */,
+				FA4CFFCF25D8DABC00B37A5B /* Images.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FA4CFE8325D771AF00B37A5B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FA4CFFD225D8DACA00B37A5B /* Images.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -962,19 +1232,16 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				FA3500722521DD1E00CE048F /* Main.m in Sources */,
-				FAAF9A462521DE4800F7C24B /* Input.m in Sources */,
-				FAAF9A492521DE4800F7C24B /* MacX.m in Sources */,
-				FAAF9A4A2521DE4800F7C24B /* Window.m in Sources */,
 				FA1A7EF425CF13E9003B4259 /* Render.c in Sources */,
-				FAAF9AC02521EA8100F7C24B /* EngineView.m in Sources */,
-				FAAF9AC32521EA9700F7C24B /* EngineAppDelegate.m in Sources */,
+				FAFEF84A25D5CA4800D8D1FB /* MTLFramebuffer.m in Sources */,
 				FAAF9B5C2521F2D600F7C24B /* Font.c in Sources */,
+				FA4CFF7825D8361400B37A5B /* Frame.c in Sources */,
 				FAAF9B5D2521F2D600F7C24B /* glTF.c in Sources */,
 				FAAF9B5E2521F2D600F7C24B /* Image.c in Sources */,
 				FAAF9B5F2521F2D600F7C24B /* NMesh.c in Sources */,
 				FAAF9B602521F2D600F7C24B /* Ogg.c in Sources */,
 				FA1A7EF025CF0FAF003B4259 /* MTLDriver.m in Sources */,
+				FA4CFFB325D8D9C800B37A5B /* Input.m in Sources */,
 				FAAF9B612521F2D600F7C24B /* TGA.c in Sources */,
 				FAAF9B622521F2D600F7C24B /* Wave.c in Sources */,
 				FAAF9B802521F3C500F7C24B /* Audio.c in Sources */,
@@ -987,6 +1254,8 @@
 				FAAF9B912521F3D700F7C24B /* Engine.c in Sources */,
 				FAAF9B922521F3D700F7C24B /* Entity.c in Sources */,
 				FAAF9B932521F3D700F7C24B /* Event.c in Sources */,
+				FA4CFF8A25D8453200B37A5B /* MTLRenderPass.m in Sources */,
+				FAFEF82F25D5A01B00D8D1FB /* MTLAccelerationStructure.m in Sources */,
 				FAAF9B942521F3D700F7C24B /* IO.c in Sources */,
 				FAAF9B952521F3D700F7C24B /* Resource.c in Sources */,
 				FAAF9B972521F3EB00F7C24B /* Input.c in Sources */,
@@ -999,6 +1268,7 @@
 				FAAF9BAE2521F47D00F7C24B /* UI.c in Sources */,
 				FAAF9BB22521F49C00F7C24B /* Log.c in Sources */,
 				FAAF9BB32521F49C00F7C24B /* System.c in Sources */,
+				FA4CFFC925D8DA7900B37A5B /* Darwin.m in Sources */,
 				FAAF9C852522A81F00F7C24B /* physfs_archiver_7z.c in Sources */,
 				FAAF9C862522A81F00F7C24B /* physfs_archiver_dir.c in Sources */,
 				FAAF9C872522A81F00F7C24B /* physfs_archiver_grp.c in Sources */,
@@ -1012,6 +1282,8 @@
 				FAAF9C8F2522A81F00F7C24B /* physfs_archiver_wad.c in Sources */,
 				FAAF9C902522A81F00F7C24B /* physfs_archiver_zip.c in Sources */,
 				FAAF9C912522A81F00F7C24B /* physfs_byteorder.c in Sources */,
+				FAFEF82C25D59F9500D8D1FB /* MTLSwapchain.m in Sources */,
+				FAFEF83225D5A08500D8D1FB /* MTLTexture.m in Sources */,
 				FAAF9C922522A81F00F7C24B /* physfs_unicode.c in Sources */,
 				FAAF9C932522A81F00F7C24B /* physfs.c in Sources */,
 				FAAF9C962522A89200F7C24B /* physfs_platform_apple.m in Sources */,
@@ -1027,15 +1299,19 @@
 				FA6BDE832523382100806A2D /* ldebug.c in Sources */,
 				FA6BDE842523382100806A2D /* ldo.c in Sources */,
 				FA6BDE852523382100806A2D /* ldump.c in Sources */,
+				FA4CFFB525D8D9C800B37A5B /* Window.m in Sources */,
 				FA6BDE862523382100806A2D /* lfunc.c in Sources */,
+				FA4CFFCB25D8DA7900B37A5B /* Thread.m in Sources */,
 				FA6BDE872523382100806A2D /* lgc.c in Sources */,
 				FA6BDE882523382100806A2D /* linit.c in Sources */,
 				FA6BDE892523382100806A2D /* liolib.c in Sources */,
+				FAFEF85325D7015E00D8D1FB /* Pipeline.c in Sources */,
 				FA6BDE8A2523382100806A2D /* llex.c in Sources */,
 				FA6BDE8B2523382100806A2D /* lmathlib.c in Sources */,
 				FA6BDE8C2523382100806A2D /* lmem.c in Sources */,
 				FA6BDE8D2523382100806A2D /* loadlib.c in Sources */,
 				FADBC14125CF70CE00085E38 /* MTLContext.m in Sources */,
+				FAFEF84225D5A11300D8D1FB /* MTLBuffer.m in Sources */,
 				FA6BDE8E2523382100806A2D /* lobject.c in Sources */,
 				FA6BDE8F2523382100806A2D /* lopcodes.c in Sources */,
 				FAA9108825D3D85D005FCDA2 /* Application.c in Sources */,
@@ -1044,37 +1320,150 @@
 				FA6BDE922523382100806A2D /* lstate.c in Sources */,
 				FABF18F125BECE85005C1329 /* AVClip.m in Sources */,
 				FA6BDE932523382100806A2D /* lstring.c in Sources */,
+				FA4CFFB425D8D9C800B37A5B /* Main.m in Sources */,
+				FA4CFFB025D8D9C800B37A5B /* macOS.m in Sources */,
 				FA6BDE942523382100806A2D /* lstrlib.c in Sources */,
 				FABF18F025BECE85005C1329 /* AVSource.m in Sources */,
+				FAFEF83C25D5A0D900D8D1FB /* MTLShaderBindingTable.m in Sources */,
 				FA6BDE952523382100806A2D /* ltable.c in Sources */,
 				FA6BDE962523382100806A2D /* ltablib.c in Sources */,
 				FA6BDE972523382100806A2D /* ltm.c in Sources */,
+				FA4CFFB125D8D9C800B37A5B /* EngineAppDelegate.m in Sources */,
 				FA6BDE982523382100806A2D /* lundump.c in Sources */,
+				FAFEF83F25D5A0ED00D8D1FB /* MTLTransientResources.m in Sources */,
 				FA6BDE992523382100806A2D /* lutf8lib.c in Sources */,
 				FA6BDE9A2523382100806A2D /* lvm.c in Sources */,
 				FA6BDE9B2523382100806A2D /* lzio.c in Sources */,
 				FA7745DD2528963200FED53F /* reallocarray.c in Sources */,
 				FABF18EF25BECE85005C1329 /* AVSound.m in Sources */,
 				FA7D9F882528D6D400F51BA0 /* physfs_platform_posix.c in Sources */,
+				FA24C1AA25D99324003D590F /* MTLDescriptorSet.m in Sources */,
 				FAC4B4B0253BE2E30074EE3C /* Job.c in Sources */,
+				FA4CFFB225D8D9C800B37A5B /* EngineView.m in Sources */,
 				FAC4B4B2253BE2F60074EE3C /* AtomicLock.c in Sources */,
-				FAC4B4B5253BE3F40074EE3C /* Thread.m in Sources */,
 				FADD5C0D253D297900606B2A /* Memory.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-/* End PBXSourcesBuildPhase section */
-
-/* Begin PBXVariantGroup section */
-		FA80DCEA2522AFD200E05EE5 /* InfoPlist.strings */ = {
-			isa = PBXVariantGroup;
-			children = (
-				FAE5E11B2569BE9D0091893B /* en */,
+		FA4CFE8125D771AF00B37A5B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FA4CFF1425D7750D00B37A5B /* AVSound.m in Sources */,
+				FA4CFEDC25D774D800B37A5B /* Font.c in Sources */,
+				FA4CFEBC25D7733700B37A5B /* EngineViewController.m in Sources */,
+				FA4CFEE025D774D800B37A5B /* TGA.c in Sources */,
+				FA4CFF4725D7754700B37A5B /* physfs_archiver_dir.c in Sources */,
+				FA4CFEED25D774E600B37A5B /* Config.c in Sources */,
+				FA4CFF5725D7758600B37A5B /* MTLAccelerationStructure.m in Sources */,
+				FA4CFEF225D774E600B37A5B /* ECSystem.c in Sources */,
+				FA4CFF2425D7753A00B37A5B /* ltablib.c in Sources */,
+				FA4CFF3525D7753A00B37A5B /* lopcodes.c in Sources */,
+				FA4CFF4025D7754700B37A5B /* physfs_archiver_mvl.c in Sources */,
+				FA4CFF0B25D774FF00B37A5B /* System.c in Sources */,
+				FA4CFF8B25D8453200B37A5B /* MTLRenderPass.m in Sources */,
+				FA4CFEDB25D774D800B37A5B /* glTF.c in Sources */,
+				FA4CFF4925D7754700B37A5B /* physfs_archiver_iso9660.c in Sources */,
+				FA4CFF1D25D7753A00B37A5B /* lbaselib.c in Sources */,
+				FA4CFEDE25D774D800B37A5B /* Ogg.c in Sources */,
+				FA4CFF1B25D7753A00B37A5B /* lfunc.c in Sources */,
+				FA4CFEEF25D774E600B37A5B /* Component.c in Sources */,
+				FA4CFF4625D7754700B37A5B /* physfs_archiver_7z.c in Sources */,
+				FA4CFEE125D774D800B37A5B /* Wave.c in Sources */,
+				FA4CFF5C25D7758600B37A5B /* MTLSwapchain.m in Sources */,
+				FA4CFEE525D774DD00B37A5B /* Audio.c in Sources */,
+				FA4CFF2225D7753A00B37A5B /* lstate.c in Sources */,
+				FA4CFF2C25D7753A00B37A5B /* lstrlib.c in Sources */,
+				FA4CFF4125D7754700B37A5B /* physfs_archiver_unpacked.c in Sources */,
+				FA4CFEF125D774E600B37A5B /* Event.c in Sources */,
+				FA4CFEE625D774DD00B37A5B /* Clip.c in Sources */,
+				FA4CFEBA25D7733700B37A5B /* EngineView.m in Sources */,
+				FA4CFF5B25D7758600B37A5B /* MTLDevice.m in Sources */,
+				FA4CFF2B25D7753A00B37A5B /* lparser.c in Sources */,
+				FA4CFED825D774D200B37A5B /* Application.c in Sources */,
+				FA4CFF5D25D7758600B37A5B /* MTLTransientResources.m in Sources */,
+				FA4CFF0625D774FB00B37A5B /* Memory.c in Sources */,
+				FA4CFEEA25D774E600B37A5B /* Entity.c in Sources */,
+				FA4CFF1F25D7753A00B37A5B /* lmathlib.c in Sources */,
+				FA4CFF1A25D7753A00B37A5B /* ldblib.c in Sources */,
+				FA4CFF2325D7753A00B37A5B /* lauxlib.c in Sources */,
+				FA4CFF3725D7753A00B37A5B /* lcorolib.c in Sources */,
+				FA4CFF3325D7753A00B37A5B /* linit.c in Sources */,
+				FA4CFF3E25D7754700B37A5B /* physfs_unicode.c in Sources */,
+				FA4CFF4C25D7754700B37A5B /* physfs_platform_apple.m in Sources */,
+				FA4CFF4425D7754700B37A5B /* physfs_archiver_wad.c in Sources */,
+				FA4CFF7925D8361400B37A5B /* Frame.c in Sources */,
+				FA4CFF2625D7753A00B37A5B /* lapi.c in Sources */,
+				FA4CFF0A25D774FF00B37A5B /* Log.c in Sources */,
+				FA4CFEEC25D774E600B37A5B /* IO.c in Sources */,
+				FA4CFEBB25D7733700B37A5B /* EngineAppDelegate.m in Sources */,
+				FA4CFF2F25D7753A00B37A5B /* lobject.c in Sources */,
+				FA4CFEE925D774E600B37A5B /* Job.c in Sources */,
+				FA4CFF5A25D7758600B37A5B /* MTLContext.m in Sources */,
+				FA4CFF5825D7758600B37A5B /* MTLBuffer.m in Sources */,
+				FA4CFF3125D7753A00B37A5B /* lgc.c in Sources */,
+				FA4CFF0F25D7750500B37A5B /* UI.c in Sources */,
+				FA4CFF4825D7754700B37A5B /* physfs_archiver_zip.c in Sources */,
+				FA4CFF5E25D7758600B37A5B /* MTLPipeline.m in Sources */,
+				FA4CFF5F25D7758600B37A5B /* MTLFramebuffer.m in Sources */,
+				FA4CFF4325D7754700B37A5B /* physfs_archiver_slb.c in Sources */,
+				FA4CFF3925D7753A00B37A5B /* lstring.c in Sources */,
+				FA4CFF1E25D7753A00B37A5B /* lctype.c in Sources */,
+				FA4CFEEE25D774E600B37A5B /* Engine.c in Sources */,
+				FA4CFF5925D7758600B37A5B /* MTLDriver.m in Sources */,
+				FA4CFEF025D774E600B37A5B /* Resource.c in Sources */,
+				FA4CFFCC25D8DA7900B37A5B /* Thread.m in Sources */,
+				FA4CFF3025D7753A00B37A5B /* loadlib.c in Sources */,
+				FA4CFF0925D774FF00B37A5B /* reallocarray.c in Sources */,
+				FA4CFF3425D7753A00B37A5B /* ltable.c in Sources */,
+				FA4CFED225D774C100B37A5B /* iOS.m in Sources */,
+				FA4CFEE425D774DD00B37A5B /* Source.c in Sources */,
+				FA4CFEDF25D774D800B37A5B /* NMesh.c in Sources */,
+				FA4CFF4225D7754700B37A5B /* physfs_byteorder.c in Sources */,
+				FA4CFF2D25D7753A00B37A5B /* llex.c in Sources */,
+				FA4CFF2825D7753A00B37A5B /* lmem.c in Sources */,
+				FA4CFEEB25D774E600B37A5B /* ECSInit.c in Sources */,
+				FA4CFF1325D7750D00B37A5B /* AVSource.m in Sources */,
+				FA4CFEFF25D774F300B37A5B /* Scene.c in Sources */,
+				FA4CFF4525D7754700B37A5B /* physfs_archiver_qpak.c in Sources */,
+				FA4CFEFE25D774F300B37A5B /* ScriptHost.c in Sources */,
+				FA4CFF3825D7753A00B37A5B /* liolib.c in Sources */,
+				FA4CFF0E25D7750500B37A5B /* Text.c in Sources */,
+				FA4CFF5625D7758600B37A5B /* MTLTexture.m in Sources */,
+				FA4CFF0225D774F700B37A5B /* Script.c in Sources */,
+				FA4CFF0525D774FB00B37A5B /* AtomicLock.c in Sources */,
+				FA4CFF3C25D7754700B37A5B /* physfs_platform_posix.c in Sources */,
+				FA4CFEFC25D774F300B37A5B /* Transform.c in Sources */,
+				FA4CFEF525D774EA00B37A5B /* Input.c in Sources */,
+				FA4CFF2725D7753A00B37A5B /* lutf8lib.c in Sources */,
+				FA4CFF2E25D7753A00B37A5B /* ldo.c in Sources */,
+				FA4CFEA225D771E100B37A5B /* Main.m in Sources */,
+				FA4CFF4B25D7754700B37A5B /* physfs_archiver_grp.c in Sources */,
+				FA4CFEDD25D774D800B37A5B /* Image.c in Sources */,
+				FA4CFF2925D7753A00B37A5B /* ldebug.c in Sources */,
+				FA4CFF3625D7753A00B37A5B /* lundump.c in Sources */,
+				FA4CFF1225D7750D00B37A5B /* AVClip.m in Sources */,
+				FA4CFED525D774C400B37A5B /* Input.m in Sources */,
+				FA4CFF2525D7753A00B37A5B /* lvm.c in Sources */,
+				FA4CFF3F25D7754700B37A5B /* physfs.c in Sources */,
+				FA4CFF3225D7753A00B37A5B /* lcode.c in Sources */,
+				FA4CFF1C25D7753A00B37A5B /* lzio.c in Sources */,
+				FA4CFFCA25D8DA7900B37A5B /* Darwin.m in Sources */,
+				FA4CFEF925D774EE00B37A5B /* Pipeline.c in Sources */,
+				FA4CFF2A25D7753A00B37A5B /* ldump.c in Sources */,
+				FA4CFECF25D774B900B37A5B /* Window.m in Sources */,
+				FA4CFF2025D7753A00B37A5B /* ltm.c in Sources */,
+				FA4CFF3D25D7754700B37A5B /* physfs_archiver_hog.c in Sources */,
+				FA4CFEF825D774EE00B37A5B /* Render.c in Sources */,
+				FA4CFF5525D7758600B37A5B /* MTLShaderBindingTable.m in Sources */,
+				FA4CFF4A25D7754700B37A5B /* physfs_archiver_vdf.c in Sources */,
+				FA4CFEFD25D774F300B37A5B /* Camera.c in Sources */,
+				FA24C1AB25D99324003D590F /* MTLDescriptorSet.m in Sources */,
+				FA4CFF2125D7753A00B37A5B /* loslib.c in Sources */,
 			);
-			name = InfoPlist.strings;
-			sourceTree = "<group>";
+			runOnlyForDeploymentPostprocessing = 0;
 		};
-/* End PBXVariantGroup section */
+/* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
 		C01FCF4B08A954540054247B /* Debug */ = {
@@ -1086,8 +1475,9 @@
 				CODE_SIGN_ENTITLEMENTS = "";
 				CODE_SIGN_IDENTITY = "-";
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 23;
 				ENABLE_HARDENED_RUNTIME = NO;
+				GCC_CW_ASM_SYNTAX = NO;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
@@ -1104,8 +1494,9 @@
 					Deps/PhysFS,
 					Deps/MoltenVK/include,
 				);
-				INFOPLIST_FILE = Platform/MacX/Info.plist;
+				INFOPLIST_FILE = Platform/macOS/Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				MARKETING_VERSION = 0.8;
 				PRODUCT_BUNDLE_IDENTIFIER = xyz.nalexandru.NekoEngine;
 				PRODUCT_NAME = NekoEngine;
@@ -1122,8 +1513,9 @@
 				CLANG_ENABLE_OBJC_WEAK = YES;
 				CODE_SIGN_ENTITLEMENTS = "";
 				CODE_SIGN_IDENTITY = "-";
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 23;
 				ENABLE_HARDENED_RUNTIME = NO;
+				GCC_CW_ASM_SYNTAX = NO;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_MODEL_TUNING = G5;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -1138,8 +1530,9 @@
 					Deps/PhysFS,
 					Deps/MoltenVK/include,
 				);
-				INFOPLIST_FILE = Platform/MacX/Info.plist;
+				INFOPLIST_FILE = Platform/macOS/Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				MARKETING_VERSION = 0.8;
 				PRODUCT_BUNDLE_IDENTIFIER = xyz.nalexandru.NekoEngine;
 				PRODUCT_NAME = NekoEngine;
@@ -1198,7 +1591,7 @@
 					Deps/Lua,
 					Deps/PhysFS,
 				);
-				INFOPLIST_FILE = Platform/MacX/Info.plist;
+				INFOPLIST_FILE = Platform/macOS/Info.plist;
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
@@ -1255,11 +1648,101 @@
 					Deps/Lua,
 					Deps/PhysFS,
 				);
-				INFOPLIST_FILE = Platform/MacX/Info.plist;
+				INFOPLIST_FILE = Platform/macOS/Info.plist;
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				SDKROOT = macosx;
 				STRIP_INSTALLED_PRODUCT = NO;
 				STRIP_STYLE = "non-global";
+			};
+			name = Release;
+		};
+		FA4CFE9C25D771B100B37A5B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = "iOS AppIcon";
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = NO;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_COMMA = NO;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 23;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 9HAM5X8W52;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+					LUA_IOS,
+					RENDER_DRIVER_BUILTIN,
+				);
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				INFOPLIST_FILE = Platform/iOS/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.1;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MARKETING_VERSION = 0.8;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "xyz.nalexandru.NekoEngine-iOS";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		FA4CFE9D25D771B100B37A5B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = "iOS AppIcon";
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = NO;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_COMMA = NO;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 23;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 9HAM5X8W52;
+				ENABLE_NS_ASSERTIONS = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					LUA_USE_MACOSX,
+					LUA_IOS,
+					RENDER_DRIVER_BUILTIN,
+				);
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				INFOPLIST_FILE = Platform/iOS/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.1;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MARKETING_VERSION = 0.8;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "xyz.nalexandru.NekoEngine-iOS";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
 		};
@@ -1280,6 +1763,15 @@
 			buildConfigurations = (
 				C01FCF4F08A954540054247B /* Debug */,
 				C01FCF5008A954540054247B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		FA4CFE9B25D771B100B37A5B /* Build configuration list for PBXNativeTarget "NekoEngine iOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FA4CFE9C25D771B100B37A5B /* Debug */,
+				FA4CFE9D25D771B100B37A5B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

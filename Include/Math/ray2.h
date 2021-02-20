@@ -406,4 +406,3 @@ r2_intersect_circle(
 }
 
 #endif /* _NE_MATH_RAY2_H_ */
-

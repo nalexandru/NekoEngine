@@ -89,10 +89,14 @@
     <ClInclude Include="..\Include\Render\Context.h" />
     <ClInclude Include="..\Include\Render\Device.h" />
     <ClInclude Include="..\Include\Render\Driver.h" />
+    <ClInclude Include="..\Include\Render\Framebuffer.h" />
     <ClInclude Include="..\Include\Render\Material.h" />
+    <ClInclude Include="..\Include\Render\Memory.h" />
     <ClInclude Include="..\Include\Render\Pipeline.h" />
     <ClInclude Include="..\Include\Render\Render.h" />
+    <ClInclude Include="..\Include\Render\RenderPass.h" />
     <ClInclude Include="..\Include\Render\ShaderBindingTable.h" />
+    <ClInclude Include="..\Include\Render\Swapchain.h" />
     <ClInclude Include="..\Include\Render\Texture.h" />
     <ClInclude Include="..\Include\Render\TransientResources.h" />
     <ClInclude Include="..\Include\Runtime\Array.h" />
@@ -196,6 +200,8 @@
     <ClCompile Include="Engine\Job.c" />
     <ClCompile Include="Engine\Resource.c" />
     <ClCompile Include="Input\Input.c" />
+    <ClCompile Include="Render\Frame.c" />
+    <ClCompile Include="Render\Pipeline.c" />
     <ClCompile Include="Render\Render.c" />
     <ClCompile Include="Scene\Camera.c" />
     <ClCompile Include="Scene\Scene.c" />

@@ -37,12 +37,12 @@ struct Map
 	uint64_t hash;
 };
 
-bool In_PointerVisible = true;
-bool In_PointerCaptured = false;
-bool In_ButtonState[BTN_STATE_COUNT];
-float In_MouseAxis[3] = { 0.f, 0.f, 0.f };
-uint8_t In_ConnectedControllers = 0;
-struct ControllerState In_ControllerState[IN_MAX_CONTROLLERS];
+bool In_pointerVisible = true;
+bool In_pointerCaptured = false;
+bool In_buttonState[BTN_STATE_COUNT];
+float In_mouseAxis[3] = { 0.f, 0.f, 0.f };
+uint8_t In_connectedControllers = 0;
+struct ControllerState In_controllerState[IN_MAX_CONTROLLERS];
 
 static bool _prevButtonState[BTN_STATE_COUNT];
 static struct ControllerState _prevControllerState[IN_MAX_CONTROLLERS];
@@ -59,8 +59,8 @@ In_InitInput(void)
 	struct Stream stm;
 	uint8_t mode = CFG_INIT;
 
-	memset(In_ButtonState, 0x0, sizeof(In_ButtonState));
-	memset(In_ControllerState, 0x0, sizeof(In_ControllerState));
+	memset(In_buttonState, 0x0, sizeof(In_buttonState));
+	memset(In_controllerState, 0x0, sizeof(In_controllerState));
 
 	if (!In_SysInit())
 		return false;
@@ -157,10 +157,10 @@ In_TermInput(void)
 	Rt_TermArray(&_map);
 	Rt_TermArray(&_virtualAxis);
 
-	if (In_PointerCaptured)
+	if (In_pointerCaptured)
 		In_CapturePointer(false);
 
-	if (!In_PointerVisible)
+	if (!In_pointerVisible)
 		In_ShowPointer(true);
 
 	In_SysTerm();
@@ -169,8 +169,8 @@ In_TermInput(void)
 void
 In_Update(void)
 {
-	memmove(_prevButtonState, In_ButtonState, sizeof(_prevButtonState));
-	memmove(_prevControllerState, In_ControllerState, sizeof(_prevControllerState));
+	memmove(_prevButtonState, In_buttonState, sizeof(_prevButtonState));
+	memmove(_prevControllerState, In_controllerState, sizeof(_prevControllerState));
 
 	In_SysPollControllers();
 }
@@ -292,14 +292,14 @@ In_Axis(uint32_t map)
 bool
 In_UnmappedButton(enum Button btn, uint8_t controller)
 {
-	return btn < BTN_STATE_COUNT ? In_ButtonState[btn] : GPAD_BTN(btn, In_ControllerState[controller]);
+	return btn < BTN_STATE_COUNT ? In_buttonState[btn] : GPAD_BTN(btn, In_controllerState[controller]);
 }
 
 bool
 In_UnmappedButtonUp(enum Button btn, uint8_t controller)
 {
 	const bool prev = btn < BTN_STATE_COUNT ? _prevButtonState[btn] : GPAD_BTN(btn, _prevControllerState[controller]);
-	const bool cur = btn < BTN_STATE_COUNT ? In_ButtonState[btn] : GPAD_BTN(btn, In_ControllerState[controller]);
+	const bool cur = btn < BTN_STATE_COUNT ? In_buttonState[btn] : GPAD_BTN(btn, In_controllerState[controller]);
 	return prev && !cur;
 }
 
@@ -307,7 +307,7 @@ bool
 In_UnmappedButtonDown(enum Button btn, uint8_t controller)
 {
 	const bool prev = btn < BTN_STATE_COUNT ? _prevButtonState[btn] : GPAD_BTN(btn, _prevControllerState[controller]);
-	const bool cur = btn < BTN_STATE_COUNT ? In_ButtonState[btn] : GPAD_BTN(btn, In_ControllerState[controller]);
+	const bool cur = btn < BTN_STATE_COUNT ? In_buttonState[btn] : GPAD_BTN(btn, In_controllerState[controller]);
 	return !prev && cur;
 }
 
@@ -318,7 +318,7 @@ In_UnmappedAxis(enum Axis axis, uint8_t controller)
 	float ret;
 
 	if (axis < CONTROLLER_AXIS_COUNT) {
-		return In_ControllerState[controller].axis[axis];
+		return In_controllerState[controller].axis[axis];
 	} else if (axis == AXIS_MOUSE_X || axis == AXIS_MOUSE_Y) {
 		return 0.f;
 	} else {

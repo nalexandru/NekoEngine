@@ -237,7 +237,7 @@ Sys_Capabilities(void)
 bool
 Sys_ScreenVisible(void)
 {
-	return !IsIconic(E_Screen);
+	return !IsIconic(E_screen);
 }
 
 void
@@ -260,7 +260,7 @@ Sys_MessageBox(const wchar_t *title, const wchar_t *message, int icon)
 		break;
 	}
 
-	MessageBoxW((HWND)E_Screen, message, title, type);
+	MessageBoxW((HWND)E_screen, message, title, type);
 }
 
 bool

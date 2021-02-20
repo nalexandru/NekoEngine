@@ -6,10 +6,6 @@
 #include <Runtime/Runtime.h>
 #include <Engine/Component.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct Transform
 {
 	COMPONENT_BASE;
@@ -190,9 +186,4 @@ xform_move_down(struct Transform *t, float distance)
 	xform_move_up(t, -distance);
 }
 
-#ifdef __cplusplus
-}
-#endif
-
 #endif /* _SCN_TRANSOFRM_H_ */
-

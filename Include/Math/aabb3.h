@@ -273,4 +273,3 @@ aabb3_expand(
 }
 
 #endif /* _NE_MATH_AABB3_H_ */
-

@@ -132,4 +132,3 @@ plane_log(const struct plane *p, const wchar_t *name, const wchar_t *module)
 }
 
 #endif /* _NE_MATH_DEBUG_H_ */
-
