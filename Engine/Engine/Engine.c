@@ -91,10 +91,10 @@ E_Init(int argc, char *argv[])
 	else
 		Sys_LogEntry(EMOD, LOG_INFORMATION, L"%ls v%d.%d.%d", App_applicationInfo.name, App_applicationInfo.version.major,
 			App_applicationInfo.version.minor, App_applicationInfo.version.build);
-	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Copyright \u00C2\u00A9 %ls", App_applicationInfo.copyright);
+	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Copyright (C) %ls", App_applicationInfo.copyright);
 
 	Sys_LogEntry(EMOD, LOG_INFORMATION, L"%ls \"%ls\" v%ls", E_PGM_NAME, E_CODENAME, E_VER_STR);
-	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Copyright \u00C2\u00A9 %ls", E_CPY_STR);
+	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Copyright (C) %ls", E_CPY_STR);
 	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Starting up...");
 
 	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Host: %hs", Sys_Hostname());
@@ -103,7 +103,7 @@ E_Init(int argc, char *argv[])
 	Sys_LogEntry(EMOD, LOG_INFORMATION, L"\tFrequency: %d MHz", Sys_CpuFreq());
 	Sys_LogEntry(EMOD, LOG_INFORMATION, L"\tCount: %d", Sys_NumCpus());
 	Sys_LogEntry(EMOD, LOG_INFORMATION, L"\tArchitecture: %hs", Sys_Machine());
-	Sys_LogEntry(EMOD, LOG_INFORMATION, L"\tBig Endian: %hs", Sys_BigEndian() ? "True" : "False");
+	Sys_LogEntry(EMOD, LOG_INFORMATION, L"\tBig Endian: %hs", Sys_BigEndian() ? "yes" : "no");
 
 	Sys_CreateWindow();
 
@@ -153,7 +153,7 @@ E_Init(int argc, char *argv[])
 	
 	Sys_SetWindowTitle(titleBuff);
 #else
-	Sys_SetWindowTitle(App_ApplicationInfo.name);
+	Sys_SetWindowTitle(App_applicationInfo.name);
 #endif
 	
 	E_InitScriptSystem();
@@ -269,4 +269,3 @@ E_Shutdown(void)
 {
 	_shutdown = true;
 }
-

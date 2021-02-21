@@ -13,4 +13,4 @@ file (GLOB src
 set(CMAKE_C_STANDARD 11)
 
 add_library(Engine STATIC ${src})
-target_link_libraries(Engine Platform Lua PhysFS m)
+target_link_libraries(Engine Platform Lua PhysFS m dl)

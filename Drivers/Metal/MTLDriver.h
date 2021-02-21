@@ -142,6 +142,8 @@ struct PipelineLayout
 struct RenderDevice *MTL_CreateDevice(struct RenderDeviceInfo *info,
 									  struct RenderDeviceProcs *devProcs,
 									  struct RenderContextProcs *ctxProcs);
+bool MTL_Execute(id<MTLDevice> dev, struct RenderContext *ctx, bool wait);
+void MTL_WaitIdle(id<MTLDevice> dev);
 void MTL_DestroyDevice(id<MTLDevice> dev);
 
 // Pipeline
@@ -247,7 +249,7 @@ static inline MTLPixelFormat NeToMTLTextureFormat(enum TextureFormat fmt)
 	case TF_B8G8R8A8_SRGB: return MTLPixelFormatBGRA8Unorm_sRGB;
 	case TF_R16G16B16A16_SFLOAT: return MTLPixelFormatRGBA16Float;
 	case TF_R32G32B32A32_SFLOAT: return MTLPixelFormatRGBA32Float;
-	case TF_R10G10B10A2_UNORM: return MTLPixelFormatRGB10A2Unorm;
+	case TF_A2R10G10B10_UNORM: return MTLPixelFormatRGB10A2Unorm;
 	case TF_R8G8_UNORM: return MTLPixelFormatRG8Unorm;
 	case TF_R8_UNORM: return MTLPixelFormatR8Unorm;
 	case TF_ETC2_R8G8B8_UNORM: return MTLPixelFormatETC2_RGB8;
@@ -283,7 +285,7 @@ static inline enum TextureFormat MTLToNeTextureFormat(MTLPixelFormat fmt)
 	case MTLPixelFormatBGRA8Unorm_sRGB: return TF_B8G8R8A8_SRGB;
 	case MTLPixelFormatRGBA16Float: return TF_R16G16B16A16_SFLOAT;
 	case MTLPixelFormatRGBA32Float: return TF_R32G32B32A32_SFLOAT;
-	case MTLPixelFormatRGB10A2Unorm: return TF_R10G10B10A2_UNORM;
+	case MTLPixelFormatRGB10A2Unorm: return TF_A2R10G10B10_UNORM;
 	case MTLPixelFormatRG8Unorm: return TF_R8G8_UNORM;
 	case MTLPixelFormatR8Unorm: return TF_R8_UNORM;
 	case MTLPixelFormatETC2_RGB8: return TF_ETC2_R8G8B8_UNORM;

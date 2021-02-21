@@ -2,7 +2,7 @@
 
 #include "OALSound.h"
 
-size_t Au_AudioClipDataSize = sizeof(ALuint);
+size_t Au_audioClipDataSize = sizeof(ALuint);
 
 bool
 Au_InitClip(struct AudioClip *ac)

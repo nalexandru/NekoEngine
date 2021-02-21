@@ -17,6 +17,8 @@ Vk_CreateBuffer(struct RenderDevice *dev, struct BufferCreateInfo *bci)
 		.sharingMode = VK_SHARING_MODE_EXCLUSIVE
 	};
 
+	vkCreateBuffer(dev->dev, &buffInfo, Vkd_allocCb, &buff->buff);
+
 	// TODO: add VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT where needed
 
 

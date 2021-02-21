@@ -1,6 +1,7 @@
 #ifndef _SYS_MEMORY_H_
 #define _SYS_MEMORY_H_
 
+#include <stddef.h>
 #include <stdbool.h>
 
 enum MemoryHeap

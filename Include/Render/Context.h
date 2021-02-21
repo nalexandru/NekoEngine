@@ -100,7 +100,7 @@ struct RenderContextProcs
 	
 	void (*Blit)(struct RenderContext *ctx, struct Texture *dst, struct Texture *src, const struct BlitRegion *regions, uint32_t regionCount, enum BlitFilter filter);
 
-	void (*Submit)(struct RenderDevice *dev, struct RenderContext *ctx);
+	bool (*Submit)(struct RenderDevice *dev, struct RenderContext *ctx);
 };
 
 extern struct RenderDevice *Re_device;

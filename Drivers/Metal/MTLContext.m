@@ -258,6 +258,12 @@ _Blit(struct RenderContext *ctx, struct Texture *dst, struct Texture *src, const
 	
 }
 
+static bool
+_Submit(id<MTLDevice> dev, struct RenderContext *ctx)
+{
+	return false;
+}
+
 void
 MTL_InitContextProcs(struct RenderContextProcs *p)
 {
@@ -289,4 +295,5 @@ MTL_InitContextProcs(struct RenderContextProcs *p)
 	p->CopyBufferToImage = _CopyBufferToImage;
 	p->CopyImageToBuffer = _CopyImageToBuffer;
 	p->Blit = _Blit;
+	p->Submit = (bool(*)(struct RenderDevice *, struct RenderContext *))_Submit;
 }

@@ -3,7 +3,7 @@
 
 #include "OALSound.h"
 
-size_t Au_SourceSize = sizeof(struct AudioSource);
+size_t Au_sourceSize = sizeof(struct AudioSource);
 
 void
 Au_SetClip(struct AudioSource *src, Handle clip)

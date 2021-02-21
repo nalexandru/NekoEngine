@@ -56,11 +56,24 @@ MTL_CreateDevice(struct RenderDeviceInfo *info,
 	
 	devProcs->CreateDescriptorSet = (struct DescriptorSet *(*)(struct RenderDevice *dev, const struct DescriptorSetLayout *layout))MTL_CreateDescriptorSet;
 	devProcs->WriteDescriptorSet = (void(*)(struct RenderDevice *, struct DescriptorSet *, const struct DescriptorWrite *, uint32_t))MTL_WriteDescriptorSet;
-	devProcs->DestroyDescriptorSet = (void (*)(struct RenderDevice *dev, struct DescriptorSet *ds))MTL_DestroyDescriptorSet;
+	devProcs->DestroyDescriptorSet = (void(*)(struct RenderDevice *dev, struct DescriptorSet *ds))MTL_DestroyDescriptorSet;
+	
+	devProcs->Execute = (bool(*)(struct RenderDevice *, struct RenderContext *, bool))MTL_Execute;
+	devProcs->WaitIdle = (void(*)(struct RenderDevice *))MTL_WaitIdle;
 	
 	MTL_InitContextProcs(ctxProcs);
 	
 	return info->private;
+}
+
+bool MTL_Execute(id<MTLDevice> dev, struct RenderContext *ctx, bool wait)
+{
+	return false;
+}
+
+void MTL_WaitIdle(id<MTLDevice> dev)
+{
+	//
 }
 
 void

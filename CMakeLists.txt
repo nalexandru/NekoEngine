@@ -1,5 +1,5 @@
 project(NekoEngine)
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.12)
 
 if(NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE, Debug)
@@ -18,6 +18,9 @@ set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} -g2 -Ofast -ma
 
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -g2")
 
+add_compile_options(-mavx)
+add_compile_definitions(RENDER_DRIVER_BUILTIN)
+
 include_directories(Include)
 include_directories(Deps)
 include_directories(Deps/PhysFS)
@@ -30,7 +33,7 @@ add_subdirectory(Engine)
 
 add_subdirectory(Platform/UNIX)
 
-add_subdirectory(Render/Vulkan)
 add_subdirectory(Sound/OpenAL)
+add_subdirectory(Drivers/Vulkan)
 
-add_subdirectory(Claire)
+add_subdirectory(Application)

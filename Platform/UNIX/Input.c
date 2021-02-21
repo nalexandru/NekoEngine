@@ -12,7 +12,7 @@
 
 #define X11INMOD	L"X11Input"
 
-enum Button X11_Keymap[256];
+enum Button X11_keymap[256];
 
 static inline enum Button _mapKey(const int key);
 
@@ -20,7 +20,7 @@ bool
 In_SysInit(void)
 {
 	for (uint16_t i = 0; i < 256; ++i)
-		X11_Keymap[i] = _mapKey(i);
+		X11_keymap[i] = _mapKey(i);
 
 	return true;
 }
@@ -42,7 +42,7 @@ In_PointerPosition(uint16_t *x, uint16_t *y)
 	int rX, rY, wX, wY;
 	unsigned mask;
 
-	if (!XQueryPointer(X11_Display, (Window)E_Screen, &w, &w, &rX, &rY, &wX, &wY, &mask))
+	if (!XQueryPointer(X11_display, (Window)E_screen, &w, &w, &rX, &rY, &wX, &wY, &mask))
 		return;
 
 	*x = (uint16_t)wX;
@@ -52,19 +52,19 @@ In_PointerPosition(uint16_t *x, uint16_t *y)
 void
 In_SetPointerPosition(uint16_t x, uint16_t y)
 {
-	XWarpPointer(X11_Display, None, (Window)E_Screen, 0, 0, 0, 0, x, y);
-	XFlush(X11_Display);
+	XWarpPointer(X11_display, None, (Window)E_screen, 0, 0, 0, 0, x, y);
+	XFlush(X11_display);
 }
 
 void
 In_CapturePointer(bool capture)
 {
 	if (capture) {
-		XSetInputFocus(X11_Display, (Window)E_Screen, RevertToPointerRoot, CurrentTime);
-		XGrabPointer(X11_Display, (Window)E_Screen, False, ButtonPressMask | ButtonReleaseMask | PointerMotionMask,
-			GrabModeAsync, GrabModeAsync, (Window)E_Screen, None, CurrentTime);
+		XSetInputFocus(X11_display, (Window)E_screen, RevertToPointerRoot, CurrentTime);
+		XGrabPointer(X11_display, (Window)E_screen, False, ButtonPressMask | ButtonReleaseMask | PointerMotionMask,
+			GrabModeAsync, GrabModeAsync, (Window)E_screen, None, CurrentTime);
 	} else {
-		XUngrabPointer(X11_Display, CurrentTime);
+		XUngrabPointer(X11_display, CurrentTime);
 	}
 }
 
@@ -77,19 +77,19 @@ In_ShowPointer(bool show)
 	static char cursor_data[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
 	if (show) {
-		cur = XCreateFontCursor(X11_Display, XC_left_ptr);
-		XDefineCursor(X11_Display, (Window)E_Screen, cur);
-		XFreeCursor(X11_Display, cur);
+		cur = XCreateFontCursor(X11_display, XC_left_ptr);
+		XDefineCursor(X11_display, (Window)E_screen, cur);
+		XFreeCursor(X11_display, cur);
 	} else {
-		pix = XCreateBitmapFromData(X11_Display, (Window)E_Screen, cursor_data, 8, 8);
-		cur = XCreatePixmapCursor(X11_Display, pix, pix, &black, &black, 0, 0);
+		pix = XCreateBitmapFromData(X11_display, (Window)E_screen, cursor_data, 8, 8);
+		cur = XCreatePixmapCursor(X11_display, pix, pix, &black, &black, 0, 0);
 
-		XDefineCursor(X11_Display, (Window)E_Screen, cur);
-		XFreeCursor(X11_Display, cur);
-		XFreePixmap(X11_Display, pix);
+		XDefineCursor(X11_display, (Window)E_screen, cur);
+		XFreeCursor(X11_display, cur);
+		XFreePixmap(X11_display, pix);
 	}
 
-	XFlush(X11_Display);
+	XFlush(X11_display);
 }
 
 enum Button
@@ -98,7 +98,7 @@ _mapKey(int key)
 	if (key < 8 || key > 254)
 		return BTN_KEY_UNRECOGNIZED;
 
-	KeySym *ks = XGetKeyboardMapping(X11_Display, key, 1, (int *)&ks);
+	KeySym *ks = XGetKeyboardMapping(X11_display, key, 1, (int *)&ks);
 	key = ks[0];
 	XFree(ks);
 

@@ -12,12 +12,6 @@
 
 #include "VulkanDriver.h"
 
-#ifdef _WIN32
-#	define EXPORT __declspec(dllexport)
-#else
-#	define EXPORT
-#endif
-
 static bool _Init(void);
 static void _Term(void);
 static bool _EnumerateDevices(uint32_t *, struct RenderDeviceInfo *);
@@ -49,7 +43,17 @@ static uint32_t _instExtensionCount = 2;
 
 extern const char *PlatformSurfaceExtensionName;
 
+#ifdef RENDER_DRIVER_BUILTIN
+const struct RenderDriver *Re_LoadBuiltinDriver() { return &_drv; }
+#else
+#ifdef _WIN32
+#	define EXPORT __declspec(dllexport)
+#else
+#	define EXPORT
+#endif
+
 EXPORT const struct RenderDriver *Re_LoadDriver(void) { return &_drv; }
+#endif
 
 static bool
 _Init(void)

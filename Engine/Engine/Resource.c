@@ -188,7 +188,7 @@ _NewResource(const char *path, const char *type, const void *ci, bool create)
 	uint64_t path_hash = 0, type_hash = 0;
 	struct ResType *rt = NULL;
 	struct Resource *res = NULL;
-	struct ResourceLoadInfo li = { 0, 0, 0, 0 };
+	struct ResourceLoadInfo li = { 0 };
 	size_t i = 0;
 
 	if (!path || !type)

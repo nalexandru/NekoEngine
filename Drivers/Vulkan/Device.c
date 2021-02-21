@@ -53,7 +53,7 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 	vk12Features->timelineSemaphore = VK_TRUE;
 
 	if (info->features.drawIndirectCount)
-		vk12Features->drawIndirectCount;
+		vk12Features->drawIndirectCount = true;
 
 	VkPhysicalDeviceFeatures2 *features = Sys_Alloc(sizeof(*features), 1, MH_Transient);
 	features->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
@@ -216,7 +216,6 @@ error:
 bool
 Vk_Execute(struct RenderDevice *dev, struct RenderContext *ctx, bool wait)
 {
-	VkPipelineStageFlags waitFlags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 	VkSubmitInfo si = 
 	{
 		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,

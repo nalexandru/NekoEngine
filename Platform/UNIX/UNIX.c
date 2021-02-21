@@ -16,12 +16,27 @@
 
 #include "UNIXPlatform.h"
 
-Display *X11_Display;
-XVisualInfo X11_VisualInfo;
+#if (defined(_XOPEN_SOURCE) && _XOPEN_SOURCE >= 600)
+#define	USE_POSIX_MEMALIGN
+#elif (defined(__GLIBC__) && ((__GLIBC__ >= 2 && __GLIBC_MINOR__ >= 8) || __GLIBC__ > 2) && defined(__LP64__)) \
+		|| (defined(__FreeBSD__) && !defined(__arm__) && !defined(__mips__)) \
+		|| defined(__APPLE__)
+#define	USE_MALLOC
+#elif __STDC_VERSION__ >= 201112L
+#define USE_ALIGNED_ALLOC
+#elif __SSE__
+#include <intrin.h>
+#define USE_MM_MALLLOC
+#else
+#define USE_MEMALIGN
+#endif
+
+Display *X11_display;
+XVisualInfo X11_visualInfo;
 Atom X11_WM_PROTOCOLS, X11_WM_DELETE_WINDOW, X11_NET_WM_STATE, X11_NET_WM_PID,
 	X11_NET_WM_WINDOW_TYPE, X11_NET_WM_WINDOW_TYPE_NORMAL, X11_NET_WM_BYPASS_COMPOSITOR;
 
-static int _numCpus = 0, _cpuFreq = 0;
+static int32_t _numCpus = 0, _cpuFreq = 0;
 static char _cpuName[128] = "Unknown";
 static char _colors[4][8] =
 {
@@ -143,18 +158,12 @@ Sys_Yield(void)
 const char *
 Sys_Hostname(void)
 {
-	if (!_uname.sysname[0])
-		uname(&_uname);
-
 	return _uname.nodename;
 }
 
 const char *
 Sys_Machine(void)
 {
-	if (!_uname.sysname[0])
-		uname(&_uname);
-
 	return _uname.machine;
 }
 
@@ -164,10 +173,28 @@ Sys_CpuName(void)
 	return _cpuName;
 }
 
+int32_t
+Sys_CpuFreq(void)
+{
+	return _cpuFreq;
+}
+
 int
 Sys_NumCpus(void)
 {
 	return _numCpus;
+}
+
+const char *
+Sys_OperatingSystem(void)
+{
+	return _uname.sysname;
+}
+
+const char *
+Sys_OperatingSystemVersion(void)
+{
+	return _uname.release;
 }
 
 enum MachineType
@@ -186,12 +213,6 @@ bool
 Sys_ScreenVisible(void)
 {
 	return true;
-}
-
-bool
-Sys_UniversalWindows(void)
-{
-	return false;
 }
 
 void
@@ -214,23 +235,23 @@ Sys_MessageBox(const wchar_t *title, const wchar_t *message, int icon)
 			break;
 	}
 
-	MessageBox((HWND)E_Screen, message, title, type);*/
+	MessageBox((HWND)E_screen, message, title, type);*/
 }
 
 bool
 Sys_ProcessEvents(void)
 {
 	XEvent ev, nev;
-	while (XPending(X11_Display)) {
-		XNextEvent(X11_Display, &ev);
+	while (XPending(X11_display)) {
+		XNextEvent(X11_display, &ev);
 		
 		switch (ev.type) {
 		case KeyPress: {
-			In_ButtonState[X11_Keymap[ev.xkey.keycode]] = true;
+			In_buttonState[X11_keymap[ev.xkey.keycode]] = true;
 		} break;
 		case KeyRelease: {
-			if (XEventsQueued(X11_Display, QueuedAfterReading)) {
-				XPeekEvent(X11_Display, &nev);
+			if (XEventsQueued(X11_display, QueuedAfterReading)) {
+				XPeekEvent(X11_display, &nev);
 				
 				if (nev.type == KeyPress &&
 						nev.xkey.time == ev.xkey.time &&
@@ -238,26 +259,26 @@ Sys_ProcessEvents(void)
 					break;
 			}
 			
-			In_ButtonState[X11_Keymap[ev.xkey.keycode]] = false;
+			In_buttonState[X11_keymap[ev.xkey.keycode]] = false;
 		} break;
 		case ButtonPress:
 		case ButtonRelease: {
 			switch (ev.xbutton.button) {
-			case Button1: In_ButtonState[BTN_MOUSE_LMB] = ev.type == ButtonPress;
-			case Button2: In_ButtonState[BTN_MOUSE_RMB] = ev.type == ButtonPress;
-			case Button3: In_ButtonState[BTN_MOUSE_MMB] = ev.type == ButtonPress;
-			case Button4: In_ButtonState[BTN_MOUSE_BTN4] = ev.type == ButtonPress;
-			case Button5: In_ButtonState[BTN_MOUSE_BTN5] = ev.type == ButtonPress;
+			case Button1: In_buttonState[BTN_MOUSE_LMB] = ev.type == ButtonPress;
+			case Button2: In_buttonState[BTN_MOUSE_RMB] = ev.type == ButtonPress;
+			case Button3: In_buttonState[BTN_MOUSE_MMB] = ev.type == ButtonPress;
+			case Button4: In_buttonState[BTN_MOUSE_BTN4] = ev.type == ButtonPress;
+			case Button5: In_buttonState[BTN_MOUSE_BTN5] = ev.type == ButtonPress;
 			}
 		} break;
 		case ConfigureNotify: {
 			XConfigureEvent ce = ev.xconfigure;
 			
-			if (ce.width == *E_ScreenWidth && ce.height == *E_ScreenHeight)
+			if (ce.width == *E_screenWidth && ce.height == *E_screenHeight)
 				break;
 			
-			*E_ScreenWidth = ce.width;
-			*E_ScreenHeight = ce.height;
+			*E_screenWidth = ce.width;
+			*E_screenHeight = ce.height;
 			
 			//ScreenResized
 		} break;
@@ -321,6 +342,63 @@ Sys_UnloadLibrary(void *lib)
 		dlclose(lib);
 }
 
+void
+Sys_Sleep(uint32_t sec)
+{
+	sleep(sec);
+}
+
+void
+Sys_MSleep(uint32_t msec)
+{
+	usleep(msec * 1000);
+}
+
+void
+Sys_USleep(uint32_t usec)
+{
+	usleep(usec);
+}
+
+void *
+Sys_AlignedAlloc(size_t size, size_t alignment)
+{
+#if defined(USE_POSIX_MEMALIGN)
+	void *mem;
+	if (posix_memalign(&mem, alignment, size))
+		return NULL;
+	return mem;
+#elif defined(USE_MEMALIGN)
+	return memalign(alignment, size);
+#elif defined(USE_MALLOC)
+	return malloc(size);
+#elif defined(USE_ALIGNED_ALLOC)
+	return aligned_alloc(alignment, size);
+#elif defined(USE_MM_MALLOC)
+	return _mm_malloc(size, alignment);
+#else
+#error	Aligned memory allocation not implemented for this platform
+#endif
+}
+
+void
+Sys_AlignedFree(void *mem)
+{
+#if defined(USE_MALLOC) || defined(USE_ALIGNED_ALLOC) || defined(USE_MEMALIGN) || defined(USE_POSIX_MEMALIGN)
+	return free(mem);
+#elif defined(USE_MM_MALLOC)
+	return _mm_free(mem);
+#else
+#error	Aligned memory allocation not implemented for this platform
+#endif
+}
+
+void
+Sys_ZeroMemory(void *mem, size_t len)
+{
+	memset(mem, 0x0, len);
+}
+
 bool
 Sys_InitPlatform(void)
 {
@@ -334,21 +412,23 @@ Sys_InitPlatform(void)
 	#endif
 #endif
 
-	X11_Display = XOpenDisplay(NULL);
-	if (!X11_Display)
+	uname(&_uname);
+
+	X11_display = XOpenDisplay(NULL);
+	if (!X11_display)
 		return false;
 	
-	int screen = XDefaultScreen(X11_Display);
-	if (!XMatchVisualInfo(X11_Display, screen, 24, TrueColor, &X11_VisualInfo))
+	int screen = XDefaultScreen(X11_display);
+	if (!XMatchVisualInfo(X11_display, screen, 24, TrueColor, &X11_visualInfo))
 		return false;
 	
-	X11_NET_WM_STATE = XInternAtom(X11_Display, "_NET_WM_STATE", False);
-	X11_NET_WM_PID = XInternAtom(X11_Display, "_NET_WM_PID", False);
-	X11_NET_WM_WINDOW_TYPE = XInternAtom(X11_Display, "_NET_WM_WINDOW_TYPE", False);
-	X11_NET_WM_WINDOW_TYPE_NORMAL = XInternAtom(X11_Display, "_NET_WM_WINDOW_TYPE_NORMAL", False);
-	X11_NET_WM_BYPASS_COMPOSITOR = XInternAtom(X11_Display, "_NET_WM_BYPASS_COMPOSITOR", False);
-	X11_WM_PROTOCOLS = XInternAtom(X11_Display, "WM_PROTOCOLS", False);
-	X11_WM_DELETE_WINDOW = XInternAtom(X11_Display, "WM_DELETE_WINDOW", False);
+	X11_NET_WM_STATE = XInternAtom(X11_display, "_NET_WM_STATE", False);
+	X11_NET_WM_PID = XInternAtom(X11_display, "_NET_WM_PID", False);
+	X11_NET_WM_WINDOW_TYPE = XInternAtom(X11_display, "_NET_WM_WINDOW_TYPE", False);
+	X11_NET_WM_WINDOW_TYPE_NORMAL = XInternAtom(X11_display, "_NET_WM_WINDOW_TYPE_NORMAL", False);
+	X11_NET_WM_BYPASS_COMPOSITOR = XInternAtom(X11_display, "_NET_WM_BYPASS_COMPOSITOR", False);
+	X11_WM_PROTOCOLS = XInternAtom(X11_display, "WM_PROTOCOLS", False);
+	X11_WM_DELETE_WINDOW = XInternAtom(X11_display, "WM_DELETE_WINDOW", False);
 
 	_CpuInfo();
 
@@ -358,7 +438,7 @@ Sys_InitPlatform(void)
 void
 Sys_TermPlatform(void)
 {
-	XCloseDisplay(X11_Display);
+	XCloseDisplay(X11_display);
 }
 
 void

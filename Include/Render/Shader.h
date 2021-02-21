@@ -28,9 +28,9 @@ enum ShaderStage
 	SS_MESH			= 0x00000080
 };
 
-static inline bool Re_LoadShaders(void);
-static inline void Re_UnloadShaders(void);
+static inline bool Re_LoadShaders(void) { return false; }
+static inline void Re_UnloadShaders(void) { }
 
-static inline struct Shader *Re_GetShader(const wchar_t *name, enum ShaderType type);
+static inline struct Shader *Re_GetShader(const wchar_t *name, enum ShaderType type) { return NULL; }
 
 #endif /* _RE_SHADER_H_ */
