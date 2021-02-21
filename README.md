@@ -43,22 +43,22 @@ This repository is a mirror which is not frequently updated.
 ### Linux
 
 #### Prerequisites
-* gcc
-* cmake
-* X11, Vulkan & OpenAL development files
-* On Debian based systems you need to install the following packages:
-	* gcc
-	* libx11-dev
-	* libopenal-dev
-	* libvulkan-dev
-	* vulkan-headers
-	* vulkan-validationlayers
-	* cmake
+* gcc 4.9+ or clang 3.3+
+* glibc 2.28+
+* cmake 2.8+
+* X11, Vlkan & OpenAL development files
+* For Arch based systems run the following:
+```
+pacman -S gcc libx11 vulkan-devel openal cmake
+```
 
 #### Build
 1. Clone the repository
 2. Clone the data repository found at https://github.com/nalexandru/NekoEngineData in SOURCE_DIR\bin\Data
 3. Build the project with CMake
+
+#### Notes
+* On Ubuntu 20.10 and earlier you must install the Vulkan SDK, because the headers provided in the repositories are too old.
 
 ### Mac OS X
 
