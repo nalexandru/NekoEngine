@@ -14,6 +14,7 @@ Supported platforms:
 * Windows Vista or newer
 * Linux on x86_64 & arm64 (ppc64 should work too, but i can't test it)
 * macOS 11.0+ x86_64 & arm64
+* iOS 14.4+
 
 Supported rendering APIs:
 * Vulkan (in-progress)
@@ -63,7 +64,7 @@ pacman -S gcc libx11 vulkan-devel openal cmake
 ### macOS / iOS
 
 #### Prerequisites
-* Xcode
+* Xcode 12
 
 #### Build
 1. Clone the repository
