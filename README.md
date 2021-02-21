@@ -12,8 +12,8 @@ Cross-platform game engine.
 
 Supported platforms:
 * Windows Vista or newer
-* Linux on x86_64 & arm64
-* macOS 11.0 x86_64 & arm64
+* Linux on x86_64 & arm64 (ppc64 should work too, but i can't test it)
+* macOS 11.0+ x86_64 & arm64
 
 Supported rendering APIs:
 * Vulkan (in-progress)
@@ -43,10 +43,10 @@ This repository is a mirror which is not frequently updated.
 ### Linux
 
 #### Prerequisites
-* gcc 4.9+ or clang 3.3+
+* gcc 4.9+ or clang 3.3+ (any compiler with C11 support should work)
 * glibc 2.28+
-* cmake 2.8+
-* X11, Vlkan & OpenAL development files
+* cmake 3.12+
+* X11, Vulkan & OpenAL development files
 * For Arch based systems run the following:
 ```
 pacman -S gcc libx11 vulkan-devel openal cmake
@@ -60,7 +60,7 @@ pacman -S gcc libx11 vulkan-devel openal cmake
 #### Notes
 * On Ubuntu 20.10 and earlier you must install the Vulkan SDK, because the headers provided in the repositories are too old.
 
-### Mac OS X
+### macOS / iOS
 
 #### Prerequisites
 * Xcode
