@@ -71,6 +71,9 @@ pacman -S gcc libx11 vulkan-devel openal cmake
 2. Clone the data repository found at https://github.com/nalexandru/NekoEngineData in SOURCE_DIR\build\Data
 3. Build NekoEngine.xcodeproj
 
+#### Notes
+* It has only been tested on a M1 Mac Mini.
+
 ## 3rd Party libraries
 
 * PhysFS - https://icculus.org/physfs/
