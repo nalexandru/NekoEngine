@@ -33,14 +33,14 @@ static void _gltfRelease(const struct cgltf_memory_options* memory_options, cons
 
 #define BUFFER_PTR(acc) ((uint8_t *)acc->buffer_view->buffer->data + acc->buffer_view->offset + acc->offset)
 
-static inline void _LoadMesh(const cgltf_mesh *mesh, Array *vertices, Array *indices, Array *meshes, Array *materials);
+static inline void _LoadMesh(const cgltf_mesh *mesh, struct Array *vertices, struct Array *indices, struct Array *meshes, struct Array *materials);
 
 bool
 E_LoadglTFAsset(const char *baseDir, struct Stream *stm, struct Model *m)
 {
 	cgltf_options opt = { 0 };
 	cgltf_data *gltf = NULL;
-	Array vertices = { 0 }, indices = { 0 }, meshes = { 0 }, materials = { 0 }, images = { 0 };
+	struct Array vertices = { 0 }, indices = { 0 }, meshes = { 0 }, materials = { 0 }, images = { 0 };
 	uint32_t i = 0, j = 0;
 
 	opt.memory.alloc = _gltfAlloc;
@@ -269,7 +269,7 @@ _gltfRelease(const struct cgltf_memory_options *memoryOptions, const struct cglt
 }
 
 void
-_LoadMesh(const cgltf_mesh *mesh, Array *vertices, Array *indices, Array *meshes, Array *materials)
+_LoadMesh(const cgltf_mesh *mesh, struct Array *vertices, struct Array *indices, struct Array *meshes, struct Array *materials)
 {
 	float *positions = NULL, *normals = NULL, *tangents = NULL, *texcoords = NULL;
 	uint32_t i, j;

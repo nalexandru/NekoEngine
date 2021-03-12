@@ -6,7 +6,7 @@
 #include "ECS.h"
 
 static int64_t _next_handle;
-static Array _component_types;
+static struct Array _component_types;
 
 #define COMP_MOD	L"Component"
 
@@ -20,7 +20,7 @@ CompHandle
 E_CreateComponentS(struct Scene *s, const wchar_t *typeName, EntityHandle owner, const void **args)
 {
 	CompTypeId id = 0;
-	Array *a = NULL;
+	struct Array *a = NULL;
 	struct CompBase *comp = NULL;
 	struct CompType *type = NULL;
 	struct CompHandleData *handle = NULL;
@@ -72,7 +72,7 @@ E_CreateComponentS(struct Scene *s, const wchar_t *typeName, EntityHandle owner,
 CompHandle
 E_CreateComponentIdS(struct Scene *s, CompTypeId id, EntityHandle owner, const void **args)
 {
-	Array *a = NULL;
+	struct Array *a = NULL;
 	struct CompType *type = NULL;
 	struct CompBase *comp = NULL;
 	struct CompHandleData *handle = NULL;
@@ -117,7 +117,7 @@ E_DestroyComponentS(struct Scene *s, CompHandle comp)
 	struct CompType *type = NULL;
 	uint8_t *dst = NULL, *src = NULL;
 	size_t dst_index = 0;
-	Array *a = NULL;
+	struct Array *a = NULL;
 
 	handle = _HandlePtr(s, comp);
 	if (!handle)
@@ -139,7 +139,7 @@ E_DestroyComponentS(struct Scene *s, CompHandle comp)
 	if (type->destroy)
 		type->destroy(dst);
 
-	memcpy(dst, src, a->elem_size);
+	memcpy(dst, src, a->elemSize);
 
 	handle = ((struct CompBase *)dst)->_self;
 	handle->index = dst_index;
@@ -150,7 +150,7 @@ E_DestroyComponentS(struct Scene *s, CompHandle comp)
 void *
 E_ComponentPtrS(struct Scene *s, CompHandle comp)
 {
-	Array *a = NULL;
+	struct Array *a = NULL;
 	struct CompHandleData *handle = NULL;
 
 	handle = _HandlePtr(s, comp);
@@ -194,7 +194,7 @@ E_ComponentTypeId(const wchar_t *type_name)
 size_t
 E_ComponentCountS(struct Scene *s, CompTypeId type)
 {
-	return ((Array *)Rt_ArrayGet(&s->compData, type))->count;
+	return ((struct Array *)Rt_ArrayGet(&s->compData, type))->count;
 }
 
 EntityHandle
@@ -231,7 +231,7 @@ E_RegisterComponent(const wchar_t *name, size_t size, size_t alignment, CompInit
 	return Rt_ArrayAdd(&_component_types, &type);
 }
 
-const Array *
+const struct Array *
 E_GetAllComponentsS(struct Scene *s, CompTypeId type)
 {
 	if (type >= s->compData.count)
@@ -260,7 +260,7 @@ E_InitSceneComponents(struct Scene *s)
 {
 	size_t i = 0;
 
-	if (!Rt_InitArray(&s->compData, _component_types.count, sizeof(Array)))
+	if (!Rt_InitArray(&s->compData, _component_types.count, sizeof(struct Array)))
 		return false;
 
 	if (!Rt_InitArray(&s->compHandle, 100, sizeof(struct CompHandleData)))
@@ -284,7 +284,7 @@ E_TermSceneComponents(struct Scene *s)
 	size_t i = 0, j = 0;
 	for (i = 0; i < s->compData.count; ++i) {
 		struct CompType *type = Rt_ArrayGet(&_component_types, i);
-		Array *a = Rt_ArrayGet(&s->compData, i);
+		struct Array *a = Rt_ArrayGet(&s->compData, i);
 
 		if (type->destroy)
 			for (j = 0; j < a->count; ++j)

@@ -12,7 +12,7 @@ struct Scene
 	wchar_t name[64];
 	char path[256];
 	bool loaded;
-	Array entities, compData, compHandle;
+	struct Array entities, compData, compHandle;
 	Handle environmentMap;
 };
 

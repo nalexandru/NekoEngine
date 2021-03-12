@@ -32,6 +32,13 @@ enum SystemCapabilityFlags
 	SC_MMIO = 0x01
 };
 
+enum SystemDirectory
+{
+	SD_SAVE_GAME,
+	SD_APP_DATA,
+	SD_TEMP
+};
+
 bool Sys_Init(void);
 void Sys_Term(void);
 
@@ -67,6 +74,10 @@ void Sys_UnloadLibrary(void *lib);
 void Sys_Sleep(uint32_t sec);
 void Sys_MSleep(uint32_t msec);
 void Sys_USleep(uint32_t usec);
+
+void Sys_DirectoryPath(enum SystemDirectory sd, char *out, size_t len);
+bool Sys_DirectoryExists(const char *path);
+bool Sys_CreateDirectory(const char *path);
 
 // Compatibility shivs
 void *reallocarray(void *ptr, size_t nmemb, size_t size);

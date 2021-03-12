@@ -6,6 +6,7 @@
 #include <Engine/Types.h>
 #include <Render/Buffer.h>
 #include <Render/Texture.h>
+#include <Render/Pipeline.h>
 #include <Render/RenderPass.h>
 #include <Render/Framebuffer.h>
 #include <Render/DescriptorSet.h>
@@ -28,13 +29,9 @@
 #import <Metal/Metal.h>
 #import <QuartzCore/CAMetalLayer.h>
 
-struct Shader
-{
-	id<MTLFunction> function;
-};
-
-#define PS_RENDER	0
-#define PS_COMPUTE	1
+#define PS_RENDER		0
+#define PS_COMPUTE		1
+#define PS_RAY_TRACING	2
 struct Pipeline
 {
 	uint32_t type;
@@ -51,6 +48,7 @@ struct Texture
 {
 	id<MTLTexture> tex;
 	struct TextureDesc desc;
+	enum TextureLayout layout;
 };
 
 struct Buffer
@@ -94,6 +92,8 @@ struct Framebuffer
 struct RenderPass
 {
 	MTLRenderPassDescriptor *desc;
+	uint32_t attachmentCount;
+	MTLPixelFormat* attachmentFormats;
 };
 
 struct DescriptorSetLayout
@@ -101,31 +101,40 @@ struct DescriptorSetLayout
 	struct DescriptorSetLayoutDesc desc;
 };
 
-struct MTLDrvBufferBinding
-{
-	uint64_t offset, size;
-	id<MTLBuffer> buffer;
-};
-
-struct MTLDrvTextureBinding
-{
-	id<MTLTexture> texture;
-};
-
 struct MTLDrvBinding
 {
-	uint32_t first;
-	uint32_t count;
-	enum ShaderStage stage;
+	union {
+		struct {
+			id<MTLBuffer> *ptr;
+			NSUInteger *offset;
+		} buffer;
+		id<MTLTexture> *texture;
+	};
+};
+
+struct MTLDrvDescriptors
+{
+	uint32_t bufferCount;
+	id<MTLBuffer> *buffers;
+	NSUInteger *offsets;
+	
+	uint32_t textureCount;
+	id<MTLTexture> *textures;
 };
 
 struct DescriptorSet
 {
 	const struct DescriptorSetLayout *layout;
-	struct MTLDrvBufferBinding *buffers;
-	struct MTLDrvTextureBinding *textures;
+//	struct MTLDrvBufferBinding *buffers;
+//	struct MTLDrvTextureBinding *textures;
+//	struct MTLDrvBinding *bindings;
+//	uint32_t bindingCount, bufferCount, textureCount;
+	
+	// new
+	uint32_t bindingCount;
 	struct MTLDrvBinding *bindings;
-	uint32_t bindingCount, bufferCount, textureCount;
+	
+	struct MTLDrvDescriptors vertex, fragment, compute;
 };
 
 struct PipelineLayout
@@ -149,9 +158,9 @@ void MTL_DestroyDevice(id<MTLDevice> dev);
 // Pipeline
 struct PipelineLayout *MTL_CreatePipelineLayout(id<MTLDevice> dev, const struct PipelineLayoutDesc *desc);
 void MTL_DestroyPipelineLayout(id<MTLDevice> dev, struct PipelineLayout *layout);
-struct Pipeline *MTL_GraphicsPipeline(id<MTLDevice> dev, struct Shader *sh, uint64_t flags, struct BlendAttachmentDesc *at, uint32_t atCount);
+struct Pipeline *MTL_GraphicsPipeline(id<MTLDevice> dev, const struct GraphicsPipelineDesc *gpDesc);
 struct Pipeline *MTL_ComputePipeline(id<MTLDevice> dev, struct Shader *sh);
-struct Pipeline *MTL_RayTracingPipeline(id<MTLDevice> dev, struct ShaderBindingTable *sbt);
+struct Pipeline *MTL_RayTracingPipeline(id<MTLDevice> dev, struct ShaderBindingTable *sbt, uint32_t maxDepth);
 void MTL_LoadPipelineCache(id<MTLDevice> dev);
 void MTL_SavePipelineCache(id<MTLDevice> dev);
 
@@ -175,6 +184,7 @@ void MTL_DestroyContext(id<MTLDevice> dev, struct RenderContext *ctx);
 // Texture
 struct Texture *MTL_CreateTexture(id<MTLDevice> dev, const struct TextureCreateInfo *tci);
 const struct TextureDesc *MTL_TextureDesc(const struct Texture *tex);
+enum TextureLayout MTL_TextureLayout(const struct Texture *tex);
 void MTL_DestroyTexture(id<MTLDevice> dev, struct Texture *tex);
 
 // Buffer
@@ -204,6 +214,11 @@ void MTL_DestroyDescriptorSetLayout(id<MTLDevice> dev, struct DescriptorSetLayou
 struct DescriptorSet *MTL_CreateDescriptorSet(id<MTLDevice> dev, const struct DescriptorSetLayout *layout);
 void MTL_WriteDescriptorSet(id<MTLDevice> dev, struct DescriptorSet *ds, const struct DescriptorWrite *writes, uint32_t writeCount);
 void MTL_DestroyDescriptorSet(id<MTLDevice> dev, struct DescriptorSet *ds);
+
+// Shader
+bool MTL_InitLibrary(id<MTLDevice> dev);
+id<MTLFunction> MTL_ShaderModule(id<MTLDevice> dev, const char *name);
+void MTL_TermLibrary(void);
 
 // Utility functions
 static inline MTLResourceOptions
@@ -306,6 +321,42 @@ static inline enum TextureFormat MTLToNeTextureFormat(MTLPixelFormat fmt)
 	case MTLPixelFormatBC7_RGBAUnorm_sRGB: return TF_BC7_SRGB;
 #endif
 	default: return TF_INVALID;
+	}
+}
+
+static inline MTLBlendOperation NeToMTLBlendOperation(enum BlendOperation op)
+{
+	switch (op) {
+	case RE_BOP_ADD: return MTLBlendOperationAdd;
+	case RE_BOP_SUBTRACT: return MTLBlendOperationSubtract;
+	case RE_BOP_REVERSE_SUBTRACT: return MTLBlendOperationReverseSubtract;
+	case RE_BOP_MIN: return MTLBlendOperationMin;
+	case RE_BOP_MAX: return MTLBlendOperationMax;
+	}
+}
+
+static inline MTLBlendFactor NeToMTLBlendFactor(enum BlendFactor bf)
+{
+	switch (bf) {
+	case RE_BF_ZERO: return MTLBlendFactorZero;
+	case RE_BF_ONE: return MTLBlendFactorOne;
+	case RE_BF_SRC_COLOR: return MTLBlendFactorSourceColor;
+	case RE_BF_ONE_MINUS_SRC_COLOR: return MTLBlendFactorOneMinusSourceColor;
+	case RE_BF_DST_COLOR: return MTLBlendFactorDestinationColor;
+	case RE_BF_ONE_MINUS_DST_COLOR: return MTLBlendFactorOneMinusDestinationColor;
+	case RE_BF_SRC_ALPHA: return MTLBlendFactorSourceAlpha;
+	case RE_BF_ONE_MINUS_SRC_ALPHA: return MTLBlendFactorOneMinusSourceAlpha;
+	case RE_BF_DST_ALPHA: return MTLBlendFactorDestinationAlpha;
+	case RE_BF_ONE_MINUS_DST_ALPHA: return MTLBlendFactorOneMinusDestinationAlpha;
+	case RE_BF_CONSTANT_COLOR: return MTLBlendFactorBlendColor;
+	case RE_BF_ONE_MINUS_CONSTANT_COLOR: return MTLBlendFactorOneMinusBlendColor;
+	case RE_BF_CONSTANT_ALPHA: return MTLBlendFactorBlendAlpha;
+	case RE_BF_ONE_MINUS_CONSTANT_ALPHA: return MTLBlendFactorOneMinusBlendAlpha;
+	case RE_BF_SRC_ALPHA_SATURATE: return MTLBlendFactorSourceAlphaSaturated;
+	case RE_BF_SRC1_COLOR: return MTLBlendFactorSource1Color;
+	case RE_BF_ONE_MINUS_SRC1_COLOR: return MTLBlendFactorOneMinusSource1Color;
+	case RE_BF_SRC1_ALPHA: return MTLBlendFactorSource1Alpha;
+	case RE_BF_ONE_MINUS_SRC1_ALPHA: return MTLBlendFactorOneMinusSource1Alpha;
 	}
 }
 

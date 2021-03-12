@@ -29,9 +29,9 @@ struct RenderDeviceInfo
 
 struct RenderDeviceProcs
 {
-	struct Pipeline *(*GraphicsPipeline)(struct RenderDevice *dev, struct Shader *sh, uint64_t flags, const struct BlendAttachmentDesc *at, uint32_t atCount);
+	struct Pipeline *(*GraphicsPipeline)(struct RenderDevice *dev, const struct GraphicsPipelineDesc *desc);
 	struct Pipeline *(*ComputePipeline)(struct RenderDevice *dev, struct Shader *sh);
-	struct Pipeline *(*RayTracingPipeline)(struct RenderDevice *dev, struct ShaderBindingTable *sbt);
+	struct Pipeline *(*RayTracingPipeline)(struct RenderDevice *dev, struct ShaderBindingTable *sbt, uint32_t maxDepth);
 	
 	void (*SetAttachment)(struct Framebuffer *fb, uint32_t pos, struct Texture *tex);
 	
@@ -47,6 +47,7 @@ struct RenderDeviceProcs
 	
 	struct Texture *(*CreateTexture)(struct RenderDevice *dev, const struct TextureCreateInfo *tci);
 	const struct TextureDesc *(*TextureDesc)(const struct Texture *tex);
+	enum TextureLayout (*TextureLayout)(const struct Texture *tex);
 	void (*DestroyTexture)(struct RenderDevice *dev, struct Texture *tex);
 	
 	struct Buffer *(*CreateBuffer)(struct RenderDevice *dev, const struct BufferCreateInfo *bci);
@@ -81,6 +82,8 @@ struct RenderDeviceProcs
 	
 	Swapchain (*CreateSwapchain)(struct RenderDevice *dev, Surface surface);
 	void (*DestroySwapchain)(struct RenderDevice *dev, Swapchain swapchain);
+	
+	void *(*ShaderModule)(struct RenderDevice *dev, const char *name);
 
 	void (*WaitIdle)(struct RenderDevice *dev);
 };

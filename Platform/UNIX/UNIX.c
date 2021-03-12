@@ -3,16 +3,19 @@
 #include <sched.h>
 #include <fcntl.h>
 #include <dlfcn.h>
+#include <errno.h>
 #include <unistd.h>
 #include <pthread.h>
 #include <sys/time.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
 #include <sys/utsname.h>
 
 #include <Input/Input.h>
 #include <System/System.h>
 #include <System/Memory.h>
 #include <Engine/Engine.h>
+#include <Engine/Application.h>
 
 #include "UNIXPlatform.h"
 
@@ -358,6 +361,57 @@ void
 Sys_USleep(uint32_t usec)
 {
 	usleep(usec);
+}
+
+void
+Sys_DirectoryPath(enum SystemDirectory sd, char *out, size_t len)
+{
+	wchar_t *path = Sys_Alloc(sizeof(wchar_t *), len, MH_Transient);
+	
+	switch (sd) {
+	case SD_SAVE_GAME: swprintf(path, len, L"%hs/.config/%ls/saves", getenv("HOME"), App_applicationInfo.name); break; 
+	case SD_APP_DATA: swprintf(path, len, L"%hs/.config/%ls/data", getenv("HOME"), App_applicationInfo.name); break; 
+	case SD_TEMP: swprintf(path, len, L"/tmp/"); break;
+	}
+	
+	wcstombs(out, path, len);
+}
+
+bool
+Sys_DirectoryExists(const char *path)
+{
+	struct stat st;
+	return !stat(path, &st);
+}
+
+bool
+Sys_CreateDirectory(const char *path)
+{
+	if (!mkdir(path, 0700))
+		return true;
+		
+	if (errno != ENOENT)
+		return false;
+		
+	char *dir = Sys_Alloc(sizeof(*dir), 4096, MH_Transient);
+	memcpy(dir, path, strlen(path));
+	
+	for (char *p = dir + 1; *p; ++p) {
+		if (*p != '/')
+			continue;
+			
+		*p = 0x0;
+		
+		if (mkdir(dir, 0700) && errno != EEXIST)
+			return false;
+			
+		*p = '/';
+	}
+	
+	if (mkdir(path, 0700))
+		return errno == EEXIST;
+	else
+		return true;
 }
 
 void *

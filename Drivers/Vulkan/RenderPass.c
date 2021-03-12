@@ -21,6 +21,8 @@ Vk_CreateRenderPass(struct RenderDevice *dev, const struct RenderPassDesc *desc)
 		atDesc[i].samples = desc->attachments[i].samples;
 		atDesc[i].loadOp = desc->attachments[i].loadOp;
 		atDesc[i].storeOp = desc->attachments[i].storeOp;
+		atDesc[i].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		atDesc[i].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		atDesc[i].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		atDesc[i].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 

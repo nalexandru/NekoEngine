@@ -8,7 +8,7 @@
 #include <Render/Buffer.h>
 #include <Render/Texture.h>
 #include <Render/Framebuffer.h>
-#include <Runtime/Runtime.h>
+#include <Runtime/Array.h>
 
 #define VK_ENABLE_BETA_EXTENSIONS
 #include "volk.h"
@@ -20,16 +20,20 @@ struct RenderDevice
 	uint32_t graphicsFamily, computeFamily, transferFamily;
 	VkPhysicalDevice physDev;
 	VkPhysicalDeviceProperties physDevProps;
+	VkPhysicalDeviceMemoryProperties physDevMemProps;
 	VkSemaphore frameSemaphore;
 	uint64_t semaphoreValue;
 	uint64_t *frameValues;
+	VkCommandPool driverTransferPool;
+	VkFence driverTransferFence;
 };
 
 struct RenderContext
 {
 	VkCommandBuffer cmdBuffer;
+	struct Pipeline *boundPipeline;
 	VkCommandPool *graphicsPools, *transferPools, *computePools;
-	Array *graphicsCmdBuffers, *transferCmdBuffers, *computeCmdBuffers;
+	struct Array *graphicsCmdBuffers, *transferCmdBuffers, *computeCmdBuffers;
 	VkFence executeFence;
 	VkDevice dev;
 };
@@ -57,6 +61,7 @@ struct Buffer
 {
 	VkBuffer buff;
 	struct BufferDesc desc;
+	VkDeviceMemory memory;
 };
 
 struct Texture
@@ -82,8 +87,19 @@ struct RenderPass
 struct Pipeline
 {
 	VkPipeline pipeline;
-	VkPipelineLayout layout;
 	VkPipelineBindPoint bindPoint;
+};
+
+struct PipelineLayout
+{
+	VkPipelineLayout layout;
+};
+
+struct DescriptorSetLayout
+{
+	VkDescriptorSetLayout layout;
+	uint32_t sizeCount;
+	VkDescriptorPoolSize *sizes;
 };
 
 #define VKST_BINARY		0
@@ -94,9 +110,15 @@ struct Semaphore
 	uint64_t value;
 };
 
+struct AccelerationStructure
+{
+	VkAccelerationStructureKHR as;
+};
+
 extern VkInstance Vkd_inst;
 extern VkAllocationCallbacks *Vkd_allocCb;
-extern Array Vkd_contexts;
+extern struct Array Vkd_contexts;
+extern VkCommandPool Vkd_transferPool;
 
 // Device
 struct RenderDevice *Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProcs, struct RenderContextProcs *ctxProcs);
@@ -105,9 +127,11 @@ void Vk_WaitIdle(struct RenderDevice *dev);
 void Vk_DestroyDevice(struct RenderDevice *dev);
 
 // Pipeline
-struct Pipeline *Vk_GraphicsPipeline(struct RenderDevice * dev, struct Shader * sh, uint64_t flags, const struct BlendAttachmentDesc *atDesc, uint32_t atCount);
+struct PipelineLayout *Vk_CreatePipelineLayout(struct RenderDevice *dev, const struct PipelineLayoutDesc *desc);
+void Vk_DestroyPipelineLayout(struct RenderDevice *dev, struct PipelineLayout *layout);
+struct Pipeline *Vk_GraphicsPipeline(struct RenderDevice *dev, const struct GraphicsPipelineDesc *desc);
 struct Pipeline *Vk_ComputePipeline(struct RenderDevice *dev, struct Shader *sh);
-struct Pipeline *Vk_RayTracingPipeline(struct RenderDevice *dev, struct ShaderBindingTable *sbt);
+struct Pipeline *Vk_RayTracingPipeline(struct RenderDevice *dev, struct ShaderBindingTable *sbt, uint32_t maxDepth);
 void Vk_LoadPipelineCache(struct RenderDevice *dev);
 void Vk_SavePipelineCache(struct RenderDevice *dev);
 
@@ -131,10 +155,12 @@ void Vk_DestroyContext(struct RenderDevice *dev, struct RenderContext *ctx);
 // Texture
 struct Texture *Vk_CreateTexture(struct RenderDevice *dev, struct TextureCreateInfo *tci);
 const struct TextureDesc *Vk_TextureDesc(const struct Texture *tex);
+enum TextureLayout Vk_TextureLayout(const struct Texture *tex);
 void Vk_DestroyTexture(struct RenderDevice *dev, struct Texture *tex);
 
 // Buffer
 struct Buffer *Vk_CreateBuffer(struct RenderDevice *dev, struct BufferCreateInfo *bci);
+void Vk_UpdateBuffer(struct RenderDevice *dev, struct Buffer *buff, uint64_t offset, void *data, uint64_t size);
 const struct BufferDesc *Vk_BufferDesc(const struct Buffer *buff);
 void Vk_DestroyBuffer(struct RenderDevice *dev, struct Buffer *buff);
 
@@ -150,6 +176,20 @@ void Vk_DestroyFramebuffer(struct RenderDevice *dev, struct Framebuffer *fb);
 // Render Pass
 struct RenderPass *Vk_CreateRenderPass(struct RenderDevice *dev, const struct RenderPassDesc *desc);
 void Vk_DestroyRenderPass(struct RenderDevice *dev, struct RenderPass *fb);
+
+// Descriptor Set
+struct DescriptorSetLayout *Vk_CreateDescriptorSetLayout(struct RenderDevice *dev, const struct DescriptorSetLayoutDesc *desc);
+void Vk_DestroyDescriptorSetLayout(struct RenderDevice *dev, struct DescriptorSetLayout *dsl);
+VkDescriptorSet Vk_CreateDescriptorSet(struct RenderDevice *dev, const struct DescriptorSetLayout *layout);
+void Vk_WriteDescriptorSet(struct RenderDevice *dev, VkDescriptorSet ds, const struct DescriptorWrite *writes, uint32_t writeCount);
+void Vk_DestroyDescriptorSet(struct RenderDevice *dev, VkDescriptorSet ds);
+bool Vk_InitDescriptorPools(VkDevice dev);
+void Vk_TermDescriptorPools(VkDevice dev);
+
+// Shader
+void *Vk_ShaderModule(struct RenderDevice *dev, const char *name);
+bool Vk_LoadShaders(VkDevice dev);
+void Vk_UnloadShaders(VkDevice dev);
 
 // Utility functions
 void Vk_InitContextProcs(struct RenderContextProcs *p);
@@ -217,7 +257,7 @@ VkToNeTextureFormat(VkFormat fmt)
 }
 
 static inline VkCommandBuffer
-Vkd_AllocateCmdBuffer(VkDevice dev, VkCommandBufferLevel level, VkCommandPool pool, Array *freeList)
+Vkd_AllocateCmdBuffer(VkDevice dev, VkCommandBufferLevel level, VkCommandPool pool, struct Array *freeList)
 {
 	VkCommandBuffer cmdBuff;
 	VkCommandBufferAllocateInfo ai =
@@ -233,6 +273,57 @@ Vkd_AllocateCmdBuffer(VkDevice dev, VkCommandBufferLevel level, VkCommandPool po
 	Rt_ArrayAddPtr(freeList, cmdBuff);
 
 	return cmdBuff;
+}
+
+static inline uint32_t
+Vkd_MemoryTypeIndex(const struct RenderDevice *dev, uint32_t filter, VkMemoryPropertyFlags flags)
+{
+	for (uint32_t i = 0; i < dev->physDevMemProps.memoryTypeCount; ++i)
+		if ((filter & (1 << i)) && ((dev->physDevMemProps.memoryTypes[i].propertyFlags & flags) == flags))
+			return i;
+	return 0;
+}
+
+static inline VkCommandBuffer
+Vkd_TransferCmdBuffer(struct RenderDevice *dev)
+{
+	VkCommandBuffer cb;
+
+	VkCommandBufferAllocateInfo cbai =
+	{
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+		.commandPool = dev->driverTransferPool,
+		.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+		.commandBufferCount = 1
+	};
+	vkAllocateCommandBuffers(dev->dev, &cbai, &cb);
+
+	VkCommandBufferBeginInfo cbbi =
+	{
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+	};
+	vkBeginCommandBuffer(cb, &cbbi);
+
+	return cb;
+}
+
+static inline void
+Vkd_ExecuteCmdBuffer(struct RenderDevice *dev, VkCommandBuffer cb)
+{
+	vkEndCommandBuffer(cb);
+
+	VkSubmitInfo si =
+	{
+		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+		.commandBufferCount = 1,
+		.pCommandBuffers = &cb,
+	};
+
+	vkQueueSubmit(dev->transferQueue, 1, &si, dev->driverTransferFence);
+	vkWaitForFences(dev->dev, 1, &dev->driverTransferFence, VK_TRUE, UINT64_MAX);
+
+	vkFreeCommandBuffers(dev->dev, dev->driverTransferPool, 1, &cb);
 }
 
 #endif /* _VULKAN_DRIVER_H_ */

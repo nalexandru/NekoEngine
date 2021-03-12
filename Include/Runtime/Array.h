@@ -1,5 +1,5 @@
-#ifndef _RT_ARRAY_H_
-#define _RT_ARRAY_H_
+#ifndef _RUNTIME_ARRAY_H_
+#define _RUNTIME_ARRAY_H_
 
 #include <string.h>
 #include <stdint.h>
@@ -12,44 +12,42 @@
 #include <Runtime/RtDefs.h>
 
 /**
- * struct rt_array - basic array
+ * struct Array - basic array
  * @data:
  * @count:
  * @size:
- * @elem_size
+ * @elemSize
  */
-typedef struct Array
+struct Array
 {
 	uint8_t *data;
 	size_t count;
 	size_t size;
-	size_t elem_size;
+	size_t elemSize;
 	size_t align;
-} Array;
+};
 
 /**
  * Rt_InitArray - initialize a rt_array structure
  * @a: the structure to initialize
  * @size: initial array size (in elements)
- * @elem_size: size of one array element
+ * @elemSize: size of one array element
  */
 static inline bool
-Rt_InitArray(Array *a, size_t size, size_t elem_size)
+Rt_InitArray(struct Array *a, size_t size, size_t elemSize)
 {
-	if (!a || !size || !elem_size)
+	if (!a || !size || !elemSize)
 		return false;
 
 	memset(a, 0x0, sizeof(*a));
 
-	// seriously, C++ is retarded for needing this cast
-	a->data = (uint8_t *)calloc(size, elem_size);
-
+	a->data = calloc(size, elemSize);
 	if (!a->data)
 		return false;
 
 	a->count = 0;
 	a->size = size;
-	a->elem_size = elem_size;
+	a->elemSize = elemSize;
 	a->align = 1;
 
 	return true;
@@ -61,28 +59,26 @@ Rt_InitArray(Array *a, size_t size, size_t elem_size)
  * have padding between items if necessary.
  * @a: the structure to initialize
  * @size: initial array size (in elements)
- * @elem_size: size of one array element
+ * @elemSize: size of one array element
  */
 static inline bool
-Rt_InitAlignedArray(Array *a, size_t size, size_t elem_size, size_t alignment)
+Rt_InitAlignedArray(struct Array *a, size_t size, size_t elemSize, size_t alignment)
 {
-	if (!a || !size || !elem_size)
+	if (!a || !size || !elemSize)
 		return false;
 
 	if (alignment == 1)
-		return Rt_InitArray(a, size, elem_size);
+		return Rt_InitArray(a, size, elemSize);
 
 	memset(a, 0x0, sizeof(*a));
 
-	// seriously, C++ is retarded for needing this cast
-	a->data = (uint8_t *)Sys_AlignedAlloc(size * elem_size, alignment);
-
+	a->data = Sys_AlignedAlloc(size * elemSize, alignment);
 	if (!a->data)
 		return false;
 
 	a->count = 0;
 	a->size = size;
-	a->elem_size = (elem_size + alignment - 1) & ~(alignment - 1);
+	a->elemSize = (elemSize + alignment - 1) & ~(alignment - 1);
 	a->align = alignment;
 
 	return true;
@@ -103,20 +99,18 @@ Rt_InitAlignedArray(Array *a, size_t size, size_t elem_size, size_t alignment)
  * Return: 0 on success
  */
 static inline bool
-Rt_CloneArray(Array *dst, const Array *src)
+Rt_CloneArray(struct Array *dst, const struct Array *src)
 {
 	if (!dst || !src)
 		return false;
 
-	dst->data = (uint8_t *)calloc(src->size, src->elem_size);
-	if (!dst->data)
+	void *data = calloc(src->size, src->elemSize);
+	if (!data)
 		return false;
 
-	memcpy(dst->data, src->data, src->size * src->elem_size);
-
-	dst->size = src->size;
-	dst->count = src->count;
-	dst->elem_size = src->elem_size;
+	memcpy(dst->data, src->data, src->size * src->elemSize);
+	memcpy(dst, src, sizeof(*dst));
+	dst->data = data;
 
 	return true;
 }
@@ -135,7 +129,7 @@ Rt_CloneArray(Array *dst, const Array *src)
  *
  * Returns: last element of the array
  */
-#define Rt_ArrayLast(a) ((a)->data + (a)->elem_size * ((a)->count - 1))
+#define Rt_ArrayLast(a) ((a)->data + (a)->elemSize * ((a)->count - 1))
 
 /**
  * Rt_ArrayCount - get the number of elements in an array
@@ -159,7 +153,7 @@ Rt_CloneArray(Array *dst, const Array *src)
  *
  * Returns: size in bytes of the array
  */
-#define Rt_ArrayByteSize(a) ((a)->size * (a)->elem_size)
+#define Rt_ArrayByteSize(a) ((a)->size * (a)->elemSize)
 
 /**
  * Rt_ArrayDataPtr - get the data pointer of an array
@@ -171,14 +165,14 @@ Rt_CloneArray(Array *dst, const Array *src)
 #define Rt_ArrayDataPtr(a) (a)->data
 
 static inline int
-Rt_ResizeArray(Array *a, size_t size)
+Rt_ResizeArray(struct Array *a, size_t size)
 {
 	uint8_t *ptr = a->data;
 
 	if (a->size == size)
 		return true;
 
-	if ((a->data = (uint8_t *)reallocarray(a->data, size, a->elem_size)) == NULL) {
+	if ((a->data = reallocarray(a->data, size, a->elemSize)) == NULL) {
 		a->data = ptr;
 		return false;
 	}
@@ -196,21 +190,20 @@ Rt_ResizeArray(Array *a, size_t size)
  * @a: the array
  * @item: item to add
  *
- * &rt_array.elem_size number of bytes will be copied from item to the next
+ * &rt_array.elemSize number of bytes will be copied from item to the next
  * location in the array. If &rt_array.count is equal to &rt_array.size the
  * array will grow.
  *
  * Returns: OK on success
  */
 static inline bool
-Rt_ArrayAdd(Array *a, const void *data)
+Rt_ArrayAdd(struct Array *a, const void *data)
 {
 	if (a->count == a->size)
-		if (!Rt_ResizeArray(a, _Rt_CalcGrowSize(a->size,
-			a->elem_size, a->size + RT_DEF_INC)))
+		if (!Rt_ResizeArray(a, _Rt_CalcGrowSize(a->size, a->elemSize, a->size + RT_DEF_INC)))
 			return false;
 
-	memcpy(a->data + a->elem_size * a->count++, data, a->elem_size);
+	memcpy(a->data + a->elemSize * a->count++, data, a->elemSize);
 
 	return true;
 }
@@ -226,7 +219,7 @@ Rt_ArrayAdd(Array *a, const void *data)
  * Returns: OK on success
  */
 static inline bool
-Rt_ArrayAddPtr(Array *a, const void *data)
+Rt_ArrayAddPtr(struct Array *a, const void *data)
 {
 	return Rt_ArrayAdd(a, &data);
 }
@@ -238,23 +231,22 @@ Rt_ArrayAddPtr(Array *a, const void *data)
  * Returns: Pointer to item
  */
 static inline void *
-Rt_ArrayAllocate(Array *a)
+Rt_ArrayAllocate(struct Array *a)
 {
 	void *ptr = NULL;
 
 	if (a->count == a->size)
-		if (!Rt_ResizeArray(a, _Rt_CalcGrowSize(a->size,
-				a->elem_size, a->size + RT_DEF_INC)))
+		if (!Rt_ResizeArray(a, _Rt_CalcGrowSize(a->size, a->elemSize, a->size + RT_DEF_INC)))
 			return NULL;
 
-	ptr = a->data + a->elem_size * a->count++;
-	memset(ptr, 0x0, a->elem_size);
+	ptr = a->data + a->elemSize * a->count++;
+	memset(ptr, 0x0, a->elemSize);
 
 	return ptr;
 }
 
 // Actual insert function
-static inline bool __miwa_array_insert(Array *, const void *, size_t, bool);
+static inline bool __miwa_array_insert(struct Array *, const void *, size_t, bool);
 
 /**
  * Rt_ArrayInsert - insert an item in the array
@@ -262,14 +254,14 @@ static inline bool __miwa_array_insert(Array *, const void *, size_t, bool);
  * @item: item to add
  * @pos: position to insert the item at
  *
- * &rt_array.elem_size number of bytes will be copied from item to the @pos
+ * &rt_array.elemSize number of bytes will be copied from item to the @pos
  * location in the array. If &rt_array.count is equal to &rt_array.size the
  * array will grow.
  *
  * Returns: OK on success
  */
 static inline bool
-Rt_ArrayInsert(Array *a, const void *item, size_t pos)
+Rt_ArrayInsert(struct Array *a, const void *item, size_t pos)
 {
 	return __miwa_array_insert(a, item, pos, true);
 }
@@ -286,7 +278,7 @@ Rt_ArrayInsert(Array *a, const void *item, size_t pos)
  * Returns: OK on success
  */
 static inline bool
-Rt_ArrayInsertPtr(Array *a, const void *item, size_t pos)
+Rt_ArrayInsertPtr(struct Array *a, const void *item, size_t pos)
 {
 	return __miwa_array_insert(a, &item, pos, true);
 }
@@ -297,7 +289,7 @@ Rt_ArrayInsertPtr(Array *a, const void *item, size_t pos)
  * @item: item to add
  * @pos: position to insert the item at
  *
- * &rt_array.elem_size number of bytes will be copied from item to the @pos
+ * &rt_array.elemSize number of bytes will be copied from item to the @pos
  * location in the array. The item at @pos will be moved to the end of the
  * array. If &rt_array.count is equal to &rt_array.size the
  * array will grow.
@@ -305,7 +297,7 @@ Rt_ArrayInsertPtr(Array *a, const void *item, size_t pos)
  * Returns: OK on success
  */
 static inline bool
-Rt_ArrayFastInsert(Array *a, const void *item, size_t pos)
+Rt_ArrayFastInsert(struct Array *a, const void *item, size_t pos)
 {
 	return __miwa_array_insert(a, item, pos, false);
 }
@@ -322,13 +314,13 @@ Rt_ArrayFastInsert(Array *a, const void *item, size_t pos)
  * Returns: OK on success
  */
 static inline bool
-Rt_ArrayFastInsertPtr(Array *a, const void *item, size_t pos)
+Rt_ArrayFastInsertPtr(struct Array *a, const void *item, size_t pos)
 {
 	return __miwa_array_insert(a, &item, pos, false);
 }
 
 static inline bool
-Rt_ArrayRemove(Array *a, size_t index)
+Rt_ArrayRemove(struct Array *a, size_t index)
 {
 	size_t i = 0;
 
@@ -338,22 +330,22 @@ Rt_ArrayRemove(Array *a, size_t index)
 	--a->count;
 
 	for (i = index + 1; i <= a->count; ++i)
-		memcpy(a->data + a->elem_size * (i - 1), a->data + a->elem_size * i, a->elem_size);
+		memcpy(a->data + a->elemSize * (i - 1), a->data + a->elemSize * i, a->elemSize);
 
 	return true;
 }
 
 static inline void *
-Rt_ArrayGet(const Array *a, size_t id)
+Rt_ArrayGet(const struct Array *a, size_t id)
 {
 	if (id > a->size)
 		return NULL;
 
-	return a->data + a->elem_size * id;
+	return a->data + a->elemSize * id;
 }
 
 static inline void *
-Rt_ArrayGetPtr(const Array *a, size_t id)
+Rt_ArrayGetPtr(const struct Array *a, size_t id)
 {
 	if (id > a->size)
 		return NULL;
@@ -362,31 +354,31 @@ Rt_ArrayGetPtr(const Array *a, size_t id)
 }
 
 static inline void *
-Rt_ArrayFind(const Array *a, const void *data, RtCmpFunc cmpFunc)
+Rt_ArrayFind(const struct Array *a, const void *data, RtCmpFunc cmpFunc)
 {
 	size_t i;
 
 	for (i = 0; i < a->count; ++i)
-		if (!cmpFunc(a->data + a->elem_size * i, data))
-			return a->data + a->elem_size * i;
+		if (!cmpFunc(a->data + a->elemSize * i, data))
+			return a->data + a->elemSize * i;
 
 	return NULL;
 }
 
 static inline size_t
-Rt_ArrayFindId(const Array *a, const void *data, RtCmpFunc cmpFunc)
+Rt_ArrayFindId(const struct Array *a, const void *data, RtCmpFunc cmpFunc)
 {
 	size_t i;
 
 	for (i = 0; i < a->count; ++i)
-		if (!cmpFunc(a->data + a->elem_size * i, data))
+		if (!cmpFunc(a->data + a->elemSize * i, data))
 			return i;
 
 	return RT_NOT_FOUND;
 }
 
 static inline void *
-Rt_ArrayBSearch(const Array *a, const void *data, RtCmpFunc cmpFunc)
+Rt_ArrayBSearch(const struct Array *a, const void *data, RtCmpFunc cmpFunc)
 {
 	size_t start = 0, end = a->count - 1, mid;
 	int32_t c;
@@ -398,7 +390,7 @@ Rt_ArrayBSearch(const Array *a, const void *data, RtCmpFunc cmpFunc)
 	while (start <= end && start < a->count && end < a->count) {
 		mid = start + (end - start) / 2;
 
-		elem = a->data + a->elem_size * mid;
+		elem = a->data + a->elemSize * mid;
 
 		c = cmpFunc(elem, data);
 		if (!c)
@@ -413,7 +405,7 @@ Rt_ArrayBSearch(const Array *a, const void *data, RtCmpFunc cmpFunc)
 }
 
 static inline size_t
-Rt_ArrayBSearchId(const Array *a, const void *data, RtCmpFunc cmpFunc)
+Rt_ArrayBSearchId(const struct Array *a, const void *data, RtCmpFunc cmpFunc)
 {
 	size_t start = 0, end = a->count - 1, mid;
 	int32_t c;
@@ -425,7 +417,7 @@ Rt_ArrayBSearchId(const Array *a, const void *data, RtCmpFunc cmpFunc)
 	while (start <= end && start < a->count && end < a->count) {
 		mid = start + (end - start) / 2;
 
-		elem = a->data + a->elem_size * mid;
+		elem = a->data + a->elemSize * mid;
 
 		c = cmpFunc(elem, data);
 		if (!c)
@@ -440,13 +432,13 @@ Rt_ArrayBSearchId(const Array *a, const void *data, RtCmpFunc cmpFunc)
 }
 
 static inline void
-Rt_ArraySort(Array *a, RtSortFunc sortFunc)
+Rt_ArraySort(struct Array *a, RtSortFunc sortFunc)
 {
-	qsort(a->data, a->count, a->elem_size, sortFunc);
+	qsort(a->data, a->count, a->elemSize, sortFunc);
 }
 
 static inline bool
-Rt_ArrayReverse(Array *a)
+Rt_ArrayReverse(struct Array *a)
 {
 	uint8_t *tmp = NULL;
 	uint64_t s = 0, e = 0;
@@ -455,7 +447,7 @@ Rt_ArrayReverse(Array *a)
 	if (!a->count)
 		return false;
 
-	tmp = (uint8_t *)calloc(1, a->elem_size);
+	tmp = calloc(1, a->elemSize);
 	if (!tmp)
 		return false;
 
@@ -463,12 +455,12 @@ Rt_ArrayReverse(Array *a)
 	e = a->count - 1;
 
 	while (s < e) {
-		start = a->data + a->elem_size * s++;
-		end = a->data + a->elem_size * e--;
+		start = a->data + a->elemSize * s++;
+		end = a->data + a->elemSize * e--;
 
-		memcpy(tmp, start, a->elem_size);
-		memcpy(start, end, a->elem_size);
-		memcpy(end, tmp, a->elem_size);
+		memcpy(tmp, start, a->elemSize);
+		memcpy(start, end, a->elemSize);
+		memcpy(end, tmp, a->elemSize);
 	}
 
 	free(tmp);
@@ -477,7 +469,7 @@ Rt_ArrayReverse(Array *a)
 }
 
 static inline size_t
-Rt_ArrayUpperBound(const Array *a, const void *data, RtCmpFunc cmpFunc)
+Rt_ArrayUpperBound(const struct Array *a, const void *data, RtCmpFunc cmpFunc)
 {
 	size_t low = 0, mid = 0;
 	size_t high = a->count;
@@ -485,7 +477,7 @@ Rt_ArrayUpperBound(const Array *a, const void *data, RtCmpFunc cmpFunc)
 	while (low < high) {
 		mid = (low + high) / 2;
 
-		if (cmpFunc(a->data + a->elem_size * mid, data) < 0)
+		if (cmpFunc(a->data + a->elemSize * mid, data) < 0)
 			high = mid;
 		else
 			low = mid + 1;
@@ -495,7 +487,7 @@ Rt_ArrayUpperBound(const Array *a, const void *data, RtCmpFunc cmpFunc)
 }
 
 static inline size_t
-Rt_ArrayLowerBound(const Array *a, const void *data, RtCmpFunc cmpFunc)
+Rt_ArrayLowerBound(const struct Array *a, const void *data, RtCmpFunc cmpFunc)
 {
 	size_t low = 0, mid = 0;
 	size_t high = a->count;
@@ -503,7 +495,7 @@ Rt_ArrayLowerBound(const Array *a, const void *data, RtCmpFunc cmpFunc)
 	while (low < high) {
 		mid = (low + high) / 2;
 
-		if (cmpFunc(a->data + a->elem_size * mid, data) >= 0)
+		if (cmpFunc(a->data + a->elemSize * mid, data) >= 0)
 			high = mid;
 		else
 			low = mid + 1;
@@ -513,10 +505,10 @@ Rt_ArrayLowerBound(const Array *a, const void *data, RtCmpFunc cmpFunc)
 }
 
 #define Rt_FillArray(a) (a)->count = (a)->size
-#define Rt_ZeroArray(a) memset((a)->data, 0x0, (a)->elem_size * (a)->count); a->count = 0
+#define Rt_ZeroArray(a) memset((a)->data, 0x0, (a)->elemSize * (a)->count); a->count = 0
 
 static inline void
-Rt_ClearArray(Array *a, bool free_memory)
+Rt_ClearArray(struct Array *a, bool free_memory)
 {
 	a->count = 0;
 
@@ -534,7 +526,7 @@ Rt_ClearArray(Array *a, bool free_memory)
 }
 
 static inline void
-Rt_TermArray(Array *a)
+Rt_TermArray(struct Array *a)
 {
 	if (!a)
 		return;
@@ -557,26 +549,26 @@ Rt_TermArray(Array *a)
 // You are not supposed to call this function directly;
 // Use the wrappers defined above instead.
 static inline bool
-__miwa_array_insert(Array *a, const void *data, size_t pos, bool ordered)
+__miwa_array_insert(struct Array *a, const void *data, size_t pos, bool ordered)
 {
 	size_t i = 0;
 
 	if (a->count == a->size)
 		if (Rt_ResizeArray(a, _Rt_CalcGrowSize(a->size,
-				a->elem_size, a->size + RT_DEF_INC)))
+				a->elemSize, a->size + RT_DEF_INC)))
 			return false;
 
 	if (!ordered) {
-		memcpy(a->data + a->elem_size * a->count, Rt_ArrayGet(a, pos), a->elem_size);
+		memcpy(a->data + a->elemSize * a->count, Rt_ArrayGet(a, pos), a->elemSize);
 	} else {
 		for (i = a->count; i > pos; --i)
-			memcpy(a->data + a->elem_size * i, a->data + a->elem_size * (i - 1), a->elem_size);
+			memcpy(a->data + a->elemSize * i, a->data + a->elemSize * (i - 1), a->elemSize);
 	}
 
-	memcpy(a->data + a->elem_size * pos, data, a->elem_size);
+	memcpy(a->data + a->elemSize * pos, data, a->elemSize);
 	++a->count;
 
 	return true;
 }
 
-#endif /* _MIWA_RUNTIME_ARRAY_H_ */
+#endif /* _RUNTIME_ARRAY_H_ */

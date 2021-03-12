@@ -24,7 +24,7 @@ struct Scene *Scn_activeScene = NULL;
 static inline bool _InitScene(struct Scene *s);
 static void _LoadJob(int worker, struct Scene *scn);
 static inline void _ReadSceneInfo(struct Scene *s, struct Stream *stm, char *data, wchar_t *buff);
-static inline void _ReadEntity(struct Scene *s, struct Stream *stm, char *data, wchar_t *wbuff, Array *args);
+static inline void _ReadEntity(struct Scene *s, struct Stream *stm, char *data, wchar_t *wbuff, struct Array *args);
 
 struct Scene *
 Scn_CreateScene(const wchar_t *name)
@@ -107,7 +107,7 @@ _LoadJob(int wid, struct Scene *s)
 	struct Stream stm;
 	char *data = NULL;
 	wchar_t *wbuff = NULL;
-	Array args;
+	struct Array args;
 
 	if (!E_FileStream(s->path, IO_READ, &stm)) {
 		Sys_LogEntry(SCNMOD, LOG_CRITICAL, L"Failed to open scene file %hs", s->path);
@@ -173,7 +173,7 @@ _ReadSceneInfo(struct Scene *s, struct Stream *stm, char *data, wchar_t *buff)
 }
 
 void
-_ReadEntity(struct Scene *s, struct Stream *stm, char *data, wchar_t *wbuff, Array *args)
+_ReadEntity(struct Scene *s, struct Stream *stm, char *data, wchar_t *wbuff, struct Array *args)
 {
 	EntityHandle entity = NULL;
 	wchar_t *compType = NULL;

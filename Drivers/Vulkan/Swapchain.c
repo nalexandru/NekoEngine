@@ -4,6 +4,7 @@
 #include <Engine/Engine.h>
 #include <Engine/Config.h>
 #include <System/Memory.h>
+#include <Runtime/Runtime.h>
 #include <Render/Swapchain.h>
 
 #include "VulkanDriver.h"
@@ -299,8 +300,6 @@ _Create(VkDevice dev, struct Swapchain *sw)
 		viewInfo.image = sw->images[i];
 		assert(vkCreateImageView(dev, &viewInfo, Vkd_allocCb, &sw->views[i]) == VK_SUCCESS);
 	}
-
-	// transition images
 
 	return true;
 }

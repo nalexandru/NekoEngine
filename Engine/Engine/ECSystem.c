@@ -12,12 +12,12 @@
 
 bool E_RegisterSystems(void);
 
-static Array _systems;
-static Array _filteredEntities;
+static struct Array _systems;
+static struct Array _filteredEntities;
 
 static int _ecsysInsertCmp(const void *item, const void *data);
 static inline void _sysExec(struct Scene *s, struct ECSystem *sys, void *args);
-static inline void _filterEntities(struct Scene *s, Array *ent, CompTypeId *comp_types, size_t type_count);
+static inline void _filterEntities(struct Scene *s, struct Array *ent, CompTypeId *comp_types, size_t type_count);
 
 bool
 E_RegisterSystem(const wchar_t *name, const wchar_t *group,
@@ -157,7 +157,7 @@ _sysExec(struct Scene *s, struct ECSystem *sys, void *args)
 {
 	size_t i = 0, j = 0;
 	void *ptr = NULL;
-	const Array *comp = NULL;
+	const struct Array *comp = NULL;
 	EntityHandle handle = 0;
 	void *components[MAX_ENTITY_COMPONENTS];
 
@@ -186,9 +186,9 @@ _sysExec(struct Scene *s, struct ECSystem *sys, void *args)
 }
 
 static inline void
-_filterEntities(struct Scene *s, Array *ent, CompTypeId *comp_types, size_t type_count)
+_filterEntities(struct Scene *s, struct Array *ent, CompTypeId *comp_types, size_t type_count)
 {
-	const Array *components;
+	const struct Array *components;
 	CompTypeId type = -1;
 	size_t count = 0, min_count = SIZE_MAX;
 	struct CompBase *comp = NULL;

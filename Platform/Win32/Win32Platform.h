@@ -1,6 +1,8 @@
 #ifndef _WIN32_PLATFORM_H_
 #define _WIN32_PLATFORM_H_
 
+#define _WIN32_WINNT	0x0600
+
 #include <Windows.h>
 
 extern UINT WM_SHOWCURSOR;

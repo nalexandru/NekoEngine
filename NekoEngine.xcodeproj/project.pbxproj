@@ -170,6 +170,10 @@
 		FA7D9F7B2528D5E300F51BA0 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FA7D9F7A2528D5E300F51BA0 /* IOKit.framework */; };
 		FA7D9F882528D6D400F51BA0 /* physfs_platform_posix.c in Sources */ = {isa = PBXBuildFile; fileRef = FA7D9F872528D6D400F51BA0 /* physfs_platform_posix.c */; };
 		FA8A94DB25D41935008B5823 /* MTLPipeline.m in Sources */ = {isa = PBXBuildFile; fileRef = FA8A94DA25D41935008B5823 /* MTLPipeline.m */; };
+		FA99953E25E2E684002CB0D3 /* MTLShader.m in Sources */ = {isa = PBXBuildFile; fileRef = FA99953D25E2E684002CB0D3 /* MTLShader.m */; };
+		FA99953F25E2E684002CB0D3 /* MTLShader.m in Sources */ = {isa = PBXBuildFile; fileRef = FA99953D25E2E684002CB0D3 /* MTLShader.m */; };
+		FA99954425E2E804002CB0D3 /* DefaultPBR.metal in Sources */ = {isa = PBXBuildFile; fileRef = FA99954325E2E804002CB0D3 /* DefaultPBR.metal */; };
+		FA99954525E2E804002CB0D3 /* DefaultPBR.metal in Sources */ = {isa = PBXBuildFile; fileRef = FA99954325E2E804002CB0D3 /* DefaultPBR.metal */; };
 		FAA9108825D3D85D005FCDA2 /* Application.c in Sources */ = {isa = PBXBuildFile; fileRef = FAA9108725D3D85D005FCDA2 /* Application.c */; };
 		FAAF9B5C2521F2D600F7C24B /* Font.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B552521F2D600F7C24B /* Font.c */; };
 		FAAF9B5D2521F2D600F7C24B /* glTF.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B562521F2D600F7C24B /* glTF.c */; };
@@ -222,6 +226,14 @@
 		FABF18F725BECFD0005C1329 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FABF18F625BECFD0005C1329 /* AVFoundation.framework */; };
 		FAC4B4B0253BE2E30074EE3C /* Job.c in Sources */ = {isa = PBXBuildFile; fileRef = FAC4B4AF253BE2E30074EE3C /* Job.c */; };
 		FAC4B4B2253BE2F60074EE3C /* AtomicLock.c in Sources */ = {isa = PBXBuildFile; fileRef = FAC4B4B1253BE2F60074EE3C /* AtomicLock.c */; };
+		FAC670F825EA6E46001BF95A /* Shader.c in Sources */ = {isa = PBXBuildFile; fileRef = FAC670F725EA6E46001BF95A /* Shader.c */; };
+		FAC670F925EA6E46001BF95A /* Shader.c in Sources */ = {isa = PBXBuildFile; fileRef = FAC670F725EA6E46001BF95A /* Shader.c */; };
+		FAC670FD25EA7BB3001BF95A /* Metadata.c in Sources */ = {isa = PBXBuildFile; fileRef = FAC670FC25EA7BB3001BF95A /* Metadata.c */; };
+		FAC670FE25EA7BB3001BF95A /* Metadata.c in Sources */ = {isa = PBXBuildFile; fileRef = FAC670FC25EA7BB3001BF95A /* Metadata.c */; };
+		FAC6710425EBE7B6001BF95A /* LightCulling.metal in Sources */ = {isa = PBXBuildFile; fileRef = FAC6710325EBE7B6001BF95A /* LightCulling.metal */; };
+		FAC6710525EBE7B6001BF95A /* LightCulling.metal in Sources */ = {isa = PBXBuildFile; fileRef = FAC6710325EBE7B6001BF95A /* LightCulling.metal */; };
+		FAC6710925EBE812001BF95A /* Skinning.metal in Sources */ = {isa = PBXBuildFile; fileRef = FAC6710825EBE812001BF95A /* Skinning.metal */; };
+		FAC6710A25EBE812001BF95A /* Skinning.metal in Sources */ = {isa = PBXBuildFile; fileRef = FAC6710825EBE812001BF95A /* Skinning.metal */; };
 		FAD516662569DFB9008FCD04 /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FAD516652569DFB9008FCD04 /* GameController.framework */; };
 		FADBC13825CF613F00085E38 /* MTLDevice.m in Sources */ = {isa = PBXBuildFile; fileRef = FADBC13725CF613F00085E38 /* MTLDevice.m */; };
 		FADBC14125CF70CE00085E38 /* MTLContext.m in Sources */ = {isa = PBXBuildFile; fileRef = FADBC14025CF70CE00085E38 /* MTLContext.m */; };
@@ -393,6 +405,8 @@
 		FA7D9F872528D6D400F51BA0 /* physfs_platform_posix.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = physfs_platform_posix.c; path = Deps/PhysFS/physfs_platform_posix.c; sourceTree = "<group>"; };
 		FA8A94DA25D41935008B5823 /* MTLPipeline.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = MTLPipeline.m; path = Drivers/Metal/MTLPipeline.m; sourceTree = "<group>"; };
 		FA8E732825D323960048A01F /* Pipeline.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Pipeline.h; path = Include/Render/Pipeline.h; sourceTree = "<group>"; };
+		FA99953D25E2E684002CB0D3 /* MTLShader.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = MTLShader.m; path = Drivers/Metal/MTLShader.m; sourceTree = "<group>"; };
+		FA99954325E2E804002CB0D3 /* DefaultPBR.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; name = DefaultPBR.metal; path = Drivers/Metal/Shaders/DefaultPBR.metal; sourceTree = "<group>"; };
 		FAA9108725D3D85D005FCDA2 /* Application.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = Application.c; path = Application/Application.c; sourceTree = "<group>"; };
 		FAA9108A25D3D886005FCDA2 /* TestApplication.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TestApplication.h; path = Application/TestApplication.h; sourceTree = "<group>"; };
 		FAA9108D25D3ECBF005FCDA2 /* AccelerationStructure.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = AccelerationStructure.h; path = Include/Render/AccelerationStructure.h; sourceTree = "<group>"; };
@@ -471,6 +485,10 @@
 		FAC4B4AF253BE2E30074EE3C /* Job.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = Job.c; path = Engine/Engine/Job.c; sourceTree = "<group>"; };
 		FAC4B4B1253BE2F60074EE3C /* AtomicLock.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = AtomicLock.c; path = Engine/System/AtomicLock.c; sourceTree = "<group>"; };
 		FAC4B4B8253BE4350074EE3C /* Thread.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = Thread.h; path = Include/System/Thread.h; sourceTree = "<group>"; };
+		FAC670F725EA6E46001BF95A /* Shader.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = Shader.c; path = Engine/Render/Shader.c; sourceTree = "<group>"; };
+		FAC670FC25EA7BB3001BF95A /* Metadata.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = Metadata.c; path = Engine/Asset/Metadata.c; sourceTree = "<group>"; };
+		FAC6710325EBE7B6001BF95A /* LightCulling.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; name = LightCulling.metal; path = Drivers/Metal/Shaders/LightCulling.metal; sourceTree = "<group>"; };
+		FAC6710825EBE812001BF95A /* Skinning.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; name = Skinning.metal; path = Drivers/Metal/Shaders/Skinning.metal; sourceTree = "<group>"; };
 		FAD516652569DFB9008FCD04 /* GameController.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameController.framework; path = System/Library/Frameworks/GameController.framework; sourceTree = SDKROOT; };
 		FADBC13525CF57C500085E38 /* Device.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Device.h; path = Include/Render/Device.h; sourceTree = "<group>"; };
 		FADBC13725CF613F00085E38 /* MTLDevice.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = MTLDevice.m; path = Drivers/Metal/MTLDevice.m; sourceTree = "<group>"; };
@@ -484,6 +502,7 @@
 		FAE5E1262569C3400091893B /* mat4_neon.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mat4_neon.h; path = Include/Math/neon/mat4_neon.h; sourceTree = "<group>"; };
 		FAE5E1272569C3550091893B /* debug.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = debug.h; path = Include/Math/debug.h; sourceTree = "<group>"; };
 		FAE5E1282569C3550091893B /* Math.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Math.h; path = Include/Math/Math.h; sourceTree = "<group>"; };
+		FAFCD95325EE4767006CA7FF /* ShaderTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = ShaderTypes.h; path = Drivers/Metal/Shaders/ShaderTypes.h; sourceTree = "<group>"; };
 		FAFEF82B25D59F9500D8D1FB /* MTLSwapchain.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = MTLSwapchain.m; path = Drivers/Metal/MTLSwapchain.m; sourceTree = "<group>"; };
 		FAFEF82E25D5A01B00D8D1FB /* MTLAccelerationStructure.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = MTLAccelerationStructure.m; path = Drivers/Metal/MTLAccelerationStructure.m; sourceTree = "<group>"; };
 		FAFEF83125D5A08500D8D1FB /* MTLTexture.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = MTLTexture.m; path = Drivers/Metal/MTLTexture.m; sourceTree = "<group>"; };
@@ -613,6 +632,7 @@
 		FA1A7EEE25CF0F15003B4259 /* Metal */ = {
 			isa = PBXGroup;
 			children = (
+				FA99954225E2E7DE002CB0D3 /* Shaders */,
 				FA1A7EEF25CF0FAF003B4259 /* MTLDriver.m */,
 				FADBC13725CF613F00085E38 /* MTLDevice.m */,
 				FADBC13C25CF616E00085E38 /* MTLDriver.h */,
@@ -627,6 +647,7 @@
 				FAFEF84925D5CA4800D8D1FB /* MTLFramebuffer.m */,
 				FA4CFF8925D8453200B37A5B /* MTLRenderPass.m */,
 				FA24C1A925D99324003D590F /* MTLDescriptorSet.m */,
+				FA99953D25E2E684002CB0D3 /* MTLShader.m */,
 			);
 			name = Metal;
 			sourceTree = "<group>";
@@ -842,6 +863,17 @@
 			name = sse;
 			sourceTree = "<group>";
 		};
+		FA99954225E2E7DE002CB0D3 /* Shaders */ = {
+			isa = PBXGroup;
+			children = (
+				FA99954325E2E804002CB0D3 /* DefaultPBR.metal */,
+				FAC6710325EBE7B6001BF95A /* LightCulling.metal */,
+				FAC6710825EBE812001BF95A /* Skinning.metal */,
+				FAFCD95325EE4767006CA7FF /* ShaderTypes.h */,
+			);
+			name = Shaders;
+			sourceTree = "<group>";
+		};
 		FAAF9B542521F2AF00F7C24B /* Asset */ = {
 			isa = PBXGroup;
 			children = (
@@ -852,6 +884,7 @@
 				FAAF9B592521F2D600F7C24B /* Ogg.c */,
 				FAAF9B5A2521F2D600F7C24B /* TGA.c */,
 				FAAF9B5B2521F2D600F7C24B /* Wave.c */,
+				FAC670FC25EA7BB3001BF95A /* Metadata.c */,
 			);
 			name = Asset;
 			sourceTree = "<group>";
@@ -912,6 +945,7 @@
 				FA1A7EF325CF13E9003B4259 /* Render.c */,
 				FAFEF85225D7015E00D8D1FB /* Pipeline.c */,
 				FA4CFF7725D8361400B37A5B /* Frame.c */,
+				FAC670F725EA6E46001BF95A /* Shader.c */,
 			);
 			name = Render;
 			sourceTree = "<group>";
@@ -1236,6 +1270,7 @@
 				FAFEF84A25D5CA4800D8D1FB /* MTLFramebuffer.m in Sources */,
 				FAAF9B5C2521F2D600F7C24B /* Font.c in Sources */,
 				FA4CFF7825D8361400B37A5B /* Frame.c in Sources */,
+				FAC670FD25EA7BB3001BF95A /* Metadata.c in Sources */,
 				FAAF9B5D2521F2D600F7C24B /* glTF.c in Sources */,
 				FAAF9B5E2521F2D600F7C24B /* Image.c in Sources */,
 				FAAF9B5F2521F2D600F7C24B /* NMesh.c in Sources */,
@@ -1245,6 +1280,7 @@
 				FAAF9B612521F2D600F7C24B /* TGA.c in Sources */,
 				FAAF9B622521F2D600F7C24B /* Wave.c in Sources */,
 				FAAF9B802521F3C500F7C24B /* Audio.c in Sources */,
+				FA99953E25E2E684002CB0D3 /* MTLShader.m in Sources */,
 				FAAF9B812521F3C500F7C24B /* Clip.c in Sources */,
 				FAAF9B822521F3C500F7C24B /* Source.c in Sources */,
 				FAAF9B8D2521F3D700F7C24B /* Component.c in Sources */,
@@ -1268,6 +1304,7 @@
 				FAAF9BAE2521F47D00F7C24B /* UI.c in Sources */,
 				FAAF9BB22521F49C00F7C24B /* Log.c in Sources */,
 				FAAF9BB32521F49C00F7C24B /* System.c in Sources */,
+				FAC6710425EBE7B6001BF95A /* LightCulling.metal in Sources */,
 				FA4CFFC925D8DA7900B37A5B /* Darwin.m in Sources */,
 				FAAF9C852522A81F00F7C24B /* physfs_archiver_7z.c in Sources */,
 				FAAF9C862522A81F00F7C24B /* physfs_archiver_dir.c in Sources */,
@@ -1293,6 +1330,7 @@
 				FA6BDE7F2523382100806A2D /* lcode.c in Sources */,
 				FA8A94DB25D41935008B5823 /* MTLPipeline.m in Sources */,
 				FADBC13825CF613F00085E38 /* MTLDevice.m in Sources */,
+				FA99954425E2E804002CB0D3 /* DefaultPBR.metal in Sources */,
 				FA6BDE802523382100806A2D /* lcorolib.c in Sources */,
 				FA6BDE812523382100806A2D /* lctype.c in Sources */,
 				FA6BDE822523382100806A2D /* ldblib.c in Sources */,
@@ -1332,6 +1370,7 @@
 				FA6BDE982523382100806A2D /* lundump.c in Sources */,
 				FAFEF83F25D5A0ED00D8D1FB /* MTLTransientResources.m in Sources */,
 				FA6BDE992523382100806A2D /* lutf8lib.c in Sources */,
+				FAC670F825EA6E46001BF95A /* Shader.c in Sources */,
 				FA6BDE9A2523382100806A2D /* lvm.c in Sources */,
 				FA6BDE9B2523382100806A2D /* lzio.c in Sources */,
 				FA7745DD2528963200FED53F /* reallocarray.c in Sources */,
@@ -1339,6 +1378,7 @@
 				FA7D9F882528D6D400F51BA0 /* physfs_platform_posix.c in Sources */,
 				FA24C1AA25D99324003D590F /* MTLDescriptorSet.m in Sources */,
 				FAC4B4B0253BE2E30074EE3C /* Job.c in Sources */,
+				FAC6710925EBE812001BF95A /* Skinning.metal in Sources */,
 				FA4CFFB225D8D9C800B37A5B /* EngineView.m in Sources */,
 				FAC4B4B2253BE2F60074EE3C /* AtomicLock.c in Sources */,
 				FADD5C0D253D297900606B2A /* Memory.c in Sources */,
@@ -1370,17 +1410,20 @@
 				FA4CFEEF25D774E600B37A5B /* Component.c in Sources */,
 				FA4CFF4625D7754700B37A5B /* physfs_archiver_7z.c in Sources */,
 				FA4CFEE125D774D800B37A5B /* Wave.c in Sources */,
+				FAC6710525EBE7B6001BF95A /* LightCulling.metal in Sources */,
 				FA4CFF5C25D7758600B37A5B /* MTLSwapchain.m in Sources */,
 				FA4CFEE525D774DD00B37A5B /* Audio.c in Sources */,
 				FA4CFF2225D7753A00B37A5B /* lstate.c in Sources */,
 				FA4CFF2C25D7753A00B37A5B /* lstrlib.c in Sources */,
 				FA4CFF4125D7754700B37A5B /* physfs_archiver_unpacked.c in Sources */,
+				FA99953F25E2E684002CB0D3 /* MTLShader.m in Sources */,
 				FA4CFEF125D774E600B37A5B /* Event.c in Sources */,
 				FA4CFEE625D774DD00B37A5B /* Clip.c in Sources */,
 				FA4CFEBA25D7733700B37A5B /* EngineView.m in Sources */,
 				FA4CFF5B25D7758600B37A5B /* MTLDevice.m in Sources */,
 				FA4CFF2B25D7753A00B37A5B /* lparser.c in Sources */,
 				FA4CFED825D774D200B37A5B /* Application.c in Sources */,
+				FAC670FE25EA7BB3001BF95A /* Metadata.c in Sources */,
 				FA4CFF5D25D7758600B37A5B /* MTLTransientResources.m in Sources */,
 				FA4CFF0625D774FB00B37A5B /* Memory.c in Sources */,
 				FA4CFEEA25D774E600B37A5B /* Entity.c in Sources */,
@@ -1393,6 +1436,7 @@
 				FA4CFF4C25D7754700B37A5B /* physfs_platform_apple.m in Sources */,
 				FA4CFF4425D7754700B37A5B /* physfs_archiver_wad.c in Sources */,
 				FA4CFF7925D8361400B37A5B /* Frame.c in Sources */,
+				FA99954525E2E804002CB0D3 /* DefaultPBR.metal in Sources */,
 				FA4CFF2625D7753A00B37A5B /* lapi.c in Sources */,
 				FA4CFF0A25D774FF00B37A5B /* Log.c in Sources */,
 				FA4CFEEC25D774E600B37A5B /* IO.c in Sources */,
@@ -1427,8 +1471,10 @@
 				FA4CFEFF25D774F300B37A5B /* Scene.c in Sources */,
 				FA4CFF4525D7754700B37A5B /* physfs_archiver_qpak.c in Sources */,
 				FA4CFEFE25D774F300B37A5B /* ScriptHost.c in Sources */,
+				FAC670F925EA6E46001BF95A /* Shader.c in Sources */,
 				FA4CFF3825D7753A00B37A5B /* liolib.c in Sources */,
 				FA4CFF0E25D7750500B37A5B /* Text.c in Sources */,
+				FAC6710A25EBE812001BF95A /* Skinning.metal in Sources */,
 				FA4CFF5625D7758600B37A5B /* MTLTexture.m in Sources */,
 				FA4CFF0225D774F700B37A5B /* Script.c in Sources */,
 				FA4CFF0525D774FB00B37A5B /* AtomicLock.c in Sources */,
@@ -1475,7 +1521,7 @@
 				CODE_SIGN_ENTITLEMENTS = "";
 				CODE_SIGN_IDENTITY = "-";
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 29;
+				CURRENT_PROJECT_VERSION = 45;
 				ENABLE_HARDENED_RUNTIME = NO;
 				GCC_CW_ASM_SYNTAX = NO;
 				GCC_DYNAMIC_NO_PIC = NO;
@@ -1513,7 +1559,7 @@
 				CLANG_ENABLE_OBJC_WEAK = YES;
 				CODE_SIGN_ENTITLEMENTS = "";
 				CODE_SIGN_IDENTITY = "-";
-				CURRENT_PROJECT_VERSION = 29;
+				CURRENT_PROJECT_VERSION = 45;
 				ENABLE_HARDENED_RUNTIME = NO;
 				GCC_CW_ASM_SYNTAX = NO;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
@@ -1675,7 +1721,7 @@
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 29;
+				CURRENT_PROJECT_VERSION = 45;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 9HAM5X8W52;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -1720,7 +1766,7 @@
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 29;
+				CURRENT_PROJECT_VERSION = 45;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 9HAM5X8W52;
 				ENABLE_NS_ASSERTIONS = NO;

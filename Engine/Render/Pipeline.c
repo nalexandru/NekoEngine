@@ -22,6 +22,7 @@ struct PipelineInfo
 		} compute;
 		struct {
 			struct ShaderBindingTable *sbt;
+			uint32_t maxDepth;
 		} rayTracing;
 	};
 	struct Pipeline *pipeline;
@@ -38,19 +39,19 @@ Re_InitPipelines(void)
 	return true;
 }
 
-struct Pipeline *Re_GraphicsPipeline(struct Shader *sh, uint64_t flags, struct BlendAttachmentDesc *at, uint32_t atCount)
+struct Pipeline *Re_GraphicsPipeline(const struct GraphicsPipelineDesc *desc)
 {
 	struct PipelineInfo *pi;
 	Rt_ArrayForEach(pi, &_pipelines) {
 		if (pi->type != P_GRAPHICS ||
-				pi->graphics.sh != sh ||
-				pi->graphics.flags != flags ||
-				pi->graphics.atCount != atCount)
+				pi->graphics.sh != desc->shader ||
+				pi->graphics.flags != desc->flags ||
+				pi->graphics.atCount != desc->attachmentCount)
 			continue;
 		
 		bool ok = true;
-		for (uint32_t i = 0; i < atCount; ++i)
-			if (memcmp(&at[i], &pi->graphics.at[i], sizeof(*at)))
+		for (uint32_t i = 0; i < desc->attachmentCount; ++i)
+			if (memcmp(&desc->attachments[i], &pi->graphics.at[i], sizeof(*desc->attachments)))
 				ok = false;
 		
 		if (!ok)
@@ -59,20 +60,20 @@ struct Pipeline *Re_GraphicsPipeline(struct Shader *sh, uint64_t flags, struct B
 		return pi->pipeline;
 	}
 	
-	struct BlendAttachmentDesc *newAt = calloc(atCount, sizeof(*newAt));
+	struct BlendAttachmentDesc *newAt = calloc(desc->attachmentCount, sizeof(*newAt));
 	if (!newAt)
 		return NULL;
 	
-	memcpy(newAt, at, atCount * sizeof(*newAt));
+	memcpy(newAt, desc->attachments, desc->attachmentCount * sizeof(*newAt));
 	
 	struct PipelineInfo new =
 	{
 		.type = P_GRAPHICS,
-		.graphics.sh = sh,
-		.graphics.flags = flags,
+		.graphics.sh = desc->shader,
+		.graphics.flags = desc->flags,
 		.graphics.at = newAt,
-		.graphics.atCount = atCount,
-		.pipeline = Re_deviceProcs.GraphicsPipeline(Re_device, sh, flags, at, atCount)
+		.graphics.atCount = desc->attachmentCount,
+		.pipeline = Re_deviceProcs.GraphicsPipeline(Re_device, desc)
 	};
 	
 	if (!new.pipeline)
@@ -108,11 +109,11 @@ struct Pipeline *Re_ComputePipeline(struct Shader *sh)
 	return new.pipeline;
 }
 
-struct Pipeline *Re_RayTracingPipeline(struct ShaderBindingTable *sbt)
+struct Pipeline *Re_RayTracingPipeline(struct ShaderBindingTable *sbt, uint32_t maxDepth)
 {
 	struct PipelineInfo *pi;
 	Rt_ArrayForEach(pi, &_pipelines) {
-		if (pi->type != P_RAY_TRACING || pi->rayTracing.sbt != sbt)
+		if (pi->type != P_RAY_TRACING || pi->rayTracing.sbt != sbt || pi->rayTracing.maxDepth != maxDepth)
 			continue;
 		
 		return pi->pipeline;
@@ -122,7 +123,8 @@ struct Pipeline *Re_RayTracingPipeline(struct ShaderBindingTable *sbt)
 	{
 		.type = P_RAY_TRACING,
 		.rayTracing.sbt = sbt,
-		.pipeline = Re_deviceProcs.RayTracingPipeline(Re_device, sbt)
+		.rayTracing.maxDepth = maxDepth,
+		.pipeline = Re_deviceProcs.RayTracingPipeline(Re_device, sbt, maxDepth)
 	};
 	
 	if (!new.pipeline)

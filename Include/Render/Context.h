@@ -55,6 +55,20 @@ struct BlitRegion
 	} dstSize;
 };
 
+struct BufferImageCopy
+{
+	uint64_t bufferOffset;
+	uint32_t rowLength;
+	uint32_t imageHeight;
+	struct ImageSubresource subresource;
+	struct {
+		int32_t x, y, z;
+	} imageOffset;
+	struct {
+		int32_t width, height, depth;
+	} imageSize;
+};
+
 struct RenderContextProcs
 {
 	void (*BeginDrawCommandBuffer)(struct RenderContext *ctx);
@@ -64,7 +78,7 @@ struct RenderContextProcs
 	
 	void (*BindPipeline)(struct RenderContext *ctx, struct Pipeline *pipeline);
 	
-	void (*BindDescriptorSets)(struct RenderContext *ctx, struct PipelineLayout *layout, uint32_t firstSet, uint32_t count, struct DescriptorSet *sets);
+	void (*BindDescriptorSets)(struct RenderContext *ctx, struct PipelineLayout *layout, uint32_t firstSet, uint32_t count, const struct DescriptorSet *sets);
 	void (*PushConstants)(struct RenderContext *ctx, struct PipelineLayout *layout, enum ShaderStage stage, uint32_t size, const void *data);
 	
 	void (*BindVertexBuffers)(struct RenderContext *ctx, uint32_t count, struct Buffer **buffers, uint64_t *offsets);
@@ -74,6 +88,9 @@ struct RenderContextProcs
 	
 	void (*BeginRenderPass)(struct RenderContext *ctx, struct RenderPass *pass, struct Framebuffer *fb);
 	void (*EndRenderPass)(struct RenderContext *ctx);
+
+	void (*SetViewport)(struct RenderContext *ctx, float x, float y, float width, float height, float minDepth, float maxDepth);
+	void (*SetScissor)(struct RenderContext *ctx, int32_t x, int32_t y, int32_t width, int32_t height);
 	
 	void (*Draw)(struct RenderContext *ctx, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance);
 	void (*DrawIndexed)(struct RenderContext *ctx, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t vertexOffset, uint32_t firstInstance);
@@ -89,14 +106,14 @@ struct RenderContextProcs
 	void (*BuildAccelerationStructure)(struct RenderContext *ctx, struct AccelerationStructure *as, struct Buffer *scratch);
 	
 	void (*Barrier)(struct RenderContext *ctx);
-	void (*Transition)(struct RenderContext *ctx, struct Texture *tex);
+	void (*Transition)(struct RenderContext *ctx, struct Texture *tex, enum TextureLayout newLayout);
 	
 	void (*Present)(struct RenderContext *ctx);
 	
 	void (*CopyBuffer)(struct RenderContext *ctx, struct Buffer *dst, uint64_t dstOffset, struct Buffer *src, uint64_t srcOffset, uint64_t size);
 	void (*CopyImage)(struct RenderContext *ctx, struct Texture *dst, struct Texture *src);
-	void (*CopyBufferToImage)(struct RenderContext *ctx, struct Buffer *src, struct Texture *dst);
-	void (*CopyImageToBuffer)(struct RenderContext *ctx, struct Texture *src, struct Buffer *dst);
+	void (*CopyBufferToImage)(struct RenderContext *ctx, struct Buffer *src, struct Texture *dst, const struct BufferImageCopy *bic);
+	void (*CopyImageToBuffer)(struct RenderContext *ctx, struct Texture *src, struct Buffer *dst, const struct BufferImageCopy *bic);
 	
 	void (*Blit)(struct RenderContext *ctx, struct Texture *dst, struct Texture *src, const struct BlitRegion *regions, uint32_t regionCount, enum BlitFilter filter);
 
@@ -119,6 +136,11 @@ static inline void Re_EndCommandBuffer(void) { Re_contextProcs.EndCommandBuffer(
 
 static inline void Re_BindPipeline(struct Pipeline *pipeline) { Re_contextProcs.BindPipeline(Re_CurrentContext(), pipeline); }
 
+static inline void Re_BindDescriptorSets(struct PipelineLayout *layout, uint32_t firstSet, uint32_t count, struct DescriptorSet *sets)
+{ Re_contextProcs.BindDescriptorSets(Re_CurrentContext(), layout, firstSet, count, sets); }
+static inline void Re_PushConstants(struct PipelineLayout *layout, enum ShaderStage stage, uint32_t size, const void *data)
+{ Re_contextProcs.PushConstants(Re_CurrentContext(), layout, stage, size, data); }
+
 static inline void Re_BindVertexBuffers(uint32_t count, struct Buffer **buffers, uint64_t *offsets) { Re_contextProcs.BindVertexBuffers(Re_CurrentContext(), count, buffers, offsets); }
 static inline void Re_BindIndexBuffer(struct Buffer *buff, uint64_t offset, enum IndexType type) { Re_contextProcs.BindIndexBuffer(Re_CurrentContext(), buff, offset, type); }
 
@@ -126,6 +148,11 @@ static inline void Re_ExecuteSecondary(struct RenderContext **contexts, uint32_t
 
 static inline void Re_BeginRenderPass(struct RenderPass *pass, struct Framebuffer *fb) { Re_contextProcs.BeginRenderPass(Re_CurrentContext(), pass, fb); }
 static inline void Re_EndRenderPass(void) { Re_contextProcs.EndRenderPass(Re_CurrentContext()); }
+
+static inline void Re_SetViewport(float x, float y, float width, float height, float minDepth, float maxDepth)
+{ Re_contextProcs.SetViewport(Re_CurrentContext(), x, y, width, height, minDepth, maxDepth); }
+static inline void Re_SetScissor(int32_t x, int32_t y, int32_t width, int32_t height)
+{ Re_contextProcs.SetScissor(Re_CurrentContext(), x, y, width, height); }
 
 static inline void Re_Draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
 { Re_contextProcs.Draw(Re_CurrentContext(), vertexCount, instanceCount, firstVertex, firstInstance); }

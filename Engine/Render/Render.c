@@ -36,6 +36,9 @@ Re_InitRender(void)
 	uint32_t devCount = 0;
 	struct RenderDeviceInfo *info = NULL, *selected = NULL;
 
+	if (E_GetCVarBln(L"Render_WaitForDebugger", false)->bln)
+		Sys_MessageBox(L"NekoEngine", L"Attach the graphics debugger now", MSG_ICON_INFO);
+
 #ifdef RENDER_DRIVER_BUILTIN
 	Re_driver = Re_LoadBuiltinDriver();
 #else
@@ -110,6 +113,7 @@ Re_InitRender(void)
 	}
 	
 	if (!selected) {
+		Sys_MessageBox(L"Fatal Error", L"No suitable graphics device found", MSG_ICON_ERROR);
 		Sys_LogEntry(RE_MOD, LOG_CRITICAL, L"No suitable device found");
 		return false;
 	}
@@ -141,6 +145,8 @@ Re_InitRender(void)
 		return false;
 	}
 	
+	Re_LoadShaders();
+	
 	Re_InitPipelines();
 	
 	Re_contexts = calloc(1, sizeof(*Re_contexts));
@@ -163,6 +169,8 @@ Re_TermRender(void)
 	free(Re_contexts);
 	
 	Re_TermPipelines();
+	
+	Re_UnloadShaders();
 	
 	Re_DestroySwapchain(Re_swapchain);
 	Re_DestroySurface(Re_surface);

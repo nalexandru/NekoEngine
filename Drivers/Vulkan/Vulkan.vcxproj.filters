@@ -16,6 +16,9 @@
     <Filter Include="Source Files\Platform">
       <UniqueIdentifier>{fa311125-5e8c-455f-84ac-996a33be1c0c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders">
+      <UniqueIdentifier>{5b2d7a87-c662-4408-a13a-30eb24f6a7cf}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="VulkanDriver.h">
@@ -68,5 +71,19 @@
     <ClCompile Include="RenderPass.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="DescriptorSet.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Shader.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Shaders\DefaultPBR_VS.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\DefaultPBR_MR_FS.frag">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

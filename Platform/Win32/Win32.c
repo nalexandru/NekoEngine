@@ -5,9 +5,12 @@
 #endif
 
 #include <System/System.h>
+#include <System/Memory.h>
 #include <Engine/Engine.h>
+#include <Engine/Application.h>
 
 #include "Win32Platform.h"
+#include <ShlObj.h>
 
 static int32_t _numCpus = 0, _cpuFreq = 0;
 static HANDLE _stdout, _stderr, _k32;
@@ -366,6 +369,39 @@ void
 Sys_USleep(uint32_t usec)
 {
 	Sleep(usec / 1000);
+}
+
+void
+Sys_DirectoryPath(enum SystemDirectory sd, char *out, size_t len)
+{
+	WCHAR *path = NULL;
+
+	switch (sd) {
+	case SD_SAVE_GAME: SHGetKnownFolderPath(&FOLDERID_SavedGames, 0, NULL, &path); break;
+	case SD_APP_DATA: SHGetKnownFolderPath(&FOLDERID_LocalAppData, 0, NULL, &path); break;
+	case SD_TEMP: GetTempPathA(len, out); break;
+	}
+
+	if (path) {
+		wchar_t *tmp = Sys_Alloc(sizeof(*tmp), 4096, MH_Transient);
+		swprintf(tmp, 4096, L"%ls/%ls", path, App_applicationInfo.name);
+		wcstombs(out, tmp, wcslen(tmp));
+		CoTaskMemFree(path);
+	}
+
+}
+
+bool
+Sys_DirectoryExists(const char *path)
+{
+	DWORD attr = GetFileAttributesA(path);
+	return attr != INVALID_FILE_ATTRIBUTES && attr & FILE_ATTRIBUTE_DIRECTORY;
+}
+
+bool
+Sys_CreateDirectory(const char *path)
+{
+	return CreateDirectoryA(path, NULL);
 }
 
 void

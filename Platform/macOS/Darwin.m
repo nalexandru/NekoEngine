@@ -52,17 +52,13 @@ Sys_InitDbgOut(void)
 void
 Sys_DbgOut(int color, const wchar_t *module, const wchar_t *severity, const wchar_t *text)
 {
-	char *m, *s, *t;
-	
-	m = Sys_Alloc(wcslen(module), sizeof(*m) + 1, MH_Transient);
-	s = Sys_Alloc(wcslen(severity), sizeof(*s) + 1, MH_Transient);
-	t = Sys_Alloc(wcslen(text), sizeof(*t) + 1, MH_Transient);
-	
-	wcstombs(m, module, wcslen(module));
-	wcstombs(s, severity, wcslen(severity));
-	wcstombs(t, text, wcslen(text));
-	
-	NSLog(@"[%s][%s]: %s\n", m, s, t);
+	@autoreleasepool {
+		NSLog(@"[%@][%@]: %@\n",
+			  [[NSString alloc] initWithBytes: module length: wcslen(module) * sizeof(wchar_t) encoding: NSUTF32LittleEndianStringEncoding],
+			  [[NSString alloc] initWithBytes: severity length: wcslen(severity) * sizeof(wchar_t) encoding: NSUTF32LittleEndianStringEncoding],
+			  [[NSString alloc] initWithBytes: text length: wcslen(text) * sizeof(wchar_t) encoding: NSUTF32LittleEndianStringEncoding]
+		);
+	}
 }
 
 void
@@ -234,6 +230,54 @@ Sys_USleep(uint32_t usec)
 	usleep(usec);
 }
 
+void
+Sys_DirectoryPath(enum SystemDirectory sd, char *out, size_t len)
+{
+	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+	
+	switch (sd) {
+	case SD_SAVE_GAME: {
+		NSArray<NSURL *> *urls = [[NSFileManager defaultManager] URLsForDirectory: NSDocumentDirectory
+																		inDomains: NSUserDomainMask];
+		
+		NSURL *path = [[urls firstObject] URLByAppendingPathComponent: [[NSString alloc] initWithBytes: App_applicationInfo.name
+																								length: wcslen(App_applicationInfo.name) * sizeof(wchar_t)
+																							  encoding: NSUTF32LittleEndianStringEncoding]];
+		
+		snprintf(out, len, "%s", [[path path] UTF8String]);
+	} break;
+	case SD_APP_DATA: {
+		const char *path = [[Darwin_appSupportURL path] UTF8String];
+		snprintf(out, len, "%s", path);
+	} break;
+	case SD_TEMP: {
+		snprintf(out, len, "%s", [[[[NSFileManager defaultManager] temporaryDirectory] path] UTF8String]);
+	} break;
+	}
+	
+	[pool release];
+}
+
+bool
+Sys_DirectoryExists(const char *path)
+{
+	@autoreleasepool {
+		return [[NSFileManager defaultManager] fileExistsAtPath: [NSString stringWithUTF8String: path]
+													isDirectory: nil];
+	}
+}
+
+bool
+Sys_CreateDirectory(const char *path)
+{
+	@autoreleasepool {
+		return [[NSFileManager defaultManager] createDirectoryAtPath: [NSString stringWithUTF8String: path]
+										 withIntermediateDirectories: true
+														  attributes: nil
+															   error: nil];
+	}
+}
+
 void *
 Sys_AlignedAlloc(size_t size, size_t alignment)
 {
@@ -262,11 +306,7 @@ Sys_InitDarwinPlatform(void)
 	_machTimerFreq = tb.numer / tb.denom;
 	
 	char dataDir[2048];
-	wchar_t wDir[2048];
 	getcwd(dataDir, 2048);
-	
-	if (dataDir[strlen(dataDir) - 1] != '/')
-		strncat(dataDir, "/", 1);
 	
 	strncat(dataDir, "/Data", 5);
 	
@@ -275,22 +315,18 @@ Sys_InitDarwinPlatform(void)
 	NSArray<NSURL *> *urls = [[NSFileManager defaultManager] URLsForDirectory: NSApplicationSupportDirectory
 																	inDomains: NSUserDomainMask];
 	
-	Darwin_appSupportURL = [urls firstObject];
+	Darwin_appSupportURL = [[urls firstObject] URLByAppendingPathComponent: [[NSString alloc] initWithBytes: App_applicationInfo.name
+																									 length: wcslen(App_applicationInfo.name) * sizeof(wchar_t)
+																								   encoding: NSUTF32LittleEndianStringEncoding]];
 	[Darwin_appSupportURL retain];
 	
-	const char *appSupport = [[Darwin_appSupportURL path] UTF8String];
-
-	swprintf(wDir, sizeof(wDir) / sizeof(wchar_t), L"%hs/%ls", appSupport, App_applicationInfo.name);
-	NSString *appSupportPath = [[NSString alloc] initWithBytes: wDir
-														length: wcslen(wDir) * sizeof(wchar_t)
-													  encoding: NSUTF32LittleEndianStringEncoding];
-	if (![[NSFileManager defaultManager] fileExistsAtPath: appSupportPath])
-		[[NSFileManager defaultManager] createDirectoryAtPath: appSupportPath
+	if (![[NSFileManager defaultManager] fileExistsAtPath: [Darwin_appSupportURL path]])
+		[[NSFileManager defaultManager] createDirectoryAtPath: [Darwin_appSupportURL path]
 								  withIntermediateDirectories: TRUE
 												   attributes: nil
 														error: nil];
 	
-	appSupportPath = [appSupportPath stringByAppendingPathComponent: @"Engine.log"];
+	NSString *appSupportPath = [[Darwin_appSupportURL path] stringByAppendingPathComponent: @"Engine.log"];
 	E_SetCVarStr(L"Engine_LogFile", [appSupportPath UTF8String]);
 	
 	uname(&Darwin_uname);

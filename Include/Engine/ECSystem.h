@@ -4,8 +4,8 @@
 #include <Engine/Types.h>
 
 #define	ECSYS_GROUP_MANUAL		L"manual"			// Executed only explicitly
-#define	ECSYS_GROUP_PRE_LOGIC	L"grp_pre_logic"		// Executed 
-#define	ECSYS_GROUP_LOGIC		L"grp_logic"			//
+#define	ECSYS_GROUP_PRE_LOGIC	L"grp_pre_logic"	// Executed 
+#define	ECSYS_GROUP_LOGIC		L"grp_logic"		//
 #define ECSYS_GROUP_POST_LOGIC	L"grp_post_logic"	//
 #define ECSYS_GROUP_FIXED_LOGIC	L"grp_fixed_logic"	//
 #define	ECSYS_GROUP_PRE_RENDER	L"grp_pre_render"	//

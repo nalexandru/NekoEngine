@@ -16,10 +16,7 @@ MTL_CreateBuffer(id<MTLDevice> dev, const struct BufferCreateInfo *bci)
 	
 	MTLResourceOptions options = MTL_GPUMemoryTypetoResourceOptions([dev hasUnifiedMemory], bci->desc.memoryType);
 	
-	if (bci->data && bci->dataSize == bci->desc.size)
-		buff->buff = [dev newBufferWithBytes: bci->data length: bci->desc.size options: options];
-	else
-		buff->buff = [dev newBufferWithLength: bci->dataSize options: options];
+	buff->buff = [dev newBufferWithLength: bci->dataSize options: options];
 	
 	if (!buff->buff) {
 		free(buff);
@@ -28,7 +25,10 @@ MTL_CreateBuffer(id<MTLDevice> dev, const struct BufferCreateInfo *bci)
 	
 	memcpy(&buff->desc, &bci->desc, sizeof(buff->desc));
 	
-	return NULL;
+	if (bci->data)
+		MTL_UpdateBuffer(dev, buff, 0, bci->data, bci->dataSize);
+	
+	return buff;
 }
 
 void

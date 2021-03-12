@@ -3,6 +3,23 @@
 
 #include <Engine/Types.h>
 
+struct jsmntok;
+
+struct Metadata
+{
+	char *json;
+	struct jsmntok *tokens;
+	uint32_t tokenCount;
+	int64_t jsonSize;
+	
+	uint32_t version;
+	const char *id;
+};
+
+// Metadata
+bool E_LoadMetadata(struct Metadata *meta, const char *file);
+void E_LoadMetadataFloatVector(struct Metadata *meta, struct jsmntok *tok, float *out, int count);
+
 // Models
 bool E_LoadNMeshAsset(struct Stream *stm, struct Model *m);
 bool E_LoadglTFAsset(const char *baseDir, struct Stream *stm, struct Model *m);

@@ -18,7 +18,7 @@ struct Transform
 	struct vec3 forward, right, up;
 
 	struct Transform *parent;
-	Array children;
+	struct Array children;
 };
 
 bool Scn_InitTransform(struct Transform *xform, const void **args);

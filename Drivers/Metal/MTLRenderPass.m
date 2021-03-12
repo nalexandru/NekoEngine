@@ -22,6 +22,9 @@ MTL_CreateRenderPass(id<MTLDevice> dev, const struct RenderPassDesc *desc)
 	
 	[rp->desc retain];
 	
+	rp->attachmentCount = desc->attachmentCount;
+	rp->attachmentFormats = calloc(sizeof(*rp->attachmentFormats), desc->attachmentCount);
+	
 	for (uint32_t i = 0; i < desc->attachmentCount; ++i) {
 		const struct AttachmentDesc *at = &desc->attachments[i];
 		
@@ -37,6 +40,7 @@ MTL_CreateRenderPass(id<MTLDevice> dev, const struct RenderPassDesc *desc)
 		}
 		
 		rp->desc.colorAttachments[i].clearColor = MTLClearColorMake(1.f, 0.f, 0.f, 1.f);
+		rp->attachmentFormats[i] = NeToMTLTextureFormat(at->format);
 	}
 	
 	return rp;

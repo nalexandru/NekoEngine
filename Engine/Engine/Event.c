@@ -19,7 +19,7 @@ struct EventHandler
 struct EventHandlerInfo
 {
 	uint64_t event;
-	Array handlers;
+	struct Array handlers;
 };
 
 struct ProcessEventArgs
@@ -28,7 +28,7 @@ struct ProcessEventArgs
 	void *args;
 };
 
-static Array _handlers, _queue[2], *_currentQueue;
+static struct Array _handlers, _queue[2], *_currentQueue;
 static int _currentQueueId;
 static struct AtomicLock _queueLock, _handlerLock;
 
@@ -147,7 +147,7 @@ E_ProcessEvents(void)
 	struct Event *evt;
 	struct EventHandlerInfo *info;
 	struct ProcessEventArgs *args;
-	Array *queue = _currentQueue;
+	struct Array *queue = _currentQueue;
 	
 	Sys_AtomicLockWrite(&_queueLock);
 	_currentQueueId = !_currentQueueId;

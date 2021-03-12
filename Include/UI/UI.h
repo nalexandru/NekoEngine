@@ -25,7 +25,7 @@ struct UIContext
 {
 	COMPONENT_BASE;
 
-	Array vertices, indices, draws;
+	struct Array vertices, indices, draws;
 };
 
 ENGINE_API extern struct mat4 UI_projection;

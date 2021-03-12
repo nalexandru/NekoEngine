@@ -60,6 +60,17 @@ enum TextureUsage
 	TU_FRAGMENT_DENSITY_MAP			= 0x00000200
 };
 
+enum TextureLayout
+{
+	TL_UNKNOWN = 0,
+	TL_COLOR_ATTACHMENT,
+	TL_DEPTH_STENCIL_ATTACHMENT,
+	TL_DEPTH_STENCIL_READ_ONLY,
+	TL_TRANSFER_SRC,
+	TL_TRANSFER_DST,
+	TL_SHADER_READ_ONLY
+};
+
 struct TextureDesc
 {
 	uint32_t width, height, depth;
@@ -81,6 +92,7 @@ struct TextureCreateInfo
 
 static inline struct Texture *Re_CreateTexture(struct RenderDevice *dev, const struct TextureCreateInfo *tci) { return Re_deviceProcs.CreateTexture(dev, tci); };
 static inline const struct TextureDesc *Re_TextureDesc(const struct Texture *tex) { return Re_deviceProcs.TextureDesc(tex); }
+static inline enum TextureLayout Re_TextureLayout(const struct Texture *tex) { return Re_deviceProcs.TextureLayout(tex); }
 static inline void Re_DestroyTexture(struct RenderDevice *dev, struct Texture *tex) { Re_deviceProcs.DestroyTexture(dev, tex); }
 
 //static inline void Re_UpdateTexture(struct Texture *tex, uint64_t offset, uint64_t size, void *data);

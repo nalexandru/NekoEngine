@@ -68,25 +68,62 @@ static void
 _BindPipeline(struct RenderContext *ctx, struct Pipeline *pipeline)
 {
 	ctx->boundPipeline = pipeline;
+	
+	if (ctx->type == RC_RENDER)
+		[ctx->encoders.render setRenderPipelineState: pipeline->render.state];
+	else if (ctx->type == RC_COMPUTE)
+		[ctx->encoders.compute setComputePipelineState: pipeline->computeState];
 }
 
 static void
 _BindDescriptorSets(struct RenderContext *ctx, struct PipelineLayout *layout, uint32_t firstSet, uint32_t count, struct DescriptorSet *sets)
 {
-	// skip through the pipeline layout until firstSet
-	// populate buffers for count sets
-	//for (uint32_t)
-	
 	if (ctx->type == RC_RENDER) {
-	//	[ctx->encoders.render setVertexBufferOffset:<#(NSUInteger)#> atIndex:<#(NSUInteger)#>]
-	}
+		uint32_t nextVertexBuffer = layout->sets[firstSet].firstBuffer;
+		uint32_t nextFragmentBuffer = layout->sets[firstSet].firstBuffer;
+		uint32_t nextVertexTexture = layout->sets[firstSet].firstTexture;
+		uint32_t nextFragmentTexture = layout->sets[firstSet].firstTexture;
 	
-	// FIXME: is this correct ?
-	/*if (stage & SS_VERTEX || stage & SS_GEOMETRY || stage & SS_TESS_CTRL || stage && SS_TESS_EVAL) {
+		for (uint32_t i = 0; i < count; ++i) {
+			if (sets[i].vertex.bufferCount)
+				[ctx->encoders.render setVertexBuffers: sets[i].vertex.buffers
+											offsets: sets[i].vertex.offsets
+											withRange: NSMakeRange(nextVertexBuffer, sets[i].vertex.bufferCount)];
+			nextVertexBuffer += sets[i].vertex.bufferCount;
 		
-	} else if (stage & SS_FRAGMENT) {
+			if (sets[i].fragment.bufferCount)
+				[ctx->encoders.render setFragmentBuffers: sets[i].fragment.buffers
+												offsets: sets[i].fragment.offsets
+											withRange: NSMakeRange(nextFragmentBuffer, sets[i].fragment.bufferCount)];
+			nextFragmentBuffer += sets[i].fragment.bufferCount;
 		
-	}*/
+			if (sets[i].vertex.textureCount)
+				[ctx->encoders.render setVertexTextures: sets[i].vertex.textures
+											  withRange: NSMakeRange(nextVertexTexture, sets[i].vertex.textureCount)];
+			nextVertexBuffer += sets[i].vertex.textureCount;
+		
+			if (sets[i].fragment.textureCount)
+				[ctx->encoders.render setFragmentTextures: sets[i].fragment.textures
+												withRange: NSMakeRange(nextFragmentTexture, sets[i].fragment.textureCount)];
+			nextFragmentTexture += sets[i].vertex.textureCount;
+		}
+	} else if (ctx->type == RC_COMPUTE) {
+		uint32_t nextBuffer = layout->sets[firstSet].firstBuffer;
+		uint32_t nextTexture = layout->sets[firstSet].firstTexture;
+		
+		for (uint32_t i = 0; i < count; ++i) {
+			if (sets[i].compute.bufferCount)
+				[ctx->encoders.compute setBuffers: sets[i].compute.buffers
+										  offsets: sets[i].compute.offsets
+										withRange: NSMakeRange(nextBuffer, sets[i].compute.bufferCount)];
+			nextBuffer += sets[i].compute.bufferCount;
+		
+			if (sets[i].compute.textureCount)
+				[ctx->encoders.compute setTextures: sets[i].compute.textures
+										 withRange: NSMakeRange(nextTexture, sets[i].compute.textureCount)];
+			nextTexture += sets[i].compute.textureCount;
+		}
+	}
 }
 
 static void
@@ -173,55 +210,65 @@ _DrawIndexed(struct RenderContext *ctx, uint32_t indexCount, uint32_t instanceCo
 static void
 _DrawIndirect(struct RenderContext *ctx, struct Buffer *buff, uint64_t offset, uint32_t count, uint32_t stride)
 {
-	
+	[ctx->encoders.render drawPrimitives: ctx->boundPipeline->render.primitiveType
+						  indirectBuffer: buff->buff
+					indirectBufferOffset: offset];
 }
 
 static void
 _DrawIndexedIndirect(struct RenderContext *ctx, struct Buffer *buff, uint64_t offset, uint32_t count, uint32_t stride)
 {
-	//
+	[ctx->encoders.render drawIndexedPrimitives: ctx->boundPipeline->render.primitiveType
+									  indexType: ctx->boundIndexBuffer.type
+									indexBuffer: ctx->boundIndexBuffer.buffer->buff
+							  indexBufferOffset: ctx->boundIndexBuffer.offset
+								 indirectBuffer: buff->buff
+						   indirectBufferOffset: offset];
 }
 
 static void
 _Dispatch(struct RenderContext *ctx, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
 {
-//	[ctx->encoders.compute dispatchThreadgroups:<#(MTLSize)#> threadsPerThreadgroup:<#(MTLSize)#>]
+	[ctx->encoders.compute dispatchThreadgroups: MTLSizeMake(groupCountX, groupCountY, groupCountZ)
+						  threadsPerThreadgroup: MTLSizeMake(16, 16, 1)];
 }
 
 static void
 _DispatchIndirect(struct RenderContext *ctx, struct Buffer *buff, uint64_t offset)
 {
-//	pctx->encoders.compute dispatchThreadgroupsWithIndirectBuffer:<#(nonnull id<MTLBuffer>)#> indirectBufferOffset:<#(NSUInteger)#> threadsPerThreadgroup:<#(MTLSize)#>];
+	[ctx->encoders.compute dispatchThreadgroupsWithIndirectBuffer: buff->buff
+											 indirectBufferOffset: offset
+											threadsPerThreadgroup: MTLSizeMake(16, 16, 1)];
 }
 
 static void
 _TraceRays(struct RenderContext *ctx, uint32_t width, uint32_t height, uint32_t depth)
 {
-//	[ctx->encoders.render re]
+	_Dispatch(ctx, width, height, depth);
 }
 
 static void
 _TraceRaysIndirect(struct RenderContext *ctx, struct Buffer *buff, uint64_t offset)
 {
-//
+	_DispatchIndirect(ctx, buff, offset);
 }
 
 static void
 _BuildAccelerationStructure(struct RenderContext *ctx, struct AccelerationStructure *as, struct Buffer *scratch)
 {
-	
+	//
 }
 
 static void
 _Barrier(struct RenderContext *ctx)
 {
-	
+//	[ctx->encoders.render memoryBarrierWithResources:<#(id<MTLResource>  _Nonnull const * _Nonnull)#> count:<#(NSUInteger)#> afterStages:<#(MTLRenderStages)#> beforeStages:<#(MTLRenderStages)#>]
 }
 
 static void
-_Transition(struct RenderContext *ctx, struct Texture *tex)
+_Transition(struct RenderContext *ctx, struct Texture *tex, enum TextureLayout newLayout)
 {
-	
+	tex->layout = newLayout;
 }
 
 static void
@@ -237,25 +284,52 @@ _CopyBuffer(struct RenderContext *ctx, struct Buffer *dst, uint64_t dstOffset, s
 static void
 _CopyImage(struct RenderContext *ctx, struct Texture *dst, struct Texture *src)
 {
-	
+	[ctx->encoders.blit copyFromTexture: src->tex toTexture: dst->tex];
 }
 
 static void
-_CopyBufferToImage(struct RenderContext *ctx, struct Buffer *src, struct Texture *dst)
+_CopyBufferToImage(struct RenderContext *ctx, struct Buffer *src, struct Texture *dst, const struct BufferImageCopy *bic)
 {
-	//
+	[ctx->encoders.blit copyFromBuffer: src->buff
+						  sourceOffset: bic->bufferOffset
+					 sourceBytesPerRow: bic->rowLength
+				   sourceBytesPerImage: 0
+							sourceSize: MTLSizeMake(bic->imageSize.width, bic->imageSize.height, bic->imageSize.depth)
+							 toTexture: dst->tex
+					  destinationSlice: bic->subresource.baseArrayLayer
+					  destinationLevel: bic->subresource.mipLevel
+					 destinationOrigin: MTLOriginMake(bic->imageOffset.x, bic->imageOffset.y, bic->imageOffset.z)];
 }
 
 static void
-_CopyImageToBuffer(struct RenderContext *ctx, struct Texture *src, struct Buffer *dst)
+_CopyImageToBuffer(struct RenderContext *ctx, struct Texture *src, struct Buffer *dst, const struct BufferImageCopy *bic)
 {
-	//
+	[ctx->encoders.blit copyFromTexture: src->tex
+							sourceSlice: bic->subresource.baseArrayLayer
+							sourceLevel: bic->subresource.mipLevel
+						   sourceOrigin: MTLOriginMake(bic->imageOffset.x, bic->imageOffset.y, bic->imageOffset.z)
+							 sourceSize: MTLSizeMake(bic->imageSize.width, bic->imageSize.height, bic->imageSize.depth)
+							   toBuffer: dst->buff
+					  destinationOffset: bic->bufferOffset
+				 destinationBytesPerRow: bic->rowLength
+			   destinationBytesPerImage: 0];
 }
 
 static void
 _Blit(struct RenderContext *ctx, struct Texture *dst, struct Texture *src, const struct BlitRegion *regions, uint32_t regionCount, enum BlitFilter filter)
 {
-	
+	for (uint32_t i = 0; i < regionCount; ++i) {
+		const struct BlitRegion r = regions[i];
+		[ctx->encoders.blit copyFromTexture: src->tex
+								sourceSlice: r.srcSubresource.baseArrayLayer
+								sourceLevel: r.srcSubresource.mipLevel
+							   sourceOrigin: MTLOriginMake(r.srcOffset.x, r.srcOffset.y, r.srcOffset.z)
+								 sourceSize: MTLSizeMake(r.srcSize.width, r.srcSize.height, r.srcSize.depth)
+								  toTexture: dst->tex
+						   destinationSlice: r.dstSubresource.baseArrayLayer
+						   destinationLevel: r.dstSubresource.mipLevel
+						  destinationOrigin: MTLOriginMake(r.dstOffset.x, r.dstOffset.y, r.dstOffset.z)];
+	}
 }
 
 static bool

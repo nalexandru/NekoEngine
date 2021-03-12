@@ -140,12 +140,14 @@
     <ClCompile Include="AccelerationStructure.c" />
     <ClCompile Include="Buffer.c" />
     <ClCompile Include="Context.c" />
+    <ClCompile Include="DescriptorSet.c" />
     <ClCompile Include="Device.c" />
     <ClCompile Include="Driver.c" />
     <ClCompile Include="Framebuffer.c" />
     <ClCompile Include="Pipeline.c" />
     <ClCompile Include="Platform\Win32.c" />
     <ClCompile Include="RenderPass.c" />
+    <ClCompile Include="Shader.c" />
     <ClCompile Include="ShaderBindingTable.c" />
     <ClCompile Include="Swapchain.c" />
     <ClCompile Include="Texture.c" />
@@ -159,6 +161,10 @@
   <ItemGroup>
     <ClInclude Include="volk.h" />
     <ClInclude Include="VulkanDriver.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Shaders\DefaultPBR_MR_FS.frag" />
+    <None Include="Shaders\DefaultPBR_VS.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

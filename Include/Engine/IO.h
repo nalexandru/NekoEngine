@@ -28,6 +28,14 @@ enum StreamType
 	ST_MappedFile
 };
 
+enum WriteDirectory
+{
+	WD_Data,
+	WD_Save,
+	WD_Temp,
+	WD_Config
+};
+
 struct Stream
 {
 	uint8_t *ptr;
@@ -51,10 +59,15 @@ bool		  E_FEof(File f);
 bool		  E_FileExists(const char *path);
 void		  E_CloseFile(File file);
 bool		  E_Mount(const char *path, const char *point);
+bool		  E_MountMemory(const char *name, const void *ptr, uint64_t size, const char *point);
 const char	**E_ListFiles(const char *dir);
 bool		  E_IsDirectory(const char *path);
 void		  E_FreeFileList(const char **list);
 void		  E_ProcessFiles(const char *path, const char *ext, bool recurse, void (*cb)(const char *));
+
+bool		  E_EnableWrite(enum WriteDirectory wd);
+void		  E_DisableWrite(void);
+bool		  E_CreateDirectory(const char *name);
 
 bool		  E_FileStream(const char *path, FileOpenMode mode, struct Stream *stm);
 bool		  E_MemoryStream(void *buff, uint64_t size, struct Stream *stm);

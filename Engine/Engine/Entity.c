@@ -9,7 +9,7 @@
 
 #define ENT_MOD	L"Entity"
 
-static Array _entity_types;
+static struct Array _entity_types;
 
 static int _TypeCmp(const void *, const void *);
 static inline bool _AddComponent(struct Scene *s, struct Entity *, CompTypeId, CompHandle);

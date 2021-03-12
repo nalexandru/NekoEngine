@@ -31,7 +31,7 @@ struct BufferCreateInfo
 	struct BufferDesc desc;
 	void *data;
 	uint64_t dataSize;
-	bool keepData;
+	bool keepData, dedicatedAllocation;
 };
 
 static inline struct Buffer *Re_CreateBuffer(const struct BufferCreateInfo *bci) { return Re_deviceProcs.CreateBuffer(Re_device, bci); };

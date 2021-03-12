@@ -2,6 +2,7 @@
 
 #include <System/Memory.h>
 #include <Render/Render.h>
+#include <Runtime/Runtime.h>
 
 #include "VulkanDriver.h"
 
@@ -24,7 +25,7 @@ Vk_CreateContext(struct RenderDevice *dev)
 		.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,
 	};
 
-	Array *arrays = calloc(RE_NUM_FRAMES * 3, sizeof(*arrays));
+	struct Array *arrays = calloc(RE_NUM_FRAMES * 3, sizeof(*arrays));
 	if (!arrays)
 		return NULL;
 
@@ -157,6 +158,19 @@ static void
 _BindPipeline(struct RenderContext *ctx, struct Pipeline *pipeline)
 {
 	vkCmdBindPipeline(ctx->cmdBuffer, pipeline->bindPoint, pipeline->pipeline);
+	ctx->boundPipeline = pipeline;
+}
+
+static void
+_BindDescriptorSets(struct RenderContext *ctx, struct PipelineLayout *layout, uint32_t firstSet, uint32_t count, const struct DescriptorSet *sets)
+{
+	vkCmdBindDescriptorSets(ctx->cmdBuffer, ctx->boundPipeline->bindPoint, layout->layout, firstSet, count, (const VkDescriptorSet *)&sets, 0, NULL);
+}
+
+static void
+_PushConstants(struct RenderContext *ctx, struct PipelineLayout *layout, enum ShaderStage stage, uint32_t size, const void *data)
+{
+	vkCmdPushConstants(ctx->cmdBuffer, layout->layout, stage, 0, size, data);
 }
 
 static void
@@ -222,6 +236,20 @@ _EndRenderPass(struct RenderContext *ctx)
 }
 
 static void
+_SetViewport(struct RenderContext *ctx, float x, float y, float width, float height, float minDepth, float maxDepth)
+{
+	VkViewport vp = { x, height + y, width, -height, minDepth, maxDepth };
+	vkCmdSetViewport(ctx->cmdBuffer, 0, 1, &vp);
+}
+
+static void
+_SetScissor(struct RenderContext *ctx, int32_t x, int32_t y, int32_t width, int32_t height)
+{
+	VkRect2D scissor = { { x, y }, { width, height } };
+	vkCmdSetScissor(ctx->cmdBuffer, 0, 1, &scissor);
+}
+
+static void
 _Draw(struct RenderContext *ctx, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
 {
 	vkCmdDraw(ctx->cmdBuffer, vertexCount, instanceCount, firstVertex, firstInstance);
@@ -282,9 +310,94 @@ _Barrier(struct RenderContext *ctx)
 }
 
 static void
-_Transition(struct RenderContext *ctx, struct Texture *tex)
+_Transition(struct RenderContext *ctx, struct Texture *tex, enum TextureLayout newLayout)
 {
-	
+	VkPipelineStageFlagBits src = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+	VkImageMemoryBarrier barrier =
+	{
+		.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+		.oldLayout = tex->layout,
+		.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+		.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+		.image = tex->image,
+		.subresourceRange =
+		{
+			.baseMipLevel = 0,
+			.baseArrayLayer = 0,
+			.levelCount = 1,
+			.layerCount = 1
+		}
+	};
+
+	switch (barrier.oldLayout) {
+	case VK_IMAGE_LAYOUT_PREINITIALIZED:
+		barrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
+		src = VK_PIPELINE_STAGE_HOST_BIT;
+	break;
+	case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+		barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		src = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	break;
+	case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+		barrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		src = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+	break;
+	case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+		barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+		src = VK_PIPELINE_STAGE_TRANSFER_BIT;
+		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	break;
+	case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		src = VK_PIPELINE_STAGE_TRANSFER_BIT;
+		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	break;
+	case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+		barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+		src = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	break;
+	default:
+		barrier.srcAccessMask = 0;
+		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	break;
+	}
+
+	switch (newLayout) {
+	case TL_COLOR_ATTACHMENT:
+		barrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		dst = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	break;
+	case TL_DEPTH_STENCIL_ATTACHMENT:
+		barrier.newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		dst = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+	break;
+	case TL_TRANSFER_SRC:
+		barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+		dst = VK_PIPELINE_STAGE_TRANSFER_BIT;
+	break;
+	case TL_TRANSFER_DST:
+		barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		dst = VK_PIPELINE_STAGE_TRANSFER_BIT;
+	break; 
+	case TL_SHADER_READ_ONLY:
+		barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		dst = VK_PIPELINE_STAGE_TRANSFER_BIT;
+		break;
+	default:
+		barrier.newLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		barrier.dstAccessMask = 0;
+	break;
+	}
+
+	vkCmdPipelineBarrier(ctx->cmdBuffer, src, dst, 0, 0, NULL, 0, NULL, 1, &barrier);
 }
 
 static void
@@ -306,16 +419,45 @@ _CopyImage(struct RenderContext *ctx, struct Texture *dst, struct Texture *src)
 }
 
 static void
-_CopyBufferToImage(struct RenderContext *ctx, struct Buffer *src, struct Texture *dst)
+_CopyBufferToImage(struct RenderContext *ctx, struct Buffer *src, struct Texture *dst, const struct BufferImageCopy *bic)
 {
-	//
-	vkCmdCopyBufferToImage(ctx->cmdBuffer, src->buff, dst->image, dst->layout, 1, NULL);
+	VkBufferImageCopy b =
+	{
+		.bufferOffset = bic->bufferOffset,
+		.bufferRowLength = bic->rowLength,
+		.bufferImageHeight = bic->imageHeight,
+		.imageSubresource = 
+		{
+			.aspectMask = bic->subresource.aspect,
+			.mipLevel = bic->subresource.mipLevel,
+			.baseArrayLayer = bic->subresource.baseArrayLayer,
+			.layerCount = bic->subresource.layerCount
+		},
+		.imageOffset = { bic->imageOffset.x, bic->imageOffset.y, bic->imageOffset.z },
+		.imageExtent = { bic->imageSize.width, bic->imageSize.height, bic->imageSize.depth }
+	};
+	vkCmdCopyBufferToImage(ctx->cmdBuffer, src->buff, dst->image, dst->layout, 1, &b);
 }
 
 static void
-_CopyImageToBuffer(struct RenderContext *ctx, struct Texture *src, struct Buffer *dst)
+_CopyImageToBuffer(struct RenderContext *ctx, struct Texture *src, struct Buffer *dst, const struct BufferImageCopy *bic)
 {
-	vkCmdCopyImageToBuffer(ctx->cmdBuffer, src->image, src->layout, dst->buff, 1, NULL);
+	VkBufferImageCopy b =
+	{
+		.bufferOffset = bic->bufferOffset,
+		.bufferRowLength = bic->rowLength,
+		.bufferImageHeight = bic->imageHeight,
+		.imageSubresource = 
+		{
+			.aspectMask = bic->subresource.aspect,
+			.mipLevel = bic->subresource.mipLevel,
+			.baseArrayLayer = bic->subresource.baseArrayLayer,
+			.layerCount = bic->subresource.layerCount
+		},
+		.imageOffset = { bic->imageOffset.x, bic->imageOffset.y, bic->imageOffset.z },
+		.imageExtent = { bic->imageSize.width, bic->imageSize.height, bic->imageSize.depth }
+	};
+	vkCmdCopyImageToBuffer(ctx->cmdBuffer, src->image, src->layout, dst->buff, 1, &b);
 }
 
 static void
@@ -364,11 +506,15 @@ Vk_InitContextProcs(struct RenderContextProcs *p)
 	p->BeginTransferCommandBuffer = _BeginTransferCommandBuffer;
 	p->EndCommandBuffer = _EndCommandBuffer;
 	p->BindPipeline = _BindPipeline;
+	p->BindDescriptorSets = _BindDescriptorSets;
+	p->PushConstants = _PushConstants;
 	p->BindVertexBuffers = _BindVertexBuffers;
 	p->BindIndexBuffer = _BindIndexBuffer;
 	p->ExecuteSecondary = _ExecuteSecondary;
 	p->BeginRenderPass = _BeginRenderPass;
 	p->EndRenderPass = _EndRenderPass;
+	p->SetViewport = _SetViewport;
+	p->SetScissor = _SetScissor;
 	p->Draw = _Draw;
 	p->DrawIndexed = _DrawIndexed;
 	p->DrawIndirect = _DrawIndirect;

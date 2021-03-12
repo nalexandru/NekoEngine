@@ -6,6 +6,7 @@
 #include <Render/Driver.h>
 #include <Render/Device.h>
 #include <Render/Context.h>
+#include <Runtime/Runtime.h>
 #include <Engine/Config.h>
 #include <Engine/Version.h>
 #include <Engine/Application.h>
@@ -30,7 +31,7 @@ static struct RenderDriver _drv =
 
 VkInstance Vkd_inst = VK_NULL_HANDLE;
 VkAllocationCallbacks *Vkd_allocCb = NULL;
-Array Vkd_contexts;
+struct Array Vkd_contexts;
 
 static const char *_instLayers[10] = { 0 };
 static uint32_t _instLayerCount = 0;
@@ -146,6 +147,7 @@ _EnumerateDevices(uint32_t *count, struct RenderDeviceInfo *info)
 	VkPhysicalDeviceVulkan12Features *vk12Features = Sys_Alloc(sizeof(*vk12Features), 1, MH_Transient);
 	VkPhysicalDeviceMeshShaderFeaturesNV *msFeatures = Sys_Alloc(sizeof(*msFeatures), 1, MH_Transient);
 	VkPhysicalDeviceRayTracingPipelineFeaturesKHR *rtFeatures = Sys_Alloc(sizeof(*rtFeatures), 1, MH_Transient);
+	VkPhysicalDeviceExtendedDynamicStateFeaturesEXT *edsFeatures = Sys_Alloc(sizeof(*edsFeatures), 1, MH_Transient);
 
 	features->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 	features->pNext = vk11Features;
@@ -160,7 +162,10 @@ _EnumerateDevices(uint32_t *count, struct RenderDeviceInfo *info)
 	msFeatures->pNext = rtFeatures;
 
 	rtFeatures->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
-	rtFeatures->pNext = NULL;
+	rtFeatures->pNext = edsFeatures;
+
+	edsFeatures->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_FEATURES_EXT;
+	edsFeatures->pNext = NULL;
 
 	for (uint32_t i = 0; i < *count; ++i) {
 		vkGetPhysicalDeviceProperties(dev[i], props);
@@ -170,14 +175,17 @@ _EnumerateDevices(uint32_t *count, struct RenderDeviceInfo *info)
 		if (!features->features.fullDrawIndexUint32 || !features->features.samplerAnisotropy)
 			continue;
 
-		if (!vk12Features->imagelessFramebuffer || !vk12Features->descriptorIndexing || !vk12Features->bufferDeviceAddress ||
+		if (!vk12Features->imagelessFramebuffer || !vk12Features->descriptorIndexing ||
 				!vk12Features->descriptorBindingPartiallyBound || !vk12Features->timelineSemaphore)
+			continue;
+
+		if (!edsFeatures->extendedDynamicState)
 			continue;
 
 		snprintf(info[i].deviceName, sizeof(info[i].deviceName), "%s", props->deviceName);
 
 		info[i].features.meshShading = msFeatures->meshShader;
-		info[i].features.rayTracing = rtFeatures->rayTracingPipeline;
+		info[i].features.rayTracing = rtFeatures->rayTracingPipeline && vk12Features->bufferDeviceAddress;
 		info[i].features.discrete = props->deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
 		info[i].features.drawIndirectCount = vk12Features->drawIndirectCount;
 		info[i].features.textureCompression = features->features.textureCompressionBC;

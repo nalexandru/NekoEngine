@@ -10,6 +10,7 @@
 #include <System/Memory.h>
 #include <System/System.h>
 #include <Runtime/Runtime.h>
+#include <Engine/Application.h>
 
 #define IO_MODULE L"I/O"
 
@@ -230,6 +231,19 @@ E_Mount(const char *path, const char *point)
 	return true;
 }
 
+bool
+E_MountMemory(const char *name, const void *ptr, uint64_t size, const char *point)
+{
+	if (!PHYSFS_mountMemory(ptr, size, NULL, name, point, 0)) {
+		Sys_LogEntry(IO_MODULE, LOG_CRITICAL,
+			L"Failed to mount memory archive [%s] -> [%s]: %s", name, point,
+			PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+		return false;
+	}
+	
+	return true;
+}
+
 const char **
 E_ListFiles(const char *dir)
 {
@@ -282,6 +296,34 @@ E_ProcessFiles(const char *path, const char *ext, bool recurse, void (*cb)(const
 }
 
 bool
+E_EnableWrite(enum WriteDirectory wd)
+{
+	size_t len = 4096;
+	char *dir = Sys_Alloc(sizeof(*dir), len, MH_Transient);
+
+	switch (wd) {
+	case WD_Data: memcpy(dir, E_GetCVarStr(L"Engine_DataDir", NULL)->str, len); break;
+	case WD_Save: Sys_DirectoryPath(SD_SAVE_GAME, dir, len); break;
+	case WD_Temp: Sys_DirectoryPath(SD_TEMP, dir, len); break;
+	case WD_Config: Sys_DirectoryPath(SD_APP_DATA, dir, len); break;
+	}
+
+	return PHYSFS_setWriteDir(dir);
+}
+
+void
+E_DisableWrite(void)
+{
+	PHYSFS_setWriteDir(NULL);
+}
+
+bool
+E_CreateDirectory(const char *path)
+{
+	return PHYSFS_mkdir(path);
+}
+
+bool
 E_FileStream(const char *path, FileOpenMode mode, struct Stream *stm)
 {
 	memset(stm, 0x0, sizeof(*stm));
@@ -331,7 +373,32 @@ E_InitIOSystem(const char *argv0)
 		return false;
 	}
 
-	if (!PHYSFS_mount(E_GetCVarStr(L"Engine_DataDir", "Data")->str, "/", 0))
+	const char *dataDir = E_GetCVarStr(L"Engine_DataDir", "Data")->str;
+	if (!Sys_DirectoryExists(dataDir))
+		Sys_CreateDirectory(dataDir);
+
+	if (!PHYSFS_mount(dataDir, "/", 0))
+		return false;
+
+	size_t len = 4096;
+	char *dir = Sys_Alloc(sizeof(*dir), len, MH_Transient);
+	
+	Sys_DirectoryPath(SD_TEMP, dir, len);
+	if (!PHYSFS_mount(dir, "/Temp", 1))
+		return false;
+
+	Sys_DirectoryPath(SD_SAVE_GAME, dir, len);
+	if (!Sys_DirectoryExists(dir))
+		Sys_CreateDirectory(dir);
+
+	if (!PHYSFS_mount(dir, "/Save", 1))
+		return false;
+
+	Sys_DirectoryPath(SD_APP_DATA, dir, len);
+	if (!Sys_DirectoryExists(dir))
+		Sys_CreateDirectory(dir);
+	
+	if (!PHYSFS_mount(dir, "/Config", 1))
 		return false;
 
 	/*if (!PHYSFS_mountMemory(engine_res, engine_res_size, 0,
@@ -340,35 +407,14 @@ E_InitIOSystem(const char *argv0)
 			L"Failed to load builtin resources: %ls",
 			PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));*/
 
-/*	rt_string write_dir;
-
-	rt_string_init(&write_dir, 2048);
-	sys_directory_path(USRDIR_DOCUMENTS, write_dir.data, write_dir.size, true);
-	write_dir.length = strlen(write_dir.data);
-
-	rt_string_append_format(&write_dir, "%s%s", PHYSFS_getDirSeparator(),
-		e_app_module ? e_app_module->app_name : "NekoEngine");
-
-	if (sys_directory_exists(write_dir.data) < 0) {
-		sys_create_directory(write_dir.data);
-
-		rt_string_append(&write_dir, "cache");
-		sys_create_directory(write_dir.data);
-	}
-
-	PHYSFS_setWriteDir(write_dir.data);
-	PHYSFS_addToSearchPath(write_dir.data, 1);
-
-	rt_string_release(&write_dir);*/
-
 	return true;
 }
 
 void
 E_TermIOSystem(void)
 {
-	if (!PHYSFS_unmount("engine_res.zip"))
-		Sys_LogEntry(IO_MODULE, LOG_DEBUG, L"Failed to unmount engine_res.zip");
+//	if (!PHYSFS_unmount("engine_res.zip"))
+//		Sys_LogEntry(IO_MODULE, LOG_DEBUG, L"Failed to unmount engine_res.zip");
 
 	PHYSFS_deinit();
 }

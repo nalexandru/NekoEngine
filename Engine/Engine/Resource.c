@@ -12,8 +12,8 @@
 
 struct ResourceList
 {
-	Array res;
-	Array free;
+	struct Array res;
+	struct Array free;
 	struct AtomicLock lock;
 };
 
@@ -40,7 +40,7 @@ struct Resource
 	uint8_t dataStart;
 };
 
-static Array _ResTypes;
+static struct Array _ResTypes;
 
 static inline Handle _NewResource(const char *path, const char *type, const void *ci, bool create);
 static inline struct Resource *_DecodeHandle(Handle res, struct ResType **rt);

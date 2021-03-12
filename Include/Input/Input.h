@@ -28,6 +28,8 @@ void In_TermInput(void);
 
 void In_Update(void);
 
+void In_EnableMouseAxis(bool enable);
+
 enum Axis In_CreateVirtualAxis(const wchar_t *name, enum Button min, enum Button max);
 enum Axis In_GetVirtualAxis(const wchar_t *name);
 

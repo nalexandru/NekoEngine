@@ -30,7 +30,7 @@ MTL_CreatePipelineLayout(id<MTLDevice> dev, const struct PipelineLayoutDesc *des
 		pl->sets[i].firstBuffer = firstBuffer;
 		pl->sets[i].firstTexture = firstTexture;
 		
-		const struct DescriptorSetLayoutDesc setDesc = desc->setLayouts[i];
+		const struct DescriptorSetLayoutDesc setDesc = desc->setLayouts[i]->desc;
 		
 		for (uint32_t j = 0; j < setDesc.bindingCount; ++j) {
 			if (setDesc.bindings[j].type == DT_TEXTURE)
@@ -53,41 +53,83 @@ MTL_DestroyPipelineLayout(id<MTLDevice> dev, struct PipelineLayout *layout)
 }
 
 struct Pipeline *
-MTL_GraphicsPipeline(id<MTLDevice> dev, struct Shader *sh, uint64_t flags, struct BlendAttachmentDesc *at, uint32_t atCount)
+MTL_GraphicsPipeline(id<MTLDevice> dev, const struct GraphicsPipelineDesc *gpDesc)
 {
 	MTLRenderPipelineDescriptor *desc = [[MTLRenderPipelineDescriptor alloc] init];
+	desc.binaryArchives = @[ _cache ];
+	
+	for (uint32_t i = 0; i < gpDesc->shader->stageCount; ++i) {
+		switch (gpDesc->shader->stages[i].stage) {
+		case SS_VERTEX: [desc setVertexFunction: (id<MTLFunction>)gpDesc->shader->stages[i].module]; break;
+		case SS_FRAGMENT: [desc setFragmentFunction: (id<MTLFunction>)gpDesc->shader->stages[i].module]; break;
+		default: continue;
+		}
+	}
+	
+	desc.alphaToCoverageEnabled = gpDesc->flags & RE_ALPHA_TO_COVERAGE;
+	desc.alphaToOneEnabled = gpDesc->flags & RE_ALPHA_TO_ONE;
+	desc.supportIndirectCommandBuffers = true;
+	desc.rasterizationEnabled = true;
+	
+	for (uint32_t i = 0; i < gpDesc->attachmentCount; ++i) {
+		desc.colorAttachments[i].pixelFormat = gpDesc->renderPass->attachmentFormats[i];
+		desc.colorAttachments[i].blendingEnabled = gpDesc->attachments[i].enableBlend;
+	
+		desc.colorAttachments[i].rgbBlendOperation = NeToMTLBlendOperation(gpDesc->attachments[i].colorOp);
+		desc.colorAttachments[i].sourceRGBBlendFactor = NeToMTLBlendFactor(gpDesc->attachments[i].srcColor);
+		desc.colorAttachments[i].destinationRGBBlendFactor = NeToMTLBlendFactor(gpDesc->attachments[i].dstColor);
+	
+		desc.colorAttachments[i].alphaBlendOperation = NeToMTLBlendOperation(gpDesc->attachments[i].alphaOp);
+		desc.colorAttachments[i].sourceAlphaBlendFactor = NeToMTLBlendFactor(gpDesc->attachments[i].srcAlpha);
+		desc.colorAttachments[i].destinationAlphaBlendFactor = NeToMTLBlendFactor(gpDesc->attachments[i].dstAlpha);
+	}
 	
 	NSError *err;
 	id<MTLRenderPipelineState> pso = [dev newRenderPipelineStateWithDescriptor: desc error: &err];
 	
+	//[_cache addRenderPipelineFunctionsWithDescriptor: desc error: nil];
 	[desc release];
 	
-	if (pso) {
-		struct Pipeline *p = malloc(sizeof(*p));
-		p->type = PS_RENDER;
+	if (!pso) {
+		Sys_LogEntry(MPMOD, LOG_CRITICAL, L"Failed to create graphics pipeline: %hs",
+					 [[err localizedDescription] UTF8String]);
 		
-		// FIXME
-		p->render.primitiveType = MTLPrimitiveTypeTriangle;
-		p->render.state = pso;
+		return NULL;
+	}
 		
-		[_cache addRenderPipelineFunctionsWithDescriptor: desc error: nil];
+	struct Pipeline *p = malloc(sizeof(*p));
+	p->type = PS_RENDER;
 		
-		return p;
+	switch (gpDesc->flags & RE_TOPOLOGY_BITS) {
+	case RE_TOPOLOGY_TRIANGLES: p->render.primitiveType = MTLPrimitiveTypeTriangle; break;
+	case RE_TOPOLOGY_LINES: p->render.primitiveType = MTLPrimitiveTypeLine; break;
+	case RE_TOPOLOGY_POINTS: p->render.primitiveType = MTLPrimitiveTypePoint; break;
 	}
 	
-	Sys_LogEntry(MPMOD, LOG_CRITICAL, L"Failed to create graphics pipeline: %hs",
-				 [[err localizedDescription] UTF8String]);
-	
-	return NULL;
+	p->render.state = pso;
+		
+	return p;
 }
 
 struct Pipeline *
 MTL_ComputePipeline(id<MTLDevice> dev, struct Shader *sh)
 {
-	MTLComputePipelineDescriptor *desc = [[MTLComputePipelineDescriptor alloc] init];
+	struct ShaderStageDesc *stageDesc = NULL;
+	for (uint32_t i = 0; i < sh->stageCount; ++i) {
+		if (sh->stages[i].stage != SS_COMPUTE)
+			continue;
+		
+		stageDesc = &sh->stages[i];
+		break;
+	}
 	
-	desc.computeFunction = sh->function;
+	if (!stageDesc)
+		return NULL;
+	
+	MTLComputePipelineDescriptor *desc = [[MTLComputePipelineDescriptor alloc] init];
 	desc.binaryArchives = @[ _cache ];
+	
+	desc.computeFunction = (id<MTLFunction>)stageDesc->module;
 	
 	NSError *err;
 	id<MTLComputePipelineState> pso =
@@ -95,14 +137,13 @@ MTL_ComputePipeline(id<MTLDevice> dev, struct Shader *sh)
 										   options: MTLPipelineOptionNone
 										reflection: nil
 											 error: &err];
-	[desc release];
+	
+	[_cache addComputePipelineFunctionsWithDescriptor: desc error: nil];
 	
 	if (pso) {
 		struct Pipeline *p = malloc(sizeof(*p));
 		p->type = PS_COMPUTE;
 		p->computeState = pso;
-		
-		[_cache addComputePipelineFunctionsWithDescriptor: desc error: nil];
 		
 		return p;
 	}
@@ -110,11 +151,13 @@ MTL_ComputePipeline(id<MTLDevice> dev, struct Shader *sh)
 	Sys_LogEntry(MPMOD, LOG_CRITICAL, L"Failed to create compute pipeline: %hs",
 				 [[err localizedDescription] UTF8String]);
 
+	[desc release];
+	
 	return NULL;
 }
 
 struct Pipeline *
-MTL_RayTracingPipeline(id<MTLDevice> dev, struct ShaderBindingTable *sbt)
+MTL_RayTracingPipeline(id<MTLDevice> dev, struct ShaderBindingTable *sbt, uint32_t maxDepth)
 {
 	MTLRenderPipelineDescriptor *desc = [[MTLRenderPipelineDescriptor alloc] init];
 	
@@ -123,15 +166,14 @@ MTL_RayTracingPipeline(id<MTLDevice> dev, struct ShaderBindingTable *sbt)
 	NSError *err;
 	id<MTLRenderPipelineState> pso = [dev newRenderPipelineStateWithDescriptor: desc error: &err];
 	
+	[_cache addRenderPipelineFunctionsWithDescriptor: desc error: nil];
 	[desc release];
 	
 	if (pso) {
 		struct Pipeline *p = malloc(sizeof(*p));
-		p->type = PS_RENDER;
+		p->type = PS_RAY_TRACING;
 		p->render.state = pso;
 		
-		[_cache addRenderPipelineFunctionsWithDescriptor: desc error: nil];
-			
 		return p;
 	}
 	
@@ -148,9 +190,12 @@ MTL_LoadPipelineCache(id<MTLDevice> dev)
 	
 	desc.url = [Darwin_appSupportURL URLByAppendingPathComponent: @"pipeline.cache"];
 	
+	if (![[NSFileManager defaultManager] fileExistsAtPath: [desc.url path]])
+		desc.url = nil;
+	
 	NSError *err;
 	_cache = [dev newBinaryArchiveWithDescriptor: desc error: &err];
-
+	
 	[desc release];
 }
 

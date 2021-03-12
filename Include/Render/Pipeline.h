@@ -43,8 +43,8 @@
 #define RE_DEPTH_OP_NOT_EQUAL		((uint64_t)  5 << 13)
 #define RE_DEPTH_OP_GREATER_EQUAL	((uint64_t)  6 << 13)
 #define RE_DEPTH_OP_ALWAYS			((uint64_t)  7 << 13)
-#define RE_DEPTH_BITS				((uint64_t)  7 << 13)
-#define RE_DEPTH_OFFSET				13
+#define RE_DEPTH_OP_BITS			((uint64_t)  7 << 13)
+#define RE_DEPTH_OP_OFFSET			13
 
 #define RE_MULTISAMPLE				((uint64_t)  1 << 15)
 #define RE_SAMPLE_SHADING			((uint64_t)  1 << 16)
@@ -57,11 +57,12 @@
 #define RE_SAMPLES_BITS				((uint64_t)  3 << 19)
 #define RE_SAMPLES_OFFSET			19
 
-#define RE_WRITE_MASK_R				((uint64_t)  1 << 22)
-#define RE_WRITE_MASK_G				((uint64_t)  1 << 23)
-#define RE_WRITE_MASK_B				((uint64_t)  1 << 24)
-#define RE_WRITE_MASK_A				((uint64_t)  1 << 25)
-#define RE_WRITE_MASK_ALL			(RE_WRITE_MASK_R | RE_WRITE_MASK_G | RE_WRITE_MASK_B | RE_WRITE_MASK_A)
+#define RE_WRITE_MASK_R				0x00000001
+#define RE_WRITE_MASK_G				0x00000002
+#define RE_WRITE_MASK_B				0x00000004
+#define RE_WRITE_MASK_A				0x00000008
+#define RE_WRITE_MASK_RGB			RE_WRITE_MASK_R | RE_WRITE_MASK_G | RE_WRITE_MASK_B
+#define RE_WRITE_MASK_RGBA			RE_WRITE_MASK_RGB | RE_WRITE_MASK_A
 
 enum BlendFactor
 {
@@ -105,22 +106,33 @@ struct BlendAttachmentDesc
 	enum BlendFactor srcAlpha;
 	enum BlendFactor dstAlpha;
 	enum BlendOperation alphaOp;
+	int32_t writeMask;
 };
 // TODO: is independent blend supported in Metal/D3D12 ?
 
 struct PipelineLayoutDesc
 {
 	uint32_t setLayoutCount;
-	const struct DescriptorSetLayoutDesc *setLayouts;
+	const struct DescriptorSetLayout **setLayouts;
 	uint32_t pushConstantSize;
+};
+
+struct GraphicsPipelineDesc
+{
+	uint64_t flags;
+	struct Shader *shader;
+	struct RenderPass *renderPass;
+	struct PipelineLayout *layout;
+	uint32_t attachmentCount;
+	const struct BlendAttachmentDesc *attachments;
 };
 
 static inline struct PipelineLayout *Re_CreatePipelineLayout(const struct PipelineLayoutDesc *desc) { return Re_deviceProcs.CreatePipelineLayout(Re_device, desc); }
 static inline void Re_DestroyPipelineLayout(struct PipelineLayout *layout) { Re_deviceProcs.DestroyPipelineLayout(Re_device, layout); }
 
-struct Pipeline *Re_GraphicsPipeline(struct Shader *sh, uint64_t flags, struct BlendAttachmentDesc *at, uint32_t atCount);
+struct Pipeline *Re_GraphicsPipeline(const struct GraphicsPipelineDesc *desc);
 struct Pipeline *Re_ComputePipeline(struct Shader *sh);
-struct Pipeline *Re_RayTracingPipeline(struct ShaderBindingTable *sbt);
+struct Pipeline *Re_RayTracingPipeline(struct ShaderBindingTable *sbt, uint32_t maxDepth);
 
 bool Re_InitPipelines(void);
 void Re_TermPipelines(void);

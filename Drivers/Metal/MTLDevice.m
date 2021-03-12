@@ -38,9 +38,9 @@ MTL_CreateDevice(struct RenderDeviceInfo *info,
 	
 	devProcs->CreatePipelineLayout = (struct PipelineLayout *(*)(struct RenderDevice *, const struct PipelineLayoutDesc *))MTL_CreatePipelineLayout;
 	devProcs->DestroyPipelineLayout = (void(*)(struct RenderDevice *, struct PipelineLayout *))MTL_DestroyPipelineLayout;
-	devProcs->GraphicsPipeline = (struct Pipeline *(*)(struct RenderDevice *, struct Shader *, uint64_t, const struct BlendAttachmentDesc *, uint32_t))MTL_GraphicsPipeline;
+	devProcs->GraphicsPipeline = (struct Pipeline *(*)(struct RenderDevice *, const struct GraphicsPipelineDesc *desc))MTL_GraphicsPipeline;
 	devProcs->ComputePipeline = (struct Pipeline *(*)(struct RenderDevice *, struct Shader *))MTL_ComputePipeline;
-	devProcs->RayTracingPipeline = (struct Pipeline *(*)(struct RenderDevice *, struct ShaderBindingTable *))MTL_RayTracingPipeline;
+	devProcs->RayTracingPipeline = (struct Pipeline *(*)(struct RenderDevice *, struct ShaderBindingTable *, uint32_t))MTL_RayTracingPipeline;
 	devProcs->LoadPipelineCache = (void(*)(struct RenderDevice *))MTL_LoadPipelineCache;
 	devProcs->SavePipelineCache = (void(*)(struct RenderDevice *))MTL_LoadPipelineCache;
 	
@@ -61,6 +61,9 @@ MTL_CreateDevice(struct RenderDeviceInfo *info,
 	devProcs->Execute = (bool(*)(struct RenderDevice *, struct RenderContext *, bool))MTL_Execute;
 	devProcs->WaitIdle = (void(*)(struct RenderDevice *))MTL_WaitIdle;
 	
+	devProcs->ShaderModule = (void *(*)(struct RenderDevice *, const char *))MTL_ShaderModule;
+	
+	MTL_InitLibrary((id<MTLDevice>)info->private);
 	MTL_InitContextProcs(ctxProcs);
 	
 	return info->private;
@@ -79,5 +82,6 @@ void MTL_WaitIdle(id<MTLDevice> dev)
 void
 MTL_DestroyDevice(id<MTLDevice> dev)
 {
+	MTL_TermLibrary();
 	[dev release];
 }

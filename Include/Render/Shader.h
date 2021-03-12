@@ -1,6 +1,9 @@
 #ifndef _RE_SHADER_H_
 #define _RE_SHADER_H_
 
+#include <Engine/Types.h>
+#include <Render/Device.h>
+
 enum ShaderType
 {
 	ST_GRAPHICS,
@@ -28,9 +31,24 @@ enum ShaderStage
 	SS_MESH			= 0x00000080
 };
 
-static inline bool Re_LoadShaders(void) { return false; }
-static inline void Re_UnloadShaders(void) { }
+struct ShaderStageDesc
+{
+	enum ShaderStage stage;
+	void *module;
+};
 
-static inline struct Shader *Re_GetShader(const wchar_t *name, enum ShaderType type) { return NULL; }
+struct Shader
+{
+	uint64_t hash;
+	enum ShaderType type;
+	uint32_t stageCount;
+	struct ShaderStageDesc *stages;
+	char name[256];
+};
+
+bool Re_LoadShaders(void);
+void Re_UnloadShaders(void);
+
+struct Shader *Re_GetShader(const char *name);
 
 #endif /* _RE_SHADER_H_ */

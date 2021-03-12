@@ -55,6 +55,12 @@ MTL_TextureDesc(const struct Texture *tex)
 	return &tex->desc;
 }
 
+enum TextureLayout
+MTL_TextureLayout(const struct Texture *tex)
+{
+	return tex->layout;
+}
+
 void
 MTL_DestroyTexture(id<MTLDevice> dev, struct Texture *tex)
 {

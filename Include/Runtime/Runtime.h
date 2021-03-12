@@ -8,6 +8,7 @@
 
 #include <Runtime/RtDefs.h>
 #include <Runtime/Array.h>
+#include <Runtime/Queue.h>
 
 static inline wchar_t *
 Rt_MbsToWcs(const char *str)

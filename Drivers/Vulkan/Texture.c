@@ -76,6 +76,12 @@ Vk_TextureDesc(const struct Texture *tex)
 	return &tex->desc;
 }
 
+enum TextureLayout
+Vk_TextureLayout(const struct Texture *tex)
+{
+	return TL_UNKNOWN;
+}
+
 void
 Vk_DestroyTexture(struct RenderDevice *dev, struct Texture *tex)
 {

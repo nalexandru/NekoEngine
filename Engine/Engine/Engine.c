@@ -166,6 +166,8 @@ E_Init(int argc, char *argv[])
 		return false;
 	
 	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Application started.");
+	
+	Sys_ResetHeap(MH_Transient);
 
 	return true;
 }
@@ -223,6 +225,8 @@ E_Run(void)
 
 		if (Sys_ScreenVisible())
 			E_Frame();
+		
+		Sys_ResetHeap(MH_Transient);
 	}
 
 	E_Term();
@@ -254,8 +258,6 @@ E_Frame(void)
 	E_ExecuteSystemGroupS(Scn_activeScene, ECSYS_GROUP_POST_RENDER);
 
 	In_Update();
-
-	Sys_ResetHeap(MH_Transient);
 }
 
 double

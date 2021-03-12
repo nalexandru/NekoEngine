@@ -27,6 +27,9 @@
 
 #define E_INVALID_HANDLE (uint64_t)-1
 
+struct Array;
+struct Queue;
+
 struct Font;
 struct Scene;
 struct Model;
@@ -51,6 +54,7 @@ struct Shader;
 struct Pipeline;
 struct PipelineLayout;
 struct PipelineLayoutDesc;
+struct GraphicsPipelineDesc;
 struct Framebuffer;
 struct FramebufferDesc;
 struct ShaderBindingTable;
@@ -73,6 +77,9 @@ struct BufferBindInfo;
 struct TextureBindInfo;
 struct AccelerationStructureBindInfo;
 struct Semaphore;
+
+enum ShaderStage;
+enum TextureLayout;
 
 typedef void *Swapchain;
 typedef void *Surface;

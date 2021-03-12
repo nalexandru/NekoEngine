@@ -423,6 +423,18 @@
     <ClInclude Include="..\Include\Render\Swapchain.h">
       <Filter>Header Files\Render</Filter>
     </ClInclude>
+    <ClInclude Include="..\Include\Render\DescriptorSet.h">
+      <Filter>Header Files\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Render\Model.h">
+      <Filter>Header Files\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Render\Shader.h">
+      <Filter>Header Files\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Runtime\Queue.h">
+      <Filter>Header Files\Runtime</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="System\System.c">
@@ -697,6 +709,12 @@
     </ClCompile>
     <ClCompile Include="Render\Frame.c">
       <Filter>Source Files\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Shader.c">
+      <Filter>Source Files\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\Metadata.c">
+      <Filter>Source Files\Asset</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

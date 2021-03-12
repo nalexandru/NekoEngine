@@ -44,10 +44,11 @@ float In_mouseAxis[3] = { 0.f, 0.f, 0.f };
 uint8_t In_connectedControllers = 0;
 struct ControllerState In_controllerState[IN_MAX_CONTROLLERS];
 
+static bool _enableMouseAxis = false;
 static bool _prevButtonState[BTN_STATE_COUNT];
 static struct ControllerState _prevControllerState[IN_MAX_CONTROLLERS];
-static Array _map;
-static Array _virtualAxis;
+static struct Array _map;
+static struct Array _virtualAxis;
 
 #define GPAD_BTN(x, state) (state.buttons & (1 << (x - BTN_GPAD_BTN_BASE)))
 
@@ -173,6 +174,28 @@ In_Update(void)
 	memmove(_prevControllerState, In_controllerState, sizeof(_prevControllerState));
 
 	In_SysPollControllers();
+	
+	if (!_enableMouseAxis || !In_pointerCaptured)
+		return;
+	
+	uint16_t x = 0, y = 0, hwidth = *E_screenWidth / 2, hheight = *E_screenHeight / 2;
+	float dx = 0.f, dy = 0.f;
+	
+	In_PointerPosition(&x, &y);
+	dx = hwidth - x;
+	dy = hheight - y;
+	In_SetPointerPosition(hwidth, hheight);
+	
+	In_mouseAxis[AXIS_MOUSE_X - MOUSE_AXIS_START] = -(dx / hwidth);
+	In_mouseAxis[AXIS_MOUSE_Y - MOUSE_AXIS_START] = dy / hheight;
+	
+	// TODO: wheel support
+}
+
+void
+In_EnableMouseAxis(bool enable)
+{
+	_enableMouseAxis = enable;
 }
 
 enum Axis

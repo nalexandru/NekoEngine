@@ -71,6 +71,9 @@ EXPORTS
 	E_FileStream
 	E_MemoryStream
 	E_CloseStream
+	E_EnableWrite
+	E_DisableWrite
+	E_CreateDirectory
 
 	E_JobWorkerThreads
 	E_ExecuteJob
