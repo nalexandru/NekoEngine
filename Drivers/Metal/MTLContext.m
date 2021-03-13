@@ -76,7 +76,7 @@ _BindPipeline(struct RenderContext *ctx, struct Pipeline *pipeline)
 }
 
 static void
-_BindDescriptorSets(struct RenderContext *ctx, struct PipelineLayout *layout, uint32_t firstSet, uint32_t count, struct DescriptorSet *sets)
+_BindDescriptorSets(struct RenderContext *ctx, struct PipelineLayout *layout, uint32_t firstSet, uint32_t count, const struct DescriptorSet *sets)
 {
 	if (ctx->type == RC_RENDER) {
 		uint32_t nextVertexBuffer = layout->sets[firstSet].firstBuffer;
@@ -175,6 +175,20 @@ static void
 _EndRenderPass(struct RenderContext *ctx)
 {
 	[ctx->encoders.render endEncoding];
+}
+
+static void
+_SetViewport(struct RenderContext *ctx, float x, float y, float width, float height, float minDepth, float maxDepth)
+{
+	MTLViewport vp = { .originX = x, .originY = y, .width = width, .height = height, .znear = minDepth, .zfar = maxDepth };
+	[ctx->encoders.render setViewport: vp];
+}
+
+static void
+_SetScissor(struct RenderContext *ctx, int32_t x, int32_t y, int32_t width, int32_t height)
+{
+	MTLScissorRect rc = { .x = x, .y = y, .width = width, .height = height };
+	[ctx->encoders.render setScissorRect: rc];
 }
 
 static void
@@ -353,6 +367,8 @@ MTL_InitContextProcs(struct RenderContextProcs *p)
 	p->ExecuteSecondary = _ExecuteSecondary;
 	p->BeginRenderPass = _BeginRenderPass;
 	p->EndRenderPass = _EndRenderPass;
+	p->SetViewport = _SetViewport;
+	p->SetScissor = _SetScissor;
 	p->Draw = _Draw;
 	p->DrawIndexed = _DrawIndexed;
 	p->DrawIndirect = _DrawIndirect;

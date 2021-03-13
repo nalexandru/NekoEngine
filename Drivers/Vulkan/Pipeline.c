@@ -1,9 +1,12 @@
 #include <Engine/IO.h>
 #include <Engine/Engine.h>
+#include <System/Log.h>
 #include <System/Memory.h>
 #include <Render/Pipeline.h>
 
 #include "VulkanDriver.h"
+
+#define VKPMOD	L"VulkanPipeline"
 
 static VkPipelineCache _cache;
 
@@ -320,6 +323,8 @@ Vk_LoadPipelineCache(struct RenderDevice *dev)
 		.pInitialData = data
 	};
 	VkResult rc = vkCreatePipelineCache(dev->dev, &info, Vkd_allocCb, &_cache);
+	if (rc != VK_SUCCESS)
+		Sys_LogEntry(VKPMOD, LOG_WARNING, L"Failed to create pipeline cache: 0x%x", rc);
 
 	Sys_Free(data);
 }

@@ -57,7 +57,7 @@ E_LoadMetadata(struct Metadata *meta, const char *file)
 }
 
 void
-E_LoadMetadataFloatVector(struct Metadata *meta, struct jsmntok *tok, float *out, int count)
+E_LoadMetadataFloatVector(struct Metadata *meta, struct jsmntok *tok, float *out, uint32_t count)
 {
 	char *ptr = meta->json + tok->start;
 	for (uint32_t i = 0; i < count; ++i)

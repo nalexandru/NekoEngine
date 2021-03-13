@@ -43,7 +43,7 @@ MTL_CreateDescriptorSet(id<MTLDevice> dev, const struct DescriptorSetLayout *lay
 		ds->bindingCount += layout->desc.bindings[i].count;
 		
 		const struct DescriptorBinding *b = &layout->desc.bindings[i];
-		if (b->type == DT_BUFFER) {
+		if (b->type == DT_STORAGE_BUFFER || b->type == DT_UNIFORM_BUFFER) {
 			if (b->stage & SS_ALL_GRAPHICS) {
 				ds->vertex.bufferCount += b->count;
 				ds->fragment.bufferCount += b->count;
@@ -127,14 +127,15 @@ MTL_WriteDescriptorSet(id<MTLDevice> dev, struct DescriptorSet *ds, const struct
 		for (uint32_t i = 0; i < w.count; ++i)
 		
 		switch (w.type) {
-		case DWT_BUFFER:
-		case DWT_ACCELERATION_STRUCTURE:
+		case DT_STORAGE_BUFFER:
+		case DT_UNIFORM_BUFFER:
+		case DT_ACCELERATION_STRUCTURE:
 			for (uint32_t j = 0; j < w.count; ++j) {
 				*ds->bindings[first + i].buffer.ptr = w.bufferInfo[i].buff->buff;
 				*ds->bindings[first + i].buffer.offset = w.bufferInfo[i].offset;
 			}
 		break;
-		case DWT_TEXTURE:
+		case DT_TEXTURE:
 			for (uint32_t j = 0; j < w.count; ++j)
 			*ds->bindings[first + i].texture = w.textureInfo[i].tex->tex;
 		break;
@@ -183,7 +184,7 @@ _LinkBindings(struct MTLDrvDescriptors *d, const struct DescriptorBinding *b, ui
 {
 	uint32_t next = *nextBinding;
 	
-	if (b->type == DT_BUFFER) {
+	if (b->type == DT_UNIFORM_BUFFER || b->type == DT_STORAGE_BUFFER) {
 		uint32_t nextBuffer = d->bufferCount;
 		
 		d->bufferCount += b->count;

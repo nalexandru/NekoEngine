@@ -61,7 +61,7 @@ VS_VERSION_INFO VERSIONINFO
 #else
  FILEFLAGS 0x0L
 #endif
- FILEOS 0x40004L
+ FILEOS 0x40000L
  FILETYPE 0x1L
  FILESUBTYPE 0x0L
 BEGIN
@@ -71,12 +71,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "Alexandru Naiman"
             VALUE "FileDescription", A_PGM_NAME
-            VALUE "FileVersion", A_VER_STR
+            VALUE "FileVersion", A_VER_STR_A
             VALUE "InternalName", "NekoEngine.exe"
             VALUE "LegalCopyright", E_CPY_STR
             VALUE "OriginalFilename", "NekoEngine.exe"
             VALUE "ProductName", E_PGM_NAME
-            VALUE "ProductVersion", E_VER_STR
+            VALUE "ProductVersion", E_VER_STR_A
         END
     END
     BLOCK "VarFileInfo"

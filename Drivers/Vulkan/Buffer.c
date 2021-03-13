@@ -26,7 +26,10 @@ Vk_CreateBuffer(struct RenderDevice *dev, struct BufferCreateInfo *bci)
 		.sharingMode = VK_SHARING_MODE_EXCLUSIVE
 	};
 	vkCreateBuffer(dev->dev, &buffInfo, Vkd_allocCb, &buff->buff);
-
+	
+	if (buffInfo.usage & BU_AS_BUILD_INPUT || buffInfo.usage & BU_AS_STORAGE || buffInfo.usage & BU_SHADER_BINDING_TABLE)
+		buffInfo.usage = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+	
 	VkMemoryRequirements req = { 0 };
 	vkGetBufferMemoryRequirements(dev->dev, buff->buff, &req);
 
@@ -39,8 +42,6 @@ Vk_CreateBuffer(struct RenderDevice *dev, struct BufferCreateInfo *bci)
 	vkAllocateMemory(dev->dev, &ai, Vkd_allocCb, &buff->memory);
 
 	vkBindBufferMemory(dev->dev, buff->buff, buff->memory, 0);
-
-	// TODO: add VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT where needed
 
 	if (!bci->data)
 		return buff;

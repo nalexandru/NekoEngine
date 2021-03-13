@@ -79,7 +79,7 @@ Re_RenderFrame(void)
 			{
 				.size = sizeof(_vertices),
 				.usage = BU_VERTEX_BUFFER | BU_STORAGE_BUFFER | BU_TRANSFER_DST,
-				.memoryType = MT_CPU_COHERENT
+				.memoryType = MT_GPU_LOCAL
 			},
 			.data = _vertices,
 			.dataSize = sizeof(_vertices),

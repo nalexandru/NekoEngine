@@ -180,9 +180,9 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 	devProcs->DestroyDescriptorSetLayout = (void (*)(struct RenderDevice *, struct DescriptorSetLayout *))Vk_DestroyDescriptorSetLayout;
 	
 	devProcs->CreateDescriptorSet = (struct DescriptorSet *(*)(struct RenderDevice *, const struct DescriptorSetLayout *))Vk_CreateDescriptorSet;
-	devProcs->WriteDescriptorSet = Vk_WriteDescriptorSet;
-	devProcs->DestroyDescriptorSet = Vk_DestroyDescriptorSet;
-	
+	devProcs->WriteDescriptorSet = (void(*)(struct RenderDevice *, struct DescriptorSet *, const struct DescriptorWrite *, uint32_t))Vk_WriteDescriptorSet;
+	devProcs->DestroyDescriptorSet = (void (*)(struct RenderDevice *, struct DescriptorSet *))Vk_DestroyDescriptorSet;
+
 	devProcs->LoadPipelineCache = (void(*)(struct RenderDevice *))Vk_LoadPipelineCache;
 	devProcs->SavePipelineCache = (void(*)(struct RenderDevice *))Vk_SavePipelineCache;
 

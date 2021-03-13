@@ -236,8 +236,8 @@ Vk_TermDescriptorPools(VkDevice dev)
 static inline struct VkDrvDescriptorPool *
 _CreatePool(VkDevice dev, const struct DescriptorSetLayout *dsl)
 {
-	uint32_t setsPerPool = E_GetCVarI32(L"VulkanDriver_DescriptorSetsPerPool", 10)->i32;
-	uint32_t initialPoolCount = E_GetCVarI32(L"VulkanDriver_InitialDescriptorPoolCount", 1)->i32;
+	uint32_t setsPerPool = E_GetCVarI32(L"VulkanDrv_DescriptorSetsPerPool", 10)->i32;
+	uint32_t initialPoolCount = E_GetCVarI32(L"VulkanDrv_InitialDescriptorPoolCount", 1)->i32;
 
 	struct VkDrvDescriptorPool pool =
 	{
@@ -272,10 +272,6 @@ _CreatePool(VkDevice dev, const struct DescriptorSetLayout *dsl)
 		vkCreateDescriptorPool(dev, &pool.ci, Vkd_allocCb, &pool.pools[i]);
 
 	Rt_ArrayAdd(&_pools, &pool);
-
-	void *p1 = Rt_ArrayLast(&_pools);
-	void *p2 = Rt_ArrayGet(&_pools, 0);
-
 	return (struct VkDrvDescriptorPool *)Rt_ArrayLast(&_pools);
 
 error:

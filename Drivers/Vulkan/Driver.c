@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #include <Engine/Job.h>
+#include <System/Log.h>
 #include <System/Memory.h>
 #include <Render/Driver.h>
 #include <Render/Device.h>
@@ -12,6 +13,8 @@
 #include <Engine/Application.h>
 
 #include "VulkanDriver.h"
+
+#define VKDMOD L"VulkanDrv"
 
 static bool _Init(void);
 static void _Term(void);
@@ -100,11 +103,13 @@ _Init(void)
 	_instExtensions[_instExtensionCount++] = PlatformSurfaceExtensionName;
 
 #ifdef _DEBUG
-	if (E_GetCVarBln(L"VulaknDrv_ValidationLayers", true)->bln)
+	if (E_GetCVarBln(L"VulkanDrv_Validation", true)->bln) {
 #else
-	if (E_GetCVarBln(L"VulaknDrv_ValidationLayers", false)->bln)
+	if (E_GetCVarBln(L"VulkanDrv_Validation", false)->bln) {
 #endif
 		_instLayers[_instLayerCount++] = "VK_LAYER_KHRONOS_validation";
+		Sys_LogEntry(VKDMOD, LOG_INFORMATION, L"Validation enabled");
+	}
 
 	instInfo.enabledLayerCount = _instLayerCount;
 	instInfo.enabledExtensionCount = _instExtensionCount;

@@ -7,7 +7,7 @@
 
 struct AccelerationStructure;
 
-enum AccelerationStructureLevel
+enum AccelerationStructureType
 {
 	AS_TOP_LEVEL,
 	AS_BOTTOM_LEVEL
@@ -20,7 +20,7 @@ struct AccelerationStructureGeometryDesc
 
 struct AccelerationStructureDesc
 {
-	enum AccelerationStructureLevel level;
+	enum AccelerationStructureType type;
 	struct AccelerationStructureGeometryDesc geometryDesc;
 	enum GPUMemoryType memoryType;
 };

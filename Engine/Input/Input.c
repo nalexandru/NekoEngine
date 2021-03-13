@@ -182,8 +182,8 @@ In_Update(void)
 	float dx = 0.f, dy = 0.f;
 	
 	In_PointerPosition(&x, &y);
-	dx = hwidth - x;
-	dy = hheight - y;
+	dx = (float)(hwidth - x);
+	dy = (float)(hheight - y);
 	In_SetPointerPosition(hwidth, hheight);
 	
 	In_mouseAxis[AXIS_MOUSE_X - MOUSE_AXIS_START] = -(dx / hwidth);

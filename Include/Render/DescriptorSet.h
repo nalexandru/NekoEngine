@@ -4,6 +4,7 @@
 #include <Engine/Types.h>
 #include <Render/Device.h>
 #include <Render/Shader.h>
+#include <Render/Texture.h>
 
 struct BufferBindInfo
 {

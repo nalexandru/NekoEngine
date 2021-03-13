@@ -136,7 +136,7 @@ _loadShader(const char *path)
 			s.stages = calloc(s.stageCount, sizeof(*s.stages));
 			
 			uint32_t pos = i;
-			for (uint32_t j = 0; j < val.size; ++j) {
+			for (int j = 0; j < val.size; ++j) {
 				while (meta.tokens[++pos].type != JSMN_OBJECT) ;
 				
 				do {

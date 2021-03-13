@@ -18,7 +18,7 @@ struct Metadata
 
 // Metadata
 bool E_LoadMetadata(struct Metadata *meta, const char *file);
-void E_LoadMetadataFloatVector(struct Metadata *meta, struct jsmntok *tok, float *out, int count);
+void E_LoadMetadataFloatVector(struct Metadata *meta, struct jsmntok *tok, float *out, uint32_t count);
 
 // Models
 bool E_LoadNMeshAsset(struct Stream *stm, struct Model *m);

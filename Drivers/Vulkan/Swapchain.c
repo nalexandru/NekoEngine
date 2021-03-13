@@ -151,7 +151,7 @@ Vk_AcquireNextImage(struct RenderDevice *dev, struct Swapchain *sw)
 		}
 	}
 
-	return (void *)imageId;
+	return (void *)(uint64_t)imageId;
 }
 
 bool
@@ -187,7 +187,7 @@ Vk_Present(struct RenderDevice *dev, struct RenderContext *ctx, struct Swapchain
 	};
 	vkQueueSubmit(dev->graphicsQueue, 1, &si, VK_NULL_HANDLE);
 
-	uint32_t imageId = (uint32_t)image;
+	uint32_t imageId = (uint32_t)(uint64_t)image;
 
 	VkPresentInfoKHR pi =
 	{
@@ -220,7 +220,7 @@ Vk_SwapchainFormat(struct Swapchain *sw)
 struct Texture *
 Vk_SwapchainTexture(struct Swapchain *sw, void *image)
 {
-	uint32_t id = (uint32_t)image;
+	uint32_t id = (uint32_t)(uint64_t)image;
 
 	struct Texture *t = Sys_Alloc(sizeof(*t), 1, MH_Transient);
 	t->image = sw->images[id];

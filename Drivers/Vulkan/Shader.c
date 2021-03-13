@@ -36,7 +36,7 @@ Vk_LoadShaders(VkDevice dev)
 
 	_dev = dev;
 
-	E_ProcessFiles("/VulkanDriver", "spv", true, _load);
+	E_ProcessFiles("/Shaders/Vulkan", "spv", true, _load);
 	Rt_ArraySort(&_modules, (RtSortFunc)&_sort);
 
 	return true;

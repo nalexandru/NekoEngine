@@ -78,8 +78,7 @@ Sys_Time(void)
 {
 	LARGE_INTEGER freq, ctr;
 
-	QueryPerformanceFrequency(&freq);
-	QueryPerformanceCounter(&ctr);
+	NtQueryPerformanceCounter(&ctr, &freq);
 
 	return ((ctr.QuadPart / freq.QuadPart) * 1000000000UL) + ((ctr.QuadPart % freq.QuadPart) * 1000000000UL / freq.QuadPart);
 }
@@ -379,7 +378,7 @@ Sys_DirectoryPath(enum SystemDirectory sd, char *out, size_t len)
 	switch (sd) {
 	case SD_SAVE_GAME: SHGetKnownFolderPath(&FOLDERID_SavedGames, 0, NULL, &path); break;
 	case SD_APP_DATA: SHGetKnownFolderPath(&FOLDERID_LocalAppData, 0, NULL, &path); break;
-	case SD_TEMP: GetTempPathA(len, out); break;
+	case SD_TEMP: GetTempPathA((DWORD)len, out); break;
 	}
 
 	if (path) {
