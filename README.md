@@ -13,7 +13,7 @@ Cross-platform game engine.
 Supported platforms:
 * Windows Vista or newer
 * Linux on x86_64 & arm64 (ppc64 should work too, but i can't test it)
-* macOS 11.0+ x86_64 & arm64
+* macOS 11.0+ arm64 (x86_64 with a Metal 2 GPU should work too)
 * iOS 14.4+
 
 Supported rendering APIs:
