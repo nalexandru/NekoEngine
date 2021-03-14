@@ -9,6 +9,21 @@
 
 #include "MTLDriver.h"
 
+#define BIND_DESCRIPTORS(targetEncoder, targetStage, stage)	\
+if (sets[i]->stage.bufferCount)	\
+	[ctx->encoders.targetEncoder set ## targetStage ## Buffers: sets[i]->stage.buffers	\
+													   offsets: sets[i]->stage.offsets	\
+													 withRange: NSMakeRange(next ## targetStage ## Buffer, sets[i]->stage.bufferCount)];	\
+next ## targetStage ## Buffer += sets[i]->stage.bufferCount;	\
+if (sets[i]->stage.textureCount)	\
+	[ctx->encoders.targetEncoder set ## targetStage ## Textures: sets[i]->stage.textures	\
+													  withRange: NSMakeRange(next ## targetStage ## Texture, sets[i]->stage.textureCount)];	\
+next ## targetStage ## Texture += sets[i]->stage.textureCount;	\
+if (sets[i]->stage.samplerCount)	\
+	[ctx->encoders.targetEncoder set ## targetStage ## SamplerStates: sets[i]->stage.samplers	\
+														   withRange: NSMakeRange(next ## targetStage ## Sampler, sets[i]->stage.samplerCount)];	\
+next ## targetStage ## Sampler += sets[i]->stage.samplerCount
+
 struct RenderContext *
 MTL_CreateContext(id<MTLDevice> dev)
 {
@@ -76,52 +91,27 @@ _BindPipeline(struct RenderContext *ctx, struct Pipeline *pipeline)
 }
 
 static void
-_BindDescriptorSets(struct RenderContext *ctx, struct PipelineLayout *layout, uint32_t firstSet, uint32_t count, const struct DescriptorSet *sets)
+_BindDescriptorSets(struct RenderContext *ctx, struct PipelineLayout *layout, uint32_t firstSet, uint32_t count, const struct DescriptorSet * const *sets)
 {
 	if (ctx->type == RC_RENDER) {
 		uint32_t nextVertexBuffer = layout->sets[firstSet].firstBuffer;
 		uint32_t nextFragmentBuffer = layout->sets[firstSet].firstBuffer;
 		uint32_t nextVertexTexture = layout->sets[firstSet].firstTexture;
 		uint32_t nextFragmentTexture = layout->sets[firstSet].firstTexture;
-	
+		uint32_t nextVertexSampler = layout->sets[firstSet].firstSampler;
+		uint32_t nextFragmentSampler = layout->sets[firstSet].firstSampler;
+		
 		for (uint32_t i = 0; i < count; ++i) {
-			if (sets[i].vertex.bufferCount)
-				[ctx->encoders.render setVertexBuffers: sets[i].vertex.buffers
-											offsets: sets[i].vertex.offsets
-											withRange: NSMakeRange(nextVertexBuffer, sets[i].vertex.bufferCount)];
-			nextVertexBuffer += sets[i].vertex.bufferCount;
-		
-			if (sets[i].fragment.bufferCount)
-				[ctx->encoders.render setFragmentBuffers: sets[i].fragment.buffers
-												offsets: sets[i].fragment.offsets
-											withRange: NSMakeRange(nextFragmentBuffer, sets[i].fragment.bufferCount)];
-			nextFragmentBuffer += sets[i].fragment.bufferCount;
-		
-			if (sets[i].vertex.textureCount)
-				[ctx->encoders.render setVertexTextures: sets[i].vertex.textures
-											  withRange: NSMakeRange(nextVertexTexture, sets[i].vertex.textureCount)];
-			nextVertexBuffer += sets[i].vertex.textureCount;
-		
-			if (sets[i].fragment.textureCount)
-				[ctx->encoders.render setFragmentTextures: sets[i].fragment.textures
-												withRange: NSMakeRange(nextFragmentTexture, sets[i].fragment.textureCount)];
-			nextFragmentTexture += sets[i].vertex.textureCount;
+			BIND_DESCRIPTORS(render, Vertex, vertex);
+			BIND_DESCRIPTORS(render, Fragment, fragment);
 		}
 	} else if (ctx->type == RC_COMPUTE) {
 		uint32_t nextBuffer = layout->sets[firstSet].firstBuffer;
 		uint32_t nextTexture = layout->sets[firstSet].firstTexture;
+		uint32_t nextSampler = layout->sets[firstSet].firstSampler;
 		
 		for (uint32_t i = 0; i < count; ++i) {
-			if (sets[i].compute.bufferCount)
-				[ctx->encoders.compute setBuffers: sets[i].compute.buffers
-										  offsets: sets[i].compute.offsets
-										withRange: NSMakeRange(nextBuffer, sets[i].compute.bufferCount)];
-			nextBuffer += sets[i].compute.bufferCount;
-		
-			if (sets[i].compute.textureCount)
-				[ctx->encoders.compute setTextures: sets[i].compute.textures
-										 withRange: NSMakeRange(nextTexture, sets[i].compute.textureCount)];
-			nextTexture += sets[i].compute.textureCount;
+			BIND_DESCRIPTORS(compute, , compute);
 		}
 	}
 }
@@ -135,13 +125,6 @@ _PushConstants(struct RenderContext *ctx, struct PipelineLayout *layout, enum Sh
 		[ctx->encoders.render setFragmentBytes: data length: size atIndex: layout->pushConstantIndex];
 	else if (stage & SS_COMPUTE)
 		[ctx->encoders.compute setBytes: data length: size atIndex: layout->pushConstantIndex];
-}
-
-static void
-_BindVertexBuffers(struct RenderContext *ctx, uint32_t count, struct Buffer **buffers, uint64_t *offsets)
-{
-	for (uint32_t i = 0; i < count; ++i)
-		[ctx->encoders.render setVertexBuffer: buffers[i]->buff offset: offsets[i] atIndex: i];
 }
 
 static void
@@ -286,7 +269,7 @@ _Transition(struct RenderContext *ctx, struct Texture *tex, enum TextureLayout n
 }
 
 static void
-_CopyBuffer(struct RenderContext *ctx, struct Buffer *dst, uint64_t dstOffset, struct Buffer *src, uint64_t srcOffset, uint64_t size)
+_CopyBuffer(struct RenderContext *ctx, const struct Buffer *src, uint64_t srcOffset, struct Buffer *dst, uint64_t dstOffset, uint64_t size)
 {
 	[ctx->encoders.blit copyFromBuffer: src->buff
 						  sourceOffset: srcOffset
@@ -296,13 +279,13 @@ _CopyBuffer(struct RenderContext *ctx, struct Buffer *dst, uint64_t dstOffset, s
 }
 
 static void
-_CopyImage(struct RenderContext *ctx, struct Texture *dst, struct Texture *src)
+_CopyImage(struct RenderContext *ctx, const struct Texture *src, struct Texture *dst)
 {
 	[ctx->encoders.blit copyFromTexture: src->tex toTexture: dst->tex];
 }
 
 static void
-_CopyBufferToImage(struct RenderContext *ctx, struct Buffer *src, struct Texture *dst, const struct BufferImageCopy *bic)
+_CopyBufferToImage(struct RenderContext *ctx, const struct Buffer *src, struct Texture *dst, const struct BufferImageCopy *bic)
 {
 	[ctx->encoders.blit copyFromBuffer: src->buff
 						  sourceOffset: bic->bufferOffset
@@ -316,7 +299,7 @@ _CopyBufferToImage(struct RenderContext *ctx, struct Buffer *src, struct Texture
 }
 
 static void
-_CopyImageToBuffer(struct RenderContext *ctx, struct Texture *src, struct Buffer *dst, const struct BufferImageCopy *bic)
+_CopyImageToBuffer(struct RenderContext *ctx, const struct Texture *src, struct Buffer *dst, const struct BufferImageCopy *bic)
 {
 	[ctx->encoders.blit copyFromTexture: src->tex
 							sourceSlice: bic->subresource.baseArrayLayer
@@ -330,7 +313,7 @@ _CopyImageToBuffer(struct RenderContext *ctx, struct Texture *src, struct Buffer
 }
 
 static void
-_Blit(struct RenderContext *ctx, struct Texture *dst, struct Texture *src, const struct BlitRegion *regions, uint32_t regionCount, enum BlitFilter filter)
+_Blit(struct RenderContext *ctx, const struct Texture *src, struct Texture *dst, const struct BlitRegion *regions, uint32_t regionCount, enum BlitFilter filter)
 {
 	for (uint32_t i = 0; i < regionCount; ++i) {
 		const struct BlitRegion r = regions[i];
@@ -362,7 +345,6 @@ MTL_InitContextProcs(struct RenderContextProcs *p)
 	p->BindPipeline = _BindPipeline;
 	p->BindDescriptorSets = _BindDescriptorSets;
 	p->PushConstants = _PushConstants;
-	p->BindVertexBuffers = _BindVertexBuffers;
 	p->BindIndexBuffer = _BindIndexBuffer;
 	p->ExecuteSecondary = _ExecuteSecondary;
 	p->BeginRenderPass = _BeginRenderPass;

@@ -20,6 +20,7 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -g2")
 
 add_compile_options(-mavx)
 add_compile_definitions(RENDER_DRIVER_BUILTIN)
+add_compile_definitions(AUDIO_DRIVER_BUILTIN)
 
 include_directories(Include)
 include_directories(Deps)
@@ -33,7 +34,7 @@ add_subdirectory(Engine)
 
 add_subdirectory(Platform/UNIX)
 
-add_subdirectory(Sound/OpenAL)
+add_subdirectory(Drivers/OpenAL)
 add_subdirectory(Drivers/Vulkan)
 
 add_subdirectory(Application)

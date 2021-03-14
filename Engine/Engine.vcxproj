@@ -45,6 +45,8 @@
     <ClInclude Include="..\Deps\Lua\lzio.h" />
     <ClInclude Include="..\Include\Audio\Audio.h" />
     <ClInclude Include="..\Include\Audio\Clip.h" />
+    <ClInclude Include="..\Include\Audio\Device.h" />
+    <ClInclude Include="..\Include\Audio\Driver.h" />
     <ClInclude Include="..\Include\Audio\Source.h" />
     <ClInclude Include="..\Include\Engine\Application.h" />
     <ClInclude Include="..\Include\Engine\Asset.h" />
@@ -97,6 +99,7 @@
     <ClInclude Include="..\Include\Render\Pipeline.h" />
     <ClInclude Include="..\Include\Render\Render.h" />
     <ClInclude Include="..\Include\Render\RenderPass.h" />
+    <ClInclude Include="..\Include\Render\Sampler.h" />
     <ClInclude Include="..\Include\Render\Shader.h" />
     <ClInclude Include="..\Include\Render\ShaderBindingTable.h" />
     <ClInclude Include="..\Include\Render\Swapchain.h" />
@@ -127,6 +130,7 @@
     <ClInclude Include="..\Platform\Win32\Compat\stdatomic.h" />
     <ClInclude Include="..\Platform\Win32\Win32Platform.h" />
     <ClInclude Include="Engine\ECS.h" />
+    <ClInclude Include="Script\Interface.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Deps\Lua\lapi.c" />
@@ -206,13 +210,16 @@
     <ClCompile Include="Engine\Resource.c" />
     <ClCompile Include="Input\Input.c" />
     <ClCompile Include="Render\Frame.c" />
+    <ClCompile Include="Render\Model.c" />
     <ClCompile Include="Render\Pipeline.c" />
     <ClCompile Include="Render\Render.c" />
     <ClCompile Include="Render\Shader.c" />
+    <ClCompile Include="Render\Texture.c" />
     <ClCompile Include="Scene\Camera.c" />
     <ClCompile Include="Scene\Scene.c" />
     <ClCompile Include="Scene\ScriptHost.c" />
     <ClCompile Include="Scene\Transform.c" />
+    <ClCompile Include="Script\l_Render.c" />
     <ClCompile Include="Script\Script.c" />
     <ClCompile Include="System\AtomicLock.c" />
     <ClCompile Include="System\Compat\getopt.c" />

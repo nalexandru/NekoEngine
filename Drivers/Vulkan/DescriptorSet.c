@@ -45,6 +45,7 @@ Vk_CreateDescriptorSetLayout(struct RenderDevice *dev, const struct DescriptorSe
 	}
 
 	VkDescriptorSetLayoutBinding *bindings = Sys_Alloc(sizeof(*bindings), desc->bindingCount, MH_Transient);
+	VkDescriptorBindingFlags *bindingFlags = Sys_Alloc(sizeof(*bindingFlags), desc->bindingCount, MH_Transient);
 
 	uint32_t nextBinding = 0;
 	for (uint32_t i = 0; i < desc->bindingCount; ++i) {
@@ -55,6 +56,7 @@ Vk_CreateDescriptorSetLayout(struct RenderDevice *dev, const struct DescriptorSe
 		case DT_STORAGE_BUFFER: bindings[i].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER; break;
 		case DT_TEXTURE: bindings[i].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE; break;
 		case DT_ACCELERATION_STRUCTURE: bindings[i].descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR; break;
+		case DT_SAMPLER: bindings[i].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
 		}
 
 		bindings[i].descriptorCount = desc->bindings[i].count;
@@ -65,13 +67,28 @@ Vk_CreateDescriptorSetLayout(struct RenderDevice *dev, const struct DescriptorSe
 
 		//bindings[i].pImmutableSamplers = NULL;
 
+		bindingFlags[i] = 0;
+
+		if ((desc->bindings[i].flags & DBF_UPDATE_AFTER_BIND) == DBF_UPDATE_AFTER_BIND)
+			bindingFlags[i] |= VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT;
+
+		if ((desc->bindings[i].flags & DBF_PARTIALLY_BOUND) == DBF_PARTIALLY_BOUND)
+			bindingFlags[i] |= VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT;
+
 		nextBinding += bindings[i].descriptorCount;
 	}
 
+	VkDescriptorSetLayoutBindingFlagsCreateInfo flagsInfo =
+	{
+		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,
+		.bindingCount = desc->bindingCount,
+		.pBindingFlags = bindingFlags
+	};
 	VkDescriptorSetLayoutCreateInfo info =
 	{
 		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
 		.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT,
+		.pNext = &flagsInfo,
 		.bindingCount = desc->bindingCount,
 		.pBindings = bindings
 	};
@@ -149,6 +166,20 @@ exit:
 }
 
 void
+Vk_CopyDescriptorSet(struct RenderDevice *dev, const VkDescriptorSet src, uint32_t srcOffset, VkDescriptorSet dst, uint32_t dstOffset, uint32_t count)
+{
+	VkCopyDescriptorSet copy =
+	{
+		.srcSet = src,
+		.srcBinding = srcOffset,
+		.dstSet = dst,
+		.dstBinding = dstOffset,
+		.descriptorCount = count
+	};
+	vkUpdateDescriptorSets(dev->dev, 0, NULL, 1, &copy);
+}
+
+void
 Vk_WriteDescriptorSet(struct RenderDevice *dev, VkDescriptorSet ds, const struct DescriptorWrite *writes, uint32_t writeCount)
 {
 	VkWriteDescriptorSet *wds = Sys_Alloc(sizeof(*wds), writeCount, MH_Transient);
@@ -179,9 +210,8 @@ Vk_WriteDescriptorSet(struct RenderDevice *dev, VkDescriptorSet ds, const struct
 			VkDescriptorImageInfo *info = Sys_Alloc(sizeof(*info), wds[i].descriptorCount, MH_Transient);
 
 			for (uint32_t j = 0; j < wds[i].descriptorCount; ++j) {
-				//info[j].sampler = writes[i].bufferInfo[j].offset;
 				info[j].imageView = writes[i].textureInfo[j].tex->imageView;
-				info[j].imageLayout = writes[i].textureInfo[j].layout;
+				info[j].imageLayout = NeToVkImageLayout(writes[i].textureInfo[j].layout);
 			}
 
 			wds[i].pImageInfo = info;
@@ -196,6 +226,15 @@ Vk_WriteDescriptorSet(struct RenderDevice *dev, VkDescriptorSet ds, const struct
 			as->pAccelerationStructures = structures;
 			as->accelerationStructureCount = writes[i].count;
 		} break;
+		case DT_SAMPLER: {
+			wds[i].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+			VkDescriptorImageInfo *info = Sys_Alloc(sizeof(*info), wds[i].descriptorCount, MH_Transient);
+
+			for (uint32_t j = 0; j < wds[i].descriptorCount; ++j)
+				info[j].sampler = (VkSampler)writes[i].samplers[j];
+
+			wds[i].pImageInfo = info;
+		}
 		}
 	}
 

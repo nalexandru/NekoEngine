@@ -72,8 +72,7 @@ _EnumerateDevices(uint32_t *count, struct RenderDeviceInfo *info)
 		info[i].features.unifiedMemory = [dev hasUnifiedMemory];
 		info[i].features.discrete = ![dev isLowPower];
 		info[i].features.canPresent = ![dev isHeadless];
-		info[i].limits.maxTextureSize = [dev supportsFamily: MTLGPUFamilyApple3]
-						|| [dev supportsFamily: MTLGPUFamilyMac1] ? 16384 : 8192;
+		info[i].limits.maxTextureSize = [dev supportsFamily: MTLGPUFamilyApple3] || [dev supportsFamily: MTLGPUFamilyMac1] ? 16384 : 8192;
 		info[i].features.drawIndirectCount = false;
 		info[i].features.textureCompression = true;
 		

@@ -77,6 +77,15 @@ struct BufferBindInfo;
 struct TextureBindInfo;
 struct AccelerationStructureBindInfo;
 struct Semaphore;
+struct Sampler;
+struct SamplerDesc;
+
+struct AudioDevice;
+struct AudioDeviceInfo;
+struct AudioDeviceProcs;
+struct AudioSource;
+struct AudioSourceProcs;
+struct AudioClip;
 
 enum ShaderStage;
 enum TextureLayout;

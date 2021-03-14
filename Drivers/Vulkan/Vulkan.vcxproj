@@ -147,6 +147,7 @@
     <ClCompile Include="Pipeline.c" />
     <ClCompile Include="Platform\Win32.c" />
     <ClCompile Include="RenderPass.c" />
+    <ClCompile Include="Sampler.c" />
     <ClCompile Include="Shader.c" />
     <ClCompile Include="ShaderBindingTable.c" />
     <ClCompile Include="Swapchain.c" />

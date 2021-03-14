@@ -17,7 +17,7 @@
 #import <Cocoa/Cocoa.h>
 #import "EngineView.h"
 
-int
+bool
 Sys_CreateWindow(void)
 {
 	NSUInteger mask = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
@@ -46,7 +46,7 @@ Sys_CreateWindow(void)
 
 	E_screen = (void *)w;
 
-	return 0;
+	return true;
 }
 
 void

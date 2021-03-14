@@ -21,8 +21,8 @@ Supported rendering APIs:
 * Metal (in-progress)
 
 Supported audio APIs:
-* XAudio2
-* OpenAL
+* OpenAL (in-progress)
+* AVFoundation (in-progress)
 
 This repository is a mirror which is not frequently updated.
 

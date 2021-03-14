@@ -70,7 +70,7 @@ _WndProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
 	return DefWindowProc(hwnd, umsg, wparam, lparam);
 }
 
-int
+bool
 Sys_CreateWindow(void)
 {
 	RECT rc;
@@ -94,7 +94,7 @@ Sys_CreateWindow(void)
 
 	if (!RegisterClassW(&wincl)) {
 		MessageBoxW(HWND_DESKTOP, L"Failed to register window class. The program will now exit.", L"FATAL ERROR", MB_OK | MB_ICONERROR);
-		return -1;
+		return false;
 	}
 
 	rc.left = rc.top = 0;
@@ -111,7 +111,8 @@ Sys_CreateWindow(void)
 		HWND_DESKTOP, NULL, GetModuleHandle(NULL), NULL);
 
 	if (!_window) {
-		return -1;
+		MessageBoxW(HWND_DESKTOP, L"Failed to create window. The program will now exit.", L"FATAL ERROR", MB_OK | MB_ICONERROR);
+		return false;
 	}
 
 	ShowWindow(_window, SW_SHOWDEFAULT);
@@ -120,7 +121,7 @@ Sys_CreateWindow(void)
 
 	E_screen = _window;
 
-	return 0;
+	return true;
 }
 
 void

@@ -27,8 +27,9 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 
 	VkPhysicalDeviceExtendedDynamicStateFeaturesEXT *edsFeatures = Sys_Alloc(sizeof(*edsFeatures), 1, MH_Transient);
 	edsFeatures->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_FEATURES_EXT;
-	edsFeatures->extendedDynamicState = VK_TRUE;
 	edsFeatures->pNext = NULL;
+
+	edsFeatures->extendedDynamicState = VK_TRUE;
 
 	VkPhysicalDeviceMeshShaderFeaturesNV *msFeatures = Sys_Alloc(sizeof(*msFeatures), 1, MH_Transient);
 	msFeatures->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_NV;
@@ -59,6 +60,10 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 	vk12Features->descriptorBindingPartiallyBound = VK_TRUE;
 	vk12Features->bufferDeviceAddress = info->features.rayTracing ? VK_TRUE : VK_FALSE;
 	vk12Features->timelineSemaphore = VK_TRUE;
+	vk12Features->runtimeDescriptorArray = VK_TRUE;
+	vk12Features->descriptorBindingVariableDescriptorCount = VK_TRUE;
+	vk12Features->shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+	vk12Features->descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
 
 	if (info->features.drawIndirectCount)
 		vk12Features->drawIndirectCount = true;
@@ -166,6 +171,9 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 	devProcs->TextureLayout = (enum TextureLayout (*)(const struct Texture *))Vk_TextureLayout;
 	devProcs->DestroyTexture = (void(*)(struct RenderDevice *, struct Texture *))Vk_DestroyTexture;
 
+	devProcs->CreateSampler = (struct Sampler *(*)(struct RenderDevice *dev, const struct SamplerDesc *desc))Vk_CreateSampler;
+	devProcs->DestroySampler = (void(*)(struct RenderDevice *dev, struct Sampler *s))Vk_DestroySampler;
+
 	devProcs->CreateBuffer = (struct Buffer *(*)(struct RenderDevice *, const struct BufferCreateInfo *))Vk_CreateBuffer;
 	devProcs->UpdateBuffer = (void (*)(struct RenderDevice *, struct Buffer *, uint64_t, void *, uint64_t))Vk_UpdateBuffer;
 	devProcs->BufferDesc = (const struct BufferDesc *(*)(const struct Buffer *))Vk_BufferDesc;
@@ -180,6 +188,7 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 	devProcs->DestroyDescriptorSetLayout = (void (*)(struct RenderDevice *, struct DescriptorSetLayout *))Vk_DestroyDescriptorSetLayout;
 	
 	devProcs->CreateDescriptorSet = (struct DescriptorSet *(*)(struct RenderDevice *, const struct DescriptorSetLayout *))Vk_CreateDescriptorSet;
+	devProcs->CopyDescriptorSet = (void(*)(struct RenderDevice *, const struct DescriptorSet *, uint32_t, struct DescriptorSet *, uint32_t, uint32_t))Vk_CopyDescriptorSet;
 	devProcs->WriteDescriptorSet = (void(*)(struct RenderDevice *, struct DescriptorSet *, const struct DescriptorWrite *, uint32_t))Vk_WriteDescriptorSet;
 	devProcs->DestroyDescriptorSet = (void (*)(struct RenderDevice *, struct DescriptorSet *))Vk_DestroyDescriptorSet;
 

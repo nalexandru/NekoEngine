@@ -11,7 +11,7 @@
 
 #include "UNIXPlatform.h"
 
-int
+bool
 Sys_CreateWindow(void)
 {
 	int x = 10, y = 10;
@@ -87,7 +87,7 @@ Sys_CreateWindow(void)
 
 	E_screen = (void *)win;
 
-	return 0;
+	return true;
 }
 
 void

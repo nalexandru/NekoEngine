@@ -30,8 +30,6 @@ struct AudioClipCreateInfo
 	uint32_t sampleCount;
 };
 
-extern size_t Au_audioClipDataSize;
-
 // Shared resource handling
 bool Au_CreateClip(const char *name, const struct AudioClipCreateInfo *ci, struct AudioClip *data, Handle h);
 bool Au_LoadClip(struct ResourceLoadInfo *li, const char *args, struct AudioClip *model, Handle h);

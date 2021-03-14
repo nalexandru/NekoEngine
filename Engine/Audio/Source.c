@@ -7,7 +7,7 @@
 bool
 Au_InitSourceComponent(struct AudioSource *src, const void **args)
 {
-	const char *clip = NULL;
+/*	const char *clip = NULL;
 
 	for (; *args; ++args) {
 		const char *fuckCpp = (const char *)*args; // in sane languages this cast is NOT NEEDED
@@ -21,7 +21,7 @@ Au_InitSourceComponent(struct AudioSource *src, const void **args)
 		return false;
 
 	if (clip)
-		Au_SetClip(src, E_LoadResource(clip, "AudioClip"));
+		Au_SetClip(src, E_LoadResource(clip, "AudioClip"));*/
 
 	return true;
 }
@@ -29,5 +29,5 @@ Au_InitSourceComponent(struct AudioSource *src, const void **args)
 void
 Au_TermSourceComponent(struct AudioSource *src)
 {
-	Au_TermSource(src);
+	//Au_TermSource(src);
 }

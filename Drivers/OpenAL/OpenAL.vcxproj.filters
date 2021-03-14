@@ -15,18 +15,18 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="XA2Sound.cxx">
+    <ClCompile Include="ALDriver.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="XA2Clip.cxx">
+    <ClCompile Include="ALDevice.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="XA2Source.cxx">
+    <ClCompile Include="ALSource.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="XA2Sound.h">
+    <ClInclude Include="OpenALDriver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

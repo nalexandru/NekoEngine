@@ -12,6 +12,20 @@
 		FA1A7EF425CF13E9003B4259 /* Render.c in Sources */ = {isa = PBXBuildFile; fileRef = FA1A7EF325CF13E9003B4259 /* Render.c */; };
 		FA24C1AA25D99324003D590F /* MTLDescriptorSet.m in Sources */ = {isa = PBXBuildFile; fileRef = FA24C1A925D99324003D590F /* MTLDescriptorSet.m */; };
 		FA24C1AB25D99324003D590F /* MTLDescriptorSet.m in Sources */ = {isa = PBXBuildFile; fileRef = FA24C1A925D99324003D590F /* MTLDescriptorSet.m */; };
+		FA4A193E25FD321400040940 /* l_Render.c in Sources */ = {isa = PBXBuildFile; fileRef = FA4A193D25FD321400040940 /* l_Render.c */; };
+		FA4A193F25FD321400040940 /* l_Render.c in Sources */ = {isa = PBXBuildFile; fileRef = FA4A193D25FD321400040940 /* l_Render.c */; };
+		FA4A194E25FD885A00040940 /* Texture.c in Sources */ = {isa = PBXBuildFile; fileRef = FA4A194D25FD885A00040940 /* Texture.c */; };
+		FA4A194F25FD885A00040940 /* Texture.c in Sources */ = {isa = PBXBuildFile; fileRef = FA4A194D25FD885A00040940 /* Texture.c */; };
+		FA4A195F25FE43E900040940 /* AVFDriver.m in Sources */ = {isa = PBXBuildFile; fileRef = FA4A195E25FE43E900040940 /* AVFDriver.m */; };
+		FA4A196025FE43E900040940 /* AVFDriver.m in Sources */ = {isa = PBXBuildFile; fileRef = FA4A195E25FE43E900040940 /* AVFDriver.m */; };
+		FA4A196725FE448F00040940 /* AVFDevice.m in Sources */ = {isa = PBXBuildFile; fileRef = FA4A196625FE448F00040940 /* AVFDevice.m */; };
+		FA4A196825FE448F00040940 /* AVFDevice.m in Sources */ = {isa = PBXBuildFile; fileRef = FA4A196625FE448F00040940 /* AVFDevice.m */; };
+		FA4A196C25FE44B700040940 /* AVFSource.m in Sources */ = {isa = PBXBuildFile; fileRef = FA4A196B25FE44B700040940 /* AVFSource.m */; };
+		FA4A196D25FE44B700040940 /* AVFSource.m in Sources */ = {isa = PBXBuildFile; fileRef = FA4A196B25FE44B700040940 /* AVFSource.m */; };
+		FA4A197125FE452C00040940 /* Model.c in Sources */ = {isa = PBXBuildFile; fileRef = FA4A197025FE452C00040940 /* Model.c */; };
+		FA4A197225FE452C00040940 /* Model.c in Sources */ = {isa = PBXBuildFile; fileRef = FA4A197025FE452C00040940 /* Model.c */; };
+		FA4A197B25FE947C00040940 /* MTLSampler.m in Sources */ = {isa = PBXBuildFile; fileRef = FA4A197A25FE947B00040940 /* MTLSampler.m */; };
+		FA4A197C25FE947C00040940 /* MTLSampler.m in Sources */ = {isa = PBXBuildFile; fileRef = FA4A197A25FE947B00040940 /* MTLSampler.m */; };
 		FA4CFEA225D771E100B37A5B /* Main.m in Sources */ = {isa = PBXBuildFile; fileRef = FAB14FBA25D74BE4009C5450 /* Main.m */; };
 		FA4CFEBA25D7733700B37A5B /* EngineView.m in Sources */ = {isa = PBXBuildFile; fileRef = FAB14FA425D74A58009C5450 /* EngineView.m */; };
 		FA4CFEBB25D7733700B37A5B /* EngineAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = FAB14FAB25D74AF1009C5450 /* EngineAppDelegate.m */; };
@@ -55,9 +69,6 @@
 		FA4CFF0B25D774FF00B37A5B /* System.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9BB12521F49C00F7C24B /* System.c */; };
 		FA4CFF0E25D7750500B37A5B /* Text.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9BAB2521F47D00F7C24B /* Text.c */; };
 		FA4CFF0F25D7750500B37A5B /* UI.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9BAC2521F47D00F7C24B /* UI.c */; };
-		FA4CFF1225D7750D00B37A5B /* AVClip.m in Sources */ = {isa = PBXBuildFile; fileRef = FABF18EE25BECE85005C1329 /* AVClip.m */; };
-		FA4CFF1325D7750D00B37A5B /* AVSource.m in Sources */ = {isa = PBXBuildFile; fileRef = FABF18ED25BECE85005C1329 /* AVSource.m */; };
-		FA4CFF1425D7750D00B37A5B /* AVSound.m in Sources */ = {isa = PBXBuildFile; fileRef = FABF18EB25BECE85005C1329 /* AVSound.m */; };
 		FA4CFF1A25D7753A00B37A5B /* ldblib.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE4B2523382100806A2D /* ldblib.c */; };
 		FA4CFF1B25D7753A00B37A5B /* lfunc.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE512523382100806A2D /* lfunc.c */; };
 		FA4CFF1C25D7753A00B37A5B /* lzio.c in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDE7A2523382100806A2D /* lzio.c */; };
@@ -220,9 +231,6 @@
 		FAAF9C922522A81F00F7C24B /* physfs_unicode.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9C822522A81F00F7C24B /* physfs_unicode.c */; };
 		FAAF9C932522A81F00F7C24B /* physfs.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9C832522A81F00F7C24B /* physfs.c */; };
 		FAAF9C962522A89200F7C24B /* physfs_platform_apple.m in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9C942522A89200F7C24B /* physfs_platform_apple.m */; };
-		FABF18EF25BECE85005C1329 /* AVSound.m in Sources */ = {isa = PBXBuildFile; fileRef = FABF18EB25BECE85005C1329 /* AVSound.m */; };
-		FABF18F025BECE85005C1329 /* AVSource.m in Sources */ = {isa = PBXBuildFile; fileRef = FABF18ED25BECE85005C1329 /* AVSource.m */; };
-		FABF18F125BECE85005C1329 /* AVClip.m in Sources */ = {isa = PBXBuildFile; fileRef = FABF18EE25BECE85005C1329 /* AVClip.m */; };
 		FABF18F725BECFD0005C1329 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FABF18F625BECFD0005C1329 /* AVFoundation.framework */; };
 		FAC4B4B0253BE2E30074EE3C /* Job.c in Sources */ = {isa = PBXBuildFile; fileRef = FAC4B4AF253BE2E30074EE3C /* Job.c */; };
 		FAC4B4B2253BE2F60074EE3C /* AtomicLock.c in Sources */ = {isa = PBXBuildFile; fileRef = FAC4B4B1253BE2F60074EE3C /* AtomicLock.c */; };
@@ -265,6 +273,18 @@
 		FA24C1A225D972A7003D590F /* DescriptorSet.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = DescriptorSet.h; path = Include/Render/DescriptorSet.h; sourceTree = "<group>"; };
 		FA24C1A925D99324003D590F /* MTLDescriptorSet.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = MTLDescriptorSet.m; path = Drivers/Metal/MTLDescriptorSet.m; sourceTree = "<group>"; };
 		FA24C1B025D9A0BF003D590F /* Shader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Shader.h; path = Include/Render/Shader.h; sourceTree = "<group>"; };
+		FA4A193D25FD321400040940 /* l_Render.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = l_Render.c; path = Engine/Script/l_Render.c; sourceTree = "<group>"; };
+		FA4A194225FD40FA00040940 /* Interface.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Interface.h; path = Engine/Script/Interface.h; sourceTree = "<group>"; };
+		FA4A194D25FD885A00040940 /* Texture.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = Texture.c; path = Engine/Render/Texture.c; sourceTree = "<group>"; };
+		FA4A195725FE42B500040940 /* Driver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Driver.h; path = Include/Audio/Driver.h; sourceTree = "<group>"; };
+		FA4A195825FE42B500040940 /* Device.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Device.h; path = Include/Audio/Device.h; sourceTree = "<group>"; };
+		FA4A195E25FE43E900040940 /* AVFDriver.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = AVFDriver.m; path = Drivers/AVFAudio/AVFDriver.m; sourceTree = "<group>"; };
+		FA4A196525FE445D00040940 /* AVFDriver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = AVFDriver.h; path = Drivers/AVFAudio/AVFDriver.h; sourceTree = "<group>"; };
+		FA4A196625FE448F00040940 /* AVFDevice.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = AVFDevice.m; path = Drivers/AVFAudio/AVFDevice.m; sourceTree = "<group>"; };
+		FA4A196B25FE44B700040940 /* AVFSource.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = AVFSource.m; path = Drivers/AVFAudio/AVFSource.m; sourceTree = "<group>"; };
+		FA4A197025FE452C00040940 /* Model.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = Model.c; path = Engine/Render/Model.c; sourceTree = "<group>"; };
+		FA4A197925FE945D00040940 /* Sampler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Sampler.h; path = Include/Render/Sampler.h; sourceTree = "<group>"; };
+		FA4A197A25FE947B00040940 /* MTLSampler.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = MTLSampler.m; path = Drivers/Metal/MTLSampler.m; sourceTree = "<group>"; };
 		FA4CFE8525D771AF00B37A5B /* NekoEngine iOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "NekoEngine iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		FA4CFF7725D8361400B37A5B /* Frame.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = Frame.c; path = Engine/Render/Frame.c; sourceTree = "<group>"; };
 		FA4CFF8925D8453200B37A5B /* MTLRenderPass.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = MTLRenderPass.m; path = Drivers/Metal/MTLRenderPass.m; sourceTree = "<group>"; };
@@ -476,10 +496,6 @@
 		FAB1504025D750D8009C5450 /* Window.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = Window.m; path = Platform/iOS/Window.m; sourceTree = "<group>"; };
 		FAB1504425D751F0009C5450 /* iOS.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = iOS.m; path = Platform/iOS/iOS.m; sourceTree = "<group>"; };
 		FAB1506025D753B5009C5450 /* Input.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = Input.m; path = Platform/iOS/Input.m; sourceTree = "<group>"; };
-		FABF18EB25BECE85005C1329 /* AVSound.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = AVSound.m; path = Sound/AVAudio/AVSound.m; sourceTree = "<group>"; };
-		FABF18EC25BECE85005C1329 /* AVSound.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AVSound.h; path = Sound/AVAudio/AVSound.h; sourceTree = "<group>"; };
-		FABF18ED25BECE85005C1329 /* AVSource.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = AVSource.m; path = Sound/AVAudio/AVSource.m; sourceTree = "<group>"; };
-		FABF18EE25BECE85005C1329 /* AVClip.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = AVClip.m; path = Sound/AVAudio/AVClip.m; sourceTree = "<group>"; };
 		FABF18F625BECFD0005C1329 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		FAC101A0252FF70000D830E9 /* sanity.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = sanity.h; path = Include/Math/sanity.h; sourceTree = "<group>"; };
 		FAC4B4AF253BE2E30074EE3C /* Job.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = Job.c; path = Engine/Engine/Job.c; sourceTree = "<group>"; };
@@ -624,6 +640,7 @@
 		FA1A7EED25CF0EEC003B4259 /* Drivers */ = {
 			isa = PBXGroup;
 			children = (
+				FA4A195D25FE435A00040940 /* AVFAudio */,
 				FA1A7EEE25CF0F15003B4259 /* Metal */,
 			);
 			name = Drivers;
@@ -648,6 +665,7 @@
 				FA4CFF8925D8453200B37A5B /* MTLRenderPass.m */,
 				FA24C1A925D99324003D590F /* MTLDescriptorSet.m */,
 				FA99953D25E2E684002CB0D3 /* MTLShader.m */,
+				FA4A197A25FE947B00040940 /* MTLSampler.m */,
 			);
 			name = Metal;
 			sourceTree = "<group>";
@@ -687,6 +705,17 @@
 				FAAF9C6F2522A7F900F7C24B /* PhysFS */,
 			);
 			name = Deps;
+			sourceTree = "<group>";
+		};
+		FA4A195D25FE435A00040940 /* AVFAudio */ = {
+			isa = PBXGroup;
+			children = (
+				FA4A195E25FE43E900040940 /* AVFDriver.m */,
+				FA4A196525FE445D00040940 /* AVFDriver.h */,
+				FA4A196625FE448F00040940 /* AVFDevice.m */,
+				FA4A196B25FE44B700040940 /* AVFSource.m */,
+			);
+			name = AVFAudio;
 			sourceTree = "<group>";
 		};
 		FA6BDCF12522B69E00806A2D /* Include */ = {
@@ -766,6 +795,7 @@
 		FA6BDCFB2522B6F700806A2D /* Render */ = {
 			isa = PBXGroup;
 			children = (
+				FA4A197925FE945D00040940 /* Sampler.h */,
 				FA8E732825D323960048A01F /* Pipeline.h */,
 				FA1A7EEB25CF0D28003B4259 /* Render.h */,
 				FA1A7EEC25CF0D34003B4259 /* Driver.h */,
@@ -847,6 +877,8 @@
 		FA6BDCFF2522B71F00806A2D /* Audio */ = {
 			isa = PBXGroup;
 			children = (
+				FA4A195825FE42B500040940 /* Device.h */,
+				FA4A195725FE42B500040940 /* Driver.h */,
 				FA6BDD242522B7D500806A2D /* Audio.h */,
 				FA6BDD252522B7D500806A2D /* Clip.h */,
 				FA6BDD262522B7D500806A2D /* Source.h */,
@@ -924,6 +956,8 @@
 			isa = PBXGroup;
 			children = (
 				FAAF9BA92521F46A00F7C24B /* Script.c */,
+				FA4A193D25FD321400040940 /* l_Render.c */,
+				FA4A194225FD40FA00040940 /* Interface.h */,
 			);
 			name = Script;
 			sourceTree = "<group>";
@@ -942,6 +976,8 @@
 		FAAF9B772521F39700F7C24B /* Render */ = {
 			isa = PBXGroup;
 			children = (
+				FA4A197025FE452C00040940 /* Model.c */,
+				FA4A194D25FD885A00040940 /* Texture.c */,
 				FA1A7EF325CF13E9003B4259 /* Render.c */,
 				FAFEF85225D7015E00D8D1FB /* Pipeline.c */,
 				FA4CFF7725D8361400B37A5B /* Frame.c */,
@@ -1086,21 +1122,9 @@
 				FA1A7EED25CF0EEC003B4259 /* Drivers */,
 				FA35006C2521DC7C00CE048F /* Application */,
 				29B97315FDCFA39411CA2CEA /* Engine */,
-				FAAF9CD12522AB1800F7C24B /* Sound */,
 				FA3500692521DC6A00CE048F /* Platform */,
 			);
 			name = Source;
-			sourceTree = "<group>";
-		};
-		FAAF9CD12522AB1800F7C24B /* Sound */ = {
-			isa = PBXGroup;
-			children = (
-				FABF18EE25BECE85005C1329 /* AVClip.m */,
-				FABF18EB25BECE85005C1329 /* AVSound.m */,
-				FABF18EC25BECE85005C1329 /* AVSound.h */,
-				FABF18ED25BECE85005C1329 /* AVSource.m */,
-			);
-			name = Sound;
 			sourceTree = "<group>";
 		};
 		FAB14F6F25D74839009C5450 /* macOS */ = {
@@ -1291,6 +1315,7 @@
 				FAAF9B922521F3D700F7C24B /* Entity.c in Sources */,
 				FAAF9B932521F3D700F7C24B /* Event.c in Sources */,
 				FA4CFF8A25D8453200B37A5B /* MTLRenderPass.m in Sources */,
+				FA4A196725FE448F00040940 /* AVFDevice.m in Sources */,
 				FAFEF82F25D5A01B00D8D1FB /* MTLAccelerationStructure.m in Sources */,
 				FAAF9B942521F3D700F7C24B /* IO.c in Sources */,
 				FAAF9B952521F3D700F7C24B /* Resource.c in Sources */,
@@ -1319,6 +1344,7 @@
 				FAAF9C8F2522A81F00F7C24B /* physfs_archiver_wad.c in Sources */,
 				FAAF9C902522A81F00F7C24B /* physfs_archiver_zip.c in Sources */,
 				FAAF9C912522A81F00F7C24B /* physfs_byteorder.c in Sources */,
+				FA4A194E25FD885A00040940 /* Texture.c in Sources */,
 				FAFEF82C25D59F9500D8D1FB /* MTLSwapchain.m in Sources */,
 				FAFEF83225D5A08500D8D1FB /* MTLTexture.m in Sources */,
 				FAAF9C922522A81F00F7C24B /* physfs_unicode.c in Sources */,
@@ -1326,6 +1352,7 @@
 				FAAF9C962522A89200F7C24B /* physfs_platform_apple.m in Sources */,
 				FA6BDE7C2523382100806A2D /* lapi.c in Sources */,
 				FA6BDE7D2523382100806A2D /* lauxlib.c in Sources */,
+				FA4A196C25FE44B700040940 /* AVFSource.m in Sources */,
 				FA6BDE7E2523382100806A2D /* lbaselib.c in Sources */,
 				FA6BDE7F2523382100806A2D /* lcode.c in Sources */,
 				FA8A94DB25D41935008B5823 /* MTLPipeline.m in Sources */,
@@ -1340,8 +1367,10 @@
 				FA4CFFB525D8D9C800B37A5B /* Window.m in Sources */,
 				FA6BDE862523382100806A2D /* lfunc.c in Sources */,
 				FA4CFFCB25D8DA7900B37A5B /* Thread.m in Sources */,
+				FA4A195F25FE43E900040940 /* AVFDriver.m in Sources */,
 				FA6BDE872523382100806A2D /* lgc.c in Sources */,
 				FA6BDE882523382100806A2D /* linit.c in Sources */,
+				FA4A193E25FD321400040940 /* l_Render.c in Sources */,
 				FA6BDE892523382100806A2D /* liolib.c in Sources */,
 				FAFEF85325D7015E00D8D1FB /* Pipeline.c in Sources */,
 				FA6BDE8A2523382100806A2D /* llex.c in Sources */,
@@ -1356,12 +1385,11 @@
 				FA6BDE902523382100806A2D /* loslib.c in Sources */,
 				FA6BDE912523382100806A2D /* lparser.c in Sources */,
 				FA6BDE922523382100806A2D /* lstate.c in Sources */,
-				FABF18F125BECE85005C1329 /* AVClip.m in Sources */,
 				FA6BDE932523382100806A2D /* lstring.c in Sources */,
+				FA4A197B25FE947C00040940 /* MTLSampler.m in Sources */,
 				FA4CFFB425D8D9C800B37A5B /* Main.m in Sources */,
 				FA4CFFB025D8D9C800B37A5B /* macOS.m in Sources */,
 				FA6BDE942523382100806A2D /* lstrlib.c in Sources */,
-				FABF18F025BECE85005C1329 /* AVSource.m in Sources */,
 				FAFEF83C25D5A0D900D8D1FB /* MTLShaderBindingTable.m in Sources */,
 				FA6BDE952523382100806A2D /* ltable.c in Sources */,
 				FA6BDE962523382100806A2D /* ltablib.c in Sources */,
@@ -1370,11 +1398,11 @@
 				FA6BDE982523382100806A2D /* lundump.c in Sources */,
 				FAFEF83F25D5A0ED00D8D1FB /* MTLTransientResources.m in Sources */,
 				FA6BDE992523382100806A2D /* lutf8lib.c in Sources */,
+				FA4A197125FE452C00040940 /* Model.c in Sources */,
 				FAC670F825EA6E46001BF95A /* Shader.c in Sources */,
 				FA6BDE9A2523382100806A2D /* lvm.c in Sources */,
 				FA6BDE9B2523382100806A2D /* lzio.c in Sources */,
 				FA7745DD2528963200FED53F /* reallocarray.c in Sources */,
-				FABF18EF25BECE85005C1329 /* AVSound.m in Sources */,
 				FA7D9F882528D6D400F51BA0 /* physfs_platform_posix.c in Sources */,
 				FA24C1AA25D99324003D590F /* MTLDescriptorSet.m in Sources */,
 				FAC4B4B0253BE2E30074EE3C /* Job.c in Sources */,
@@ -1389,7 +1417,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				FA4CFF1425D7750D00B37A5B /* AVSound.m in Sources */,
 				FA4CFEDC25D774D800B37A5B /* Font.c in Sources */,
 				FA4CFEBC25D7733700B37A5B /* EngineViewController.m in Sources */,
 				FA4CFEE025D774D800B37A5B /* TGA.c in Sources */,
@@ -1399,6 +1426,7 @@
 				FA4CFEF225D774E600B37A5B /* ECSystem.c in Sources */,
 				FA4CFF2425D7753A00B37A5B /* ltablib.c in Sources */,
 				FA4CFF3525D7753A00B37A5B /* lopcodes.c in Sources */,
+				FA4A197225FE452C00040940 /* Model.c in Sources */,
 				FA4CFF4025D7754700B37A5B /* physfs_archiver_mvl.c in Sources */,
 				FA4CFF0B25D774FF00B37A5B /* System.c in Sources */,
 				FA4CFF8B25D8453200B37A5B /* MTLRenderPass.m in Sources */,
@@ -1411,8 +1439,10 @@
 				FA4CFF4625D7754700B37A5B /* physfs_archiver_7z.c in Sources */,
 				FA4CFEE125D774D800B37A5B /* Wave.c in Sources */,
 				FAC6710525EBE7B6001BF95A /* LightCulling.metal in Sources */,
+				FA4A196825FE448F00040940 /* AVFDevice.m in Sources */,
 				FA4CFF5C25D7758600B37A5B /* MTLSwapchain.m in Sources */,
 				FA4CFEE525D774DD00B37A5B /* Audio.c in Sources */,
+				FA4A193F25FD321400040940 /* l_Render.c in Sources */,
 				FA4CFF2225D7753A00B37A5B /* lstate.c in Sources */,
 				FA4CFF2C25D7753A00B37A5B /* lstrlib.c in Sources */,
 				FA4CFF4125D7754700B37A5B /* physfs_archiver_unpacked.c in Sources */,
@@ -1430,6 +1460,7 @@
 				FA4CFF1F25D7753A00B37A5B /* lmathlib.c in Sources */,
 				FA4CFF1A25D7753A00B37A5B /* ldblib.c in Sources */,
 				FA4CFF2325D7753A00B37A5B /* lauxlib.c in Sources */,
+				FA4A197C25FE947C00040940 /* MTLSampler.m in Sources */,
 				FA4CFF3725D7753A00B37A5B /* lcorolib.c in Sources */,
 				FA4CFF3325D7753A00B37A5B /* linit.c in Sources */,
 				FA4CFF3E25D7754700B37A5B /* physfs_unicode.c in Sources */,
@@ -1444,6 +1475,7 @@
 				FA4CFF2F25D7753A00B37A5B /* lobject.c in Sources */,
 				FA4CFEE925D774E600B37A5B /* Job.c in Sources */,
 				FA4CFF5A25D7758600B37A5B /* MTLContext.m in Sources */,
+				FA4A194F25FD885A00040940 /* Texture.c in Sources */,
 				FA4CFF5825D7758600B37A5B /* MTLBuffer.m in Sources */,
 				FA4CFF3125D7753A00B37A5B /* lgc.c in Sources */,
 				FA4CFF0F25D7750500B37A5B /* UI.c in Sources */,
@@ -1467,7 +1499,6 @@
 				FA4CFF2D25D7753A00B37A5B /* llex.c in Sources */,
 				FA4CFF2825D7753A00B37A5B /* lmem.c in Sources */,
 				FA4CFEEB25D774E600B37A5B /* ECSInit.c in Sources */,
-				FA4CFF1325D7750D00B37A5B /* AVSource.m in Sources */,
 				FA4CFEFF25D774F300B37A5B /* Scene.c in Sources */,
 				FA4CFF4525D7754700B37A5B /* physfs_archiver_qpak.c in Sources */,
 				FA4CFEFE25D774F300B37A5B /* ScriptHost.c in Sources */,
@@ -1488,8 +1519,8 @@
 				FA4CFEDD25D774D800B37A5B /* Image.c in Sources */,
 				FA4CFF2925D7753A00B37A5B /* ldebug.c in Sources */,
 				FA4CFF3625D7753A00B37A5B /* lundump.c in Sources */,
-				FA4CFF1225D7750D00B37A5B /* AVClip.m in Sources */,
 				FA4CFED525D774C400B37A5B /* Input.m in Sources */,
+				FA4A196025FE43E900040940 /* AVFDriver.m in Sources */,
 				FA4CFF2525D7753A00B37A5B /* lvm.c in Sources */,
 				FA4CFF3F25D7754700B37A5B /* physfs.c in Sources */,
 				FA4CFF3225D7753A00B37A5B /* lcode.c in Sources */,
@@ -1506,6 +1537,7 @@
 				FA4CFEFD25D774F300B37A5B /* Camera.c in Sources */,
 				FA24C1AB25D99324003D590F /* MTLDescriptorSet.m in Sources */,
 				FA4CFF2125D7753A00B37A5B /* loslib.c in Sources */,
+				FA4A196D25FE44B700040940 /* AVFSource.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1521,13 +1553,14 @@
 				CODE_SIGN_ENTITLEMENTS = "";
 				CODE_SIGN_IDENTITY = "-";
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 51;
+				CURRENT_PROJECT_VERSION = 65;
 				ENABLE_HARDENED_RUNTIME = NO;
 				GCC_CW_ASM_SYNTAX = NO;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
+					AUDIO_DRIVER_BUILTIN,
 					RENDER_DRIVER_BUILTIN,
 					LUA_USE_MACOSX,
 					_DEBUG,
@@ -1559,12 +1592,13 @@
 				CLANG_ENABLE_OBJC_WEAK = YES;
 				CODE_SIGN_ENTITLEMENTS = "";
 				CODE_SIGN_IDENTITY = "-";
-				CURRENT_PROJECT_VERSION = 51;
+				CURRENT_PROJECT_VERSION = 65;
 				ENABLE_HARDENED_RUNTIME = NO;
 				GCC_CW_ASM_SYNTAX = NO;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_MODEL_TUNING = G5;
 				GCC_PREPROCESSOR_DEFINITIONS = (
+					AUDIO_DRIVER_BUILTIN,
 					RENDER_DRIVER_BUILTIN,
 					LUA_USE_MACOSX,
 				);
@@ -1721,7 +1755,7 @@
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 51;
+				CURRENT_PROJECT_VERSION = 65;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 9HAM5X8W52;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -1766,7 +1800,7 @@
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 51;
+				CURRENT_PROJECT_VERSION = 65;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 9HAM5X8W52;
 				ENABLE_NS_ASSERTIONS = NO;

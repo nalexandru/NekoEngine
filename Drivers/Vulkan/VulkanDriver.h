@@ -7,6 +7,7 @@
 #include <Render/Render.h>
 #include <Render/Buffer.h>
 #include <Render/Texture.h>
+#include <Render/Sampler.h>
 #include <Render/Framebuffer.h>
 #include <Runtime/Array.h>
 
@@ -70,6 +71,7 @@ struct Texture
 	VkImage image;
 	VkImageLayout layout;
 	struct TextureDesc desc;
+	VkDeviceMemory memory;
 };
 
 struct Framebuffer
@@ -181,6 +183,7 @@ void Vk_DestroyRenderPass(struct RenderDevice *dev, struct RenderPass *fb);
 struct DescriptorSetLayout *Vk_CreateDescriptorSetLayout(struct RenderDevice *dev, const struct DescriptorSetLayoutDesc *desc);
 void Vk_DestroyDescriptorSetLayout(struct RenderDevice *dev, struct DescriptorSetLayout *dsl);
 VkDescriptorSet Vk_CreateDescriptorSet(struct RenderDevice *dev, const struct DescriptorSetLayout *layout);
+void Vk_CopyDescriptorSet(struct RenderDevice *dev, const VkDescriptorSet src, uint32_t srcOffset, VkDescriptorSet dst, uint32_t dstOffset, uint32_t count);
 void Vk_WriteDescriptorSet(struct RenderDevice *dev, VkDescriptorSet ds, const struct DescriptorWrite *writes, uint32_t writeCount);
 void Vk_DestroyDescriptorSet(struct RenderDevice *dev, VkDescriptorSet ds);
 bool Vk_InitDescriptorPools(VkDevice dev);
@@ -190,6 +193,10 @@ void Vk_TermDescriptorPools(VkDevice dev);
 void *Vk_ShaderModule(struct RenderDevice *dev, const char *name);
 bool Vk_LoadShaders(VkDevice dev);
 void Vk_UnloadShaders(VkDevice dev);
+
+// Sampler
+VkSampler Vk_CreateSampler(struct RenderDevice *dev, const struct SamplerDesc *desc);
+void Vk_DestroySampler(struct RenderDevice *dev, VkSampler s);
 
 // Utility functions
 void Vk_InitContextProcs(struct RenderContextProcs *p);
@@ -256,6 +263,18 @@ VkToNeTextureFormat(VkFormat fmt)
 	}
 }
 
+static inline VkMemoryPropertyFlags
+NeToVkMemoryProperties(enum GPUMemoryType type)
+{
+	switch (type) {
+	case MT_CPU_READ: return VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+	case MT_CPU_WRITE: return VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+	case MT_CPU_COHERENT: return VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+	case MT_GPU_LOCAL:
+	default: return VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+	}
+}
+
 static inline VkCommandBuffer
 Vkd_AllocateCmdBuffer(VkDevice dev, VkCommandBufferLevel level, VkCommandPool pool, struct Array *freeList)
 {
@@ -279,7 +298,7 @@ static inline uint32_t
 Vkd_MemoryTypeIndex(const struct RenderDevice *dev, uint32_t filter, VkMemoryPropertyFlags flags)
 {
 	for (uint32_t i = 0; i < dev->physDevMemProps.memoryTypeCount; ++i)
-		if ((filter & (1 << i)) && ((dev->physDevMemProps.memoryTypes[i].propertyFlags & flags) == flags))
+		if (/*(filter & (1 << i)) &&*/ ((dev->physDevMemProps.memoryTypes[i].propertyFlags & flags) == flags))
 			return i;
 	return 0;
 }
@@ -322,8 +341,124 @@ Vkd_ExecuteCmdBuffer(struct RenderDevice *dev, VkCommandBuffer cb)
 
 	vkQueueSubmit(dev->transferQueue, 1, &si, dev->driverTransferFence);
 	vkWaitForFences(dev->dev, 1, &dev->driverTransferFence, VK_TRUE, UINT64_MAX);
+	vkResetFences(dev->dev, 1, &dev->driverTransferFence);
 
 	vkFreeCommandBuffers(dev->dev, dev->driverTransferPool, 1, &cb);
+}
+
+static inline void
+Vkd_TransitionImageLayout(VkCommandBuffer cmdBuffer, VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout)
+{
+	VkPipelineStageFlagBits src = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+	VkImageMemoryBarrier barrier =
+	{
+		.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+		.oldLayout = oldLayout,
+		.newLayout = newLayout,
+		.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+		.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+		.image = image,
+		.subresourceRange =
+		{
+			.baseMipLevel = 0,
+			.baseArrayLayer = 0,
+			.levelCount = 1,
+			.layerCount = 1
+		}
+	};
+
+	switch (barrier.oldLayout) {
+	case VK_IMAGE_LAYOUT_PREINITIALIZED:
+		barrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
+		src = VK_PIPELINE_STAGE_HOST_BIT;
+	break;
+	case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+		barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		src = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	break;
+	case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+		barrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		src = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+	break;
+	case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+		barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+		src = VK_PIPELINE_STAGE_TRANSFER_BIT;
+		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	break;
+	case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		src = VK_PIPELINE_STAGE_TRANSFER_BIT;
+		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	break;
+	case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+		barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+		src = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	break;
+	default:
+		barrier.srcAccessMask = 0;
+		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	break;
+	}
+
+	switch (barrier.newLayout) {
+	case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+		barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		dst = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	break;
+	case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+		barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		dst = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+	break;
+	case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+		barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+		dst = VK_PIPELINE_STAGE_TRANSFER_BIT;
+	break;
+	case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+		barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		dst = VK_PIPELINE_STAGE_TRANSFER_BIT;
+	break; 
+	case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+		barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		dst = VK_PIPELINE_STAGE_TRANSFER_BIT;
+		break;
+	default:
+		barrier.dstAccessMask = 0;
+	break;
+	}
+
+	vkCmdPipelineBarrier(cmdBuffer, src, dst, 0, 0, NULL, 0, NULL, 1, &barrier);
+}
+
+static inline VkImageLayout
+NeToVkImageLayout(enum TextureLayout tl)
+{
+	switch (tl) {
+		case TL_COLOR_ATTACHMENT: return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		case TL_DEPTH_STENCIL_ATTACHMENT: return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		case TL_DEPTH_STENCIL_READ_ONLY: return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+		case TL_TRANSFER_SRC: return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		case TL_TRANSFER_DST: return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		case TL_SHADER_READ_ONLY: return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		case TL_UNKNOWN:
+		default: return VK_IMAGE_LAYOUT_UNDEFINED;
+	}
+}
+
+static inline enum TextureLayout 
+VkToNeImageLayout(VkImageLayout il)
+{
+	switch (il) {
+		case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL: return TL_COLOR_ATTACHMENT;
+		case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL: return TL_DEPTH_STENCIL_ATTACHMENT;
+		case VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL: return TL_DEPTH_STENCIL_READ_ONLY;
+		case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL: return TL_TRANSFER_SRC;
+		case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL: return TL_TRANSFER_DST;
+		case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL: return TL_SHADER_READ_ONLY;
+		default: return TL_UNKNOWN;
+	}
 }
 
 #endif /* _VULKAN_DRIVER_H_ */

@@ -9,15 +9,6 @@ Vk_CreateBuffer(struct RenderDevice *dev, struct BufferCreateInfo *bci)
 	if (!buff)
 		return NULL;
 
-	VkMemoryPropertyFlags memFlags;
-	switch (bci->desc.memoryType) {
-	case MT_CPU_READ: memFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT; break;
-	case MT_CPU_WRITE: memFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT; break;
-	case MT_CPU_COHERENT: memFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT; break;
-	case MT_GPU_LOCAL:
-	default: memFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT; break;
-	}
-
 	VkBufferCreateInfo buffInfo =
 	{
 		.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
@@ -37,7 +28,7 @@ Vk_CreateBuffer(struct RenderDevice *dev, struct BufferCreateInfo *bci)
 	{
 		.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
 		.allocationSize = req.size,
-		.memoryTypeIndex = Vkd_MemoryTypeIndex(dev, req.memoryTypeBits, memFlags)
+		.memoryTypeIndex = Vkd_MemoryTypeIndex(dev, req.memoryTypeBits, NeToVkMemoryProperties(bci->desc.memoryType))
 	};
 	vkAllocateMemory(dev->dev, &ai, Vkd_allocCb, &buff->memory);
 

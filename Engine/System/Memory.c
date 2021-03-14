@@ -47,6 +47,8 @@ Sys_Alloc(size_t size, size_t count, enum MemoryHeap heap)
 		ret = _transientHeapPtr;
 		_transientHeapPtr += totalSize;
 
+		memset(ret, 0x0, totalSize);
+
 		Sys_AtomicUnlockWrite(&_lock);
 	} break;
 	case MH_Persistent:

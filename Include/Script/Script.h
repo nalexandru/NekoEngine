@@ -4,6 +4,8 @@
 #include <stdbool.h>
 
 #include <lua.h>
+#include <lualib.h>
+#include <lauxlib.h>
 
 lua_State *E_CreateVM(bool jit);
 

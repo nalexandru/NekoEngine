@@ -181,7 +181,9 @@ _EnumerateDevices(uint32_t *count, struct RenderDeviceInfo *info)
 			continue;
 
 		if (!vk12Features->imagelessFramebuffer || !vk12Features->descriptorIndexing ||
-				!vk12Features->descriptorBindingPartiallyBound || !vk12Features->timelineSemaphore)
+				!vk12Features->descriptorBindingPartiallyBound || !vk12Features->timelineSemaphore ||
+				!vk12Features->shaderSampledImageArrayNonUniformIndexing || !vk12Features->runtimeDescriptorArray ||
+				!vk12Features->descriptorBindingSampledImageUpdateAfterBind)
 			continue;
 
 		if (!edsFeatures->extendedDynamicState)

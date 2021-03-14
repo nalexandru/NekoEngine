@@ -4,6 +4,8 @@
 #include <Engine/Types.h>
 #include <Runtime/Runtime.h>
 
+#define RES_MODEL	"Model"
+
 #pragma pack(push,1)
 struct Vertex
 {
@@ -34,5 +36,22 @@ struct Model
 	uint32_t *indices;
 	uint32_t indexCount;
 };
+
+struct ModelCreateInfo
+{
+	struct Vertex *vertices;
+	uint32_t vertexCount;
+	
+	uint32_t *indices;
+	uint32_t indexCount;
+	
+	struct Mesh *meshes;
+	const wchar_t **materials;
+	uint32_t meshCount;
+};
+
+bool Re_CreateModelResource(const char *name, const struct ModelCreateInfo *ci, struct Model *mdl, Handle h);
+bool Re_LoadModelResource(struct ResourceLoadInfo *li, const char *args, struct Model *mdl, Handle h);
+void Re_UnloadModelResource(struct Model *mdl, Handle h);
 
 #endif /* _RE_MODEL_H_ */

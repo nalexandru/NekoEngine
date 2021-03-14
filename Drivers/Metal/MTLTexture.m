@@ -46,6 +46,33 @@ MTL_CreateTexture(id<MTLDevice> dev, const struct TextureCreateInfo *tci)
 	
 	[desc release];
 	
+	if (tci->data) {
+		id<MTLBuffer> staging = [dev newBufferWithBytes: tci->data length: tci->dataSize options: MTLResourceStorageModeShared];
+		
+		id<MTLCommandQueue> queue = [dev newCommandQueue];
+		id<MTLCommandBuffer> cmdBuffer = [queue commandBuffer];
+		id<MTLBlitCommandEncoder> encoder = [cmdBuffer blitCommandEncoder];
+		
+		[encoder copyFromBuffer: staging
+				   sourceOffset: 0
+			  sourceBytesPerRow: tci->desc.width * 4 * sizeof(uint8_t)
+			sourceBytesPerImage: 0
+					 sourceSize: MTLSizeMake(tci->desc.width, tci->desc.height, tci->desc.depth)
+					  toTexture: tex->tex
+			   destinationSlice: 0
+			   destinationLevel: 0
+			  destinationOrigin: MTLOriginMake(0, 0, 0)];
+		[encoder endEncoding];
+		
+		[cmdBuffer commit];
+		[cmdBuffer waitUntilCompleted];
+		
+		[encoder release];
+		[cmdBuffer release];
+		[queue release];
+		[staging release];
+	}
+	
 	return tex;
 }
 

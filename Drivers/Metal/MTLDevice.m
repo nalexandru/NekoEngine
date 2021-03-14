@@ -21,6 +21,9 @@ MTL_CreateDevice(struct RenderDeviceInfo *info,
 	devProcs->TextureDesc = (const struct TextureDesc *(*)(const struct Texture *))MTL_TextureDesc;
 	devProcs->DestroyTexture = (void(*)(struct RenderDevice *, struct Texture *))MTL_DestroyTexture;
 	
+	devProcs->CreateSampler = (struct Sampler *(*)(struct RenderDevice *, const struct SamplerDesc *))MTL_CreateSampler;
+	devProcs->DestroySampler = (void(*)(struct RenderDevice *, struct Sampler *s))MTL_DestroySampler;
+	
 	devProcs->CreateBuffer = (struct Buffer *(*)(struct RenderDevice *, const struct BufferCreateInfo *))MTL_CreateBuffer;
 	devProcs->UpdateBuffer = (void(*)(struct RenderDevice *, struct Buffer *, uint64_t, void *, uint64_t))MTL_UpdateBuffer;
 	devProcs->BufferDesc = (const struct BufferDesc *(*)(const struct Buffer *))MTL_BufferDesc;
@@ -55,6 +58,7 @@ MTL_CreateDevice(struct RenderDeviceInfo *info,
 	devProcs->DestroyDescriptorSetLayout = (void(*)(struct RenderDevice *, struct DescriptorSetLayout *))MTL_DestroyDescriptorSetLayout;
 	
 	devProcs->CreateDescriptorSet = (struct DescriptorSet *(*)(struct RenderDevice *dev, const struct DescriptorSetLayout *layout))MTL_CreateDescriptorSet;
+	devProcs->CopyDescriptorSet = (void(*)(struct RenderDevice *, const struct DescriptorSet *, uint32_t, struct DescriptorSet *, uint32_t, uint32_t))MTL_CopyDescriptorSet;
 	devProcs->WriteDescriptorSet = (void(*)(struct RenderDevice *, struct DescriptorSet *, const struct DescriptorWrite *, uint32_t))MTL_WriteDescriptorSet;
 	devProcs->DestroyDescriptorSet = (void(*)(struct RenderDevice *dev, struct DescriptorSet *ds))MTL_DestroyDescriptorSet;
 	

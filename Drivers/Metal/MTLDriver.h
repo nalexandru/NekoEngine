@@ -6,6 +6,7 @@
 #include <Engine/Types.h>
 #include <Render/Buffer.h>
 #include <Render/Texture.h>
+#include <Render/Sampler.h>
 #include <Render/Pipeline.h>
 #include <Render/RenderPass.h>
 #include <Render/Framebuffer.h>
@@ -109,6 +110,7 @@ struct MTLDrvBinding
 			NSUInteger *offset;
 		} buffer;
 		id<MTLTexture> *texture;
+		id<MTLSamplerState> *sampler;
 	};
 };
 
@@ -120,6 +122,9 @@ struct MTLDrvDescriptors
 	
 	uint32_t textureCount;
 	id<MTLTexture> *textures;
+	
+	uint32_t samplerCount;
+	id<MTLSamplerState> *samplers;
 };
 
 struct DescriptorSet
@@ -143,6 +148,7 @@ struct PipelineLayout
 	struct {
 		uint32_t firstBuffer;
 		uint32_t firstTexture;
+		uint32_t firstSampler;
 	} *sets;
 	uint32_t pushConstantIndex;
 };
@@ -212,6 +218,7 @@ void MTL_DestroyRenderPass(id<MTLDevice> dev, struct RenderPass *pass);
 struct DescriptorSetLayout *MTL_CreateDescriptorSetLayout(id<MTLDevice> dev, const struct DescriptorSetLayoutDesc *desc);
 void MTL_DestroyDescriptorSetLayout(id<MTLDevice> dev, struct DescriptorSetLayout *ds);
 struct DescriptorSet *MTL_CreateDescriptorSet(id<MTLDevice> dev, const struct DescriptorSetLayout *layout);
+void MTL_CopyDescriptorSet(id<MTLDevice> dev, const struct DescriptorSet *src, uint32_t srcOffset, struct DescriptorSet *dst, uint32_t dstOffset, uint32_t count);
 void MTL_WriteDescriptorSet(id<MTLDevice> dev, struct DescriptorSet *ds, const struct DescriptorWrite *writes, uint32_t writeCount);
 void MTL_DestroyDescriptorSet(id<MTLDevice> dev, struct DescriptorSet *ds);
 
@@ -219,6 +226,10 @@ void MTL_DestroyDescriptorSet(id<MTLDevice> dev, struct DescriptorSet *ds);
 bool MTL_InitLibrary(id<MTLDevice> dev);
 id<MTLFunction> MTL_ShaderModule(id<MTLDevice> dev, const char *name);
 void MTL_TermLibrary(void);
+
+// Sampler
+id<MTLSamplerState> MTL_CreateSampler(id<MTLDevice> dev, const struct SamplerDesc *sDesc);
+void MTL_DestroySampler(id<MTLDevice> dev, id<MTLSamplerState> s);
 
 // Utility functions
 static inline MTLResourceOptions
@@ -255,7 +266,8 @@ MTL_GPUMemoryTypetoResourceOptions(bool hasUnifiedMemory, enum GPUMemoryType typ
 	return options;
 }
 
-static inline MTLPixelFormat NeToMTLTextureFormat(enum TextureFormat fmt)
+static inline MTLPixelFormat
+NeToMTLTextureFormat(enum TextureFormat fmt)
 {
 	switch (fmt) {
 	case TF_R8G8B8A8_UNORM: return MTLPixelFormatRGBA8Unorm;
@@ -291,7 +303,8 @@ static inline MTLPixelFormat NeToMTLTextureFormat(enum TextureFormat fmt)
 	return MTLPixelFormatInvalid;
 }
 
-static inline enum TextureFormat MTLToNeTextureFormat(MTLPixelFormat fmt)
+static inline enum TextureFormat
+MTLToNeTextureFormat(MTLPixelFormat fmt)
 {
 	switch (fmt) {
 	case MTLPixelFormatRGBA8Unorm: return TF_R8G8B8A8_UNORM;
@@ -324,7 +337,8 @@ static inline enum TextureFormat MTLToNeTextureFormat(MTLPixelFormat fmt)
 	}
 }
 
-static inline MTLBlendOperation NeToMTLBlendOperation(enum BlendOperation op)
+static inline MTLBlendOperation
+NeToMTLBlendOperation(enum BlendOperation op)
 {
 	switch (op) {
 	case RE_BOP_ADD: return MTLBlendOperationAdd;
@@ -335,7 +349,8 @@ static inline MTLBlendOperation NeToMTLBlendOperation(enum BlendOperation op)
 	}
 }
 
-static inline MTLBlendFactor NeToMTLBlendFactor(enum BlendFactor bf)
+static inline MTLBlendFactor
+NeToMTLBlendFactor(enum BlendFactor bf)
 {
 	switch (bf) {
 	case RE_BF_ZERO: return MTLBlendFactorZero;
@@ -357,6 +372,67 @@ static inline MTLBlendFactor NeToMTLBlendFactor(enum BlendFactor bf)
 	case RE_BF_ONE_MINUS_SRC1_COLOR: return MTLBlendFactorOneMinusSource1Color;
 	case RE_BF_SRC1_ALPHA: return MTLBlendFactorSource1Alpha;
 	case RE_BF_ONE_MINUS_SRC1_ALPHA: return MTLBlendFactorOneMinusSource1Alpha;
+	}
+}
+
+static inline MTLSamplerMinMagFilter
+NeToMTLTextureFilter(enum TextureFilter tf)
+{
+	switch (tf) {
+	case TFL_NEAREST: return MTLSamplerMinMagFilterNearest;
+	case TFL_LINEAR: return MTLSamplerMinMagFilterLinear;
+	}
+}
+
+static inline MTLSamplerMipFilter
+NeToMTLMipFilter(enum TextureMipmapMode tmm)
+{
+	switch (tmm) {
+	case TMM_NEAREST: return MTLSamplerMipFilterNearest;
+	case TMM_LINEAR: return MTLSamplerMipFilterLinear;
+	}
+}
+
+static inline MTLSamplerAddressMode
+NeToMTLSamplerAddressMode(enum TextureAddressMode tam)
+{
+	switch (tam) {
+	case TAM_REPEAT: return MTLSamplerAddressModeRepeat;
+	case TAM_MIRRORED_REPEAT: return MTLSamplerAddressModeMirrorRepeat;
+	case TAM_CLAMP_TO_EDGE: return MTLSamplerAddressModeClampToEdge;
+	case TAM_CLAMP_TO_BORDER: return MTLSamplerAddressModeClampToBorderColor;
+	case TAM_MIRROR_CLAMP_TO_EDGE: return MTLSamplerAddressModeMirrorClampToEdge;
+	}
+}
+
+static inline MTLCompareFunction
+NeToMTLSamplerCompareFunction(enum CompareOperation co)
+{
+	switch (co) {
+	case CO_NEVER: return MTLCompareFunctionNever;
+	case CO_LESS: return MTLCompareFunctionLess;
+	case CO_EQUAL: return MTLCompareFunctionEqual;
+	case CO_LESS_EQUAL: return MTLCompareFunctionLessEqual;
+	case CO_GREATER: return MTLCompareFunctionGreater;
+	case CO_NOT_EQUAL: return MTLCompareFunctionNotEqual;
+	case CO_GREATER_EQUAL: return MTLCompareFunctionGreaterEqual;
+	case CO_ALWAYS: return MTLCompareFunctionAlways;
+	}
+}
+
+static inline MTLSamplerBorderColor
+NeToMTLSamplerBorderColor(enum BorderColor bc)
+{
+	switch (bc) {
+	case BC_INT_TRANSPARENT_BLACK:
+	case BC_FLOAT_TRANSPARENT_BLACK:
+		return MTLSamplerBorderColorTransparentBlack;
+	case BC_INT_OPAQUE_BLACK:
+	case BC_FLOAT_OPAQUE_BLACK:
+		return MTLSamplerBorderColorOpaqueBlack;
+	case BC_INT_OPAQUE_WHITE:
+	case BC_FLOAT_OPAQUE_WHITE:
+		return MTLSamplerBorderColorOpaqueWhite;
 	}
 }
 

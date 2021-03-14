@@ -492,7 +492,7 @@ Sys_InitPlatform(void)
 void
 Sys_TermPlatform(void)
 {
-	XCloseDisplay(X11_display);
+	//XCloseDisplay(X11_display);
 }
 
 void

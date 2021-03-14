@@ -263,10 +263,10 @@ _Create(VkDevice dev, struct Swapchain *sw)
 	if (sw->imageCount != count || !sw->images || !sw->views) {
 		void *ptr;
 		
-		ptr = realloc(sw->images, sizeof(*sw->images) * count);
+		ptr = reallocarray(sw->images, count, sizeof(*sw->images));
 		assert(ptr); sw->images = ptr;
 
-		ptr = realloc(sw->views, sizeof(*sw->views) * count);
+		ptr = reallocarray(sw->views, count, sizeof(*sw->views));
 		assert(ptr); sw->views = ptr;
 
 		sw->imageCount = count;

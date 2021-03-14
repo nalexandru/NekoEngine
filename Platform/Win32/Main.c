@@ -10,7 +10,7 @@ _declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
 _declspec(dllexport) DWORD AmdPowerXpressRequestHighPerformance = 0x00000001;
 
 int APIENTRY
-WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nCmdShow)
+WinMain(_In_ HINSTANCE hInst, _In_opt_ HINSTANCE hPrevInst, _In_ LPSTR lpCmdLine, _In_ int nCmdShow)
 {
 #if 1
 //	_crtBreakAlloc = 391;
@@ -19,7 +19,8 @@ WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nCmdShow)
 	_CrtSetDbgFlag(flag);
 #endif
 
-	E_Init(__argc, __argv);
+	if (!E_Init(__argc, __argv))
+		return -1;
 
 	return E_Run();
 }

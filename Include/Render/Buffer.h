@@ -12,7 +12,6 @@ enum BufferUsage
 	BU_UNIFORM_BUFFER		= 0x00000010,
 	BU_STORAGE_BUFFER		= 0x00000020,
 	BU_INDEX_BUFFER			= 0x00000040,
-	BU_VERTEX_BUFFER		= 0x00000080,
 	BU_INDIRECT_BUFFER		= 0x00000100,
 	BU_AS_BUILD_INPUT		= 0x00080000,
 	BU_AS_STORAGE			= 0x00100000,
@@ -38,7 +37,5 @@ static inline struct Buffer *Re_CreateBuffer(const struct BufferCreateInfo *bci)
 static inline void Re_UpdateBuffer(struct Buffer *buff, uint64_t offset, uint8_t *data, uint64_t size) { Re_deviceProcs.UpdateBuffer(Re_device, buff, offset, data, size); }
 static inline const struct BufferDesc *Re_BufferDesc(const struct Buffer *buff) { return Re_deviceProcs.BufferDesc(buff); }
 static inline void Re_DestroyBuffer(struct Buffer *buff) { Re_deviceProcs.DestroyBuffer(Re_device, buff); }
-
-//static inline void Re_UpdateTexture(struct Texture *tex, uint64_t offset, uint64_t size, void *data);
 
 #endif /* _RE_BUFFER_H_ */

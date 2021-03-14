@@ -25,16 +25,19 @@ MTL_CreatePipelineLayout(id<MTLDevice> dev, const struct PipelineLayoutDesc *des
 	pl->setCount = desc->setLayoutCount;
 	pl->sets = calloc(desc->setLayoutCount, sizeof(*pl->sets));
 	
-	uint32_t firstBuffer = 0, firstTexture = 0;
+	uint32_t firstBuffer = 0, firstTexture = 0, firstSampler = 0;
 	for (uint32_t i = 0; i < desc->setLayoutCount; ++i) {
 		pl->sets[i].firstBuffer = firstBuffer;
 		pl->sets[i].firstTexture = firstTexture;
+		pl->sets[i].firstSampler = firstSampler;
 		
 		const struct DescriptorSetLayoutDesc setDesc = desc->setLayouts[i]->desc;
 		
 		for (uint32_t j = 0; j < setDesc.bindingCount; ++j) {
 			if (setDesc.bindings[j].type == DT_TEXTURE)
 				firstTexture += setDesc.bindings[j].count;
+			else if (setDesc.bindings[j].type == DT_SAMPLER)
+				firstSampler += setDesc.bindings[j].count;
 			else
 				firstBuffer += setDesc.bindings[j].count;
 		}
@@ -68,7 +71,6 @@ MTL_GraphicsPipeline(id<MTLDevice> dev, const struct GraphicsPipelineDesc *gpDes
 	
 	desc.alphaToCoverageEnabled = gpDesc->flags & RE_ALPHA_TO_COVERAGE;
 	desc.alphaToOneEnabled = gpDesc->flags & RE_ALPHA_TO_ONE;
-	desc.supportIndirectCommandBuffers = true;
 	desc.rasterizationEnabled = true;
 	
 	for (uint32_t i = 0; i < gpDesc->attachmentCount; ++i) {

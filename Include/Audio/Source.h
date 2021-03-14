@@ -3,9 +3,12 @@
 
 #include <Engine/Types.h>
 
-struct AudioSource;
+struct AudioSourceProcs
+{
+	void *a;
+};
 
-extern size_t Au_sourceSize;
+extern struct AudioSourceProcs Au_sourceProcs;
 
 // Shared component handling
 bool Au_InitSourceComponent(struct AudioSource *src, const void **);

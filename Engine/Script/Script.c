@@ -7,6 +7,8 @@
 #include <System/Memory.h>
 #include <Script/Script.h>
 
+#include "Interface.h"
+
 #define SCRIPTMOD	L"Script"
 
 lua_State *
@@ -19,6 +21,8 @@ E_CreateVM(bool jit)
 		return NULL;
 
 	luaL_openlibs(vm);
+	
+	SIface_OpenRender(vm);
 
 	return vm;
 }

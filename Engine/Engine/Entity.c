@@ -225,7 +225,7 @@ E_InitEntities(void)
 {
 	memset(&_entity_types, 0x0, sizeof(_entity_types));
 
-	if (Rt_InitArray(&_entity_types, 10, sizeof(struct EntityType)))
+	if (!Rt_InitArray(&_entity_types, 10, sizeof(struct EntityType)))
 		return false;
 
 	return true;

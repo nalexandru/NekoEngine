@@ -5,6 +5,8 @@
 #include <Render/Device.h>
 #include <Render/Memory.h>
 
+#define RES_TEXTURE "Texture"
+
 enum TextureType
 {
 	TT_2D,
@@ -90,11 +92,26 @@ struct TextureCreateInfo
 	bool keepData;
 };
 
-static inline struct Texture *Re_CreateTexture(struct RenderDevice *dev, const struct TextureCreateInfo *tci) { return Re_deviceProcs.CreateTexture(dev, tci); };
+struct TextureResource
+{
+	uint16_t id;
+	struct Texture *texture;
+};
+
+bool Re_CreateTextureResource(const char *name, const struct TextureCreateInfo *ci, struct TextureResource *tex, Handle h);
+bool Re_LoadTextureResource(struct ResourceLoadInfo *li, const char *args, struct TextureResource *tex, Handle h);
+void Re_UnloadTextureResource(struct TextureResource *tex, Handle h);
+
 static inline const struct TextureDesc *Re_TextureDesc(const struct Texture *tex) { return Re_deviceProcs.TextureDesc(tex); }
 static inline enum TextureLayout Re_TextureLayout(const struct Texture *tex) { return Re_deviceProcs.TextureLayout(tex); }
-static inline void Re_DestroyTexture(struct RenderDevice *dev, struct Texture *tex) { Re_deviceProcs.DestroyTexture(dev, tex); }
 
 //static inline void Re_UpdateTexture(struct Texture *tex, uint64_t offset, uint64_t size, void *data);
+
+struct Sampler *Re_SceneTextureSampler(void);
+const struct DescriptorSetLayout *Re_TextureDescriptorSetLayout(void);
+void Re_BindTextureDescriptorSet(struct PipelineLayout *layout, uint32_t pos);
+
+bool Re_InitTextureSystem(void);
+void Re_TermTextureSystem(void);
 
 #endif /* _RE_TEXTURE_H_ */

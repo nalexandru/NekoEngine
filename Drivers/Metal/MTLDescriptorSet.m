@@ -8,6 +8,19 @@
 
 #include "MTLDriver.h"
 
+#define APPEND_BINDING_COUNT(x) \
+if ((b->stage & SS_ALL_GRAPHICS) == SS_ALL_GRAPHICS) {	\
+	ds->vertex.x += b->count;							\
+	ds->fragment.x += b->count;							\
+} else {												\
+	if ((b->stage & SS_VERTEX) == SS_VERTEX)			\
+		ds->vertex.x += b->count;						\
+	if ((b->stage & SS_FRAGMENT) == SS_FRAGMENT)		\
+		ds->fragment.x += b->count;						\
+}														\
+if ((b->stage & SS_COMPUTE) == SS_COMPUTE)				\
+	ds->compute.x += b->count
+
 static inline bool _AllocateDescriptors(struct MTLDrvDescriptors *d);
 static inline bool _LinkBindings(struct MTLDrvDescriptors *d, const struct DescriptorBinding *b, uint32_t *nextBinding, struct MTLDrvBinding *bindings);
 static inline void _FreeDescriptors(struct MTLDrvDescriptors *d);
@@ -19,7 +32,9 @@ MTL_CreateDescriptorSetLayout(id<MTLDevice> dev, const struct DescriptorSetLayou
 	if (!dsl)
 		return NULL;
 	
-	memcpy(&dsl->desc, desc, sizeof(dsl->desc));
+	dsl->desc.bindingCount = desc->bindingCount;
+	dsl->desc.bindings = calloc(sizeof(*dsl->desc.bindings), desc->bindingCount);
+	memcpy(dsl->desc.bindings, desc->bindings, sizeof(*dsl->desc.bindings) * desc->bindingCount);
 	
 	return dsl;
 }
@@ -27,6 +42,7 @@ MTL_CreateDescriptorSetLayout(id<MTLDevice> dev, const struct DescriptorSetLayou
 void
 MTL_DestroyDescriptorSetLayout(id<MTLDevice> dev, struct DescriptorSetLayout *dsl)
 {
+	free(dsl->desc.bindings);
 	free(dsl);
 }
 
@@ -43,30 +59,12 @@ MTL_CreateDescriptorSet(id<MTLDevice> dev, const struct DescriptorSetLayout *lay
 		ds->bindingCount += layout->desc.bindings[i].count;
 		
 		const struct DescriptorBinding *b = &layout->desc.bindings[i];
-		if (b->type == DT_STORAGE_BUFFER || b->type == DT_UNIFORM_BUFFER) {
-			if (b->stage & SS_ALL_GRAPHICS) {
-				ds->vertex.bufferCount += b->count;
-				ds->fragment.bufferCount += b->count;
-			} else {
-				if (b->stage & SS_VERTEX)
-					ds->vertex.bufferCount += b->count;
-				if (b->stage & SS_FRAGMENT)
-					ds->fragment.bufferCount += b->count;
-			}
-			if (b->stage & SS_COMPUTE)
-				ds->compute.bufferCount += b->count;
+		if (b->type == DT_STORAGE_BUFFER || b->type == DT_UNIFORM_BUFFER || b->type == DT_ACCELERATION_STRUCTURE) {
+			APPEND_BINDING_COUNT(bufferCount);
 		} else if (b->type == DT_TEXTURE) {
-			if (b->stage & SS_ALL_GRAPHICS) {
-				ds->vertex.textureCount += b->count;
-				ds->fragment.textureCount += b->count;
-			} else {
-				if (b->stage & SS_VERTEX)
-					ds->vertex.textureCount += b->count;
-				if (b->stage & SS_FRAGMENT)
-					ds->fragment.textureCount += b->count;
-			}
-			if (b->stage & SS_COMPUTE)
-				ds->compute.textureCount += b->count;
+			APPEND_BINDING_COUNT(textureCount);
+		} else if (b->type == DT_SAMPLER) {
+			APPEND_BINDING_COUNT(samplerCount);
 		}
 	}
 	
@@ -81,23 +79,23 @@ MTL_CreateDescriptorSet(id<MTLDevice> dev, const struct DescriptorSetLayout *lay
 	for (uint32_t i = 0; i < layout->desc.bindingCount; ++i) {
 		const struct DescriptorBinding b = layout->desc.bindings[i];
 		
-		if (b.stage & SS_ALL_GRAPHICS) {
+		if ((b.stage & SS_ALL_GRAPHICS) == SS_ALL_GRAPHICS) {
 			if (!_LinkBindings(&ds->vertex, &b, &nextBinding, ds->bindings))
 				goto error;
 			
 			if (!_LinkBindings(&ds->fragment, &b, &nextBinding, ds->bindings))
 				goto error;
 		} else {
-			if (b.stage & SS_VERTEX)
+			if ((b.stage & SS_VERTEX) == SS_VERTEX)
 				if (!_LinkBindings(&ds->vertex, &b, &nextBinding, ds->bindings))
 					goto error;
 			
-			if (b.stage & SS_FRAGMENT)
+			if ((b.stage & SS_FRAGMENT) == SS_FRAGMENT)
 				if (!_LinkBindings(&ds->fragment, &b, &nextBinding, ds->bindings))
 					goto error;
 		}
 		
-		if (b.stage & SS_COMPUTE)
+		if ((b.stage & SS_COMPUTE) == SS_COMPUTE)
 			if (!_LinkBindings(&ds->compute, &b, &nextBinding, ds->bindings))
 				goto error;
 	}
@@ -122,7 +120,6 @@ MTL_WriteDescriptorSet(id<MTLDevice> dev, struct DescriptorSet *ds, const struct
 	for (uint32_t i = 0; i < writeCount; ++i) {
 		const struct DescriptorWrite w = writes[i];
 		
-		
 		uint32_t first = w.binding;
 		for (uint32_t i = 0; i < w.count; ++i)
 		
@@ -131,16 +128,25 @@ MTL_WriteDescriptorSet(id<MTLDevice> dev, struct DescriptorSet *ds, const struct
 		case DT_UNIFORM_BUFFER:
 		case DT_ACCELERATION_STRUCTURE:
 			for (uint32_t j = 0; j < w.count; ++j) {
-				*ds->bindings[first + i].buffer.ptr = w.bufferInfo[i].buff->buff;
-				*ds->bindings[first + i].buffer.offset = w.bufferInfo[i].offset;
+				*ds->bindings[first + i].buffer.ptr = w.bufferInfo[j].buff->buff;
+				*ds->bindings[first + i].buffer.offset = w.bufferInfo[j].offset;
 			}
 		break;
 		case DT_TEXTURE:
 			for (uint32_t j = 0; j < w.count; ++j)
-			*ds->bindings[first + i].texture = w.textureInfo[i].tex->tex;
+				*ds->bindings[first + i].texture = w.textureInfo[j].tex->tex;
 		break;
+		case DT_SAMPLER:
+			for (uint32_t j = 0; j < w.count; ++j)
+				*ds->bindings[first + i].sampler = (id<MTLSamplerState>)w.samplers[j];
 		}
 	}
+}
+
+void
+MTL_CopyDescriptorSet(id<MTLDevice> dev, const struct DescriptorSet *src, uint32_t srcOffset, struct DescriptorSet *dst, uint32_t dstOffset, uint32_t count)
+{
+	memcpy(&dst->bindings[dstOffset], &src->bindings[srcOffset], sizeof(*dst->bindings) * count);
 }
 
 void
@@ -173,8 +179,15 @@ _AllocateDescriptors(struct MTLDrvDescriptors *d)
 			return false;
 	}
 	
+	if (d->samplerCount) {
+		d->samplers = calloc(d->samplerCount, sizeof(*d->samplers));
+		if (!d->samplers)
+			return false;
+	}
+	
 	d->bufferCount = 0;
 	d->textureCount = 0;
+	d->samplerCount = 0;
 	
 	return true;
 }
@@ -199,6 +212,12 @@ _LinkBindings(struct MTLDrvDescriptors *d, const struct DescriptorBinding *b, ui
 		
 		for (uint32_t i = 0; i < b->count; ++i)
 			bindings[next++].texture = &d->textures[nextTexture++];
+	} else if (b->type == DT_SAMPLER) {
+		uint32_t nextSampler = d->samplerCount;
+		d->samplerCount += b->count;
+		
+		for (uint32_t i = 0; i < b->count; ++i)
+			bindings[next++].sampler = &d->samplers[nextSampler++];
 	}
 	
 	*nextBinding = next;
@@ -212,7 +231,9 @@ _FreeDescriptors(struct MTLDrvDescriptors *d)
 	free(d->buffers); d->buffers = NULL;
 	free(d->offsets); d->offsets = NULL;
 	free(d->textures); d->textures = NULL;
+	free(d->samplers); d->samplers = NULL;
 	
 	d->bufferCount = 0;
 	d->textureCount = 0;
+	d->samplerCount = 0;
 }

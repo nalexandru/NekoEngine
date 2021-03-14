@@ -78,10 +78,9 @@ struct RenderContextProcs
 	
 	void (*BindPipeline)(struct RenderContext *ctx, struct Pipeline *pipeline);
 	
-	void (*BindDescriptorSets)(struct RenderContext *ctx, struct PipelineLayout *layout, uint32_t firstSet, uint32_t count, const struct DescriptorSet *sets);
+	void (*BindDescriptorSets)(struct RenderContext *ctx, struct PipelineLayout *layout, uint32_t firstSet, uint32_t count, const struct DescriptorSet * const *sets);
 	void (*PushConstants)(struct RenderContext *ctx, struct PipelineLayout *layout, enum ShaderStage stage, uint32_t size, const void *data);
 	
-	void (*BindVertexBuffers)(struct RenderContext *ctx, uint32_t count, struct Buffer **buffers, uint64_t *offsets);
 	void (*BindIndexBuffer)(struct RenderContext *ctx, struct Buffer *buff, uint64_t offset, enum IndexType type);
 	
 	void (*ExecuteSecondary)(struct RenderContext *ctx, struct RenderContext **contexts, uint32_t count);
@@ -110,12 +109,12 @@ struct RenderContextProcs
 	
 	void (*Present)(struct RenderContext *ctx);
 	
-	void (*CopyBuffer)(struct RenderContext *ctx, struct Buffer *dst, uint64_t dstOffset, struct Buffer *src, uint64_t srcOffset, uint64_t size);
-	void (*CopyImage)(struct RenderContext *ctx, struct Texture *dst, struct Texture *src);
-	void (*CopyBufferToImage)(struct RenderContext *ctx, struct Buffer *src, struct Texture *dst, const struct BufferImageCopy *bic);
-	void (*CopyImageToBuffer)(struct RenderContext *ctx, struct Texture *src, struct Buffer *dst, const struct BufferImageCopy *bic);
+	void (*CopyBuffer)(struct RenderContext *ctx, const struct Buffer *src, uint64_t srcOffset, struct Buffer *dst, uint64_t dstOffset, uint64_t size);
+	void (*CopyImage)(struct RenderContext *ctx, const struct Texture *src, struct Texture *dst);
+	void (*CopyBufferToImage)(struct RenderContext *ctx, const struct Buffer *src, struct Texture *dst, const struct BufferImageCopy *bic);
+	void (*CopyImageToBuffer)(struct RenderContext *ctx, const struct Texture *src, struct Buffer *dst, const struct BufferImageCopy *bic);
 	
-	void (*Blit)(struct RenderContext *ctx, struct Texture *dst, struct Texture *src, const struct BlitRegion *regions, uint32_t regionCount, enum BlitFilter filter);
+	void (*Blit)(struct RenderContext *ctx, const struct Texture *src, struct Texture *dst, const struct BlitRegion *regions, uint32_t regionCount, enum BlitFilter filter);
 
 	bool (*Submit)(struct RenderDevice *dev, struct RenderContext *ctx);
 };
@@ -136,12 +135,11 @@ static inline void Re_EndCommandBuffer(void) { Re_contextProcs.EndCommandBuffer(
 
 static inline void Re_BindPipeline(struct Pipeline *pipeline) { Re_contextProcs.BindPipeline(Re_CurrentContext(), pipeline); }
 
-static inline void Re_BindDescriptorSets(struct PipelineLayout *layout, uint32_t firstSet, uint32_t count, struct DescriptorSet *sets)
+static inline void Re_BindDescriptorSets(struct PipelineLayout *layout, uint32_t firstSet, uint32_t count, const struct DescriptorSet * const *sets)
 { Re_contextProcs.BindDescriptorSets(Re_CurrentContext(), layout, firstSet, count, sets); }
 static inline void Re_PushConstants(struct PipelineLayout *layout, enum ShaderStage stage, uint32_t size, const void *data)
 { Re_contextProcs.PushConstants(Re_CurrentContext(), layout, stage, size, data); }
 
-static inline void Re_BindVertexBuffers(uint32_t count, struct Buffer **buffers, uint64_t *offsets) { Re_contextProcs.BindVertexBuffers(Re_CurrentContext(), count, buffers, offsets); }
 static inline void Re_BindIndexBuffer(struct Buffer *buff, uint64_t offset, enum IndexType type) { Re_contextProcs.BindIndexBuffer(Re_CurrentContext(), buff, offset, type); }
 
 static inline void Re_ExecuteSecondary(struct RenderContext **contexts, uint32_t count) { Re_contextProcs.ExecuteSecondary(Re_CurrentContext(), contexts, count); }

@@ -50,6 +50,9 @@ struct RenderDeviceProcs
 	enum TextureLayout (*TextureLayout)(const struct Texture *tex);
 	void (*DestroyTexture)(struct RenderDevice *dev, struct Texture *tex);
 	
+	struct Sampler *(*CreateSampler)(struct RenderDevice *dev, const struct SamplerDesc *desc);
+	void (*DestroySampler)(struct RenderDevice *dev, struct Sampler *s);
+	
 	struct Buffer *(*CreateBuffer)(struct RenderDevice *dev, const struct BufferCreateInfo *bci);
 	void (*UpdateBuffer)(struct RenderDevice *dev, struct Buffer *buff, uint64_t offset, void *data, uint64_t size);
 	const struct BufferDesc *(*BufferDesc)(const struct Buffer *buff);
@@ -62,6 +65,7 @@ struct RenderDeviceProcs
 	void (*DestroyDescriptorSetLayout)(struct RenderDevice *dev, struct DescriptorSetLayout *dsl);
 	
 	struct DescriptorSet *(*CreateDescriptorSet)(struct RenderDevice *dev, const struct DescriptorSetLayout *layout);
+	void (*CopyDescriptorSet)(struct RenderDevice *dev, const struct DescriptorSet *src, uint32_t srcOffset, struct DescriptorSet *dst, uint32_t dstOffset, uint32_t count);
 	void (*WriteDescriptorSet)(struct RenderDevice *dev, struct DescriptorSet *ds, const struct DescriptorWrite *writes, uint32_t writeCount);
 	void (*DestroyDescriptorSet)(struct RenderDevice *dev, struct DescriptorSet *ds);
 	
@@ -69,8 +73,8 @@ struct RenderDeviceProcs
 	void (*DestroyFramebuffer)(struct RenderDevice *dev, struct Framebuffer *fb);
 	
 	struct RenderPass *(*CreateRenderPass)(struct RenderDevice *dev, const struct RenderPassDesc *desc);
-	void (*DestroyRenderPass)(struct RenderDevice *dev, struct RenderPass *fb);
-	
+	void (*DestroyRenderPass)(struct RenderDevice *dev, struct RenderPass *rp);
+
 	void (*LoadPipelineCache)(struct RenderDevice *dev);
 	void (*SavePipelineCache)(struct RenderDevice *dev);
 	
@@ -99,9 +103,5 @@ static inline Surface Re_CreateSurface(void *window) { return Re_deviceProcs.Cre
 static inline void Re_DestroySurface(Surface surface) { Re_deviceProcs.DestroySurface(Re_device, surface); }
 
 static inline void Re_WaitIdle(void) { Re_deviceProcs.WaitIdle(Re_device); }
-
-//static inline bool Re_InitDevice(struct RenderDevice *dev) { return Re_deviceProcs.Init(dev); }
-//static inline bool Re_InitDevice(struct RenderDevice *dev) { return Re_deviceProcs.Init(dev); }
-//static inline bool Re_InitDevice(struct RenderDevice *dev) { return Re_deviceProcs.Init(dev); }
 
 #endif /* _RE_DEVICE_H_ */

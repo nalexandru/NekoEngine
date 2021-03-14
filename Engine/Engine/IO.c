@@ -366,9 +366,9 @@ E_CloseStream(struct Stream *stm)
 }
 
 bool
-E_InitIOSystem(const char *argv0)
+E_InitIOSystem(void)
 {
-	if (!PHYSFS_init(argv0)) {
+	if (!PHYSFS_init("NekoEngine")) {
 		Sys_LogEntry(IO_MODULE, LOG_CRITICAL, L"Failed to initialize I/O subsystem: %s", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
 		return false;
 	}

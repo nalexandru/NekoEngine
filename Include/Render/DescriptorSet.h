@@ -28,12 +28,20 @@ enum DescriptorType
 	DT_UNIFORM_BUFFER,
 	DT_STORAGE_BUFFER,
 	DT_TEXTURE,
-	DT_ACCELERATION_STRUCTURE
+	DT_ACCELERATION_STRUCTURE,
+	DT_SAMPLER
+};
+
+enum DescriptorBindFlags
+{
+	DBF_UPDATE_AFTER_BIND	= 0x00000001,
+	DBF_PARTIALLY_BOUND		= 0x00000002
 };
 
 struct DescriptorBinding
 {
 	enum DescriptorType type;
+	enum DescriptorBindFlags flags;
 	uint32_t count;
 	enum ShaderStage stage;
 };
@@ -49,6 +57,7 @@ struct DescriptorWrite
 	enum DescriptorType type;
 	uint32_t binding, arrayElement, count;
 	union {
+		struct Sampler **samplers;
 		struct BufferBindInfo *bufferInfo;
 		struct TextureBindInfo *textureInfo;
 		struct AccelerationStructureBindInfo *accelerationStructureInfo;
@@ -62,6 +71,8 @@ static inline struct DescriptorSetLayout *Re_CreateDescriptorSetLayout(const str
 static inline void Re_DestroyDescriptorSetLayout(struct DescriptorSetLayout *dsl) { Re_deviceProcs.DestroyDescriptorSetLayout(Re_device, dsl); }
 
 static inline struct DescriptorSet *Re_CreateDescriptorSet(const struct DescriptorSetLayout *layout) { return Re_deviceProcs.CreateDescriptorSet(Re_device, layout); }
+static inline void Re_CopyDescriptorSet(const struct DescriptorSet *src, uint32_t srcOffset, struct DescriptorSet *dst, uint32_t dstOffset, uint32_t count)
+{ Re_deviceProcs.CopyDescriptorSet(Re_device, src, srcOffset, dst, dstOffset, count); }
 static inline void Re_WriteDescriptorSet(struct DescriptorSet *ds, const struct DescriptorWrite *writes, uint32_t writeCount) { Re_deviceProcs.WriteDescriptorSet(Re_device, ds, writes, writeCount); }
 static inline void Re_DestroyDescriptorSet(struct DescriptorSet *ds) { Re_deviceProcs.DestroyDescriptorSet(Re_device, ds); }
 

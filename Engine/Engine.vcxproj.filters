@@ -435,6 +435,18 @@
     <ClInclude Include="..\Include\Runtime\Queue.h">
       <Filter>Header Files\Runtime</Filter>
     </ClInclude>
+    <ClInclude Include="Script\Interface.h">
+      <Filter>Source Files\Script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Audio\Driver.h">
+      <Filter>Header Files\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Audio\Device.h">
+      <Filter>Header Files\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Render\Sampler.h">
+      <Filter>Header Files\Render</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="System\System.c">
@@ -715,6 +727,15 @@
     </ClCompile>
     <ClCompile Include="Asset\Metadata.c">
       <Filter>Source Files\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\l_Render.c">
+      <Filter>Source Files\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Texture.c">
+      <Filter>Source Files\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Model.c">
+      <Filter>Source Files\Render</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

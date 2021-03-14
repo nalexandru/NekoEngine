@@ -18,7 +18,7 @@
 #import <UIKit/UIKit.h>
 #import "EngineViewController.h"
 
-int
+bool
 Sys_CreateWindow(void)
 {
 	CGRect r = [[UIScreen mainScreen] bounds];
@@ -32,7 +32,7 @@ Sys_CreateWindow(void)
 	*E_screenHeight = r.size.height;
 	E_screen = (void *)w;
 
-	return 0;
+	return true;
 }
 
 void

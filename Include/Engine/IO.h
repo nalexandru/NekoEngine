@@ -73,7 +73,7 @@ bool		  E_FileStream(const char *path, FileOpenMode mode, struct Stream *stm);
 bool		  E_MemoryStream(void *buff, uint64_t size, struct Stream *stm);
 void		  E_CloseStream(struct Stream *stm);
 
-bool		  E_InitIOSystem(const char *argv0);
+bool		  E_InitIOSystem(void);
 void		  E_TermIOSystem(void);
 
 // Inline functions

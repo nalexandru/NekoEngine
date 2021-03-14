@@ -18,7 +18,6 @@
 #include <Render/Render.h>
 #include <Render/Device.h>
 #include <Render/Driver.h>
-//#include <Render/Material.h>
 #include <Engine/Event.h>
 #include <Engine/Entity.h>
 #include <Engine/Version.h>
@@ -28,9 +27,6 @@
 #include <Engine/Application.h>
 #include <Script/Script.h>
 #include <UI/UI.h>
-
-//#include <Render/Texture.h>
-//#include <Render/Components/ModelRender.h>
 
 #include "ECS.h"
 
@@ -46,6 +42,31 @@ double E_deltaTime = 0.0;
 static bool _shutdown;
 static double _startTime, _prevTime;
 #include <Math/sanity.h>
+
+struct EngineSubsystem
+{
+	char name[256];
+	bool (*init)(void);
+	void (*term)(void);
+};
+
+static struct EngineSubsystem _subsystems[] =
+{
+	{ "Window", Sys_CreateWindow, Sys_DestroyWindow },
+	{ "Job System", E_InitJobSystem, E_TermJobSystem },
+	{ "I/O System", E_InitIOSystem, E_TermIOSystem },
+	{ "Event System", E_InitEventSystem, E_TermEventSystem },
+	{ "Components", E_InitComponents, E_TermComponents },
+	{ "Entities", E_InitEntities, E_TermEntities },
+	{ "ECSystems", E_InitECSystems, E_TermECSystems },
+	{ "Resource System", E_InitResourceSystem, E_TermResourceSystem },
+	{ "Render System", Re_InitRender, Re_TermRender },
+	{ "Audio System", Au_Init, Au_Term },
+	{ "Resource Purge", NULL, E_PurgeResources },
+	{ "Input", In_InitInput, In_TermInput },
+	{ "Scripting", E_InitScriptSystem, E_TermScriptSystem }
+};
+static const int32_t _subsystemCount = sizeof(_subsystems) / sizeof(_subsystems[0]);
 
 bool
 E_Init(int argc, char *argv[])
@@ -74,7 +95,7 @@ E_Init(int argc, char *argv[])
 	Sys_Init();
 	Sys_InitMemory();
 
-	__MathDbg_SanityTest();
+	//__MathDbg_SanityTest();
 
 	if (logFile)
 		E_SetCVarStr(L"Engine_LogFile", logFile);
@@ -105,32 +126,20 @@ E_Init(int argc, char *argv[])
 	Sys_LogEntry(EMOD, LOG_INFORMATION, L"\tArchitecture: %hs", Sys_Machine());
 	Sys_LogEntry(EMOD, LOG_INFORMATION, L"\tBig Endian: %hs", Sys_BigEndian() ? "yes" : "no");
 
-	Sys_CreateWindow();
+	for (int32_t i = 0; i < _subsystemCount; ++i) {
+		if (!_subsystems[i].init)
+			continue;
+			
+		if (!_subsystems[i].init()) {
+			wchar_t *msg = Sys_Alloc(sizeof(*msg), 256, MH_Transient);
+			swprintf(msg, 256, L"Failed to initialize %hs. The program will now exit.", _subsystems[i].name);
+			Sys_MessageBox(L"Fatal Error", msg, MSG_ICON_ERROR);
 
-	E_InitJobSystem();
-	E_InitIOSystem(argv ? argv[0] : "NekoEngine");
-	E_InitEventSystem();
+			Sys_LogEntry(EMOD, LOG_CRITICAL, L"Failed to initialize %hs", _subsystems[i].name);
+			return false;
+		}
+	}
 
-	E_InitComponents();
-	E_InitEntities();
-	E_InitECSystems();
-
-	E_InitResourceSystem();
-
-	Re_InitRender();
-
-//	E_RegisterResourceType(RES_MODEL, RE_APPEND_DATA_SIZE(struct Model, Re.modelRenderDataSize),
-//		(ResourceCreateProc)Re_CreateModel, (ResourceLoadProc)Re_LoadModel, (ResourceUnloadProc)Re_UnloadModel);
-//	E_RegisterResourceType(RES_TEXTURE, RE_APPEND_DATA_SIZE(struct Texture, Re.textureRenderDataSize),
-//		(ResourceCreateProc)Re_CreateTexture, (ResourceLoadProc)Re_LoadTexture, (ResourceUnloadProc)Re_UnloadTexture);
-
-//	Re_LoadMaterials();
-
-	Au_Init();
-
-	In_InitInput();
-//	UI_InitUI();
-	
 #ifdef _DEBUG
 	wchar_t titleBuff[256];
 	
@@ -155,8 +164,6 @@ E_Init(int argc, char *argv[])
 #else
 	Sys_SetWindowTitle(App_applicationInfo.name);
 #endif
-	
-	E_InitScriptSystem();
 
 	_startTime = (double)Sys_Time();
 
@@ -176,35 +183,19 @@ void
 E_Term(void)
 {
 	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Shutting down...");
+	
+	Re_WaitIdle();
 
 	App_TermApplication();
 
 	if (Scn_activeScene)
 		Scn_UnloadScene(Scn_activeScene);
-
-	E_TermScriptSystem();
-
-//	UI_TermUI();
-	In_TermInput();
-
-	E_TermECSystems();
-	E_TermEntities();
-	E_TermComponents();
-
-//	Re_UnloadMaterials();
-
-	E_PurgeResources();
-
-	Au_Term();
-	Re_TermRender();
-
-	E_TermResourceSystem();
-
-	E_TermEventSystem();
-	E_TermIOSystem();
-	E_TermJobSystem();
-
-	Sys_DestroyWindow();
+	
+	for (int32_t i = _subsystemCount - 1; i >= 0; --i) {
+		if (!_subsystems[i].term)
+			continue;
+		_subsystems[i].term();
+	}
 
 	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Shut down complete.");
 
