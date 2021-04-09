@@ -1,17 +1,8 @@
 #ifndef _RE_ACCELERATION_STRUCTURE_H_
 #define _RE_ACCELERATION_STRUCTURE_H_
 
-#include <Engine/Types.h>
+#include <Render/Types.h>
 #include <Render/Device.h>
-#include <Render/Memory.h>
-
-struct AccelerationStructure;
-
-enum AccelerationStructureType
-{
-	AS_TOP_LEVEL,
-	AS_BOTTOM_LEVEL
-};
 
 struct AccelerationStructureGeometryDesc
 {

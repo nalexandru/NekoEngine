@@ -1,25 +1,98 @@
 #include <UI/UI.h>
 #include <Math/Math.h>
 #include <Engine/Engine.h>
-//#include <Render/Render.h>
+#include <Render/Render.h>
 
-struct mat4 UI_projection;
+struct mat4 _projection;
+struct Buffer *_vertexBuffer, *_indexBuffer;
+struct RenderPass *_renderPass;
+struct Framebuffer *_framebuffer;
+struct Pipeline *_pipeline;
+struct DescriptorSet *_descriptorSet;
+struct DescriptorSetLayout *_dsLayout;
 
 bool
 UI_InitUI(void)
 {
-//	if (!Re.info.negativeDepth)
-//		m4_ortho(&UI_projection, 0.f, (float)*E_screenWidth, (float)*E_screenHeight, 0.f, 0.f, 1.f);
-//	else
-//		m4_ortho_nd(&UI_projection, 0.f, (float)*E_screenWidth, (float)*E_screenHeight, 0.f, 0.f, 1.f);
-
-	return UI_InitText();
+	/*struct AttachmentDesc atDesc =
+	{
+		.mayAlias = false,
+		.format = Re_SwapchainFormat(Re_swapchain),
+		.loadOp = ATL_LOAD,
+		.storeOp = ATS_STORE,
+		.samples = ASC_1_SAMPLE,
+	};
+	struct RenderPassDesc desc =
+	{
+		.attachmentCount = 1,
+		.attachments = &atDesc,
+	};
+	_renderPass = Re_CreateRenderPass(&desc);
+	
+	struct FramebufferAttachmentDesc fbAtDesc =
+	{
+		.usage = TU_COLOR_ATTACHMENT | TU_TRANSFER_DST,
+		.format = Re_SwapchainFormat(Re_swapchain)
+	};
+	struct FramebufferDesc fbDesc =
+	{
+		.attachmentCount = 1,
+		.attachments = &fbAtDesc,
+		.width = *E_screenWidth,
+		.height = *E_screenHeight,
+		.layers = 1,
+		.renderPass = _renderPass
+	};
+	_framebuffer = Re_CreateFramebuffer(&fbDesc);
+	
+	struct BufferCreateInfo vtxInfo =
+	{
+		.desc =
+		{
+			.size = 1000,
+			.usage = BU_STORAGE_BUFFER | BU_TRANSFER_DST,
+			.memoryType = MT_CPU_COHERENT
+		},
+	};
+	_vertexBuffer = Re_CreateBuffer(&vtxInfo);
+	
+	struct BufferCreateInfo idxInfo =
+	{
+		.desc =
+		{
+			.size = 1000,
+			.usage = BU_INDEX_BUFFER | BU_TRANSFER_DST,
+			.memoryType = MT_CPU_COHERENT
+		},
+	};
+	_indexBuffer = Re_CreateBuffer(&idxInfo);
+	
+	struct Shader *shader = Re_GetShader("UI");
+	
+	struct BlendAttachmentDesc blendAttachments[] =
+	{
+		{ .enableBlend = false, .writeMask = RE_WRITE_MASK_RGB }
+	};
+	struct GraphicsPipelineDesc pipeDesc =
+	{
+		.flags = RE_TOPOLOGY_TRIANGLES | RE_POLYGON_FILL | RE_CULL_NONE | RE_FRONT_FACE_CW,
+		.shader = shader,
+		.renderPass = _renderPass,
+		.pushConstantSize = 0,
+		.attachmentCount = sizeof(blendAttachments) / sizeof(blendAttachments[0]),
+		.attachments = blendAttachments
+	};
+	_pipeline = Re_GraphicsPipeline(&pipeDesc);
+	
+	m4_ortho(&_projection, 0.f, (float)*E_screenWidth, (float)*E_screenHeight, 0.f, 0.f, 1.f);*/
+	
+	return true;
 }
 
 void
 UI_TermUI(void)
 {
-	UI_TermText();
+	//
 }
 
 bool

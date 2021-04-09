@@ -3,6 +3,12 @@
 
 #include <Engine/Types.h>
 
+#if defined(_MSC_VER)
+#	define THREAD_LOCAL	__declspec(thread)
+#elif defined(__GNUC__)
+#	define THREAD_LOCAL	__thread
+#endif
+
 uint32_t Sys_TlsAlloc(void);
 void *Sys_TlsGet(uint32_t key);
 void Sys_TlsSet(uint32_t key, void *data);

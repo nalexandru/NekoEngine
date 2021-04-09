@@ -2,13 +2,9 @@
 
 #include "VulkanDriver.h"
 
-struct Texture *
-Vk_CreateTexture(struct RenderDevice *dev, struct TextureCreateInfo *tci)
+bool
+Vk_CreateImage(struct RenderDevice *dev, const struct TextureCreateInfo *tci, struct Texture *tex, bool alias)
 {
-	struct Texture *tex = malloc(sizeof(*tex));
-	if (!tex)
-		return NULL;
-
 	VkImageCreateInfo imageInfo =
 	{
 		.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -26,6 +22,33 @@ Vk_CreateTexture(struct RenderDevice *dev, struct TextureCreateInfo *tci)
 		.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
 		.samples = VK_SAMPLE_COUNT_1_BIT
 	};
+
+	switch (tci->desc.type) {
+	case TT_2D:
+		imageInfo.imageType = VK_IMAGE_TYPE_2D;
+	break;
+	case TT_3D:
+		imageInfo.imageType = VK_IMAGE_TYPE_3D;
+	break;
+	case TT_2D_Multisample:
+		imageInfo.imageType = VK_IMAGE_TYPE_2D;
+	//	imageInfo.samples = tci->desc.sam
+	break;
+	case TT_Cube:
+		imageInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+	break;
+	}
+
+	memcpy(&tex->desc, &tci->desc, sizeof(tex->desc));
+	tex->layout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+	return vkCreateImage(dev->dev, &imageInfo, Vkd_allocCb, &tex->image) == VK_SUCCESS;
+}
+
+bool
+Vk_CreateImageView(struct RenderDevice *dev, const struct TextureCreateInfo *tci, struct Texture *tex)
+{
 	VkImageViewCreateInfo viewInfo =
 	{
 		.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
@@ -38,30 +61,38 @@ Vk_CreateTexture(struct RenderDevice *dev, struct TextureCreateInfo *tci)
 			.levelCount = tci->desc.mipLevels,
 			.baseArrayLayer = 0,
 			.layerCount = tci->desc.arrayLayers
-		}
+		},
+		.image = tex->image
 	};
 	
 	switch (tci->desc.type) {
 	case TT_2D:
-		imageInfo.imageType = VK_IMAGE_TYPE_2D;
 		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
 	break;
 	case TT_3D:
-		imageInfo.imageType = VK_IMAGE_TYPE_3D;
 		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_3D;
 	break;
 	case TT_2D_Multisample:
-		imageInfo.imageType = VK_IMAGE_TYPE_2D;
+	//	imageInfo.imageType = VK_IMAGE_TYPE_2D;
 	//	imageInfo.samples = tci->desc.sam
 	break;
 	case TT_Cube:
-		imageInfo.imageType = VK_IMAGE_TYPE_2D;
-		imageInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 		viewInfo.sType = VK_IMAGE_VIEW_TYPE_CUBE;
 	break;
 	}
 
-	vkCreateImage(dev->dev, &imageInfo, Vkd_allocCb, &tex->image);
+	return vkCreateImageView(dev->dev, &viewInfo, Vkd_allocCb, &tex->imageView) == VK_SUCCESS;
+}
+
+struct Texture *
+Vk_CreateTexture(struct RenderDevice *dev, const struct TextureCreateInfo *tci, uint16_t location)
+{
+	struct Texture *tex = malloc(sizeof(*tex));
+	if (!tex)
+		return NULL;
+
+	if (!Vk_CreateImage(dev, tci, tex, false))
+		goto error;
 
 	VkMemoryRequirements req = { 0 };
 	vkGetImageMemoryRequirements(dev->dev, tex->image, &req);
@@ -73,15 +104,12 @@ Vk_CreateTexture(struct RenderDevice *dev, struct TextureCreateInfo *tci)
 		.memoryTypeIndex = Vkd_MemoryTypeIndex(dev, req.memoryTypeBits, NeToVkMemoryProperties(tci->desc.memoryType))
 	};
 	vkAllocateMemory(dev->dev, &ai, Vkd_allocCb, &tex->memory);
-
 	vkBindImageMemory(dev->dev, tex->image, tex->memory, 0);
 
-	viewInfo.image = tex->image;
-	vkCreateImageView(dev->dev, &viewInfo, Vkd_allocCb, &tex->imageView);
+	if (!Vk_CreateImageView(dev, tci, tex))
+		goto error;
 
-	memcpy(&tex->desc, &tci->desc, sizeof(tex->desc));
-
-	tex->layout = VK_IMAGE_LAYOUT_UNDEFINED;
+	Vk_SetTexture(dev, location, tex->imageView);
 
 	// FIXME
 
@@ -148,6 +176,10 @@ Vk_CreateTexture(struct RenderDevice *dev, struct TextureCreateInfo *tci)
 	// FIXME
 
 	return tex;
+
+error:
+	free(tex);
+	return NULL;
 }
 
 const struct TextureDesc *

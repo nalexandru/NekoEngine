@@ -3,6 +3,7 @@
 
 #include <System/Log.h>
 #include <System/System.h>
+#include <System/Thread.h>
 #include <Engine/IO.h>
 #include <Engine/Job.h>
 #include <Engine/Config.h>
@@ -16,6 +17,7 @@
 #include <Render/Context.h>
 #include <Render/Pipeline.h>
 #include <Render/Swapchain.h>
+#include <Render/TransientResources.h>
 
 #define RE_MOD L"Render"
 #define CHK_FAIL(x, y) if (!x) { Sys_LogEntry(RE_MOD, LOG_CRITICAL, y); return false; }
@@ -25,10 +27,11 @@ struct RenderDeviceInfo Re_deviceInfo = { 0 };
 struct RenderDeviceProcs Re_deviceProcs = { 0 };
 struct RenderContextProcs Re_contextProcs = { 0 };
 
-void *Re_surface = NULL;
-void *Re_swapchain = NULL;
-struct RenderContext **Re_contexts = NULL;
+struct Surface *Re_surface = NULL;
+struct Swapchain *Re_swapchain = NULL;
+THREAD_LOCAL struct RenderContext *Re_context = NULL;
 const struct RenderDriver *Re_driver = NULL;
+struct RenderContext **Re_contexts = NULL;
 
 #ifndef RENDER_DRIVER_BUILTIN
 static void *_drvModule = NULL;
@@ -110,25 +113,25 @@ Re_InitRender(void)
 	
 	CHK_FAIL(Re_LoadShaders(), L"Failed to load shaders");
 	CHK_FAIL(Re_InitPipelines(), L"Failed to create pipelines");
-	
-	Re_contexts = calloc(1, sizeof(*Re_contexts));
-	CHK_FAIL(Re_contexts, L"Failed to allocate contexts");
-	
-	Re_contexts[0] = Re_CreateContext();
-	CHK_FAIL(Re_contexts[0], L"Failed to create context");
-	
-	//for (uint32_t i = 0; i < E_JobWorkerThreads() + 1; ++i) {
 
-	//}
+	Re_contexts = calloc(E_JobWorkerThreads() + 1, sizeof(*Re_contexts));
+	CHK_FAIL(Re_contexts, L"Failed to allocate contextx");
+
+	for (uint32_t i = 0; i < E_JobWorkerThreads() + 1; ++i)
+		Re_contexts[i] = Re_CreateContext();
+	Re_context = Re_contexts[E_JobWorkerThreads()];
 
 	CHK_FAIL(Re_InitTextureSystem(), L"Failed to initialize texture system");
-	
+	CHK_FAIL(Re_InitTransientHeap(E_GetCVarU64(L"Render_TransientHeapSize", 64 * 1024 * 1024)->u64), L"Failed to initialize transient heap");
+
 	CHK_FAIL(E_RegisterResourceType(RES_TEXTURE, sizeof(struct TextureResource), (ResourceCreateProc)Re_CreateTextureResource,
 							(ResourceLoadProc)Re_LoadTextureResource, (ResourceUnloadProc)Re_UnloadTextureResource),
 			L"Failed to register texture resource");
 	CHK_FAIL(E_RegisterResourceType(RES_MODEL, sizeof(struct Model), (ResourceCreateProc)Re_CreateModelResource,
 							(ResourceLoadProc)Re_LoadModelResource, (ResourceUnloadProc)Re_UnloadModelResource),
 			L"Failed to register model resource");
+
+	CHK_FAIL(Re_InitResourceDestructor(), L"Failed to initialize resource destructor");
 
 	return true;
 }
@@ -138,9 +141,11 @@ Re_TermRender(void)
 {
 	Re_WaitIdle();
 	
+	Re_TermResourceDestructor();
 	Re_TermTextureSystem();
 
-	Re_DestroyContext(Re_contexts[0]);
+	for (uint32_t i = 0; i < E_JobWorkerThreads() + 1; ++i)
+		Re_DestroyContext(Re_contexts[i]);
 	free(Re_contexts);
 	
 	Re_TermPipelines();
@@ -157,3 +162,4 @@ Re_TermRender(void)
 	Sys_UnloadLibrary(_drvModule);
 #endif
 }
+

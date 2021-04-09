@@ -32,53 +32,12 @@ struct Queue;
 
 struct Font;
 struct Scene;
-struct Model;
 struct Stream;
 struct Camera;
 struct UIContext;
 struct AudioClip;
 struct AtomicLock;
 struct ResourceLoadInfo;
-struct ModelCreateInfo;
-
-struct Buffer;
-struct BufferDesc;
-struct BufferCreateInfo;
-struct Texture;
-struct TextureDesc;
-struct TextureCreateInfo;
-struct AccelerationStructure;
-struct AccelerationStructureDesc;
-struct AccelerationStructureCreateInfo;
-struct Shader;
-struct Pipeline;
-struct PipelineLayout;
-struct PipelineLayoutDesc;
-struct GraphicsPipelineDesc;
-struct Framebuffer;
-struct FramebufferDesc;
-struct ShaderBindingTable;
-struct BlendAttachmentDesc;
-struct RenderDevice;
-struct RenderDeviceInfo;
-struct RenderDeviceProcs;
-struct RenderContext;
-struct RenderContextProcs;
-struct RenderPass;
-struct RenderPassDesc;
-struct AttachmentDesc;
-struct FramebufferAttachmentDesc;
-struct DescriptorSet;
-struct DescriptorWrite;
-struct DescriptorSetLayout;
-struct DescriptorSetLayoutDesc;
-struct DescriptorBinding;
-struct BufferBindInfo;
-struct TextureBindInfo;
-struct AccelerationStructureBindInfo;
-struct Semaphore;
-struct Sampler;
-struct SamplerDesc;
 
 struct AudioDevice;
 struct AudioDeviceInfo;
@@ -87,12 +46,6 @@ struct AudioSource;
 struct AudioSourceProcs;
 struct AudioClip;
 
-enum ShaderStage;
-enum TextureLayout;
-
-typedef void *Swapchain;
-typedef void *Surface;
-
 struct Version
 {
 	uint8_t major;
@@ -100,8 +53,6 @@ struct Version
 	uint8_t build;
 	uint8_t revision;
 };
-
-enum GPUMemoryFlags;
 
 typedef void *File;
 typedef void *Mutex;

@@ -42,6 +42,7 @@ static int _numThreads;
 static bool _shutdown;
 static struct JobQueue _jobQueue;
 static ALIGN(16) volatile uint64_t _submittedJobs; 
+static THREAD_LOCAL int _workerId;
 
 static void _ThreadProc(void *args);
 static void _DispatchWrapper(int worker, struct DispatchArgs *args);
@@ -79,6 +80,8 @@ E_InitJobSystem(void)
 		Sys_SetThreadAffinity(_threads[i], i + 2);
 	}
 
+	_workerId = _numThreads;
+
 	return true;
 }
 
@@ -86,6 +89,12 @@ int
 E_JobWorkerThreads()
 {
 	return _numThreads;
+}
+
+int
+E_WorkerId(void)
+{
+	return _workerId;
 }
 
 uint64_t
@@ -172,6 +181,8 @@ _ThreadProc(void *args)
 	static _Atomic int32_t workerId = -1;
 	int32_t id = atomic_fetch_add(&workerId, 1);
 	struct Job job = { 0, 0 };
+
+	_workerId = id;
 
 	while (!_shutdown) {
 		Sys_LockFutex(_wakeLock);

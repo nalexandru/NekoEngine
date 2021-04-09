@@ -10,11 +10,22 @@
 struct AccelerationStructure *
 MTL_CreateAccelerationStructure(id<MTLDevice> dev, const struct AccelerationStructureCreateInfo *asci)
 {
-	return NULL;
+	struct AccelerationStructure *as = calloc(1, sizeof(*as));
+	if (!as)
+		return NULL;
+	
+	as->desc = [[MTLAccelerationStructureDescriptor alloc] init];
+	as->desc.usage = MTLAccelerationStructureUsageNone;
+	
+	as->as = [dev newAccelerationStructureWithDescriptor: as->desc];
+	
+	return as;
 }
 
 void
-MTL_DestroyAccelerationStructure(id<MTLDevice> dev, struct AccelerationStructure *buff)
+MTL_DestroyAccelerationStructure(id<MTLDevice> dev, struct AccelerationStructure *as)
 {
-	//
+	[as->as release];
+	
+	free(as);
 }

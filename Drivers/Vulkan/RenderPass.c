@@ -1,7 +1,6 @@
 #include <stdlib.h>
 
 #include <System/Memory.h>
-#include <Render/RenderPass.h>
 
 #include "VulkanDriver.h"
 
@@ -14,6 +13,8 @@ Vk_CreateRenderPass(struct RenderDevice *dev, const struct RenderPassDesc *desc)
 
 	VkAttachmentDescription *atDesc = Sys_Alloc(sizeof(*atDesc), desc->attachmentCount, MH_Transient);
 	VkAttachmentReference *atRef = Sys_Alloc(sizeof(*atRef), desc->attachmentCount, MH_Transient);
+
+	rp->clearValues = calloc(sizeof(*rp->clearValues), desc->attachmentCount);
 
 	for (uint32_t i = 0; i < desc->attachmentCount; ++i) {
 		atDesc[i].flags = desc->attachments[i].mayAlias ? VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT : 0;
@@ -28,6 +29,8 @@ Vk_CreateRenderPass(struct RenderDevice *dev, const struct RenderPassDesc *desc)
 
 		atRef[i].attachment = i;
 		atRef[i].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		memcpy(rp->clearValues[i].color.float32, desc->attachments[i].clearColor, sizeof(rp->clearValues[i].color.float32));
 	}
 
 	VkSubpassDescription spDesc[] =
@@ -85,5 +88,6 @@ Vk_DestroyRenderPass(struct RenderDevice *dev, struct RenderPass *rp)
 {
 	vkDestroyRenderPass(dev->dev, rp->rp, Vkd_allocCb);
 
+	free(rp->clearValues);
 	free(rp);
 }

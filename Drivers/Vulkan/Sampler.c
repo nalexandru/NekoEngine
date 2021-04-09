@@ -26,6 +26,8 @@ Vk_CreateSampler(struct RenderDevice *dev, const struct SamplerDesc *desc)
 	if (vkCreateSampler(dev->dev, &info, Vkd_allocCb, &s) != VK_SUCCESS)
 		return VK_NULL_HANDLE;
 
+	Vk_SetSampler(dev, 0, s);
+
 	return s;
 }
 

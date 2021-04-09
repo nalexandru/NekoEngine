@@ -15,46 +15,6 @@ extern NSURL *Darwin_appSupportURL;
 
 static id<MTLBinaryArchive> _cache;
 
-struct PipelineLayout *
-MTL_CreatePipelineLayout(id<MTLDevice> dev, const struct PipelineLayoutDesc *desc)
-{
-	struct PipelineLayout *pl = calloc(1, sizeof(*pl));
-	if (!pl)
-		return NULL;
-	
-	pl->setCount = desc->setLayoutCount;
-	pl->sets = calloc(desc->setLayoutCount, sizeof(*pl->sets));
-	
-	uint32_t firstBuffer = 0, firstTexture = 0, firstSampler = 0;
-	for (uint32_t i = 0; i < desc->setLayoutCount; ++i) {
-		pl->sets[i].firstBuffer = firstBuffer;
-		pl->sets[i].firstTexture = firstTexture;
-		pl->sets[i].firstSampler = firstSampler;
-		
-		const struct DescriptorSetLayoutDesc setDesc = desc->setLayouts[i]->desc;
-		
-		for (uint32_t j = 0; j < setDesc.bindingCount; ++j) {
-			if (setDesc.bindings[j].type == DT_TEXTURE)
-				firstTexture += setDesc.bindings[j].count;
-			else if (setDesc.bindings[j].type == DT_SAMPLER)
-				firstSampler += setDesc.bindings[j].count;
-			else
-				firstBuffer += setDesc.bindings[j].count;
-		}
-	}
-	
-	pl->pushConstantIndex = firstBuffer;
-	
-	return pl;
-}
-
-void
-MTL_DestroyPipelineLayout(id<MTLDevice> dev, struct PipelineLayout *layout)
-{
-	free(layout->sets);
-	free(layout);
-}
-
 struct Pipeline *
 MTL_GraphicsPipeline(id<MTLDevice> dev, const struct GraphicsPipelineDesc *gpDesc)
 {
@@ -90,7 +50,7 @@ MTL_GraphicsPipeline(id<MTLDevice> dev, const struct GraphicsPipelineDesc *gpDes
 	id<MTLRenderPipelineState> pso = [dev newRenderPipelineStateWithDescriptor: desc error: &err];
 	
 	//[_cache addRenderPipelineFunctionsWithDescriptor: desc error: nil];
-	[desc release];
+	[desc autorelease];
 	
 	if (!pso) {
 		Sys_LogEntry(MPMOD, LOG_CRITICAL, L"Failed to create graphics pipeline: %hs",
@@ -153,7 +113,7 @@ MTL_ComputePipeline(id<MTLDevice> dev, struct Shader *sh)
 	Sys_LogEntry(MPMOD, LOG_CRITICAL, L"Failed to create compute pipeline: %hs",
 				 [[err localizedDescription] UTF8String]);
 
-	[desc release];
+	[desc autorelease];
 	
 	return NULL;
 }
@@ -169,7 +129,7 @@ MTL_RayTracingPipeline(id<MTLDevice> dev, struct ShaderBindingTable *sbt, uint32
 	id<MTLRenderPipelineState> pso = [dev newRenderPipelineStateWithDescriptor: desc error: &err];
 	
 	[_cache addRenderPipelineFunctionsWithDescriptor: desc error: nil];
-	[desc release];
+	[desc autorelease];
 	
 	if (pso) {
 		struct Pipeline *p = malloc(sizeof(*p));
@@ -198,7 +158,7 @@ MTL_LoadPipelineCache(id<MTLDevice> dev)
 	NSError *err;
 	_cache = [dev newBinaryArchiveWithDescriptor: desc error: &err];
 	
-	[desc release];
+	[desc autorelease];
 }
 
 void

@@ -12,11 +12,18 @@ struct VsOutput
 	float2 uv;
 };
 
+struct ShaderArguments
+{
+	array<sampler, 3> samplers [[ id(0) ]];
+	array<texture2d<float>, 65535> textures [[ id(3) ]];
+	array<constant struct Vertex *, 65535> vertexBuffers [[ id(65538) ]];
+};
+
 vertex struct VsOutput
 DefaultPBR_VS(uint vertexId [[vertex_id]],
-			 constant struct Vertex *vertices [[buffer(0)]])
+			  constant struct ShaderArguments *args [[ buffer(0) ]])
 {
-	struct Vertex vtx = vertices[vertexId];
+	struct Vertex vtx = args->vertexBuffers[0][vertexId];
 	struct VsOutput out;
 	
 	out.position = float4(vtx.x, vtx.y, vtx.z, 1.0);
@@ -28,10 +35,10 @@ DefaultPBR_VS(uint vertexId [[vertex_id]],
 
 fragment float4
 DefaultPBR_MR_FS(struct VsOutput in [[stage_in]],
-				 array<texture2d<float>, 16> colorTextures [[texture(0)]],
-				 sampler sceneSampler [[sampler(0)]])
+				 constant struct ShaderArguments *args [[ buffer(0) ]])
 {
-	return colorTextures[0].sample(sceneSampler, in.uv);
+//	return float4(1.0, 1.0, 1.0, 1.0);
+	return args->textures[0].sample(args->samplers[0], in.uv);
 }
 
 fragment float4

@@ -77,16 +77,18 @@ Sys_MessageBox(const wchar_t *title, const wchar_t *message, int icon)
 bool
 Sys_ProcessEvents(void)
 {
-	while (1) {
-		NSEvent *e = [NSApp nextEventMatchingMask: NSEventMaskAny
-							untilDate: [NSDate distantPast]
-							inMode: NSDefaultRunLoopMode
-							dequeue: true];
+	@autoreleasepool {
+		while (1) {
+			NSEvent *e = [NSApp nextEventMatchingMask: NSEventMaskAny
+											untilDate: [NSDate distantPast]
+											   inMode: NSDefaultRunLoopMode
+											  dequeue: true];
 							
-		if (!e)
-			break;
+			if (!e)
+				break;
 				
-		[NSApp sendEvent: e];
+			[NSApp sendEvent: e];
+		}
 	}
 
 	return true;

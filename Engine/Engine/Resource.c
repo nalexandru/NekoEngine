@@ -118,7 +118,7 @@ E_RetainResource(Handle res)
 }
 
 Handle
-E_GPUHandleToRes(uint32_t handle, const char *type)
+E_GPUHandleToRes(uint16_t handle, const char *type)
 {
 	uint32_t rtId = 0;
 	uint64_t hash = Rt_HashString(type);

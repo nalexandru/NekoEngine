@@ -1,10 +1,10 @@
 #ifndef _RE_DRIVER_H_
 #define _RE_DRIVER_H_
 
-#include <Engine/Types.h>
+#include <Render/Types.h>
 
 #define NE_RENDER_DRIVER_ID		0xB15B00B5
-#define NE_RENDER_DRIVER_API	1
+#define NE_RENDER_DRIVER_API	3
 
 struct RenderDriver
 {

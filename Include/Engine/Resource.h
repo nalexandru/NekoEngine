@@ -25,8 +25,8 @@ void *E_ResourcePtr(Handle res);
 int32_t	E_ResourceReferences(Handle res);
 void	E_RetainResource(Handle res);
 
-static inline uint32_t	E_ResHandleToGPU(Handle h) { return (uint32_t)(h & (uint64_t)0x00000000FFFFFFFF); }
-Handle					E_GPUHandleToRes(uint32_t id, const char *type);
+static inline uint16_t	E_ResHandleToGPU(Handle h) { return (uint16_t)(h & (uint64_t)0x000000000000FFFF); }
+Handle					E_GPUHandleToRes(uint16_t id, const char *type);
 
 void	E_UnloadResource(Handle res);
 

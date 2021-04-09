@@ -5,8 +5,6 @@
 #include <System/Log.h>
 #include <System/Memory.h>
 #include <Render/Driver.h>
-#include <Render/Device.h>
-#include <Render/Context.h>
 #include <Runtime/Runtime.h>
 #include <Engine/Config.h>
 #include <Engine/Version.h>
@@ -177,13 +175,14 @@ _EnumerateDevices(uint32_t *count, struct RenderDeviceInfo *info)
 		vkGetPhysicalDeviceFeatures2(dev[i], features);
 
 		// check requirements
-		if (!features->features.fullDrawIndexUint32 || !features->features.samplerAnisotropy)
+		if (!features->features.fullDrawIndexUint32 || !features->features.samplerAnisotropy || !features->features.shaderInt16)
 			continue;
 
 		if (!vk12Features->imagelessFramebuffer || !vk12Features->descriptorIndexing ||
 				!vk12Features->descriptorBindingPartiallyBound || !vk12Features->timelineSemaphore ||
 				!vk12Features->shaderSampledImageArrayNonUniformIndexing || !vk12Features->runtimeDescriptorArray ||
-				!vk12Features->descriptorBindingSampledImageUpdateAfterBind)
+				!vk12Features->descriptorBindingSampledImageUpdateAfterBind || !vk12Features->descriptorBindingStorageBufferUpdateAfterBind ||
+				!vk12Features->shaderStorageBufferArrayNonUniformIndexing)
 			continue;
 
 		if (!edsFeatures->extendedDynamicState)
@@ -196,6 +195,7 @@ _EnumerateDevices(uint32_t *count, struct RenderDeviceInfo *info)
 		info[i].features.discrete = props->deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
 		info[i].features.drawIndirectCount = vk12Features->drawIndirectCount;
 		info[i].features.textureCompression = features->features.textureCompressionBC;
+		info[i].features.multiDrawIndirect = vk11Features->shaderDrawParameters && vk12Features->drawIndirectCount;
 
 		info[i].limits.maxTextureSize = props->limits.maxImageDimension2D;
 

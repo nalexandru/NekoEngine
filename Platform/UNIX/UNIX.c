@@ -73,15 +73,15 @@ uint64_t
 Sys_Time(void)
 {
 #ifdef CLOCK_MONOTONIC
-    struct timespec tp;
-    clock_gettime(CLOCK_MONOTONIC, &tp);
- 
-    return (uint64_t)tp.tv_sec * (uint64_t)1000000000 + (uint64_t)tp.tv_nsec;
+	struct timespec tp;
+	clock_gettime(CLOCK_MONOTONIC, &tp);
+	
+	return (uint64_t)tp.tv_sec * (uint64_t)1000000000 + (uint64_t)tp.tv_nsec;
 #else
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
- 
-    return (uint64_t)tv.tv_sec * (uint64_t)1000000 + (uint64_t)tv.tv_usec;
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	
+	return (uint64_t)tv.tv_sec * (uint64_t)1000000 + (uint64_t)tv.tv_usec;
 #endif
 }
 
@@ -468,10 +468,14 @@ Sys_InitPlatform(void)
 
 	uname(&_uname);
 
+	XInitThreads();
+
 	X11_display = XOpenDisplay(NULL);
 	if (!X11_display)
 		return false;
 	
+	XLockDisplay(X11_display);
+
 	int screen = XDefaultScreen(X11_display);
 	if (!XMatchVisualInfo(X11_display, screen, 24, TrueColor, &X11_visualInfo))
 		return false;
@@ -483,6 +487,8 @@ Sys_InitPlatform(void)
 	X11_NET_WM_BYPASS_COMPOSITOR = XInternAtom(X11_display, "_NET_WM_BYPASS_COMPOSITOR", False);
 	X11_WM_PROTOCOLS = XInternAtom(X11_display, "WM_PROTOCOLS", False);
 	X11_WM_DELETE_WINDOW = XInternAtom(X11_display, "WM_DELETE_WINDOW", False);
+
+	XUnlockDisplay(X11_display);
 
 	_CpuInfo();
 

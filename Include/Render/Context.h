@@ -1,33 +1,10 @@
 #ifndef _RE_CONTEXT_H_
 #define _RE_CONTEXT_H_
 
-#include <Engine/Types.h>
+#include <Engine/Job.h>
+#include <Render/Types.h>
 #include <Render/Shader.h>
-
-enum IndexType
-{
-	IT_UINT_16,
-	IT_UINT_32
-};
-
-enum BlitFilter
-{
-	BF_NEAREST,
-	BF_LINEAR,
-	BF_CUBIC
-};
-
-enum ImageAspect
-{
-	IA_COLOR	= 0x00000001,
-	IA_DEPTH	= 0x00000002,
-	IA_STENCIL	= 0x00000004
-};
-
-struct ImageRegion
-{
-	void *a;
-};
+#include <System/Thread.h>
 
 struct ImageSubresource
 {
@@ -77,9 +54,7 @@ struct RenderContextProcs
 	void (*EndCommandBuffer)(struct RenderContext *ctx);
 	
 	void (*BindPipeline)(struct RenderContext *ctx, struct Pipeline *pipeline);
-	
-	void (*BindDescriptorSets)(struct RenderContext *ctx, struct PipelineLayout *layout, uint32_t firstSet, uint32_t count, const struct DescriptorSet * const *sets);
-	void (*PushConstants)(struct RenderContext *ctx, struct PipelineLayout *layout, enum ShaderStage stage, uint32_t size, const void *data);
+	void (*PushConstants)(struct RenderContext *ctx, enum ShaderStage stage, uint32_t size, const void *data);
 	
 	void (*BindIndexBuffer)(struct RenderContext *ctx, struct Buffer *buff, uint64_t offset, enum IndexType type);
 	
@@ -114,19 +89,25 @@ struct RenderContextProcs
 	void (*CopyBufferToImage)(struct RenderContext *ctx, const struct Buffer *src, struct Texture *dst, const struct BufferImageCopy *bic);
 	void (*CopyImageToBuffer)(struct RenderContext *ctx, const struct Texture *src, struct Buffer *dst, const struct BufferImageCopy *bic);
 	
-	void (*Blit)(struct RenderContext *ctx, const struct Texture *src, struct Texture *dst, const struct BlitRegion *regions, uint32_t regionCount, enum BlitFilter filter);
+	void (*Blit)(struct RenderContext *ctx, const struct Texture *src, struct Texture *dst, const struct BlitRegion *regions, uint32_t regionCount, enum ImageFilter filter);
 
 	bool (*Submit)(struct RenderDevice *dev, struct RenderContext *ctx);
 };
 
 extern struct RenderDevice *Re_device;
-extern struct RenderContext **Re_contexts;
 extern struct RenderContextProcs Re_contextProcs;
+extern THREAD_LOCAL struct RenderContext *Re_context;
+extern struct RenderContext **Re_contexts;
 
-static inline struct RenderContext *Re_CurrentContext(void)
+static inline struct RenderContext *
+Re_CurrentContext(void)
 {
-	return Re_contexts[0];
+	if (!Re_context)
+		Re_context = Re_contexts[E_WorkerId()];
+	return Re_context;
 }
+
+void Re_BindIndexBuffer(BufferHandle handle, uint64_t offset, enum IndexType type);
 
 static inline void Re_BeginDrawCommandBuffer(void) { Re_contextProcs.BeginDrawCommandBuffer(Re_CurrentContext()); }
 static inline void Re_BeginComputeCommandBuffer(void) { Re_contextProcs.BeginComputeCommandBuffer(Re_CurrentContext()); }
@@ -134,13 +115,8 @@ static inline void Re_BeginTransferCommandBuffer(void) { Re_contextProcs.BeginTr
 static inline void Re_EndCommandBuffer(void) { Re_contextProcs.EndCommandBuffer(Re_CurrentContext()); }
 
 static inline void Re_BindPipeline(struct Pipeline *pipeline) { Re_contextProcs.BindPipeline(Re_CurrentContext(), pipeline); }
-
-static inline void Re_BindDescriptorSets(struct PipelineLayout *layout, uint32_t firstSet, uint32_t count, const struct DescriptorSet * const *sets)
-{ Re_contextProcs.BindDescriptorSets(Re_CurrentContext(), layout, firstSet, count, sets); }
-static inline void Re_PushConstants(struct PipelineLayout *layout, enum ShaderStage stage, uint32_t size, const void *data)
-{ Re_contextProcs.PushConstants(Re_CurrentContext(), layout, stage, size, data); }
-
-static inline void Re_BindIndexBuffer(struct Buffer *buff, uint64_t offset, enum IndexType type) { Re_contextProcs.BindIndexBuffer(Re_CurrentContext(), buff, offset, type); }
+static inline void Re_PushConstants(enum ShaderStage stage, uint32_t size, const void *data)
+{ Re_contextProcs.PushConstants(Re_CurrentContext(), stage, size, data); }
 
 static inline void Re_ExecuteSecondary(struct RenderContext **contexts, uint32_t count) { Re_contextProcs.ExecuteSecondary(Re_CurrentContext(), contexts, count); }
 

@@ -1,7 +1,6 @@
 #include <stdlib.h>
 
 #include <System/Memory.h>
-#include <Render/Device.h>
 
 #include "VulkanDriver.h"
 
@@ -51,9 +50,16 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 		_devExtensions[_devExtensionCount] = VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME;
 	}
 
+	VkPhysicalDeviceVulkan11Features *vk11Features = Sys_Alloc(sizeof(*vk11Features), 1, MH_Transient);
+	vk11Features->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
+	vk11Features->pNext = rtFeatures;
+
+	if (info->features.multiDrawIndirect)
+		vk11Features->shaderDrawParameters = true;
+
 	VkPhysicalDeviceVulkan12Features *vk12Features = Sys_Alloc(sizeof(*vk12Features), 1, MH_Transient);
 	vk12Features->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
-	vk12Features->pNext = rtFeatures;
+	vk12Features->pNext = vk11Features;
 
 	vk12Features->imagelessFramebuffer = VK_TRUE;
 	vk12Features->descriptorIndexing = VK_TRUE;
@@ -63,7 +69,9 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 	vk12Features->runtimeDescriptorArray = VK_TRUE;
 	vk12Features->descriptorBindingVariableDescriptorCount = VK_TRUE;
 	vk12Features->shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+	vk12Features->shaderStorageBufferArrayNonUniformIndexing = VK_TRUE;
 	vk12Features->descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
+	vk12Features->descriptorBindingStorageBufferUpdateAfterBind = VK_TRUE;
 
 	if (info->features.drawIndirectCount)
 		vk12Features->drawIndirectCount = true;
@@ -72,6 +80,7 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 	features->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 	features->pNext = vk12Features;
 
+	features->features.shaderInt16 = VK_TRUE;
 	features->features.fullDrawIndexUint32 = VK_TRUE;
 	features->features.samplerAnisotropy = VK_TRUE;
 
@@ -158,51 +167,38 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 	devProcs->ComputePipeline = (struct Pipeline *(*)(struct RenderDevice *, struct Shader *))Vk_ComputePipeline;
 	devProcs->RayTracingPipeline = (struct Pipeline *(*)(struct RenderDevice *, struct ShaderBindingTable *, uint32_t))Vk_RayTracingPipeline;
 	
-	devProcs->CreatePipelineLayout = Vk_CreatePipelineLayout;
-	devProcs->DestroyPipelineLayout = Vk_DestroyPipelineLayout;
+	devProcs->AcquireNextImage = (void *(*)(struct RenderDevice *, struct Swapchain *))Vk_AcquireNextImage;
+	devProcs->Present = (bool(*)(struct RenderDevice *, struct RenderContext *ctx, struct Swapchain *, void *))Vk_Present;
+	devProcs->SwapchainFormat = (enum TextureFormat(*)(struct Swapchain *))Vk_SwapchainFormat;
+	devProcs->SwapchainTexture = (struct Texture *(*)(struct Swapchain *, void *))Vk_SwapchainTexture;
+	devProcs->ScreenResized = Vk_ScreenResized;
 
-	devProcs->AcquireNextImage = (void *(*)(struct RenderDevice *, Swapchain))Vk_AcquireNextImage;
-	devProcs->Present = (bool(*)(struct RenderDevice *, struct RenderContext *ctx, Swapchain, void *))Vk_Present;
-	devProcs->SwapchainFormat = (enum TextureFormat(*)(Swapchain))Vk_SwapchainFormat;
-	devProcs->SwapchainTexture = (struct Texture *(*)(Swapchain, void *))Vk_SwapchainTexture;
+	devProcs->CreateTexture = Vk_CreateTexture;
+	devProcs->TextureLayout = Vk_TextureLayout;
+	devProcs->DestroyTexture = Vk_DestroyTexture;
 
-	devProcs->CreateTexture = (struct Texture *(*)(struct RenderDevice *, const struct TextureCreateInfo *))Vk_CreateTexture;
-	devProcs->TextureDesc = (const struct TextureDesc *(*)(const struct Texture *))Vk_TextureDesc;
-	devProcs->TextureLayout = (enum TextureLayout (*)(const struct Texture *))Vk_TextureLayout;
-	devProcs->DestroyTexture = (void(*)(struct RenderDevice *, struct Texture *))Vk_DestroyTexture;
+	devProcs->CreateSampler = (struct Sampler *(*)(struct RenderDevice *, const struct SamplerDesc *))Vk_CreateSampler;
+	devProcs->DestroySampler = (void (*)(struct RenderDevice *dev, struct Sampler *))Vk_DestroySampler;
 
-	devProcs->CreateSampler = (struct Sampler *(*)(struct RenderDevice *dev, const struct SamplerDesc *desc))Vk_CreateSampler;
-	devProcs->DestroySampler = (void(*)(struct RenderDevice *dev, struct Sampler *s))Vk_DestroySampler;
+	devProcs->CreateBuffer = Vk_CreateBuffer;
+	devProcs->UpdateBuffer = Vk_UpdateBuffer;
+	devProcs->DestroyBuffer = Vk_DestroyBuffer;
 
-	devProcs->CreateBuffer = (struct Buffer *(*)(struct RenderDevice *, const struct BufferCreateInfo *))Vk_CreateBuffer;
-	devProcs->UpdateBuffer = (void (*)(struct RenderDevice *, struct Buffer *, uint64_t, void *, uint64_t))Vk_UpdateBuffer;
-	devProcs->BufferDesc = (const struct BufferDesc *(*)(const struct Buffer *))Vk_BufferDesc;
-	devProcs->DestroyBuffer = (void(*)(struct RenderDevice *, struct Buffer *))Vk_DestroyBuffer;
-
-	devProcs->CreateAccelerationStructure =
-		(struct AccelerationStructure *(*)(struct RenderDevice *, const struct AccelerationStructureCreateInfo *))Vk_CreateAccelerationStructure;
+	devProcs->CreateAccelerationStructure = Vk_CreateAccelerationStructure;
 	devProcs->DestroyAccelerationStructure = (void(*)(struct RenderDevice *, struct AccelerationStructure *))Vk_DestroyAccelerationStructure;
-
-	devProcs->CreateDescriptorSetLayout =
-		(struct DescriptorSetLayout *(*)(struct RenderDevice *, const struct DescriptorSetLayoutDesc *))Vk_CreateDescriptorSetLayout;
-	devProcs->DestroyDescriptorSetLayout = (void (*)(struct RenderDevice *, struct DescriptorSetLayout *))Vk_DestroyDescriptorSetLayout;
-	
-	devProcs->CreateDescriptorSet = (struct DescriptorSet *(*)(struct RenderDevice *, const struct DescriptorSetLayout *))Vk_CreateDescriptorSet;
-	devProcs->CopyDescriptorSet = (void(*)(struct RenderDevice *, const struct DescriptorSet *, uint32_t, struct DescriptorSet *, uint32_t, uint32_t))Vk_CopyDescriptorSet;
-	devProcs->WriteDescriptorSet = (void(*)(struct RenderDevice *, struct DescriptorSet *, const struct DescriptorWrite *, uint32_t))Vk_WriteDescriptorSet;
-	devProcs->DestroyDescriptorSet = (void (*)(struct RenderDevice *, struct DescriptorSet *))Vk_DestroyDescriptorSet;
 
 	devProcs->LoadPipelineCache = (void(*)(struct RenderDevice *))Vk_LoadPipelineCache;
 	devProcs->SavePipelineCache = (void(*)(struct RenderDevice *))Vk_SavePipelineCache;
 
-	devProcs->CreateContext = (struct RenderContext *(*)(struct RenderDevice *))Vk_CreateContext;
-	devProcs->DestroyContext = (void(*)(struct RenderDevice *, struct RenderContext *))Vk_DestroyContext;
+	devProcs->CreateContext = Vk_CreateContext;
+	devProcs->ResetContext = Vk_ResetContext;
+	devProcs->DestroyContext = Vk_DestroyContext;
 
-	devProcs->CreateSurface = (Surface (*)(struct RenderDevice *, void *))Vk_CreateSurface;
-	devProcs->DestroySurface = (void (*)(struct RenderDevice *, Surface))Vk_DestroySurface;
+	devProcs->CreateSurface = (struct Surface *(*)(struct RenderDevice *, void *))Vk_CreateSurface;
+	devProcs->DestroySurface = (void (*)(struct RenderDevice *, struct Surface *))Vk_DestroySurface;
 
-	devProcs->CreateSwapchain = (Swapchain (*)(struct RenderDevice *dev, Surface))Vk_CreateSwapchain;
-	devProcs->DestroySwapchain = (void(*)(struct RenderDevice *dev, Swapchain))Vk_DestroySwapchain;
+	devProcs->CreateSwapchain = (struct Swapchain *(*)(struct RenderDevice *dev, struct Surface *))Vk_CreateSwapchain;
+	devProcs->DestroySwapchain = (void(*)(struct RenderDevice *dev, struct Swapchain *))Vk_DestroySwapchain;
 
 	devProcs->CreateFramebuffer = Vk_CreateFramebuffer;
 	devProcs->SetAttachment = Vk_SetAttachment;
@@ -215,6 +211,12 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 
 	devProcs->Execute = Vk_Execute;
 	devProcs->WaitIdle = Vk_WaitIdle;
+
+	devProcs->CreateTransientBuffer = Vk_CreateTransientBuffer;
+	devProcs->CreateTransientTexture = Vk_CreateTransientTexture;
+	devProcs->InitTransientHeap = Vk_InitTransientHeap;
+	devProcs->ResizeTransientHeap = Vk_ResizeTransientHeap;
+	devProcs->TermTransientHeap = Vk_TermTransientHeap;
 
 	Vk_InitContextProcs(ctxProcs);
 
@@ -234,7 +236,7 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 	dev->semaphoreValue = 0;
 	dev->frameValues = calloc(RE_NUM_FRAMES, sizeof(*dev->frameValues));
 
-	if (!Vk_InitDescriptorPools(dev->dev))
+	if (!Vk_CreateDescriptorSet(dev))
 		goto error;
 
 	if (!Vk_LoadShaders(dev->dev))
@@ -295,7 +297,7 @@ Vk_WaitIdle(struct RenderDevice *dev)
 void
 Vk_DestroyDevice(struct RenderDevice *dev)
 {
-	Vk_TermDescriptorPools(dev->dev);
+	Vk_TermDescriptorSet(dev);
 	Vk_UnloadShaders(dev->dev);
 
 	vkDestroyCommandPool(dev->dev, dev->driverTransferPool, Vkd_allocCb);

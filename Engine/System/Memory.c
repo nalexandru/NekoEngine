@@ -23,8 +23,8 @@ struct Allocation
 
 static uint8_t *_transientHeap, *_transientHeapPtr;
 static uint64_t *_transientHeapSize;
-static uint64_t _transientHeapPeak = 0;
-struct AtomicLock _lock;
+static uint64_t _transientHeapPeak;
+static struct AtomicLock _lock;
 
 void *
 Sys_Alloc(size_t size, size_t count, enum MemoryHeap heap)

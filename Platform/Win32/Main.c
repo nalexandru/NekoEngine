@@ -9,6 +9,8 @@
 _declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
 _declspec(dllexport) DWORD AmdPowerXpressRequestHighPerformance = 0x00000001;
 
+HINSTANCE Win32_instance;
+
 int APIENTRY
 WinMain(_In_ HINSTANCE hInst, _In_opt_ HINSTANCE hPrevInst, _In_ LPSTR lpCmdLine, _In_ int nCmdShow)
 {
@@ -18,6 +20,8 @@ WinMain(_In_ HINSTANCE hInst, _In_opt_ HINSTANCE hPrevInst, _In_ LPSTR lpCmdLine
 	flag |= _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF;
 	_CrtSetDbgFlag(flag);
 #endif
+
+	Win32_instance = hInst;
 
 	if (!E_Init(__argc, __argv))
 		return -1;

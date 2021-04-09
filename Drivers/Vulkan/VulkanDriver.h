@@ -5,10 +5,6 @@
 
 #include <Engine/Types.h>
 #include <Render/Render.h>
-#include <Render/Buffer.h>
-#include <Render/Texture.h>
-#include <Render/Sampler.h>
-#include <Render/Framebuffer.h>
 #include <Runtime/Array.h>
 
 #define VK_ENABLE_BETA_EXTENSIONS
@@ -17,7 +13,10 @@
 struct RenderDevice
 {
 	VkDevice dev;
+	VkDeviceMemory transientHeap;
 	VkQueue transferQueue, graphicsQueue, computeQueue;
+	VkDescriptorSet descriptorSet;
+
 	uint32_t graphicsFamily, computeFamily, transferFamily;
 	VkPhysicalDevice physDev;
 	VkPhysicalDeviceProperties physDevProps;
@@ -27,6 +26,9 @@ struct RenderDevice
 	uint64_t *frameValues;
 	VkCommandPool driverTransferPool;
 	VkFence driverTransferFence;
+
+	VkDescriptorSetLayout setLayout;
+	VkDescriptorPool descriptorPool;
 };
 
 struct RenderContext
@@ -37,6 +39,8 @@ struct RenderContext
 	struct Array *graphicsCmdBuffers, *transferCmdBuffers, *computeCmdBuffers;
 	VkFence executeFence;
 	VkDevice dev;
+	//
+	VkDescriptorSet descriptorSet;
 };
 
 struct VulkanDeviceInfo
@@ -84,24 +88,14 @@ struct Framebuffer
 struct RenderPass
 {
 	VkRenderPass rp;
+	VkClearValue *clearValues;
 };
 
 struct Pipeline
 {
 	VkPipeline pipeline;
-	VkPipelineBindPoint bindPoint;
-};
-
-struct PipelineLayout
-{
 	VkPipelineLayout layout;
-};
-
-struct DescriptorSetLayout
-{
-	VkDescriptorSetLayout layout;
-	uint32_t sizeCount;
-	VkDescriptorPoolSize *sizes;
+	VkPipelineBindPoint bindPoint;
 };
 
 #define VKST_BINARY		0
@@ -119,7 +113,6 @@ struct AccelerationStructure
 
 extern VkInstance Vkd_inst;
 extern VkAllocationCallbacks *Vkd_allocCb;
-extern struct Array Vkd_contexts;
 extern VkCommandPool Vkd_transferPool;
 
 // Device
@@ -129,8 +122,6 @@ void Vk_WaitIdle(struct RenderDevice *dev);
 void Vk_DestroyDevice(struct RenderDevice *dev);
 
 // Pipeline
-struct PipelineLayout *Vk_CreatePipelineLayout(struct RenderDevice *dev, const struct PipelineLayoutDesc *desc);
-void Vk_DestroyPipelineLayout(struct RenderDevice *dev, struct PipelineLayout *layout);
 struct Pipeline *Vk_GraphicsPipeline(struct RenderDevice *dev, const struct GraphicsPipelineDesc *desc);
 struct Pipeline *Vk_ComputePipeline(struct RenderDevice *dev, struct Shader *sh);
 struct Pipeline *Vk_RayTracingPipeline(struct RenderDevice *dev, struct ShaderBindingTable *sbt, uint32_t maxDepth);
@@ -144,6 +135,7 @@ void *Vk_AcquireNextImage(struct RenderDevice *, struct Swapchain *sw);
 bool Vk_Present(struct RenderDevice *dev, struct RenderContext *ctx, struct Swapchain *sw, void *image);
 enum TextureFormat Vk_SwapchainFormat(struct Swapchain *sw);
 struct Texture *Vk_SwapchainTexture(struct Swapchain *sw, void *image);
+void Vk_ScreenResized(struct RenderDevice *dev, struct Swapchain *sw);
 
 // Surface (Platform.c, Driver.c)
 bool Vk_CheckPresentSupport(VkPhysicalDevice dev, uint32_t family);
@@ -152,22 +144,23 @@ void Vk_DestroySurface(struct RenderDevice *dev, VkSurfaceKHR surface);
 
 // Context
 struct RenderContext *Vk_CreateContext(struct RenderDevice *dev);
+void Vk_ResetContext(struct RenderDevice *dev, struct RenderContext *ctx);
 void Vk_DestroyContext(struct RenderDevice *dev, struct RenderContext *ctx);
 
 // Texture
-struct Texture *Vk_CreateTexture(struct RenderDevice *dev, struct TextureCreateInfo *tci);
-const struct TextureDesc *Vk_TextureDesc(const struct Texture *tex);
+bool Vk_CreateImage(struct RenderDevice *dev, const struct TextureCreateInfo *tci, struct Texture *tex, bool alias);
+bool Vk_CreateImageView(struct RenderDevice *dev, const struct TextureCreateInfo *tci, struct Texture *tex);
+struct Texture *Vk_CreateTexture(struct RenderDevice *dev, const struct TextureCreateInfo *tci, uint16_t location);
 enum TextureLayout Vk_TextureLayout(const struct Texture *tex);
 void Vk_DestroyTexture(struct RenderDevice *dev, struct Texture *tex);
 
 // Buffer
-struct Buffer *Vk_CreateBuffer(struct RenderDevice *dev, struct BufferCreateInfo *bci);
+struct Buffer *Vk_CreateBuffer(struct RenderDevice *dev, const struct BufferCreateInfo *bci, uint16_t location);
 void Vk_UpdateBuffer(struct RenderDevice *dev, struct Buffer *buff, uint64_t offset, void *data, uint64_t size);
-const struct BufferDesc *Vk_BufferDesc(const struct Buffer *buff);
 void Vk_DestroyBuffer(struct RenderDevice *dev, struct Buffer *buff);
 
 // Acceleration Structure
-struct AccelerationStructure *Vk_CreateAccelerationStructure(struct RenderDevice *dev, struct AccelerationStructureCreateInfo *asci);
+struct AccelerationStructure *Vk_CreateAccelerationStructure(struct RenderDevice *dev, const struct AccelerationStructureCreateInfo *asci);
 void Vk_DestroyAccelerationStructure(struct RenderDevice *dev, struct AccelerationStructure *as);
 
 // Framebuffer
@@ -180,14 +173,11 @@ struct RenderPass *Vk_CreateRenderPass(struct RenderDevice *dev, const struct Re
 void Vk_DestroyRenderPass(struct RenderDevice *dev, struct RenderPass *fb);
 
 // Descriptor Set
-struct DescriptorSetLayout *Vk_CreateDescriptorSetLayout(struct RenderDevice *dev, const struct DescriptorSetLayoutDesc *desc);
-void Vk_DestroyDescriptorSetLayout(struct RenderDevice *dev, struct DescriptorSetLayout *dsl);
-VkDescriptorSet Vk_CreateDescriptorSet(struct RenderDevice *dev, const struct DescriptorSetLayout *layout);
-void Vk_CopyDescriptorSet(struct RenderDevice *dev, const VkDescriptorSet src, uint32_t srcOffset, VkDescriptorSet dst, uint32_t dstOffset, uint32_t count);
-void Vk_WriteDescriptorSet(struct RenderDevice *dev, VkDescriptorSet ds, const struct DescriptorWrite *writes, uint32_t writeCount);
-void Vk_DestroyDescriptorSet(struct RenderDevice *dev, VkDescriptorSet ds);
-bool Vk_InitDescriptorPools(VkDevice dev);
-void Vk_TermDescriptorPools(VkDevice dev);
+bool Vk_CreateDescriptorSet(struct RenderDevice *dev);
+void Vk_SetSampler(struct RenderDevice *dev, uint16_t location, VkSampler sampler);
+void Vk_SetBuffer(struct RenderDevice *dev, uint16_t location, VkBuffer buffer);
+void Vk_SetTexture(struct RenderDevice *dev, uint16_t location, VkImageView imageView);
+void Vk_TermDescriptorSet(struct RenderDevice *dev);
 
 // Shader
 void *Vk_ShaderModule(struct RenderDevice *dev, const char *name);
@@ -197,6 +187,13 @@ void Vk_UnloadShaders(VkDevice dev);
 // Sampler
 VkSampler Vk_CreateSampler(struct RenderDevice *dev, const struct SamplerDesc *desc);
 void Vk_DestroySampler(struct RenderDevice *dev, VkSampler s);
+
+// TransientResources
+struct Texture *Vk_CreateTransientTexture(struct RenderDevice *dev, const struct TextureCreateInfo *tci, uint64_t offset);
+struct Buffer *Vk_CreateTransientBuffer(struct RenderDevice *dev, const struct BufferCreateInfo *bci, uint64_t offset);
+bool Vk_InitTransientHeap(struct RenderDevice *dev, uint64_t size);
+bool Vk_ResizeTransientHeap(struct RenderDevice *dev, uint64_t size);
+void Vk_TermTransientHeap(struct RenderDevice *dev);
 
 // Utility functions
 void Vk_InitContextProcs(struct RenderContextProcs *p);

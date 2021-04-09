@@ -1,7 +1,6 @@
 #include <assert.h>
 
 #include <System/Memory.h>
-#include <Render/Render.h>
 #include <Runtime/Runtime.h>
 
 #include "VulkanDriver.h"
@@ -68,8 +67,7 @@ Vk_CreateContext(struct RenderDevice *dev)
 	vkCreateFence(dev->dev, &fci, Vkd_allocCb, &ctx->executeFence);
 
 	ctx->dev = dev->dev;
-
-	Rt_ArrayAddPtr(&Vkd_contexts, ctx);
+	ctx->descriptorSet = dev->descriptorSet;
 
 	return ctx;
 
@@ -84,6 +82,31 @@ error:
 	free(ctx);
 
 	return NULL;
+}
+
+void
+Vk_ResetContext(struct RenderDevice *dev, struct RenderContext *ctx)
+{
+	if (ctx->graphicsCmdBuffers[Re_frameId].count) {
+		vkFreeCommandBuffers(dev->dev, ctx->graphicsPools[Re_frameId],
+			(uint32_t)ctx->graphicsCmdBuffers[Re_frameId].count, (const VkCommandBuffer *)ctx->graphicsCmdBuffers[Re_frameId].data);
+		vkResetCommandPool(dev->dev, ctx->graphicsPools[Re_frameId], VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
+		Rt_ClearArray(&ctx->graphicsCmdBuffers[Re_frameId], false);
+	}
+	
+	if (ctx->transferCmdBuffers[Re_frameId].count) {
+		vkFreeCommandBuffers(dev->dev, ctx->transferPools[Re_frameId],
+			(uint32_t)ctx->transferCmdBuffers[Re_frameId].count, (const VkCommandBuffer *)ctx->transferCmdBuffers[Re_frameId].data);
+		vkResetCommandPool(dev->dev, ctx->transferPools[Re_frameId], VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
+		Rt_ClearArray(&ctx->transferCmdBuffers[Re_frameId], false);
+	}
+	
+	if (ctx->computeCmdBuffers[Re_frameId].count) {
+		vkFreeCommandBuffers(dev->dev, ctx->computePools[Re_frameId],
+			(uint32_t)ctx->computeCmdBuffers[Re_frameId].count, (const VkCommandBuffer *)ctx->computeCmdBuffers[Re_frameId].data);
+		vkResetCommandPool(dev->dev, ctx->computePools[Re_frameId], VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
+		Rt_ClearArray(&ctx->computeCmdBuffers[Re_frameId], false);
+	}
 }
 
 void
@@ -158,19 +181,15 @@ static void
 _BindPipeline(struct RenderContext *ctx, struct Pipeline *pipeline)
 {
 	vkCmdBindPipeline(ctx->cmdBuffer, pipeline->bindPoint, pipeline->pipeline);
+	vkCmdBindDescriptorSets(ctx->cmdBuffer, pipeline->bindPoint, pipeline->layout, 0, 1, &ctx->descriptorSet, 0, NULL);
+
 	ctx->boundPipeline = pipeline;
 }
 
 static void
-_BindDescriptorSets(struct RenderContext *ctx, struct PipelineLayout *layout, uint32_t firstSet, uint32_t count, const struct DescriptorSet * const *sets)
+_PushConstants(struct RenderContext *ctx, enum ShaderStage stage, uint32_t size, const void *data)
 {
-	vkCmdBindDescriptorSets(ctx->cmdBuffer, ctx->boundPipeline->bindPoint, layout->layout, firstSet, count, (const VkDescriptorSet **)sets, 0, NULL);
-}
-
-static void
-_PushConstants(struct RenderContext *ctx, struct PipelineLayout *layout, enum ShaderStage stage, uint32_t size, const void *data)
-{
-	vkCmdPushConstants(ctx->cmdBuffer, layout->layout, stage, 0, size, data);
+	vkCmdPushConstants(ctx->cmdBuffer, ctx->boundPipeline->layout, stage, 0, size, data);
 }
 
 static void
@@ -197,11 +216,6 @@ _BeginRenderPass(struct RenderContext *ctx, struct RenderPass *pass, struct Fram
 		.attachmentCount = fb->attachmentCount,
 		.pAttachments = fb->attachments
 	};
-
-	VkClearValue value =
-	{
-		.color.float32 = { 1.f, 0.f, 0.f, 1.f }
-	};
 	VkRenderPassBeginInfo rpbi =
 	{
 		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
@@ -210,9 +224,8 @@ _BeginRenderPass(struct RenderContext *ctx, struct RenderPass *pass, struct Fram
 		.framebuffer = fb->fb,
 		.renderArea = { { 0, 0 }, { fb->width, fb->height } },
 		.clearValueCount = 1,
-		.pClearValues = &value 
+		.pClearValues = pass->clearValues
 	};
-
 	vkCmdBeginRenderPass(ctx->cmdBuffer, &rpbi, VK_SUBPASS_CONTENTS_INLINE);
 }
 
@@ -364,14 +377,14 @@ _CopyImageToBuffer(struct RenderContext *ctx, const struct Texture *src, struct 
 }
 
 static void
-_Blit(struct RenderContext *ctx, const struct Texture *src, struct Texture *dst, const struct BlitRegion *regions, uint32_t regionCount, enum BlitFilter filter)
+_Blit(struct RenderContext *ctx, const struct Texture *src, struct Texture *dst, const struct BlitRegion *regions, uint32_t regionCount, enum ImageFilter filter)
 {
 	VkFilter f = VK_FILTER_NEAREST;
 
 	switch (filter) {
-	case BF_NEAREST: f = VK_FILTER_NEAREST; break;
-	case BF_LINEAR: f = VK_FILTER_LINEAR; break;
-	case BF_CUBIC: f = VK_FILTER_CUBIC_EXT; break;
+	case IF_NEAREST: f = VK_FILTER_NEAREST; break;
+	case IF_LINEAR: f = VK_FILTER_LINEAR; break;
+	case IF_CUBIC: f = VK_FILTER_CUBIC_EXT; break;
 	}
 
 	VkImageBlit *r = Sys_Alloc(sizeof(*r), regionCount, MH_Transient);
@@ -409,7 +422,6 @@ Vk_InitContextProcs(struct RenderContextProcs *p)
 	p->BeginTransferCommandBuffer = _BeginTransferCommandBuffer;
 	p->EndCommandBuffer = _EndCommandBuffer;
 	p->BindPipeline = _BindPipeline;
-	p->BindDescriptorSets = _BindDescriptorSets;
 	p->PushConstants = _PushConstants;
 	p->BindIndexBuffer = _BindIndexBuffer;
 	p->ExecuteSecondary = _ExecuteSecondary;

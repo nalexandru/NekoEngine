@@ -9,21 +9,6 @@
 
 #include "MTLDriver.h"
 
-#define BIND_DESCRIPTORS(targetEncoder, targetStage, stage)	\
-if (sets[i]->stage.bufferCount)	\
-	[ctx->encoders.targetEncoder set ## targetStage ## Buffers: sets[i]->stage.buffers	\
-													   offsets: sets[i]->stage.offsets	\
-													 withRange: NSMakeRange(next ## targetStage ## Buffer, sets[i]->stage.bufferCount)];	\
-next ## targetStage ## Buffer += sets[i]->stage.bufferCount;	\
-if (sets[i]->stage.textureCount)	\
-	[ctx->encoders.targetEncoder set ## targetStage ## Textures: sets[i]->stage.textures	\
-													  withRange: NSMakeRange(next ## targetStage ## Texture, sets[i]->stage.textureCount)];	\
-next ## targetStage ## Texture += sets[i]->stage.textureCount;	\
-if (sets[i]->stage.samplerCount)	\
-	[ctx->encoders.targetEncoder set ## targetStage ## SamplerStates: sets[i]->stage.samplers	\
-														   withRange: NSMakeRange(next ## targetStage ## Sampler, sets[i]->stage.samplerCount)];	\
-next ## targetStage ## Sampler += sets[i]->stage.samplerCount
-
 struct RenderContext *
 MTL_CreateContext(id<MTLDevice> dev)
 {
@@ -32,6 +17,11 @@ MTL_CreateContext(id<MTLDevice> dev)
 	ctx->queue = [dev newCommandQueue];
 	
 	return ctx;
+}
+
+void
+MTL_ResetContext(id<MTLDevice> dev, struct RenderContext *ctx)
+{
 }
 
 void
@@ -84,47 +74,24 @@ _BindPipeline(struct RenderContext *ctx, struct Pipeline *pipeline)
 {
 	ctx->boundPipeline = pipeline;
 	
-	if (ctx->type == RC_RENDER)
-		[ctx->encoders.render setRenderPipelineState: pipeline->render.state];
-	else if (ctx->type == RC_COMPUTE)
-		[ctx->encoders.compute setComputePipelineState: pipeline->computeState];
-}
-
-static void
-_BindDescriptorSets(struct RenderContext *ctx, struct PipelineLayout *layout, uint32_t firstSet, uint32_t count, const struct DescriptorSet * const *sets)
-{
 	if (ctx->type == RC_RENDER) {
-		uint32_t nextVertexBuffer = layout->sets[firstSet].firstBuffer;
-		uint32_t nextFragmentBuffer = layout->sets[firstSet].firstBuffer;
-		uint32_t nextVertexTexture = layout->sets[firstSet].firstTexture;
-		uint32_t nextFragmentTexture = layout->sets[firstSet].firstTexture;
-		uint32_t nextVertexSampler = layout->sets[firstSet].firstSampler;
-		uint32_t nextFragmentSampler = layout->sets[firstSet].firstSampler;
-		
-		for (uint32_t i = 0; i < count; ++i) {
-			BIND_DESCRIPTORS(render, Vertex, vertex);
-			BIND_DESCRIPTORS(render, Fragment, fragment);
-		}
+		[ctx->encoders.render setRenderPipelineState: pipeline->render.state];
+		MTL_SetRenderArguments(ctx->encoders.render);
 	} else if (ctx->type == RC_COMPUTE) {
-		uint32_t nextBuffer = layout->sets[firstSet].firstBuffer;
-		uint32_t nextTexture = layout->sets[firstSet].firstTexture;
-		uint32_t nextSampler = layout->sets[firstSet].firstSampler;
-		
-		for (uint32_t i = 0; i < count; ++i) {
-			BIND_DESCRIPTORS(compute, , compute);
-		}
+		[ctx->encoders.compute setComputePipelineState: pipeline->computeState];
+		MTL_SetComputeArguments(ctx->encoders.compute);
 	}
 }
 
 static void
-_PushConstants(struct RenderContext *ctx, struct PipelineLayout *layout, enum ShaderStage stage, uint32_t size, const void *data)
+_PushConstants(struct RenderContext *ctx, enum ShaderStage stage, uint32_t size, const void *data)
 {
 	if (stage & SS_VERTEX || stage & SS_GEOMETRY || stage & SS_TESS_CTRL || stage && SS_TESS_EVAL)
-		[ctx->encoders.render setVertexBytes: data length: size atIndex: layout->pushConstantIndex];
+		[ctx->encoders.render setVertexBytes: data length: size atIndex: 1];
 	else if (stage & SS_FRAGMENT)
-		[ctx->encoders.render setFragmentBytes: data length: size atIndex: layout->pushConstantIndex];
+		[ctx->encoders.render setFragmentBytes: data length: size atIndex: 1];
 	else if (stage & SS_COMPUTE)
-		[ctx->encoders.compute setBytes: data length: size atIndex: layout->pushConstantIndex];
+		[ctx->encoders.compute setBytes: data length: size atIndex: 1];
 }
 
 static void
@@ -253,7 +220,10 @@ _TraceRaysIndirect(struct RenderContext *ctx, struct Buffer *buff, uint64_t offs
 static void
 _BuildAccelerationStructure(struct RenderContext *ctx, struct AccelerationStructure *as, struct Buffer *scratch)
 {
-	//
+	[ctx->encoders.accelerationStructure buildAccelerationStructure: as->as
+														 descriptor: as->desc
+													  scratchBuffer: scratch->buff
+												scratchBufferOffset: 0];
 }
 
 static void
@@ -313,7 +283,7 @@ _CopyImageToBuffer(struct RenderContext *ctx, const struct Texture *src, struct 
 }
 
 static void
-_Blit(struct RenderContext *ctx, const struct Texture *src, struct Texture *dst, const struct BlitRegion *regions, uint32_t regionCount, enum BlitFilter filter)
+_Blit(struct RenderContext *ctx, const struct Texture *src, struct Texture *dst, const struct BlitRegion *regions, uint32_t regionCount, enum ImageFilter filter)
 {
 	for (uint32_t i = 0; i < regionCount; ++i) {
 		const struct BlitRegion r = regions[i];
@@ -343,7 +313,6 @@ MTL_InitContextProcs(struct RenderContextProcs *p)
 	p->BeginTransferCommandBuffer = _BeginTransferCommandBuffer;
 	p->EndCommandBuffer = _EndCommandBuffer;
 	p->BindPipeline = _BindPipeline;
-	p->BindDescriptorSets = _BindDescriptorSets;
 	p->PushConstants = _PushConstants;
 	p->BindIndexBuffer = _BindIndexBuffer;
 	p->ExecuteSecondary = _ExecuteSecondary;

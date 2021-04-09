@@ -8,19 +8,47 @@
 #include <Engine/Events.h>
 #include <Scene/Scene.h>
 #include <Scene/Camera.h>
-//#include <Render/Render.h>
-//#include <Render/Texture.h>
 #include <System/System.h>
 #include <System/Memory.h>
 #include <Runtime/Runtime.h>
 #include <Engine/Resource.h>
+#include <Render/Render.h>
+#include <Render/Buffer.h>
 
 #include "../Engine/ECS.h"
 
 #define SCNMOD	L"Scene"
 #define BUFF_SZ	512
 
+struct SceneData
+{
+	struct {
+		struct mat4 viewProjection;
+		struct vec4 cameraPosition;
+	} camera;
+
+	struct {
+		struct vec4 sunPosition;
+		uint32_t enviornmentMap;
+		uint32_t __padding[3];
+	} enviornment;
+
+	struct {
+		uint32_t lightCount;
+		uint32_t xTileCount;
+		uint32_t __padding[2];
+	} lighting;
+	
+	struct {
+		float exposure;
+		float gamma;
+		uint32_t sampleCount;
+		uint32_t __padding[1];
+	} settings;
+};
+
 struct Scene *Scn_activeScene = NULL;
+
 static inline bool _InitScene(struct Scene *s);
 static void _LoadJob(int worker, struct Scene *scn);
 static inline void _ReadSceneInfo(struct Scene *s, struct Stream *stm, char *data, wchar_t *buff);
@@ -69,6 +97,9 @@ Scn_StartSceneLoad(const char *path)
 void
 Scn_UnloadScene(struct Scene *s)
 {
+	/*Re_Destroy(s->sceneData);
+	Re_Destroy(s->descriptorSet);*/
+
 	E_TermSceneEntities(s);
 	E_TermSceneComponents(s);
 
@@ -92,9 +123,32 @@ _InitScene(struct Scene *s)
 	if (!E_InitSceneComponents(s) || !E_InitSceneEntities(s))
 		goto error;
 	
+/*	s->descriptorSet = Re_CreateDescriptorSet(_sceneLayout);
+	if (!s->descriptorSet)
+		goto error;
+
+	struct BufferCreateInfo bci =
+	{
+		.desc =
+		{
+			.size = sizeof(struct SceneData) * RE_NUM_FRAMES,
+			.usage = BU_TRANSFER_DST | BU_UNIFORM_BUFFER,
+			.memoryType = MT_GPU_LOCAL
+		}
+	};
+	s->sceneData = Re_CreateBuffer(&bci);
+	if (!s->sceneData)
+		goto error;*/
+
 	return true;
 
 error:
+/*	if (s->descriptorSet)
+		Re_DestroyDescriptorSet(s->descriptorSet);
+
+	if (s->sceneData)
+		Re_DestroyBuffer(s->sceneData);*/
+
 	E_TermSceneEntities(s);
 	E_TermSceneComponents(s);
 
@@ -145,6 +199,8 @@ _LoadJob(int wid, struct Scene *s)
 
 	s->loaded = true;
 	E_Broadcast(EVT_SCENE_LOADED, s);
+	
+	Rt_TermArray(&args);
 }
 
 void

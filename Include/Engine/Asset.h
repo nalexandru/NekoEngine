@@ -2,6 +2,7 @@
 #define _E_ASSET_H_
 
 #include <Engine/Types.h>
+#include <Render/Types.h>
 
 struct jsmntok;
 
@@ -18,6 +19,8 @@ struct Metadata
 
 // Metadata
 bool E_LoadMetadata(struct Metadata *meta, const char *file);
+bool E_LoadMetadataFromFile(struct Metadata *meta, File f);
+bool E_LoadMetadataFromStream(struct Metadata *meta, struct Stream *stm);
 void E_LoadMetadataFloatVector(struct Metadata *meta, struct jsmntok *tok, float *out, uint32_t count);
 
 // Models

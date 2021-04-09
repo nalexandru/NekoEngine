@@ -2,7 +2,6 @@ EXPORTS
 	E_screen DATA
 	E_screenWidth DATA
 	E_screenHeight DATA
-	UI_projection DATA
 	Scn_activeCamera DATA
 	Scn_activeScene DATA
 	Re_frameId DATA
@@ -75,6 +74,7 @@ EXPORTS
 	E_DisableWrite
 	E_CreateDirectory
 
+	E_WorkerId
 	E_JobWorkerThreads
 	E_ExecuteJob
 	E_DispatchJobs

@@ -1,15 +1,7 @@
 #ifndef _RE_SHADER_BINDING_TABLE_H_
 #define _RE_SHADER_BINDING_TABLE_H_
 
-struct ShaderBindingTable;
-
-enum ShaderEntryType
-{
-	SET_RayGen,
-	SET_Miss,
-	SET_HitGroup,
-	SET_Callable
-};
+#include <Render/Types.h>
 
 struct ShaderBindingTable *Re_CreateShaderBindingTable(void);
 void Re_SBTAddShader(struct ShaderBindingTable *sbt, enum ShaderEntryType type, struct Shader *sh);

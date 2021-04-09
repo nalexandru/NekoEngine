@@ -97,6 +97,9 @@
     <Filter Include="Source Files\Platform\Compat">
       <UniqueIdentifier>{b9897578-dcbb-4891-b8d9-cc7cbed3f392}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Render\Graph">
+      <UniqueIdentifier>{63ef7c67-fbdd-4c68-8769-6c6b0b3e2098}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Include\System\System.h">
@@ -414,9 +417,6 @@
     <ClInclude Include="..\Include\Render\Framebuffer.h">
       <Filter>Header Files\Render</Filter>
     </ClInclude>
-    <ClInclude Include="..\Include\Render\Memory.h">
-      <Filter>Header Files\Render</Filter>
-    </ClInclude>
     <ClInclude Include="..\Include\Render\RenderPass.h">
       <Filter>Header Files\Render</Filter>
     </ClInclude>
@@ -445,6 +445,18 @@
       <Filter>Header Files\Audio</Filter>
     </ClInclude>
     <ClInclude Include="..\Include\Render\Sampler.h">
+      <Filter>Header Files\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Render\Types.h">
+      <Filter>Header Files\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Render\Graph\Pass.h">
+      <Filter>Header Files\Render\Graph</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Render\Graph\Graph.h">
+      <Filter>Header Files\Render\Graph</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Render\DestroyResource.h">
       <Filter>Header Files\Render</Filter>
     </ClInclude>
   </ItemGroup>
@@ -737,9 +749,17 @@
     <ClCompile Include="Render\Model.c">
       <Filter>Source Files\Render</Filter>
     </ClCompile>
+    <ClCompile Include="Render\Graph.c">
+      <Filter>Source Files\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\DestroyResource.c">
+      <Filter>Source Files\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Buffer.c">
+      <Filter>Source Files\Render</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
     <None Include="Exports.def">
       <Filter>Resource Files</Filter>
     </None>

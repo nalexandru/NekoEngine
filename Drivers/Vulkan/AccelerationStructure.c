@@ -1,9 +1,7 @@
-#include <Render/AccelerationStructure.h>
-
 #include "VulkanDriver.h"
 
 struct AccelerationStructure *
-Vk_CreateAccelerationStructure(struct RenderDevice *dev, struct AccelerationStructureCreateInfo *info)
+Vk_CreateAccelerationStructure(struct RenderDevice *dev, const struct AccelerationStructureCreateInfo *info)
 {
 	struct AccelerationStructure *as = calloc(1, sizeof(*as));
 	if (!as)

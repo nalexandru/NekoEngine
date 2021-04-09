@@ -24,10 +24,13 @@ MTL_CreateSampler(id<MTLDevice> dev, const struct SamplerDesc *sDesc)
 	desc.normalizedCoordinates = !sDesc->unnormalizedCoordinates;
 	desc.compareFunction = NeToMTLSamplerCompareFunction(sDesc->compareOp);
 	desc.borderColor = NeToMTLSamplerBorderColor(sDesc->borderColor);
+	desc.supportArgumentBuffers = true;
 	
 	id<MTLSamplerState> s = [dev newSamplerStateWithDescriptor: desc];
 
-	[desc release];
+	[desc autorelease];
+	
+	MTL_SetSampler(0, s);
 	
 	return s;
 }
@@ -35,5 +38,5 @@ MTL_CreateSampler(id<MTLDevice> dev, const struct SamplerDesc *sDesc)
 void
 MTL_DestroySampler(id<MTLDevice> dev, id<MTLSamplerState> s)
 {
-	[s release];
+	[s autorelease];
 }

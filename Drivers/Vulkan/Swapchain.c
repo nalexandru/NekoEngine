@@ -5,7 +5,6 @@
 #include <Engine/Config.h>
 #include <System/Memory.h>
 #include <Runtime/Runtime.h>
-#include <Render/Swapchain.h>
 
 #include "VulkanDriver.h"
 
@@ -127,30 +126,6 @@ Vk_AcquireNextImage(struct RenderDevice *dev, struct Swapchain *sw)
 	};
 	vkWaitSemaphores(dev->dev, &waitInfo, UINT64_MAX);
 
-	struct RenderContext *ctx;
-	Rt_ArrayForEachPtr(ctx, &Vkd_contexts) {
-		if (ctx->graphicsCmdBuffers[Re_frameId].count) {
-			vkFreeCommandBuffers(dev->dev, ctx->graphicsPools[Re_frameId],
-				(uint32_t)ctx->graphicsCmdBuffers[Re_frameId].count, (const VkCommandBuffer *)ctx->graphicsCmdBuffers[Re_frameId].data);
-			vkResetCommandPool(dev->dev, ctx->graphicsPools[Re_frameId], VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
-			Rt_ClearArray(&ctx->graphicsCmdBuffers[Re_frameId], false);
-		}
-	
-		if (ctx->transferCmdBuffers[Re_frameId].count) {
-			vkFreeCommandBuffers(dev->dev, ctx->transferPools[Re_frameId],
-				(uint32_t)ctx->transferCmdBuffers[Re_frameId].count, (const VkCommandBuffer *)ctx->transferCmdBuffers[Re_frameId].data);
-			vkResetCommandPool(dev->dev, ctx->transferPools[Re_frameId], VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
-			Rt_ClearArray(&ctx->transferCmdBuffers[Re_frameId], false);
-		}
-	
-		if (ctx->computeCmdBuffers[Re_frameId].count) {
-			vkFreeCommandBuffers(dev->dev, ctx->computePools[Re_frameId],
-				(uint32_t)ctx->computeCmdBuffers[Re_frameId].count, (const VkCommandBuffer *)ctx->computeCmdBuffers[Re_frameId].data);
-			vkResetCommandPool(dev->dev, ctx->computePools[Re_frameId], VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
-			Rt_ClearArray(&ctx->computeCmdBuffers[Re_frameId], false);
-		}
-	}
-
 	return (void *)(uint64_t)imageId;
 }
 
@@ -227,6 +202,12 @@ Vk_SwapchainTexture(struct Swapchain *sw, void *image)
 	t->imageView = sw->views[id];
 
 	return t;
+}
+
+void
+Vk_ScreenResized(struct RenderDevice *dev, struct Swapchain *sw)
+{
+	assert(_Create(dev->dev, sw));
 }
 
 static inline bool

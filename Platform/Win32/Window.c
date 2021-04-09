@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdbool.h>
 
 #include "Win32Platform.h"
 #include <Dbt.h>
@@ -6,12 +7,14 @@
 #include <System/Window.h>
 #include <Engine/Engine.h>
 #include <Render/Render.h>
+#include <Render/Device.h>
+#include <Render/Swapchain.h>
 
 #include "Win32Platform.h"
 
 static HWND _window;
 
-#define WND_CLASS_NAME				L"LightWindowClass"
+#define WND_CLASS_NAME				L"NekoEngineWindowClass"
 #define WM_SHOWCURSOR_MSG_GUID		L"NE_WM_SHOWCURSOR_{916fcbf2-b4be-4df8-884b-f0dc086e03ad}"
 #define WM_HIDECURSOR_MSG_GUID		L"NE_WM_HIDECURSOR_{916fcbf2-b4be-4df8-884b-f0dc086e03ad}"
 
@@ -53,8 +56,8 @@ _WndProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
 		*E_screenWidth = LOWORD(lparam);
 		*E_screenHeight = HIWORD(lparam);
 
-//		if (Re.ScreenResized)
-	//		Re.ScreenResized();
+		if (Re_device)
+			Re_deviceProcs.ScreenResized(Re_device, Re_swapchain);
 	} break;
 	default: {
 		if (umsg == WM_SHOWCURSOR) {
@@ -81,10 +84,10 @@ Sys_CreateWindow(void)
 	WNDCLASSW wincl = { 0 };
 	wincl.style = CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;
 	wincl.lpfnWndProc = _WndProc;
-	wincl.hInstance = GetModuleHandle(NULL);
+	wincl.hInstance = Win32_instance;
 	wincl.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
 	wincl.lpszClassName = WND_CLASS_NAME;
-	wincl.hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(300));
+	wincl.hIcon = LoadIcon(Win32_instance, MAKEINTRESOURCE(300));
 
 	if (!WM_SHOWCURSOR)
 		WM_SHOWCURSOR = RegisterWindowMessageW(WM_SHOWCURSOR_MSG_GUID);
@@ -108,7 +111,7 @@ Sys_CreateWindow(void)
 
 	_window = CreateWindowExW(exStyle, WND_CLASS_NAME,
 		L"NekoEngine", style, x, y, rc.right - rc.left, rc.bottom - rc.top,
-		HWND_DESKTOP, NULL, GetModuleHandle(NULL), NULL);
+		HWND_DESKTOP, NULL, Win32_instance, NULL);
 
 	if (!_window) {
 		MessageBoxW(HWND_DESKTOP, L"Failed to create window. The program will now exit.", L"FATAL ERROR", MB_OK | MB_ICONERROR);
@@ -133,5 +136,5 @@ Sys_SetWindowTitle(const wchar_t *name)
 void
 Sys_DestroyWindow(void)
 {
-	
+	UnregisterClass(WND_CLASS_NAME, Win32_instance);
 }

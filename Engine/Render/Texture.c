@@ -7,22 +7,20 @@
 #include <Render/Render.h>
 #include <Render/Texture.h>
 #include <Render/Sampler.h>
-#include <Render/DescriptorSet.h>
+#include <Render/Context.h>
+#include <Render/DestroyResource.h>
 
-static struct DescriptorSet *_textureDescriptorSet;
-static struct DescriptorSetLayout *_textureSetLayout;
-static uint32_t _usedSlots, _textureSlots;
 static struct Sampler *_sceneSampler;
 
-static inline struct Texture *_CreateTexture(const struct TextureCreateInfo *tci) { return Re_deviceProcs.CreateTexture(Re_device, tci); };
-static inline void _DestroyTexture(struct Texture *tex) { Re_deviceProcs.DestroyTexture(Re_device, tex); }
-
-static inline void _ResizeDescriptorSet(void);
+static inline struct Texture *_CreateTexture(const struct TextureCreateInfo *tci, uint16_t location) { return Re_deviceProcs.CreateTexture(Re_device, tci, location); };
 
 bool
 Re_CreateTextureResource(const char *name, const struct TextureCreateInfo *ci, struct TextureResource *tex, Handle h)
 {
-	tex->texture = _CreateTexture(ci);
+	if ((h & 0x00000000FFFFFFFF) > (uint64_t)65535)
+		return false;
+	
+	tex->texture = _CreateTexture(ci, E_ResHandleToGPU(h));
 	if (!tex->texture)
 		return false;
 
@@ -35,6 +33,9 @@ Re_CreateTextureResource(const char *name, const struct TextureCreateInfo *ci, s
 bool
 Re_LoadTextureResource(struct ResourceLoadInfo *li, const char *args, struct TextureResource *tex, Handle h)
 {
+	if ((h & 0x00000000FFFFFFFF) > (uint64_t)65535)
+		return false;
+	
 	bool rc = false;
 	struct TextureCreateInfo ci = 
 	{
@@ -56,21 +57,7 @@ Re_LoadTextureResource(struct ResourceLoadInfo *li, const char *args, struct Tex
 		rc = E_LoadImageAsset(&li->stm, &ci);
 
 	if (rc)
-		tex->texture = _CreateTexture(&ci);
-	
-	struct TextureBindInfo textureInfo =
-	{
-		.tex = tex->texture,
-		.layout = TL_SHADER_READ_ONLY
-	};
-	struct DescriptorWrite dw =
-	{
-		.type = DT_TEXTURE,
-		.binding = _usedSlots++,
-		.count = 1,
-		.textureInfo = &textureInfo
-	};
-	Re_WriteDescriptorSet(_textureDescriptorSet, &dw, 1);
+		tex->texture = _CreateTexture(&ci, E_ResHandleToGPU(h));
 
 	free(ci.data);
 
@@ -80,25 +67,21 @@ Re_LoadTextureResource(struct ResourceLoadInfo *li, const char *args, struct Tex
 void
 Re_UnloadTextureResource(struct TextureResource *tex, Handle h)
 {
-	_DestroyTexture(tex->texture);
+	Re_Destroy(tex->texture);
 }
 
-struct Sampler *
-Re_SceneTextureSampler(void)
+const struct TextureDesc *
+Re_TextureDesc(TextureHandle tex)
 {
-	return _sceneSampler;
+	struct TextureResource *res = E_ResourcePtr(E_GPUHandleToRes(tex, RES_TEXTURE));
+	return res ? &res->desc : NULL;
 }
 
-const struct DescriptorSetLayout *
-Re_TextureDescriptorSetLayout(void)
+enum TextureLayout
+Re_TextureLayout(TextureHandle tex)
 {
-	return _textureSetLayout;
-}
-
-void
-Re_BindTextureDescriptorSet(struct PipelineLayout *layout, uint32_t pos)
-{
-	Re_BindDescriptorSets(layout, pos, 1, (const struct DescriptorSet **)&_textureDescriptorSet);
+	struct TextureResource *res = E_ResourcePtr(E_GPUHandleToRes(tex, RES_TEXTURE));
+	return res ? Re_deviceProcs.TextureLayout(res->texture) : TL_UNKNOWN;
 }
 
 bool
@@ -106,77 +89,24 @@ Re_InitTextureSystem(void)
 {
 	struct SamplerDesc desc =
 	{
-		.minFilter = TFL_LINEAR,
-		.magFilter = TFL_LINEAR,
-		.mipmapMode = TMM_LINEAR,
+		.minFilter = IF_LINEAR,
+		.magFilter = IF_LINEAR,
+		.mipmapMode = SMM_LINEAR,
 		.enableAnisotropy = E_GetCVarBln(L"Render_AnisotropicFiltering", true)->bln,
 		.maxAnisotropy = E_GetCVarFlt(L"Render_Anisotropy", 16)->flt,
-		.addressModeU = TAM_CLAMP_TO_EDGE,
-		.addressModeV = TAM_CLAMP_TO_EDGE,
-		.addressModeW = TAM_CLAMP_TO_EDGE
+		.addressModeU = SAM_CLAMP_TO_EDGE,
+		.addressModeV = SAM_CLAMP_TO_EDGE,
+		.addressModeW = SAM_CLAMP_TO_EDGE
 	};
 	_sceneSampler = Re_CreateSampler(&desc);
 	if (!_sceneSampler)
 		return false;
-
-	_ResizeDescriptorSet();
 	
-	return _textureSetLayout && _textureDescriptorSet;
+	return true;
 }
 
 void
 Re_TermTextureSystem(void)
 {
 	Re_DestroySampler(_sceneSampler);
-
-	Re_DestroyDescriptorSet(_textureDescriptorSet);
-	Re_DestroyDescriptorSetLayout(_textureSetLayout);
-}
-
-static inline void _ResizeDescriptorSet(void)
-{
-	uint32_t newCount = _textureSlots ? _textureSlots * 2 : E_GetCVarI32(L"Render_InitialTextureSlots", 16)->i32;
-	
-	struct DescriptorSetLayout *oldLayout = _textureSetLayout;
-	struct DescriptorSet *oldSet = _textureDescriptorSet;
-	
-	struct DescriptorBinding binding =
-	{
-		.type = DT_TEXTURE,
-		.flags = DBF_PARTIALLY_BOUND | DBF_UPDATE_AFTER_BIND,
-		.count = newCount,
-		.stage = SS_FRAGMENT
-	};
-	struct DescriptorSetLayoutDesc desc =
-	{
-		.bindingCount = 1,
-		.bindings = &binding
-	};
-	
-	_textureSetLayout = Re_CreateDescriptorSetLayout(&desc);
-	if (!_textureSetLayout)
-		goto error;
-	
-	_textureDescriptorSet = Re_CreateDescriptorSet(_textureSetLayout);
-	if (!_textureDescriptorSet)
-		goto error;
-	
-	if (_usedSlots)
-		Re_CopyDescriptorSet(oldSet, 0, _textureDescriptorSet, 0, _textureSlots);
-	
-	if (oldLayout) {
-		// queue layout destroy
-	}
-	
-	if (oldSet) {
-		// queue ds destroy
-	}
-	
-	_textureSlots = newCount;
-	
-	return;
-	
-error:
-	_textureSetLayout = oldLayout;
-	_textureDescriptorSet = oldSet;
 }

@@ -8,7 +8,7 @@
 #include "MTLDriver.h"
 
 struct Buffer *
-MTL_CreateBuffer(id<MTLDevice> dev, const struct BufferCreateInfo *bci)
+MTL_CreateBufferInternal(id<MTLDevice> dev, const struct BufferCreateInfo *bci, bool transient, uint16_t location)
 {
 	struct Buffer *buff = calloc(1, sizeof(*buff));
 	if (!buff)
@@ -16,14 +16,18 @@ MTL_CreateBuffer(id<MTLDevice> dev, const struct BufferCreateInfo *bci)
 	
 	MTLResourceOptions options = MTL_GPUMemoryTypetoResourceOptions([dev hasUnifiedMemory], bci->desc.memoryType);
 	
-	buff->buff = [dev newBufferWithLength: bci->dataSize options: options];
+	if (transient)
+		options |= MTLResourceStorageModeMemoryless;
+	
+	buff->buff = [dev newBufferWithLength: bci->desc.size options: options];
 	
 	if (!buff->buff) {
 		free(buff);
 		return NULL;
 	}
 	
-	memcpy(&buff->desc, &bci->desc, sizeof(buff->desc));
+	MTL_SetBuffer(location, buff->buff);
+	buff->memoryType = bci->desc.memoryType;
 	
 	if (bci->data)
 		MTL_UpdateBuffer(dev, buff, 0, bci->data, bci->dataSize);
@@ -31,10 +35,16 @@ MTL_CreateBuffer(id<MTLDevice> dev, const struct BufferCreateInfo *bci)
 	return buff;
 }
 
+struct Buffer *
+MTL_CreateBuffer(id<MTLDevice> dev, const struct BufferCreateInfo *bci, uint16_t location)
+{
+	return MTL_CreateBufferInternal(dev, bci, false, location);
+}
+
 void
 MTL_UpdateBuffer(id<MTLDevice> dev, struct Buffer *buff, uint64_t offset, uint8_t *data, uint64_t size)
 {
-	if (buff->desc.memoryType == MT_GPU_LOCAL) {
+	if (buff->memoryType == MT_GPU_LOCAL) {
 		id<MTLBuffer> staging = [dev newBufferWithBytes: data length: size options: MTLResourceStorageModeShared];
 		
 		id<MTLCommandQueue> queue = [dev newCommandQueue];
@@ -51,10 +61,10 @@ MTL_UpdateBuffer(id<MTLDevice> dev, struct Buffer *buff, uint64_t offset, uint8_
 		[cmdBuffer commit];
 		[cmdBuffer waitUntilCompleted];
 		
-		[encoder release];
-		[cmdBuffer release];
-		[queue release];
-		[staging release];
+		[encoder autorelease];
+		[cmdBuffer autorelease];
+		[queue autorelease];
+		[staging autorelease];
 	} else {
 		uint8_t *dst = [buff->buff contents];
 		dst += offset;
@@ -68,15 +78,10 @@ MTL_UpdateBuffer(id<MTLDevice> dev, struct Buffer *buff, uint64_t offset, uint8_
 	}
 }
 
-const struct BufferDesc *
-MTL_BufferDesc(const struct Buffer *buff)
-{
-	return &buff->desc;
-}
-
 void
 MTL_DestroyBuffer(id<MTLDevice> dev, struct Buffer *buff)
 {
-	[buff->buff release];
+	MTL_RemoveBuffer(buff->buff);
+	[buff->buff autorelease];
 	free(buff);
 }

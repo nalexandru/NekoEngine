@@ -2,7 +2,6 @@
 #include <Engine/Engine.h>
 #include <System/Log.h>
 #include <System/Memory.h>
-#include <Render/Pipeline.h>
 
 #include "VulkanDriver.h"
 
@@ -22,49 +21,7 @@ _NeToVkBlendOp(uint64_t flags)
 	return VK_BLEND_OP_ADD;
 }
 
-struct PipelineLayout *
-Vk_CreatePipelineLayout(struct RenderDevice *dev, const struct PipelineLayoutDesc *desc)
-{
-	struct PipelineLayout *l = calloc(1, sizeof(*l));
-	if (!l)
-		return NULL;
-
-	VkDescriptorSetLayout *layouts = Sys_Alloc(sizeof(*layouts), desc->setLayoutCount, MH_Transient);
-	for (uint32_t i = 0; i < desc->setLayoutCount; ++i)
-		layouts[i] = desc->setLayouts[i]->layout;
-	
-	VkPipelineLayoutCreateInfo info =
-	{
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-		.setLayoutCount = desc->setLayoutCount,
-		.pSetLayouts = layouts
-	};
-
-	if (desc->pushConstantSize) {
-		VkPushConstantRange range =
-		{
-			.stageFlags = VK_SHADER_STAGE_ALL,
-			.offset = 0,
-			.size = desc->pushConstantSize
-		};
-		info.pushConstantRangeCount = 1;
-		info.pPushConstantRanges = &range;
-	}
-
-	if (vkCreatePipelineLayout(dev->dev, &info, Vkd_allocCb, &l->layout) != VK_SUCCESS) {
-		free(l);
-		return NULL;
-	}
-
-	return l;
-}
-
-void
-Vk_DestroyPipelineLayout(struct RenderDevice *dev, struct PipelineLayout *layout)
-{
-	vkDestroyPipelineLayout(dev->dev, layout->layout, Vkd_allocCb);
-	free(layout);
-}
+static inline VkPipelineLayout _CreateLayout(struct RenderDevice *dev, uint32_t size);
 
 struct Pipeline *
 Vk_GraphicsPipeline(struct RenderDevice *dev, const struct GraphicsPipelineDesc *desc)
@@ -72,6 +29,12 @@ Vk_GraphicsPipeline(struct RenderDevice *dev, const struct GraphicsPipelineDesc 
 	struct Pipeline *p = calloc(1, sizeof(*p));
 	if (!p)
 		return NULL;
+
+	VkPipelineLayout layout = _CreateLayout(dev, desc->pushConstantSize);
+	if (!layout) {
+		free(p);
+		return NULL;
+	}
 
 	uint64_t flags = desc->flags;
 
@@ -222,7 +185,7 @@ Vk_GraphicsPipeline(struct RenderDevice *dev, const struct GraphicsPipelineDesc 
 		.pDepthStencilState = &ds,
 		.pColorBlendState = &cb,
 		.pDynamicState = &dyn,
-		.layout = desc->layout->layout,
+		.layout = layout,
 		.renderPass = desc->renderPass ? desc->renderPass->rp : VK_NULL_HANDLE
 	};
 
@@ -239,9 +202,12 @@ Vk_GraphicsPipeline(struct RenderDevice *dev, const struct GraphicsPipelineDesc 
 	}
 
 	if (vkCreateGraphicsPipelines(dev->dev, _cache, 1, &info, Vkd_allocCb, &p->pipeline) != VK_SUCCESS) {
+		vkDestroyPipelineLayout(dev->dev, layout, Vkd_allocCb);
 		free(p);
 		return NULL;
 	}
+
+	p->layout = layout;
 
 	return p;
 }
@@ -355,5 +321,29 @@ Vk_SavePipelineCache(struct RenderDevice *dev)
 	vkDestroyPipelineCache(dev->dev, _cache, Vkd_allocCb);
 
 	free(data);
+}
+
+static inline VkPipelineLayout
+_CreateLayout(struct RenderDevice *dev, uint32_t size)
+{
+	VkPushConstantRange range =
+	{
+		.stageFlags = VK_SHADER_STAGE_ALL,
+		.offset = 0,
+		.size = size
+	};
+	VkPipelineLayoutCreateInfo info =
+	{
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+		.setLayoutCount = 1,
+		.pSetLayouts = &dev->setLayout,
+		.pushConstantRangeCount = size > 0,
+		.pPushConstantRanges = &range
+	};
+	VkPipelineLayout layout;
+	if (vkCreatePipelineLayout(dev->dev, &info, Vkd_allocCb, &layout) != VK_SUCCESS)
+		return VK_NULL_HANDLE;
+	else
+		return layout;
 }
 

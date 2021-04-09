@@ -9,6 +9,8 @@
 
 #if TARGET_OS_OSX
 
+static NSAutoreleasePool *pool;
+
 void *
 MTL_CreateSurface(id<MTLDevice> dev, NSWindow *window)
 {
@@ -63,7 +65,19 @@ MTL_DestroySwapchain(id<MTLDevice> dev, CAMetalLayer *layer)
 void *
 MTL_AcquireNextImage(id<MTLDevice> dev, CAMetalLayer *layer)
 {
+	pool = [[NSAutoreleasePool alloc] init];
 	return [layer nextDrawable];
+}
+
+bool
+MTL_Present(id<MTLDevice> dev, struct RenderContext *ctx, VIEWTYPE *v, id<CAMetalDrawable> image)
+{
+	[ctx->cmdBuffer presentDrawable: image];
+	[ctx->cmdBuffer commit];
+
+	[pool release];
+	
+	return true;
 }
 
 struct Texture *
@@ -80,11 +94,9 @@ MTL_SwapchainFormat(CAMetalLayer *layer)
 	return MTLToNeTextureFormat([layer pixelFormat]);
 }
 
-bool
-MTL_Present(id<MTLDevice> dev, struct RenderContext *ctx, VIEWTYPE *v, id<CAMetalDrawable> image)
+void
+MTL_ScreenResized(id<MTLDevice> dev, CAMetalLayer *layer)
 {
-	[ctx->cmdBuffer presentDrawable: image];
-	[ctx->cmdBuffer commit];
-	
-	return true;
+	(void)dev;
+	(void)layer;
 }

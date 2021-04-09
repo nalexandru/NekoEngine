@@ -8,14 +8,14 @@
 #include "MTLDriver.h"
 
 struct Texture *
-MTL_CreateTexture(id<MTLDevice> dev, const struct TextureCreateInfo *tci)
+MTL_CreateTextureInternal(id<MTLDevice> dev, const struct TextureCreateInfo *tci, bool transient, uint16_t location)
 {
 	struct Texture *tex = malloc(sizeof(*tex));
 	MTLTextureDescriptor *desc = [[MTLTextureDescriptor alloc] init];
 	
 	desc.pixelFormat = NeToMTLTextureFormat(tci->desc.format);
 	if (desc.pixelFormat == MTLPixelFormatInvalid) {
-		[desc release];
+		[desc autorelease];
 		return NULL;
 	}
 	
@@ -41,10 +41,15 @@ MTL_CreateTexture(id<MTLDevice> dev, const struct TextureCreateInfo *tci)
 	desc.arrayLength = tci->desc.arrayLayers;
 	desc.mipmapLevelCount = tci->desc.mipLevels;
 	
+	if (transient)
+		desc.resourceOptions |= MTLResourceStorageModeMemoryless;
+	
 	memcpy(&tex->desc, &tci->desc, sizeof(tex->desc));
 	tex->tex = [dev newTextureWithDescriptor: desc];
 	
 	[desc release];
+	
+	MTL_SetTexture(location, tex->tex);
 	
 	if (tci->data) {
 		id<MTLBuffer> staging = [dev newBufferWithBytes: tci->data length: tci->dataSize options: MTLResourceStorageModeShared];
@@ -67,20 +72,21 @@ MTL_CreateTexture(id<MTLDevice> dev, const struct TextureCreateInfo *tci)
 		[cmdBuffer commit];
 		[cmdBuffer waitUntilCompleted];
 		
-		[encoder release];
-		[cmdBuffer release];
-		[queue release];
-		[staging release];
+		[encoder autorelease];
+		[cmdBuffer autorelease];
+		[queue autorelease];
+		[staging autorelease];
 	}
 	
 	return tex;
 }
 
-const struct TextureDesc *
-MTL_TextureDesc(const struct Texture *tex)
+struct Texture *
+MTL_CreateTexture(id<MTLDevice> dev, const struct TextureCreateInfo *tci, uint16_t location)
 {
-	return &tex->desc;
+	return MTL_CreateTextureInternal(dev, tci, false, location);
 }
+
 
 enum TextureLayout
 MTL_TextureLayout(const struct Texture *tex)
@@ -91,6 +97,7 @@ MTL_TextureLayout(const struct Texture *tex)
 void
 MTL_DestroyTexture(id<MTLDevice> dev, struct Texture *tex)
 {
-	[tex->tex release];
+	MTL_RemoveTexture(tex->tex);
+	[tex->tex autorelease];
 	free(tex);
 }

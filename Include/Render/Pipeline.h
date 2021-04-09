@@ -64,39 +64,6 @@
 #define RE_WRITE_MASK_RGB			RE_WRITE_MASK_R | RE_WRITE_MASK_G | RE_WRITE_MASK_B
 #define RE_WRITE_MASK_RGBA			RE_WRITE_MASK_RGB | RE_WRITE_MASK_A
 
-enum BlendFactor
-{
-	RE_BF_ZERO						=  0,
-	RE_BF_ONE						=  1,
-	RE_BF_SRC_COLOR					=  2,
-	RE_BF_ONE_MINUS_SRC_COLOR		=  3,
-	RE_BF_DST_COLOR					=  4,
-	RE_BF_ONE_MINUS_DST_COLOR		=  5,
-	RE_BF_SRC_ALPHA					=  6,
-	RE_BF_ONE_MINUS_SRC_ALPHA		=  7,
-	RE_BF_DST_ALPHA					=  8,
-	RE_BF_ONE_MINUS_DST_ALPHA		=  9,
-	RE_BF_CONSTANT_COLOR			= 10,
-	RE_BF_ONE_MINUS_CONSTANT_COLOR	= 11,
-	RE_BF_CONSTANT_ALPHA			= 12,
-	RE_BF_ONE_MINUS_CONSTANT_ALPHA	= 13,
-	RE_BF_SRC_ALPHA_SATURATE		= 14,
-	RE_BF_SRC1_COLOR				= 15,
-	RE_BF_ONE_MINUS_SRC1_COLOR		= 16,
-	RE_BF_SRC1_ALPHA				= 17,
-	RE_BF_ONE_MINUS_SRC1_ALPHA		= 18,
-};
-
-enum BlendOperation
-{
-	RE_BOP_ADD					= 0,
-	RE_BOP_SUBTRACT				= 1,
-	RE_BOP_REVERSE_SUBTRACT		= 2,
-	RE_BOP_MIN					= 3,
-	RE_BOP_MAX					= 4
-};
-// TODO: See VK_EXT_blend_operation_advanced
-
 struct BlendAttachmentDesc
 {
 	bool enableBlend;
@@ -110,25 +77,15 @@ struct BlendAttachmentDesc
 };
 // TODO: is independent blend supported in Metal/D3D12 ?
 
-struct PipelineLayoutDesc
-{
-	uint32_t setLayoutCount;
-	const struct DescriptorSetLayout **setLayouts;
-	uint32_t pushConstantSize;
-};
-
 struct GraphicsPipelineDesc
 {
 	uint64_t flags;
 	struct Shader *shader;
 	struct RenderPass *renderPass;
-	struct PipelineLayout *layout;
+	uint32_t pushConstantSize;
 	uint32_t attachmentCount;
 	const struct BlendAttachmentDesc *attachments;
 };
-
-static inline struct PipelineLayout *Re_CreatePipelineLayout(const struct PipelineLayoutDesc *desc) { return Re_deviceProcs.CreatePipelineLayout(Re_device, desc); }
-static inline void Re_DestroyPipelineLayout(struct PipelineLayout *layout) { Re_deviceProcs.DestroyPipelineLayout(Re_device, layout); }
 
 struct Pipeline *Re_GraphicsPipeline(const struct GraphicsPipelineDesc *desc);
 struct Pipeline *Re_ComputePipeline(struct Shader *sh);

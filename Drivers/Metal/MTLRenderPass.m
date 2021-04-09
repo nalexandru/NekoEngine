@@ -39,7 +39,7 @@ MTL_CreateRenderPass(id<MTLDevice> dev, const struct RenderPassDesc *desc)
 		case ATS_DONT_CARE: rp->desc.colorAttachments[i].loadAction = MTLStoreActionDontCare; break;
 		}
 		
-		rp->desc.colorAttachments[i].clearColor = MTLClearColorMake(1.f, 0.f, 0.f, 1.f);
+		rp->desc.colorAttachments[i].clearColor = MTLClearColorMake(at->clearColor[0], at->clearColor[1], at->clearColor[2], at->clearColor[3]);
 		rp->attachmentFormats[i] = NeToMTLTextureFormat(at->format);
 	}
 	
@@ -49,6 +49,6 @@ MTL_CreateRenderPass(id<MTLDevice> dev, const struct RenderPassDesc *desc)
 void
 MTL_DestroyRenderPass(id<MTLDevice> dev, struct RenderPass *rp)
 {
-	[rp->desc release];
+	[rp->desc autorelease];
 	free(rp);
 }

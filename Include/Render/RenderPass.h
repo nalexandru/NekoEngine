@@ -1,33 +1,8 @@
 #ifndef _RE_RENDER_PASS_H_
 #define _RE_RENDER_PASS_H_
 
-#include <Engine/Types.h>
+#include <Render/Types.h>
 #include <Render/Device.h>
-#include <Render/Framebuffer.h>
-
-struct RenderPass;
-
-enum AttachmentLoadOp
-{
-	ATL_LOAD = 0,
-	ATL_CLEAR = 1,
-	ATL_DONT_CARE = 2
-};
-
-enum AttachmentStoreOp
-{
-	ATS_STORE = 0,
-	ATS_DONT_CARE = 1
-};
-
-enum AttachmentSampleCount
-{
-	ASC_1_SAMPLE		=  1,
-	ASC_2_SAMPLES		=  2,
-	ASC_4_SAMPLES		=  4,
-	ASC_8_SAMPLES		=  8,
-	ASC_16_SAMPLES		= 16
-};
 
 struct AttachmentDesc
 {
@@ -36,6 +11,13 @@ struct AttachmentDesc
 	enum AttachmentLoadOp loadOp;
 	enum AttachmentStoreOp storeOp;
 	enum AttachmentSampleCount samples;
+	union {
+		float clearColor[4];
+		struct {
+			float clearDepth;
+			uint8_t clearStencil;
+		};
+	};
 };
 
 struct RenderPassDesc

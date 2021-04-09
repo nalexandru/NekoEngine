@@ -3,9 +3,9 @@
 #include "VulkanDriver.h"
 
 struct Buffer *
-Vk_CreateBuffer(struct RenderDevice *dev, struct BufferCreateInfo *bci)
+Vk_CreateBuffer(struct RenderDevice *dev, const struct BufferCreateInfo *bci, uint16_t location)
 {
-	struct Buffer *buff = malloc(sizeof(*buff));
+	struct Buffer *buff = calloc(1, sizeof(*buff));
 	if (!buff)
 		return NULL;
 
@@ -33,6 +33,8 @@ Vk_CreateBuffer(struct RenderDevice *dev, struct BufferCreateInfo *bci)
 	vkAllocateMemory(dev->dev, &ai, Vkd_allocCb, &buff->memory);
 
 	vkBindBufferMemory(dev->dev, buff->buff, buff->memory, 0);
+
+	Vk_SetBuffer(dev, location, buff->buff);
 
 	if (!bci->data)
 		return buff;

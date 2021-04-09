@@ -115,7 +115,7 @@ bool
 E_LoadTGAAsset(struct Stream *stm, struct TextureCreateInfo *tci)
 {
 	uint8_t *data = NULL;
-	uint32_t imgSize, size, dataSize;
+	uint32_t imgSize, dataSize;
 	struct TGAHeader hdr;
 
 	E_ReadStream(stm, &hdr, sizeof(hdr));
@@ -144,11 +144,10 @@ E_LoadTGAAsset(struct Stream *stm, struct TextureCreateInfo *tci)
 	if (imgSize < hdr.width || imgSize < hdr.height)
 		return false;
 
-	size = (uint32_t)imgSize * (hdr.bits == 8 ? 8 : 32);
-	if (size < imgSize)
+	tci->dataSize = imgSize * (hdr.bits == 8 ? 1 : 4);
+	if (tci->dataSize < imgSize)
 		return false;
 
-	tci->dataSize = (size + 7) / 8;
 	tci->data = calloc(sizeof(uint8_t), tci->dataSize);
 	if (!tci->data)
 		return false;

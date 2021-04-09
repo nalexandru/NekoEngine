@@ -4,13 +4,7 @@
 #define Handle __EngineHandle
 
 #include <Engine/Types.h>
-#include <Render/Buffer.h>
-#include <Render/Texture.h>
-#include <Render/Sampler.h>
-#include <Render/Pipeline.h>
-#include <Render/RenderPass.h>
-#include <Render/Framebuffer.h>
-#include <Render/DescriptorSet.h>
+#include <Render/Render.h>
 
 #undef Handle
 
@@ -55,7 +49,7 @@ struct Texture
 struct Buffer
 {
 	id<MTLBuffer> buff;
-	struct BufferDesc desc;
+	enum GPUMemoryType memoryType;
 };
 
 struct RenderDevice
@@ -75,6 +69,7 @@ struct RenderContext
 		id<MTLBlitCommandEncoder> blit;
 		id<MTLRenderCommandEncoder> render;
 		id<MTLComputeCommandEncoder> compute;
+		id<MTLAccelerationStructureCommandEncoder> accelerationStructure;
 	} encoders;
 	struct Pipeline *boundPipeline;
 	struct {
@@ -97,60 +92,10 @@ struct RenderPass
 	MTLPixelFormat* attachmentFormats;
 };
 
-struct DescriptorSetLayout
+struct AccelerationStructure
 {
-	struct DescriptorSetLayoutDesc desc;
-};
-
-struct MTLDrvBinding
-{
-	union {
-		struct {
-			id<MTLBuffer> *ptr;
-			NSUInteger *offset;
-		} buffer;
-		id<MTLTexture> *texture;
-		id<MTLSamplerState> *sampler;
-	};
-};
-
-struct MTLDrvDescriptors
-{
-	uint32_t bufferCount;
-	id<MTLBuffer> *buffers;
-	NSUInteger *offsets;
-	
-	uint32_t textureCount;
-	id<MTLTexture> *textures;
-	
-	uint32_t samplerCount;
-	id<MTLSamplerState> *samplers;
-};
-
-struct DescriptorSet
-{
-	const struct DescriptorSetLayout *layout;
-//	struct MTLDrvBufferBinding *buffers;
-//	struct MTLDrvTextureBinding *textures;
-//	struct MTLDrvBinding *bindings;
-//	uint32_t bindingCount, bufferCount, textureCount;
-	
-	// new
-	uint32_t bindingCount;
-	struct MTLDrvBinding *bindings;
-	
-	struct MTLDrvDescriptors vertex, fragment, compute;
-};
-
-struct PipelineLayout
-{
-	uint32_t setCount;
-	struct {
-		uint32_t firstBuffer;
-		uint32_t firstTexture;
-		uint32_t firstSampler;
-	} *sets;
-	uint32_t pushConstantIndex;
+	id<MTLAccelerationStructure> as;
+	MTLAccelerationStructureDescriptor *desc;
 };
 
 // Device
@@ -162,8 +107,6 @@ void MTL_WaitIdle(id<MTLDevice> dev);
 void MTL_DestroyDevice(id<MTLDevice> dev);
 
 // Pipeline
-struct PipelineLayout *MTL_CreatePipelineLayout(id<MTLDevice> dev, const struct PipelineLayoutDesc *desc);
-void MTL_DestroyPipelineLayout(id<MTLDevice> dev, struct PipelineLayout *layout);
 struct Pipeline *MTL_GraphicsPipeline(id<MTLDevice> dev, const struct GraphicsPipelineDesc *gpDesc);
 struct Pipeline *MTL_ComputePipeline(id<MTLDevice> dev, struct Shader *sh);
 struct Pipeline *MTL_RayTracingPipeline(id<MTLDevice> dev, struct ShaderBindingTable *sbt, uint32_t maxDepth);
@@ -181,22 +124,24 @@ void *MTL_AcquireNextImage(id<MTLDevice> dev, CAMetalLayer *layer);
 bool MTL_Present(id<MTLDevice> dev, struct RenderContext *ctx, VIEWTYPE *v, id<CAMetalDrawable> image);
 struct Texture *MTL_SwapchainTexture(CAMetalLayer *layer, id<CAMetalDrawable> image);
 enum TextureFormat MTL_SwapchainFormat(CAMetalLayer *layer);
+void MTL_ScreenResized(id<MTLDevice> dev, CAMetalLayer *layer);
 
 // Context
 void MTL_InitContextProcs(struct RenderContextProcs *p);
 struct RenderContext *MTL_CreateContext(id<MTLDevice> dev);
+void MTL_ResetContext(id<MTLDevice> dev, struct RenderContext *ctx);
 void MTL_DestroyContext(id<MTLDevice> dev, struct RenderContext *ctx);
 
 // Texture
-struct Texture *MTL_CreateTexture(id<MTLDevice> dev, const struct TextureCreateInfo *tci);
-const struct TextureDesc *MTL_TextureDesc(const struct Texture *tex);
+struct Texture *MTL_CreateTextureInternal(id<MTLDevice> dev, const struct TextureCreateInfo *tci, bool transient, uint16_t location);
+struct Texture *MTL_CreateTexture(id<MTLDevice> dev, const struct TextureCreateInfo *tci, uint16_t location);
 enum TextureLayout MTL_TextureLayout(const struct Texture *tex);
 void MTL_DestroyTexture(id<MTLDevice> dev, struct Texture *tex);
 
 // Buffer
-struct Buffer *MTL_CreateBuffer(id<MTLDevice> dev, const struct BufferCreateInfo *bci);
+struct Buffer *MTL_CreateBufferInternal(id<MTLDevice> dev, const struct BufferCreateInfo *bci, bool transient, uint16_t location);
+struct Buffer *MTL_CreateBuffer(id<MTLDevice> dev, const struct BufferCreateInfo *bci, uint16_t location);
 void MTL_UpdateBuffer(id<MTLDevice> dev, struct Buffer *buff, uint64_t offset, uint8_t *data, uint64_t size);
-const struct BufferDesc *MTL_BufferDesc(const struct Buffer *buff);
 void MTL_DestroyBuffer(id<MTLDevice> dev, struct Buffer *buff);
 
 // Acceleration Structure
@@ -214,13 +159,16 @@ struct RenderPass *MTL_CreateRenderPass(id<MTLDevice> dev, const struct RenderPa
 const struct RenderPassDesc *MTL_RenderPassDesc(const struct RenderPass *pass);
 void MTL_DestroyRenderPass(id<MTLDevice> dev, struct RenderPass *pass);
 
-// Descriptor Set
-struct DescriptorSetLayout *MTL_CreateDescriptorSetLayout(id<MTLDevice> dev, const struct DescriptorSetLayoutDesc *desc);
-void MTL_DestroyDescriptorSetLayout(id<MTLDevice> dev, struct DescriptorSetLayout *ds);
-struct DescriptorSet *MTL_CreateDescriptorSet(id<MTLDevice> dev, const struct DescriptorSetLayout *layout);
-void MTL_CopyDescriptorSet(id<MTLDevice> dev, const struct DescriptorSet *src, uint32_t srcOffset, struct DescriptorSet *dst, uint32_t dstOffset, uint32_t count);
-void MTL_WriteDescriptorSet(id<MTLDevice> dev, struct DescriptorSet *ds, const struct DescriptorWrite *writes, uint32_t writeCount);
-void MTL_DestroyDescriptorSet(id<MTLDevice> dev, struct DescriptorSet *ds);
+// Argument Buffer
+bool MTL_InitArgumentBuffer(id<MTLDevice> dev);
+void MTL_TermArgumentBuffer(id<MTLDevice> dev);
+void MTL_SetSampler(uint16_t location, id<MTLSamplerState> sampler);
+void MTL_SetTexture(uint16_t location, id<MTLTexture> tex);
+void MTL_RemoveTexture(id<MTLTexture> tex);
+void MTL_SetBuffer(uint16_t location, id<MTLBuffer> buff);
+void MTL_RemoveBuffer(id<MTLBuffer> buff);
+void MTL_SetRenderArguments(id<MTLRenderCommandEncoder> encoder);
+void MTL_SetComputeArguments(id<MTLComputeCommandEncoder> encoder);
 
 // Shader
 bool MTL_InitLibrary(id<MTLDevice> dev);
@@ -230,6 +178,13 @@ void MTL_TermLibrary(void);
 // Sampler
 id<MTLSamplerState> MTL_CreateSampler(id<MTLDevice> dev, const struct SamplerDesc *sDesc);
 void MTL_DestroySampler(id<MTLDevice> dev, id<MTLSamplerState> s);
+
+// Transient Resources
+struct Texture *MTL_CreateTransientTexture(id<MTLDevice> dev, const struct TextureCreateInfo *tci, uint64_t offset);
+struct Buffer *MTL_CreateTransientBuffer(id<MTLDevice> dev, const struct BufferCreateInfo *bci, uint64_t offset);
+bool MTL_InitTransientHeap(id<MTLDevice> dev, uint64_t size);
+bool MTL_ResizeTransientHeap(id<MTLDevice> dev, uint64_t size);
+void MTL_TermTransientHeap(id<MTLDevice> dev);
 
 // Utility functions
 static inline MTLResourceOptions
@@ -376,32 +331,33 @@ NeToMTLBlendFactor(enum BlendFactor bf)
 }
 
 static inline MTLSamplerMinMagFilter
-NeToMTLTextureFilter(enum TextureFilter tf)
+NeToMTLTextureFilter(enum ImageFilter tf)
 {
 	switch (tf) {
-	case TFL_NEAREST: return MTLSamplerMinMagFilterNearest;
-	case TFL_LINEAR: return MTLSamplerMinMagFilterLinear;
+	case IF_NEAREST: return MTLSamplerMinMagFilterNearest;
+	case IF_LINEAR: return MTLSamplerMinMagFilterLinear;
+	case IF_CUBIC: return MTLSamplerMinMagFilterLinear;
 	}
 }
 
 static inline MTLSamplerMipFilter
-NeToMTLMipFilter(enum TextureMipmapMode tmm)
+NeToMTLMipFilter(enum SamplerMipmapMode tmm)
 {
 	switch (tmm) {
-	case TMM_NEAREST: return MTLSamplerMipFilterNearest;
-	case TMM_LINEAR: return MTLSamplerMipFilterLinear;
+	case SMM_NEAREST: return MTLSamplerMipFilterNearest;
+	case SMM_LINEAR: return MTLSamplerMipFilterLinear;
 	}
 }
 
 static inline MTLSamplerAddressMode
-NeToMTLSamplerAddressMode(enum TextureAddressMode tam)
+NeToMTLSamplerAddressMode(enum SamplerAddressMode tam)
 {
 	switch (tam) {
-	case TAM_REPEAT: return MTLSamplerAddressModeRepeat;
-	case TAM_MIRRORED_REPEAT: return MTLSamplerAddressModeMirrorRepeat;
-	case TAM_CLAMP_TO_EDGE: return MTLSamplerAddressModeClampToEdge;
-	case TAM_CLAMP_TO_BORDER: return MTLSamplerAddressModeClampToBorderColor;
-	case TAM_MIRROR_CLAMP_TO_EDGE: return MTLSamplerAddressModeMirrorClampToEdge;
+	case SAM_REPEAT: return MTLSamplerAddressModeRepeat;
+	case SAM_MIRRORED_REPEAT: return MTLSamplerAddressModeMirrorRepeat;
+	case SAM_CLAMP_TO_EDGE: return MTLSamplerAddressModeClampToEdge;
+	case SAM_CLAMP_TO_BORDER: return MTLSamplerAddressModeClampToBorderColor;
+	case SAM_MIRROR_CLAMP_TO_EDGE: return MTLSamplerAddressModeMirrorClampToEdge;
 	}
 }
 

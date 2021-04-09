@@ -5,6 +5,7 @@
 
 #include <Windows.h>
 
+extern HINSTANCE Win32_instance;
 extern UINT WM_SHOWCURSOR;
 extern UINT WM_HIDECURSOR;
 

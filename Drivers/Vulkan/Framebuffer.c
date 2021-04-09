@@ -1,14 +1,13 @@
 #include <stdlib.h>
 
 #include <System/Memory.h>
-#include <Render/Framebuffer.h>
 
 #include "VulkanDriver.h"
 
 struct Framebuffer *
 Vk_CreateFramebuffer(struct RenderDevice *dev, const struct FramebufferDesc *desc)
 {
-	struct Framebuffer *fb = calloc(sizeof(*fb), 1);
+	struct Framebuffer *fb = calloc(1, sizeof(*fb));
 	if (!fb)
 		return NULL;
 
