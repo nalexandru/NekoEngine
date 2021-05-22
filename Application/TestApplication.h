@@ -8,7 +8,7 @@
 
 #define A_VER_MAJOR		0
 #define A_VER_MINOR		8
-#define A_VER_BUILD		21
+#define A_VER_BUILD		22
 #define A_VER_REVISION	0
 
 #define A_PGM_NAME		L"NekoEngine Test Application"

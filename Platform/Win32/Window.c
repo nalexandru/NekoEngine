@@ -7,8 +7,6 @@
 #include <System/Window.h>
 #include <Engine/Engine.h>
 #include <Render/Render.h>
-#include <Render/Device.h>
-#include <Render/Swapchain.h>
 
 #include "Win32Platform.h"
 
@@ -53,11 +51,8 @@ _WndProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
 		UpdateControllers();
 	} break;
 	case WM_SIZE: {
-		*E_screenWidth = LOWORD(lparam);
-		*E_screenHeight = HIWORD(lparam);
-
-		if (Re_device)
-			Re_deviceProcs.ScreenResized(Re_device, Re_swapchain);
+		if (*E_screenWidth != LOWORD(lparam) || *E_screenHeight != HIWORD(lparam))
+			E_ScreenResized(LOWORD(lparam), HIWORD(lparam));
 	} break;
 	default: {
 		if (umsg == WM_SHOWCURSOR) {

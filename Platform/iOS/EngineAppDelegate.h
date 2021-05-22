@@ -12,5 +12,7 @@
 
 @property (strong, nonatomic) UIWindow *window;
 
-@end
+- (void)downloadAssets;
+- (BOOL)startEngine;
 
+@end

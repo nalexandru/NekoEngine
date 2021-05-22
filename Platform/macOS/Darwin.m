@@ -25,7 +25,6 @@
 #include <Engine/Config.h>
 #include <Engine/Application.h>
 
-
 #undef Handle
 
 #import <Foundation/Foundation.h>
@@ -33,7 +32,7 @@
 #define INFO_STR_LEN	128
 
 natural_t Darwin_numCpus = 0;
-int32_t Darwin_cpuFreq;
+uint32_t Darwin_cpuFreq;
 struct utsname Darwin_uname;
 char Darwin_osName[INFO_STR_LEN];
 char Darwin_osVersion[INFO_STR_LEN];
@@ -131,14 +130,20 @@ Sys_CpuName(void)
 	return Darwin_cpuName;
 }
 
-int32_t
+uint32_t
 Sys_CpuFreq(void)
 {
 	return Darwin_cpuFreq;
 }
 
-int32_t
-Sys_NumCpus(void)
+uint32_t
+Sys_CpuCount(void)
+{
+	return Darwin_numCpus;
+}
+
+uint32_t
+Sys_CpuThreadCount(void)
 {
 	return Darwin_numCpus;
 }
@@ -259,11 +264,22 @@ Sys_DirectoryPath(enum SystemDirectory sd, char *out, size_t len)
 }
 
 bool
+Sys_FileExists(const char *path)
+{
+	@autoreleasepool {
+		BOOL isDir;
+		return [[NSFileManager defaultManager] fileExistsAtPath: [NSString stringWithUTF8String: path]
+													isDirectory: &isDir] && !isDir;
+	}
+}
+
+bool
 Sys_DirectoryExists(const char *path)
 {
 	@autoreleasepool {
+		BOOL isDir;
 		return [[NSFileManager defaultManager] fileExistsAtPath: [NSString stringWithUTF8String: path]
-													isDirectory: nil];
+													isDirectory: &isDir] && isDir;
 	}
 }
 
@@ -300,6 +316,11 @@ Sys_ZeroMemory(void *mem, size_t len)
 bool
 Sys_InitDarwinPlatform(void)
 {
+	static bool _initialized = false;
+	
+	if (_initialized)
+		return true;
+	
 	mach_timebase_info_data_t tb;
 	mach_timebase_info(&tb);
 	
@@ -330,6 +351,8 @@ Sys_InitDarwinPlatform(void)
 	E_SetCVarStr(L"Engine_LogFile", [appSupportPath UTF8String]);
 	
 	uname(&Darwin_uname);
+	
+	_initialized = true;
 	
 	return true;
 }

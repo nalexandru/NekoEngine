@@ -15,7 +15,7 @@ _NeToVkCompareOp(uint64_t flags)
 	return VK_COMPARE_OP_LESS;
 }
 
-static inline VkBlendOp 
+static inline VkBlendOp
 _NeToVkBlendOp(uint64_t flags)
 {
 	return VK_BLEND_OP_ADD;
@@ -26,13 +26,13 @@ static inline VkPipelineLayout _CreateLayout(struct RenderDevice *dev, uint32_t 
 struct Pipeline *
 Vk_GraphicsPipeline(struct RenderDevice *dev, const struct GraphicsPipelineDesc *desc)
 {
-	struct Pipeline *p = calloc(1, sizeof(*p));
+	struct Pipeline *p = Sys_Alloc(1, sizeof(*p), MH_RenderDriver);
 	if (!p)
 		return NULL;
 
 	VkPipelineLayout layout = _CreateLayout(dev, desc->pushConstantSize);
 	if (!layout) {
-		free(p);
+		Sys_Free(p);
 		return NULL;
 	}
 
@@ -46,7 +46,7 @@ Vk_GraphicsPipeline(struct RenderDevice *dev, const struct GraphicsPipelineDesc 
 	VkPipelineInputAssemblyStateCreateInfo ia =
 	{
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-		.primitiveRestartEnable = VK_FALSE 
+		.primitiveRestartEnable = VK_FALSE
 	};
 
 	switch (flags & RE_TOPOLOGY_BITS) {
@@ -82,7 +82,7 @@ Vk_GraphicsPipeline(struct RenderDevice *dev, const struct GraphicsPipelineDesc 
 	case RE_FRONT_FACE_CW: rs.frontFace = VK_FRONT_FACE_CLOCKWISE; break;
 	}
 
-	VkPipelineMultisampleStateCreateInfo ms = 
+	VkPipelineMultisampleStateCreateInfo ms =
 	{
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
 		.sampleShadingEnable = flags & RE_SAMPLE_SHADING,
@@ -170,7 +170,7 @@ Vk_GraphicsPipeline(struct RenderDevice *dev, const struct GraphicsPipelineDesc 
 		.viewportCount = 1,
 		.pViewports = &vp,
 		.scissorCount = 1,
-		.pScissors = &scissor 
+		.pScissors = &scissor
 	};
 
 	VkGraphicsPipelineCreateInfo info =
@@ -186,7 +186,7 @@ Vk_GraphicsPipeline(struct RenderDevice *dev, const struct GraphicsPipelineDesc 
 		.pColorBlendState = &cb,
 		.pDynamicState = &dyn,
 		.layout = layout,
-		.renderPass = desc->renderPass ? desc->renderPass->rp : VK_NULL_HANDLE
+		.renderPass = desc->renderPassDesc ? desc->renderPassDesc->rp : VK_NULL_HANDLE
 	};
 
 	info.stageCount = desc->shader->stageCount;
@@ -203,7 +203,7 @@ Vk_GraphicsPipeline(struct RenderDevice *dev, const struct GraphicsPipelineDesc 
 
 	if (vkCreateGraphicsPipelines(dev->dev, _cache, 1, &info, Vkd_allocCb, &p->pipeline) != VK_SUCCESS) {
 		vkDestroyPipelineLayout(dev->dev, layout, Vkd_allocCb);
-		free(p);
+		Sys_Free(p);
 		return NULL;
 	}
 
@@ -215,7 +215,7 @@ Vk_GraphicsPipeline(struct RenderDevice *dev, const struct GraphicsPipelineDesc 
 struct Pipeline *
 Vk_ComputePipeline(struct RenderDevice *dev, struct Shader *sh)
 {
-	struct Pipeline *p = calloc(1, sizeof(*p));
+	struct Pipeline *p = Sys_Alloc(1, sizeof(*p), MH_RenderDriver);
 	if (!p)
 		return NULL;
 
@@ -227,7 +227,7 @@ Vk_ComputePipeline(struct RenderDevice *dev, struct Shader *sh)
 	};
 
 	if (vkCreateComputePipelines(dev->dev, _cache, 1, &info, Vkd_allocCb, &p->pipeline) != VK_SUCCESS) {
-		free(p);
+		Sys_Free(p);
 		return NULL;
 	}
 
@@ -237,7 +237,7 @@ Vk_ComputePipeline(struct RenderDevice *dev, struct Shader *sh)
 struct Pipeline *
 Vk_RayTracingPipeline(struct RenderDevice *dev, struct ShaderBindingTable *sbt, uint32_t maxDepth)
 {
-	struct Pipeline *p = calloc(1, sizeof(*p));
+	struct Pipeline *p = Sys_Alloc(1, sizeof(*p), MH_RenderDriver);
 	if (!p)
 		return NULL;
 
@@ -260,7 +260,7 @@ Vk_RayTracingPipeline(struct RenderDevice *dev, struct ShaderBindingTable *sbt, 
 	info.pGroups = 0;
 
 	if (vkCreateRayTracingPipelinesKHR(dev->dev, VK_NULL_HANDLE, _cache, 1, &info, Vkd_allocCb, &p->pipeline) != VK_SUCCESS) {
-		free(p);
+		Sys_Free(p);
 		return NULL;
 	}
 
@@ -302,7 +302,7 @@ Vk_SavePipelineCache(struct RenderDevice *dev)
 	void *data = NULL;
 	vkGetPipelineCacheData(dev->dev, _cache, &dataSize, data);
 
-	data = malloc(dataSize);
+	data = Sys_Alloc(1, dataSize, MH_RenderDriver);
 	vkGetPipelineCacheData(dev->dev, _cache, &dataSize, data);
 
 	E_EnableWrite(WD_Config);
@@ -320,7 +320,15 @@ Vk_SavePipelineCache(struct RenderDevice *dev)
 
 	vkDestroyPipelineCache(dev->dev, _cache, Vkd_allocCb);
 
-	free(data);
+	Sys_Free(data);
+}
+
+void
+Vk_DestroyPipeline(struct RenderDevice *dev, struct Pipeline *pipeline)
+{
+	vkDestroyPipeline(dev->dev, pipeline->pipeline, Vkd_allocCb);
+	vkDestroyPipelineLayout(dev->dev, pipeline->layout, Vkd_allocCb);
+	Sys_Free(pipeline);
 }
 
 static inline VkPipelineLayout
@@ -346,4 +354,3 @@ _CreateLayout(struct RenderDevice *dev, uint32_t size)
 	else
 		return layout;
 }
-

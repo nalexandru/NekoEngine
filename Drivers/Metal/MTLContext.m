@@ -1,18 +1,11 @@
-#define Handle __EngineHandle
-
 #include <stdlib.h>
-
-#include <Render/Device.h>
-#include <Render/Context.h>
-
-#undef Handle
 
 #include "MTLDriver.h"
 
 struct RenderContext *
 MTL_CreateContext(id<MTLDevice> dev)
 {
-	struct RenderContext *ctx = malloc(sizeof(*ctx));
+	struct RenderContext *ctx = Sys_Alloc(sizeof(*ctx), 1, MH_RenderDriver);
 	
 	ctx->queue = [dev newCommandQueue];
 	
@@ -29,7 +22,13 @@ MTL_DestroyContext(id<MTLDevice> dev, struct RenderContext *ctx)
 {
 	[ctx->queue release];
 	
-	free(ctx);
+	Sys_Free(ctx);
+}
+
+static CommandBufferHandle
+_BeginSecondary(struct RenderContext *ctx, struct RenderPassDesc *passDesc)
+{
+	return ctx->cmdBuffer;
 }
 
 static void
@@ -86,11 +85,11 @@ _BindPipeline(struct RenderContext *ctx, struct Pipeline *pipeline)
 static void
 _PushConstants(struct RenderContext *ctx, enum ShaderStage stage, uint32_t size, const void *data)
 {
-	if (stage & SS_VERTEX || stage & SS_GEOMETRY || stage & SS_TESS_CTRL || stage && SS_TESS_EVAL)
+	if (stage & SS_VERTEX || stage & SS_GEOMETRY || stage & SS_TESS_CTRL || stage & SS_TESS_EVAL)
 		[ctx->encoders.render setVertexBytes: data length: size atIndex: 1];
-	else if (stage & SS_FRAGMENT)
+	if (stage & SS_FRAGMENT)
 		[ctx->encoders.render setFragmentBytes: data length: size atIndex: 1];
-	else if (stage & SS_COMPUTE)
+	if (ctx->type == RC_COMPUTE && stage & SS_COMPUTE)
 		[ctx->encoders.compute setBytes: data length: size atIndex: 1];
 }
 
@@ -107,18 +106,17 @@ _BindIndexBuffer(struct RenderContext *ctx, struct Buffer *buff, uint64_t offset
 }
 
 static void
-_ExecuteSecondary(struct RenderContext *ctx, struct RenderContext **contexts, uint32_t count)
+_ExecuteSecondary(struct RenderContext *ctx, CommandBufferHandle *cmdBuffers, uint32_t count)
 {
-	//
 }
 
 static void
-_BeginRenderPass(struct RenderContext *ctx, struct RenderPass *pass, struct Framebuffer *fb)
+_BeginRenderPass(struct RenderContext *ctx, struct RenderPassDesc *passDesc, struct Framebuffer *fb, enum RenderCommandContents contents)
 {
 	for (uint32_t i = 0; i < fb->attachmentCount; ++i)
-		pass->desc.colorAttachments[i].texture = fb->attachments[i];
-	
-	ctx->encoders.render = [ctx->cmdBuffer renderCommandEncoderWithDescriptor: pass->desc];
+		passDesc->desc.colorAttachments[i].texture = fb->attachments[i];
+
+	ctx->encoders.render = [ctx->cmdBuffer renderCommandEncoderWithDescriptor: passDesc->desc];
 }
 
 static void
@@ -218,12 +216,12 @@ _TraceRaysIndirect(struct RenderContext *ctx, struct Buffer *buff, uint64_t offs
 }
 
 static void
-_BuildAccelerationStructure(struct RenderContext *ctx, struct AccelerationStructure *as, struct Buffer *scratch)
+_BuildAccelerationStructures(struct RenderContext *ctx, uint32_t count, struct AccelerationStructureBuildInfo *buildInfo, const struct AccelerationStructureRangeInfo **rangeInfo)
 {
-	[ctx->encoders.accelerationStructure buildAccelerationStructure: as->as
+/*	[ctx->encoders.accelerationStructure buildAccelerationStructure: as->as
 														 descriptor: as->desc
 													  scratchBuffer: scratch->buff
-												scratchBufferOffset: 0];
+												scratchBufferOffset: 0];*/
 }
 
 static void
@@ -308,6 +306,7 @@ _Submit(id<MTLDevice> dev, struct RenderContext *ctx)
 void
 MTL_InitContextProcs(struct RenderContextProcs *p)
 {
+	p->BeginSecondary = _BeginSecondary;
 	p->BeginDrawCommandBuffer = _BeginDrawCommandBuffer;
 	p->BeginComputeCommandBuffer = _BeginComputeCommandBuffer;
 	p->BeginTransferCommandBuffer = _BeginTransferCommandBuffer;
@@ -328,7 +327,7 @@ MTL_InitContextProcs(struct RenderContextProcs *p)
 	p->DispatchIndirect = _DispatchIndirect;
 	p->TraceRays = _TraceRays;
 	p->TraceRaysIndirect = _TraceRaysIndirect;
-	p->BuildAccelerationStructure = _BuildAccelerationStructure;
+	p->BuildAccelerationStructures = _BuildAccelerationStructures;
 	p->Barrier = _Barrier;
 	p->Transition = _Transition;
 	p->CopyBuffer = _CopyBuffer;

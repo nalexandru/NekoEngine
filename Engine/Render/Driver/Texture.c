@@ -5,10 +5,6 @@
 #include <Engine/Config.h>
 #include <Engine/Resource.h>
 #include <Render/Render.h>
-#include <Render/Texture.h>
-#include <Render/Sampler.h>
-#include <Render/Context.h>
-#include <Render/DestroyResource.h>
 
 static struct Sampler *_sceneSampler;
 
@@ -19,13 +15,13 @@ Re_CreateTextureResource(const char *name, const struct TextureCreateInfo *ci, s
 {
 	if ((h & 0x00000000FFFFFFFF) > (uint64_t)65535)
 		return false;
-	
+
 	tex->texture = _CreateTexture(ci, E_ResHandleToGPU(h));
 	if (!tex->texture)
 		return false;
 
 	if (!ci->keepData)
-		free(ci->data);
+		Sys_Free(ci->data);
 
 	return true;
 }
@@ -35,9 +31,9 @@ Re_LoadTextureResource(struct ResourceLoadInfo *li, const char *args, struct Tex
 {
 	if ((h & 0x00000000FFFFFFFF) > (uint64_t)65535)
 		return false;
-	
+
 	bool rc = false;
-	struct TextureCreateInfo ci = 
+	struct TextureCreateInfo ci =
 	{
 		.desc =
 		{
@@ -59,7 +55,7 @@ Re_LoadTextureResource(struct ResourceLoadInfo *li, const char *args, struct Tex
 	if (rc)
 		tex->texture = _CreateTexture(&ci, E_ResHandleToGPU(h));
 
-	free(ci.data);
+	Sys_Free(ci.data);
 
 	return tex->texture != NULL;
 }
@@ -101,7 +97,7 @@ Re_InitTextureSystem(void)
 	_sceneSampler = Re_CreateSampler(&desc);
 	if (!_sceneSampler)
 		return false;
-	
+
 	return true;
 }
 

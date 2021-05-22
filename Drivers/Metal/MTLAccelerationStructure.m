@@ -1,16 +1,9 @@
-#define Handle __EngineHandle
-
-#include <Render/Device.h>
-#include <Render/AccelerationStructure.h>
-
-#undef Handle
-
 #include "MTLDriver.h"
 
 struct AccelerationStructure *
 MTL_CreateAccelerationStructure(id<MTLDevice> dev, const struct AccelerationStructureCreateInfo *asci)
 {
-	struct AccelerationStructure *as = calloc(1, sizeof(*as));
+	struct AccelerationStructure *as = Sys_Alloc(sizeof(*as), 1, MH_RenderDriver);
 	if (!as)
 		return NULL;
 	
@@ -22,10 +15,16 @@ MTL_CreateAccelerationStructure(id<MTLDevice> dev, const struct AccelerationStru
 	return as;
 }
 
+uint64_t
+MTL_AccelerationStructureHandle(id<MTLDevice> dev, const struct AccelerationStructure *as)
+{
+	return (uint64_t)as;
+}
+
 void
 MTL_DestroyAccelerationStructure(id<MTLDevice> dev, struct AccelerationStructure *as)
 {
 	[as->as release];
 	
-	free(as);
+	Sys_Free(as);
 }

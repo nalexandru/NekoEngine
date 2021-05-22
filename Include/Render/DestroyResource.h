@@ -27,4 +27,3 @@ DESTROYH_PROTO(Buffer);
 )(x)
 
 #endif /* _RE_DESTROY_RESOURCE_H_ */
-

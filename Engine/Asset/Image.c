@@ -5,9 +5,12 @@
 #include <Engine/IO.h>
 #include <Engine/Asset.h>
 #include <System/Endian.h>
-#include <Render/Texture.h>
+#include <Render/Render.h>
 
 #define STBI_NO_STDIO
+#define STBI_MALLOC(sz)			Sys_Alloc(1, sz, MH_Asset)
+#define STBI_REALLOC(p, new)	Sys_ReAlloc(p, 1, new, MH_Asset)
+#define STBI_FREE(p)			Sys_Free(p)
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 

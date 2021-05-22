@@ -66,13 +66,4 @@
 	return YES;
 }
 
-- (void)viewDidEndLiveResize
-{
-	[super viewDidEndLiveResize];
-	
-	//e_screen_resized([self frame].size.width, [self frame].size.height);
-	
-	[self setNeedsDisplay: YES];
-}
-
 @end

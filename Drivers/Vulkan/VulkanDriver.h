@@ -5,6 +5,7 @@
 
 #include <Engine/Types.h>
 #include <Render/Render.h>
+#include <Render/Driver/RayTracing.h>
 #include <Runtime/Array.h>
 
 #define VK_ENABLE_BETA_EXTENSIONS
@@ -36,7 +37,7 @@ struct RenderContext
 	VkCommandBuffer cmdBuffer;
 	struct Pipeline *boundPipeline;
 	VkCommandPool *graphicsPools, *transferPools, *computePools;
-	struct Array *graphicsCmdBuffers, *transferCmdBuffers, *computeCmdBuffers;
+	struct Array *graphicsCmdBuffers, *secondaryCmdBuffers, *transferCmdBuffers, *computeCmdBuffers;
 	VkFence executeFence;
 	VkDevice dev;
 	//
@@ -65,7 +66,6 @@ struct Swapchain
 struct Buffer
 {
 	VkBuffer buff;
-	struct BufferDesc desc;
 	VkDeviceMemory memory;
 };
 
@@ -85,7 +85,7 @@ struct Framebuffer
 	uint32_t width, height, layers, attachmentCount;
 };
 
-struct RenderPass
+struct RenderPassDesc
 {
 	VkRenderPass rp;
 	VkClearValue *clearValues;
@@ -127,6 +127,7 @@ struct Pipeline *Vk_ComputePipeline(struct RenderDevice *dev, struct Shader *sh)
 struct Pipeline *Vk_RayTracingPipeline(struct RenderDevice *dev, struct ShaderBindingTable *sbt, uint32_t maxDepth);
 void Vk_LoadPipelineCache(struct RenderDevice *dev);
 void Vk_SavePipelineCache(struct RenderDevice *dev);
+void Vk_DestroyPipeline(struct RenderDevice *dev, struct Pipeline *pipeline);
 
 // Swapchain
 struct Swapchain *Vk_CreateSwapchain(struct RenderDevice *dev, VkSurfaceKHR surface);
@@ -157,10 +158,14 @@ void Vk_DestroyTexture(struct RenderDevice *dev, struct Texture *tex);
 // Buffer
 struct Buffer *Vk_CreateBuffer(struct RenderDevice *dev, const struct BufferCreateInfo *bci, uint16_t location);
 void Vk_UpdateBuffer(struct RenderDevice *dev, struct Buffer *buff, uint64_t offset, void *data, uint64_t size);
+void *Vk_MapBuffer(struct RenderDevice *dev, struct Buffer *buff);
+void Vk_UnmapBuffer(struct RenderDevice *dev, struct Buffer *buff);
+uint64_t Vk_BufferAddress(struct RenderDevice *dev, const struct Buffer *buff, uint64_t offset);
 void Vk_DestroyBuffer(struct RenderDevice *dev, struct Buffer *buff);
 
 // Acceleration Structure
 struct AccelerationStructure *Vk_CreateAccelerationStructure(struct RenderDevice *dev, const struct AccelerationStructureCreateInfo *asci);
+uint64_t Vk_AccelerationStructureHandle(struct RenderDevice *dev, const struct AccelerationStructure *as);
 void Vk_DestroyAccelerationStructure(struct RenderDevice *dev, struct AccelerationStructure *as);
 
 // Framebuffer
@@ -169,8 +174,8 @@ void Vk_SetAttachment(struct Framebuffer *fb, uint32_t pos, struct Texture *tex)
 void Vk_DestroyFramebuffer(struct RenderDevice *dev, struct Framebuffer *fb);
 
 // Render Pass
-struct RenderPass *Vk_CreateRenderPass(struct RenderDevice *dev, const struct RenderPassDesc *desc);
-void Vk_DestroyRenderPass(struct RenderDevice *dev, struct RenderPass *fb);
+struct RenderPassDesc *Vk_CreateRenderPassDesc(struct RenderDevice *dev, const struct AttachmentDesc *attachments, uint32_t count, const struct AttachmentDesc *depthAttachment);
+void Vk_DestroyRenderPassDesc(struct RenderDevice *dev, struct RenderPassDesc *fb);
 
 // Descriptor Set
 bool Vk_CreateDescriptorSet(struct RenderDevice *dev);
@@ -265,8 +270,8 @@ NeToVkMemoryProperties(enum GPUMemoryType type)
 {
 	switch (type) {
 	case MT_CPU_READ: return VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-	case MT_CPU_WRITE: return VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-	case MT_CPU_COHERENT: return VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+	case MT_CPU_WRITE: return VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+	case MT_CPU_COHERENT: return VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 	case MT_GPU_LOCAL:
 	default: return VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 	}
@@ -416,7 +421,7 @@ Vkd_TransitionImageLayout(VkCommandBuffer cmdBuffer, VkImage image, VkImageLayou
 	case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
 		barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 		dst = VK_PIPELINE_STAGE_TRANSFER_BIT;
-	break; 
+	break;
 	case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
 		barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 		dst = VK_PIPELINE_STAGE_TRANSFER_BIT;
@@ -435,25 +440,29 @@ NeToVkImageLayout(enum TextureLayout tl)
 	switch (tl) {
 		case TL_COLOR_ATTACHMENT: return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 		case TL_DEPTH_STENCIL_ATTACHMENT: return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-		case TL_DEPTH_STENCIL_READ_ONLY: return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+		case TL_DEPTH_STENCIL_READ_ONLY_ATTACHMENT: return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+		case TL_DEPTH_ATTACHMENT: return VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+		case TL_STENCIL_ATTACHMENT: return VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL;
 		case TL_TRANSFER_SRC: return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		case TL_TRANSFER_DST: return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		case TL_SHADER_READ_ONLY: return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		case TL_PRESENT_SRC: return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 		case TL_UNKNOWN:
 		default: return VK_IMAGE_LAYOUT_UNDEFINED;
 	}
 }
 
-static inline enum TextureLayout 
+static inline enum TextureLayout
 VkToNeImageLayout(VkImageLayout il)
 {
 	switch (il) {
 		case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL: return TL_COLOR_ATTACHMENT;
 		case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL: return TL_DEPTH_STENCIL_ATTACHMENT;
-		case VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL: return TL_DEPTH_STENCIL_READ_ONLY;
+		case VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL: return TL_DEPTH_STENCIL_READ_ONLY_ATTACHMENT;
 		case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL: return TL_TRANSFER_SRC;
 		case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL: return TL_TRANSFER_DST;
 		case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL: return TL_SHADER_READ_ONLY;
+		case VK_IMAGE_LAYOUT_PRESENT_SRC_KHR: return TL_PRESENT_SRC;
 		default: return TL_UNKNOWN;
 	}
 }

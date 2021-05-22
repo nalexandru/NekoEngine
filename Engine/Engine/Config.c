@@ -15,6 +15,7 @@ static struct CVar *_cvars = NULL;
 
 static inline struct CVar *_findCVar(const wchar_t *name, enum CVarType type);
 static inline struct CVar *_newCVar(const wchar_t *name, enum CVarType type);
+static inline char *_CfgStrDup(const char *str);
 
 void
 E_InitConfig(const char *file)
@@ -82,12 +83,12 @@ E_TermConfig(void)
 	struct CVar *cv = _cvars, *prev;
 	while (cv) {
 		if (cv->type == CV_String)
-			free((void *)cv->str);
+			Sys_Free((void *)cv->str);
 
 		prev = cv;
 		cv = cv->next;
 
-		free(prev);
+		Sys_Free(prev);
 	}
 }
 
@@ -128,25 +129,25 @@ void														\
 E_SetCVar ## suffix(const wchar_t *name, type val)			\
 {															\
 	struct CVar *cv = E_GetCVar ## suffix(name, val);		\
-	free((void *)cv->member);								\
+	Sys_Free((void *)cv->member);							\
 	cv->member = set(val);									\
 }
 
-GETS_CVAR_IMPL(Str, str, const char *, CV_String, strdup)
+GETS_CVAR_IMPL(Str, str, const char *, CV_String, _CfgStrDup)
 GET_CVAR_IMPL(I32, i32, int32_t, CV_Int32)
 GET_CVAR_IMPL(U32, u32, uint32_t, CV_UInt32)
 GET_CVAR_IMPL(U64, u64, uint64_t, CV_UInt64)
 GET_CVAR_IMPL(Flt, flt, float, CV_Float)
 GET_CVAR_IMPL(Bln, bln, bool, CV_Bool)
 
-SETF_CVAR_IMPL(Str, str, const char *, CV_String, strdup)
+SETF_CVAR_IMPL(Str, str, const char *, CV_String, _CfgStrDup)
 SET_CVAR_IMPL(I32, i32, int32_t, CV_Int32)
 SET_CVAR_IMPL(U32, u32, uint32_t, CV_UInt32)
 SET_CVAR_IMPL(U64, u64, uint64_t, CV_UInt64)
 SET_CVAR_IMPL(Flt, flt, float, CV_Float)
 SET_CVAR_IMPL(Bln, bln, bool, CV_Bool)
 
-struct CVar *
+static inline struct CVar *
 _findCVar(const wchar_t *name, enum CVarType type)
 {
 	uint64_t hash = 0;
@@ -163,7 +164,7 @@ _findCVar(const wchar_t *name, enum CVarType type)
 	return NULL;
 }
 
-struct CVar *
+static inline struct CVar *
 _newCVar(const wchar_t *name, enum CVarType type)
 {
 	uint64_t hash = 0;
@@ -172,7 +173,7 @@ _newCVar(const wchar_t *name, enum CVarType type)
 	hash = Rt_HashStringW(name);
 
 	if (!cv) {
-		_cvars = calloc(1, sizeof(*cv));
+		_cvars = Sys_Alloc(1, sizeof(*cv), MH_System);
 		cv = _cvars;
 	} else {
 		while (cv) {
@@ -181,7 +182,7 @@ _newCVar(const wchar_t *name, enum CVarType type)
 				continue;
 			}
 
-			cv->next = calloc(1, sizeof(*cv));
+			cv->next = Sys_Alloc(1, sizeof(*cv), MH_System);
 			cv = cv->next;
 			break;
 		}
@@ -194,5 +195,14 @@ _newCVar(const wchar_t *name, enum CVarType type)
 	wcsncpy(cv->name, name, CVAR_MAX_NAME);
 
 	return cv;
+}
+
+static inline char *
+_CfgStrDup(const char *str)
+{
+	size_t len = strlen(str);
+	char *dst = Sys_Alloc(len + 1, 1, MH_System);
+	memcpy(dst, str, len);
+	return dst;
 }
 

@@ -19,6 +19,15 @@
     <Filter Include="Shaders">
       <UniqueIdentifier>{5b2d7a87-c662-4408-a13a-30eb24f6a7cf}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders\Headers">
+      <UniqueIdentifier>{2ef2532d-f99c-4254-b98d-c754d4d2d1bd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\Vertex">
+      <UniqueIdentifier>{f9d92d99-0a82-424a-a1c8-0f6a75d315da}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\Fragment">
+      <UniqueIdentifier>{d307c795-996d-447e-9936-b18536de98a3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="VulkanDriver.h">
@@ -27,17 +36,20 @@
     <ClInclude Include="volk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Shaders\Texture.h">
-      <Filter>Shaders</Filter>
-    </ClInclude>
-    <ClInclude Include="Shaders\Vertex.h">
-      <Filter>Shaders</Filter>
+    <ClInclude Include="Shaders\DrawInfo.h">
+      <Filter>Shaders\Headers</Filter>
     </ClInclude>
     <ClInclude Include="Shaders\Material.h">
-      <Filter>Shaders</Filter>
+      <Filter>Shaders\Headers</Filter>
     </ClInclude>
     <ClInclude Include="Shaders\Object.h">
-      <Filter>Shaders</Filter>
+      <Filter>Shaders\Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Shaders\Texture.h">
+      <Filter>Shaders\Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Shaders\Vertex.h">
+      <Filter>Shaders\Headers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -94,11 +106,11 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Shaders\DefaultPBR_VS.vert">
-      <Filter>Shaders</Filter>
-    </None>
-    <None Include="Shaders\DefaultPBR_MR_FS.frag">
-      <Filter>Shaders</Filter>
-    </None>
+    <CustomBuild Include="Shaders\DefaultPBR_VS.vert">
+      <Filter>Shaders\Vertex</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Shaders\DefaultPBR_MR_FS.frag">
+      <Filter>Shaders\Fragment</Filter>
+    </CustomBuild>
   </ItemGroup>
 </Project>

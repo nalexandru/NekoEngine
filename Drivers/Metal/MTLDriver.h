@@ -50,6 +50,7 @@ struct Buffer
 {
 	id<MTLBuffer> buff;
 	enum GPUMemoryType memoryType;
+	uint32_t location;
 };
 
 struct RenderDevice
@@ -77,6 +78,8 @@ struct RenderContext
 		struct Buffer *buffer;
 		uint64_t offset;
 	} boundIndexBuffer;
+	id<MTLParallelRenderCommandEncoder> parallelEncoder;
+	id<MTLDevice> dev;
 };
 
 struct Framebuffer
@@ -85,7 +88,7 @@ struct Framebuffer
 	uint32_t attachmentCount;
 };
 
-struct RenderPass
+struct RenderPassDesc
 {
 	MTLRenderPassDescriptor *desc;
 	uint32_t attachmentCount;
@@ -112,6 +115,7 @@ struct Pipeline *MTL_ComputePipeline(id<MTLDevice> dev, struct Shader *sh);
 struct Pipeline *MTL_RayTracingPipeline(id<MTLDevice> dev, struct ShaderBindingTable *sbt, uint32_t maxDepth);
 void MTL_LoadPipelineCache(id<MTLDevice> dev);
 void MTL_SavePipelineCache(id<MTLDevice> dev);
+void MTL_DestroyPipeline(id<MTLDevice> dev, struct Pipeline *p);
 
 // Surface
 void *MTL_CreateSurface(id<MTLDevice> dev, WINDOWTYPE *window);
@@ -133,19 +137,23 @@ void MTL_ResetContext(id<MTLDevice> dev, struct RenderContext *ctx);
 void MTL_DestroyContext(id<MTLDevice> dev, struct RenderContext *ctx);
 
 // Texture
-struct Texture *MTL_CreateTextureInternal(id<MTLDevice> dev, const struct TextureCreateInfo *tci, bool transient, uint16_t location);
+struct Texture *MTL_CreateTextureInternal(id<MTLDevice> dev, struct Texture *tex, const struct TextureCreateInfo *tci, bool transient, uint16_t location);
 struct Texture *MTL_CreateTexture(id<MTLDevice> dev, const struct TextureCreateInfo *tci, uint16_t location);
 enum TextureLayout MTL_TextureLayout(const struct Texture *tex);
 void MTL_DestroyTexture(id<MTLDevice> dev, struct Texture *tex);
 
 // Buffer
-struct Buffer *MTL_CreateBufferInternal(id<MTLDevice> dev, const struct BufferCreateInfo *bci, bool transient, uint16_t location);
+struct Buffer *MTL_CreateBufferInternal(id<MTLDevice> dev, struct Buffer *buff, const struct BufferCreateInfo *bci, bool transient, uint16_t location);
 struct Buffer *MTL_CreateBuffer(id<MTLDevice> dev, const struct BufferCreateInfo *bci, uint16_t location);
 void MTL_UpdateBuffer(id<MTLDevice> dev, struct Buffer *buff, uint64_t offset, uint8_t *data, uint64_t size);
+void *MTL_MapBuffer(id<MTLDevice> dev, struct Buffer *buff);
+void MTL_UnmapBuffer(id<MTLDevice> dev, struct Buffer *buff);
+uint64_t MTL_BufferAddress(id<MTLDevice> dev, const struct Buffer *buff, uint64_t offset);
 void MTL_DestroyBuffer(id<MTLDevice> dev, struct Buffer *buff);
 
 // Acceleration Structure
 struct AccelerationStructure *MTL_CreateAccelerationStructure(id<MTLDevice> dev, const struct AccelerationStructureCreateInfo *asci);
+uint64_t MTL_AccelerationStructureHandle(id<MTLDevice> dev, const struct AccelerationStructure *as);
 void MTL_DestroyAccelerationStructure(id<MTLDevice> dev, struct AccelerationStructure *as);
 
 // Framebuffer
@@ -155,9 +163,8 @@ const struct FramebufferDesc *MTL_FramebufferDesc(const struct Framebuffer *fb);
 void MTL_DestroyFramebuffer(id<MTLDevice> dev, struct Framebuffer *fb);
 
 // Render Pass
-struct RenderPass *MTL_CreateRenderPass(id<MTLDevice> dev, const struct RenderPassDesc *desc);
-const struct RenderPassDesc *MTL_RenderPassDesc(const struct RenderPass *pass);
-void MTL_DestroyRenderPass(id<MTLDevice> dev, struct RenderPass *pass);
+struct RenderPassDesc *MTL_CreateRenderPassDesc(id<MTLDevice> dev, const struct AttachmentDesc *attachments, uint32_t count, const struct AttachmentDesc *depthAttachment);
+void MTL_DestroyRenderPassDesc(id<MTLDevice> dev, struct RenderPassDesc *pass);
 
 // Argument Buffer
 bool MTL_InitArgumentBuffer(id<MTLDevice> dev);
@@ -169,6 +176,7 @@ void MTL_SetBuffer(uint16_t location, id<MTLBuffer> buff);
 void MTL_RemoveBuffer(id<MTLBuffer> buff);
 void MTL_SetRenderArguments(id<MTLRenderCommandEncoder> encoder);
 void MTL_SetComputeArguments(id<MTLComputeCommandEncoder> encoder);
+void MTL_SetIndirectArguments(id<MTLRenderCommandEncoder> encoder, id<MTLIndirectRenderCommand> cmd);
 
 // Shader
 bool MTL_InitLibrary(id<MTLDevice> dev);
@@ -242,6 +250,7 @@ NeToMTLTextureFormat(enum TextureFormat fmt)
 	case TF_EAC_R11_SNORM: return MTLPixelFormatEAC_R11Snorm;
 	case TF_EAC_R11G11_UNORM: return MTLPixelFormatEAC_RG11Unorm;
 	case TF_EAC_R11G11_SNORM: return MTLPixelFormatEAC_RG11Snorm;
+	case TF_D32_SFLOAT: return MTLPixelFormatDepth32Float;
 	case TF_INVALID: return MTLPixelFormatInvalid;
 #if TARGET_OS_OSX
 	case TF_BC5_UNORM: return MTLPixelFormatBC5_RGUnorm;
@@ -250,6 +259,7 @@ NeToMTLTextureFormat(enum TextureFormat fmt)
 	case TF_BC6H_SF16: return MTLPixelFormatBC6H_RGBFloat;
 	case TF_BC7_UNORM: return MTLPixelFormatBC7_RGBAUnorm;
 	case TF_BC7_SRGB: return MTLPixelFormatBC7_RGBAUnorm_sRGB;
+	case TF_D24_STENCIL8: return MTLPixelFormatDepth24Unorm_Stencil8;
 #else
 	default: return MTLPixelFormatInvalid;
 #endif
@@ -279,6 +289,7 @@ MTLToNeTextureFormat(MTLPixelFormat fmt)
 	case MTLPixelFormatEAC_R11Snorm: return TF_EAC_R11_SNORM;
 	case MTLPixelFormatEAC_RG11Unorm: return TF_EAC_R11G11_UNORM;
 	case MTLPixelFormatEAC_RG11Snorm: return TF_EAC_R11G11_SNORM;
+	case MTLPixelFormatDepth32Float: return TF_D32_SFLOAT;
 	case MTLPixelFormatInvalid: return TF_INVALID;
 #if TARGET_OS_OSX
 	case MTLPixelFormatBC5_RGUnorm: return TF_BC5_UNORM;
@@ -287,6 +298,7 @@ MTLToNeTextureFormat(MTLPixelFormat fmt)
 	case MTLPixelFormatBC6H_RGBFloat: return TF_BC6H_SF16;
 	case MTLPixelFormatBC7_RGBAUnorm: return TF_BC7_UNORM;
 	case MTLPixelFormatBC7_RGBAUnorm_sRGB: return TF_BC7_SRGB;
+	case MTLPixelFormatDepth24Unorm_Stencil8: return TF_D24_STENCIL8;
 #endif
 	default: return TF_INVALID;
 	}

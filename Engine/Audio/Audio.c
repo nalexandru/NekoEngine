@@ -101,5 +101,5 @@ Au_Update(void)
 void
 Au_Term(void)
 {
-//	Au_TermLib();
+	Au_driver->DestroyDevice(Au_device);
 }

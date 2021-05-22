@@ -2,7 +2,7 @@
 #define _RE_TRANSIENT_RESOURCES_H_
 
 #include <Render/Types.h>
-#include <Render/Device.h>
+#include <Render/Driver/Device.h>
 
 static inline bool Re_InitTransientHeap(uint64_t size) { return Re_deviceProcs.InitTransientHeap(Re_device, size); }
 static inline bool Re_ResizeTransientHeap(uint64_t size) { return Re_deviceProcs.ResizeTransientHeap(Re_device, size); }

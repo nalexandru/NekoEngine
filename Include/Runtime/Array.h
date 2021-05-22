@@ -25,6 +25,7 @@ struct Array
 	size_t size;
 	size_t elemSize;
 	size_t align;
+	enum MemoryHeap heap;
 };
 
 /**
@@ -34,14 +35,14 @@ struct Array
  * @elemSize: size of one array element
  */
 static inline bool
-Rt_InitArray(struct Array *a, size_t size, size_t elemSize)
+Rt_InitArray(struct Array *a, size_t size, size_t elemSize, enum MemoryHeap heap)
 {
 	if (!a || !size || !elemSize)
 		return false;
 
 	memset(a, 0x0, sizeof(*a));
 
-	a->data = calloc(size, elemSize);
+	a->data = Sys_Alloc(size, elemSize, heap);
 	if (!a->data)
 		return false;
 
@@ -49,12 +50,13 @@ Rt_InitArray(struct Array *a, size_t size, size_t elemSize)
 	a->size = size;
 	a->elemSize = elemSize;
 	a->align = 1;
+	a->heap = heap;
 
 	return true;
 }
 
 /**
- * rt_array_init_align - initialize a rt_array structure with
+ * Rt_InitAlignedArray - initialize a rt_array structure with
  * data aligned to the specified boundary. The array will
  * have padding between items if necessary.
  * @a: the structure to initialize
@@ -68,7 +70,7 @@ Rt_InitAlignedArray(struct Array *a, size_t size, size_t elemSize, size_t alignm
 		return false;
 
 	if (alignment == 1)
-		return Rt_InitArray(a, size, elemSize);
+		return Rt_InitArray(a, size, elemSize, MH_System);
 
 	memset(a, 0x0, sizeof(*a));
 
@@ -89,7 +91,7 @@ Rt_InitAlignedArray(struct Array *a, size_t size, size_t elemSize, size_t alignm
  * @a: the structure to initialize
  * @size: initial array size (in elements)
  */
-#define Rt_InitPtrArray(a, size) Rt_InitArray(a, size, sizeof(void *))
+#define Rt_InitPtrArray(a, size, heap) Rt_InitArray(a, size, sizeof(void *), heap)
 
 /**
  * Rt_CloneArray - clone an array
@@ -99,18 +101,19 @@ Rt_InitAlignedArray(struct Array *a, size_t size, size_t elemSize, size_t alignm
  * Return: 0 on success
  */
 static inline bool
-Rt_CloneArray(struct Array *dst, const struct Array *src)
+Rt_CloneArray(struct Array *dst, const struct Array *src, enum MemoryHeap heap)
 {
 	if (!dst || !src)
 		return false;
 
-	void *data = calloc(src->size, src->elemSize);
+	void *data = Sys_Alloc(src->size, src->elemSize, heap);
 	if (!data)
 		return false;
 
 	memcpy(dst->data, src->data, src->size * src->elemSize);
 	memcpy(dst, src, sizeof(*dst));
 	dst->data = data;
+	dst->heap = heap;
 
 	return true;
 }
@@ -172,7 +175,7 @@ Rt_ResizeArray(struct Array *a, size_t size)
 	if (a->size == size)
 		return true;
 
-	if ((a->data = reallocarray(a->data, size, a->elemSize)) == NULL) {
+	if ((a->data = Sys_ReAlloc(a->data, size, a->elemSize, a->heap)) == NULL) {
 		a->data = ptr;
 		return false;
 	}
@@ -240,7 +243,7 @@ Rt_ArrayAllocate(struct Array *a)
 			return NULL;
 
 	ptr = a->data + a->elemSize * a->count++;
-	memset(ptr, 0x0, a->elemSize);
+	Sys_ZeroMemory(ptr, a->elemSize);
 
 	return ptr;
 }
@@ -447,7 +450,7 @@ Rt_ArrayReverse(struct Array *a)
 	if (!a->count)
 		return false;
 
-	tmp = calloc(1, a->elemSize);
+	tmp = Sys_Alloc(1, a->elemSize, MH_Transient);
 	if (!tmp)
 		return false;
 
@@ -462,8 +465,6 @@ Rt_ArrayReverse(struct Array *a)
 		memcpy(start, end, a->elemSize);
 		memcpy(end, tmp, a->elemSize);
 	}
-
-	free(tmp);
 
 	return true;
 }
@@ -520,7 +521,7 @@ Rt_ClearArray(struct Array *a, bool free_memory)
 	if (a->align > 1)
 		Sys_AlignedFree(a->data);
 	else
-		free(a->data);
+		Sys_Free(a->data);
 
 	a->data = NULL;
 }

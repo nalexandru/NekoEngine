@@ -12,7 +12,7 @@ struct Metadata
 	struct jsmntok *tokens;
 	uint32_t tokenCount;
 	int64_t jsonSize;
-	
+
 	uint32_t version;
 	const char *id;
 };
@@ -25,7 +25,7 @@ void E_LoadMetadataFloatVector(struct Metadata *meta, struct jsmntok *tok, float
 
 // Models
 bool E_LoadNMeshAsset(struct Stream *stm, struct Model *m);
-bool E_LoadglTFAsset(const char *baseDir, struct Stream *stm, struct Model *m);
+bool E_LoadglTFAsset(struct ResourceLoadInfo *li, struct Model *m);
 
 // Textures
 bool E_LoadImageAsset(struct Stream *stm, struct TextureCreateInfo *tex);

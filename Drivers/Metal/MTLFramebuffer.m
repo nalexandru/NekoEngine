@@ -1,24 +1,19 @@
-#define Handle __EngineHandle
-
 #include <stdlib.h>
-
-#include <Render/Device.h>
-#include <Render/Framebuffer.h>
-
-#undef Handle
 
 #include "MTLDriver.h"
 
 struct Framebuffer *
 MTL_CreateFramebuffer(id<MTLDevice> dev, const struct FramebufferDesc *desc)
 {
-	struct Framebuffer *fb = malloc(sizeof(*fb));
+	enum MemoryHeap heap = MH_Frame;
+	
+	struct Framebuffer *fb = Sys_Alloc(sizeof(*fb), 1, heap);
 	if (!fb)
 		return NULL;
 	
-	fb->attachments = calloc(desc->attachmentCount, sizeof(*fb->attachments));
+	fb->attachments = Sys_Alloc(sizeof(*fb->attachments), desc->attachmentCount, heap);
 	if (!fb->attachments) {
-		free(fb);
+		Sys_Free(fb);
 		return NULL;
 	}
 	
@@ -36,6 +31,6 @@ MTL_SetAttachment(struct Framebuffer *fb, uint32_t pos, struct Texture *tex)
 void
 MTL_DestroyFramebuffer(id<MTLDevice> dev, struct Framebuffer *fb)
 {
-	free(fb->attachments);
-	free(fb);
+	Sys_Free(fb->attachments);
+	Sys_Free(fb);
 }

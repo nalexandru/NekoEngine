@@ -1,44 +1,57 @@
+#include <assert.h>
 #include <stdlib.h>
 
 #include <System/Memory.h>
 
 #include "VulkanDriver.h"
 
-struct RenderPass *
-Vk_CreateRenderPass(struct RenderDevice *dev, const struct RenderPassDesc *desc)
+static inline void _SetAttachment(VkAttachmentDescription *dst, const struct AttachmentDesc *src);
+
+struct RenderPassDesc *
+Vk_CreateRenderPassDesc(struct RenderDevice *dev, const struct AttachmentDesc *attachments, uint32_t count, const struct AttachmentDesc *depthAttachment)
 {
-	struct RenderPass *rp = calloc(sizeof(*rp), 1);
+	struct RenderPassDesc *rp = Sys_Alloc(sizeof(*rp), 1, MH_RenderDriver);
 	if (!rp)
 		return NULL;
 
-	VkAttachmentDescription *atDesc = Sys_Alloc(sizeof(*atDesc), desc->attachmentCount, MH_Transient);
-	VkAttachmentReference *atRef = Sys_Alloc(sizeof(*atRef), desc->attachmentCount, MH_Transient);
+	uint32_t atCount = count;
+	if (depthAttachment)
+		++atCount;
 
-	rp->clearValues = calloc(sizeof(*rp->clearValues), desc->attachmentCount);
+	VkAttachmentDescription *atDesc = Sys_Alloc(sizeof(*atDesc), atCount, MH_Transient);
+	VkAttachmentReference *atRef = Sys_Alloc(sizeof(*atRef), atCount, MH_Transient);
 
-	for (uint32_t i = 0; i < desc->attachmentCount; ++i) {
-		atDesc[i].flags = desc->attachments[i].mayAlias ? VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT : 0;
-		atDesc[i].format = NeToVkTextureFormat(desc->attachments[i].format);
-		atDesc[i].samples = desc->attachments[i].samples;
-		atDesc[i].loadOp = desc->attachments[i].loadOp;
-		atDesc[i].storeOp = desc->attachments[i].storeOp;
-		atDesc[i].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		atDesc[i].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		atDesc[i].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		atDesc[i].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	rp->clearValues = Sys_Alloc(sizeof(*rp->clearValues), atCount, MH_RenderDriver);
+	assert(rp->clearValues);
+
+	for (uint32_t i = 0; i < count; ++i) {
+		_SetAttachment(&atDesc[i], &attachments[i]);
 
 		atRef[i].attachment = i;
-		atRef[i].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		atRef[i].layout = NeToVkImageLayout(attachments[i].layout);
 
-		memcpy(rp->clearValues[i].color.float32, desc->attachments[i].clearColor, sizeof(rp->clearValues[i].color.float32));
+		memcpy(rp->clearValues[i].color.float32, attachments[i].clearColor, sizeof(rp->clearValues[i].color.float32));
+	}
+
+	if (depthAttachment) {
+		_SetAttachment(&atDesc[count], depthAttachment);
+
+		atRef[count].attachment = count;
+		atRef[count].layout = NeToVkImageLayout(depthAttachment->layout);
+
+		rp->clearValues[count].depthStencil.depth = depthAttachment->clearDepth;
+		rp->clearValues[count].depthStencil.stencil = depthAttachment->clearStencil;
 	}
 
 	VkSubpassDescription spDesc[] =
 	{
 		{
 			.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
-			.colorAttachmentCount = desc->attachmentCount,
+
+			.colorAttachmentCount = count,
 			.pColorAttachments = atRef,
+
+			.pDepthStencilAttachment = depthAttachment ? &atRef[count] : NULL
 		}
 	};
 
@@ -67,7 +80,7 @@ Vk_CreateRenderPass(struct RenderDevice *dev, const struct RenderPassDesc *desc)
 	VkRenderPassCreateInfo rpInfo =
 	{
 		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-		.attachmentCount = desc->attachmentCount,
+		.attachmentCount = count,
 		.pAttachments = atDesc,
 		.subpassCount = sizeof(spDesc) / sizeof(spDesc[0]),
 		.pSubpasses = spDesc,
@@ -76,7 +89,8 @@ Vk_CreateRenderPass(struct RenderDevice *dev, const struct RenderPassDesc *desc)
 	};
 
 	if (vkCreateRenderPass(dev->dev, &rpInfo, Vkd_allocCb, &rp->rp) != VK_SUCCESS) {
-		free(rp);
+		Sys_Free(rp->clearValues);
+		Sys_Free(rp);
 		return NULL;
 	}
 
@@ -84,10 +98,24 @@ Vk_CreateRenderPass(struct RenderDevice *dev, const struct RenderPassDesc *desc)
 }
 
 void
-Vk_DestroyRenderPass(struct RenderDevice *dev, struct RenderPass *rp)
+Vk_DestroyRenderPassDesc(struct RenderDevice *dev, struct RenderPassDesc *rp)
 {
 	vkDestroyRenderPass(dev->dev, rp->rp, Vkd_allocCb);
 
-	free(rp->clearValues);
-	free(rp);
+	Sys_Free(rp->clearValues);
+	Sys_Free(rp);
+}
+
+static inline void
+_SetAttachment(VkAttachmentDescription *dst, const struct AttachmentDesc *src)
+{
+	dst->flags = src->mayAlias ? VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT : 0;
+	dst->format = NeToVkTextureFormat(src->format);
+	dst->samples = src->samples;
+	dst->loadOp = src->loadOp;
+	dst->storeOp = src->storeOp;
+	dst->stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	dst->stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	dst->initialLayout = NeToVkImageLayout(src->initialLayout);
+	dst->finalLayout = NeToVkImageLayout(src->finalLayout);
 }

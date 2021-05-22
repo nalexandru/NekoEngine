@@ -39,6 +39,9 @@ static void _ProcessEvent(int worker, struct ProcessEventArgs *args);
 void
 E_Broadcast(const wchar_t *event, void *args)
 {
+	if (!_currentQueue)
+		return;
+
 	struct Event evt;
 	evt.event = Rt_HashStringW(event);
 	evt.args = args;
@@ -56,7 +59,7 @@ E_RegisterHandler(const wchar_t *event, EventHandlerProc handlerProc, void *user
 	struct EventHandlerInfo *info = NULL;
 	uint64_t hash = Rt_HashStringW(event);
 	uint32_t idx = 0, handlerIdx = 0;
-	
+
 	Sys_AtomicLockWrite(&_handlerLock);
 
 	handlerIdx = (uint32_t)Rt_ArrayBSearchId(&_handlers, &hash, (RtCmpFunc)_Comp);
@@ -64,7 +67,7 @@ E_RegisterHandler(const wchar_t *event, EventHandlerProc handlerProc, void *user
 	if (!info) {
 		info = Rt_ArrayAllocate(&_handlers);
 		info->event = hash;
-		Rt_InitArray(&info->handlers, 5, sizeof(struct EventHandler));
+		Rt_InitArray(&info->handlers, 5, sizeof(struct EventHandler), MH_System);
 		sort = true;
 	}
 
@@ -78,7 +81,7 @@ E_RegisterHandler(const wchar_t *event, EventHandlerProc handlerProc, void *user
 		Rt_ArraySort(&_handlers, (RtSortFunc)_Sort);
 		handlerIdx = (uint32_t)Rt_ArrayBSearchId(&_handlers, &event, (RtCmpFunc)_Comp);
 	}
-	
+
 	Sys_AtomicUnlockWrite(&_handlerLock);
 
 	return (uint64_t)idx | (uint64_t)handlerIdx << 32;
@@ -106,13 +109,13 @@ E_UnregisterHandler(uint64_t handler)
 bool
 E_InitEventSystem(void)
 {
-	if (!Rt_InitArray(&_handlers, 10, sizeof(struct EventHandlerInfo)))
+	if (!Rt_InitArray(&_handlers, 10, sizeof(struct EventHandlerInfo), MH_System))
 		return false;
 
-	if (!Rt_InitArray(&_queue[0], 10, sizeof(struct Event)))
+	if (!Rt_InitArray(&_queue[0], 10, sizeof(struct Event), MH_System))
 		return false;
 
-	if (!Rt_InitArray(&_queue[1], 10, sizeof(struct Event)))
+	if (!Rt_InitArray(&_queue[1], 10, sizeof(struct Event), MH_System))
 		return false;
 
 	_currentQueue = &_queue[0];
@@ -148,7 +151,7 @@ E_ProcessEvents(void)
 	struct EventHandlerInfo *info;
 	struct ProcessEventArgs *args;
 	struct Array *queue = _currentQueue;
-	
+
 	Sys_AtomicLockWrite(&_queueLock);
 	_currentQueueId = !_currentQueueId;
 	_currentQueue = &_queue[_currentQueueId];
@@ -194,4 +197,3 @@ _ProcessEvent(int worker, struct ProcessEventArgs *args)
 {
 	args->handler.proc(args->handler.user, args->args);
 }
-

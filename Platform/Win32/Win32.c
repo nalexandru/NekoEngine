@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <assert.h>
 
 #if defined(_M_AMD64) || defined(_M_IX86) && _MSC_VER >= 1400
 #	include <intrin.h>
@@ -12,7 +13,7 @@
 #include "Win32Platform.h"
 #include <ShlObj.h>
 
-static int32_t _numCpus = 0, _cpuFreq = 0;
+static uint32_t _cpuCount = 0, _cpuThreadCount = 0, _cpuFreq = 0;
 static HANDLE _stdout, _stderr, _k32;
 static WORD _cpuArch, _colors[4] =
 {
@@ -200,16 +201,22 @@ Sys_CpuName(void)
 	return _cpu;
 }
 
-int32_t
+uint32_t
 Sys_CpuFreq(void)
 {
 	return _cpuFreq;
 }
 
-int32_t
-Sys_NumCpus(void)
+uint32_t
+Sys_CpuCount(void)
 {
-	return _numCpus;
+	return _cpuCount;
+}
+
+uint32_t
+Sys_CpuThreadCount(void)
+{
+	return _cpuThreadCount;
 }
 
 const char *
@@ -312,8 +319,36 @@ Sys_InitPlatform(void)
 		return false;
 
 	GetNativeSystemInfo(&si);
-	_numCpus = si.dwNumberOfProcessors;
 	_cpuArch = si.wProcessorArchitecture;
+
+	DWORD len = 0;
+	GetLogicalProcessorInformation(NULL, &len);
+
+	SYSTEM_LOGICAL_PROCESSOR_INFORMATION *info = calloc(len, sizeof(*info));
+	assert(info);
+
+	GetLogicalProcessorInformation(info, &len);
+
+	_cpuCount = 0;
+	_cpuThreadCount = 0;
+	for (DWORD i = 0; i < len / sizeof(*info); ++i) {
+		if (info[i].Relationship != RelationProcessorCore)
+			continue;
+
+		++_cpuCount;
+
+		DWORD bitSetCount = 0;
+		ULONG_PTR bitTest = (ULONG_PTR)1 << (sizeof(ULONG_PTR) * 8 - 1);
+
+		for (DWORD j = 0; j <= sizeof(ULONG_PTR) * 8 - 1; ++j) {
+			bitSetCount += ((info[i].ProcessorMask & bitTest) ? 1 : 0);
+			bitTest /= 2;
+		}
+
+		_cpuThreadCount += bitSetCount;
+	}
+
+	free(info);
 
 	_LoadOSInfo();
 	_CalcCPUFreq();
@@ -375,6 +410,8 @@ Sys_DirectoryPath(enum SystemDirectory sd, char *out, size_t len)
 {
 	WCHAR *path = NULL;
 
+	memset(out, 0x0, len);
+
 	switch (sd) {
 	case SD_SAVE_GAME: SHGetKnownFolderPath(&FOLDERID_SavedGames, 0, NULL, &path); break;
 	case SD_APP_DATA: SHGetKnownFolderPath(&FOLDERID_LocalAppData, 0, NULL, &path); break;
@@ -387,7 +424,13 @@ Sys_DirectoryPath(enum SystemDirectory sd, char *out, size_t len)
 		wcstombs(out, tmp, wcslen(tmp));
 		CoTaskMemFree(path);
 	}
+}
 
+bool
+Sys_FileExists(const char *path)
+{
+	DWORD attr = GetFileAttributesA(path);
+	return attr != INVALID_FILE_ATTRIBUTES;
 }
 
 bool
@@ -491,4 +534,3 @@ _CalcCPUFreq(void)
 
 	_cpuFreq = (uint32_t)(freq / 1000);
 }
-

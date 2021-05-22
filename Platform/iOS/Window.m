@@ -16,6 +16,8 @@
 #undef Handle
 
 #import <UIKit/UIKit.h>
+
+#import "EngineView.h"
 #import "EngineViewController.h"
 
 bool
@@ -27,9 +29,11 @@ Sys_CreateWindow(void)
 	w.rootViewController = [[EngineViewController alloc] init];
 	[w makeKeyAndVisible];
 	[w retain];
+	
+	CGSize size = [(EngineView *)[[w rootViewController] view] drawableSize];
 
-	*E_screenWidth = r.size.width;
-	*E_screenHeight = r.size.height;
+	*E_screenWidth = size.width;
+	*E_screenHeight = size.height;
 	E_screen = (void *)w;
 
 	return true;

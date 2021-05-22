@@ -15,7 +15,28 @@
 #undef Handle
 
 #import <Cocoa/Cocoa.h>
+#import <QuartzCore/CAMetalLayer.h>
+
 #import "EngineView.h"
+
+@interface EngineWindowDelegate : NSObject<NSWindowDelegate>
+@end
+
+@implementation EngineWindowDelegate
+
+- (void)windowDidResize: (NSNotification *)notification
+{
+	NSWindow *w = (NSWindow *)E_screen;
+	EngineView *v = (EngineView *)[w contentView];
+	CAMetalLayer *metalLayer = (CAMetalLayer *)[v layer];
+	
+	const NSRect r = [v frame];
+	[metalLayer setDrawableSize: r.size];
+	
+	E_ScreenResized(r.size.width, r.size.height);
+}
+
+@end
 
 bool
 Sys_CreateWindow(void)
@@ -41,6 +62,8 @@ Sys_CreateWindow(void)
 	
 	[w makeKeyAndOrderFront: NSApp];
 	[w center];
+	
+	[w setDelegate: [[EngineWindowDelegate alloc] init]];
 	
 	[NSApp activateIgnoringOtherApps: YES];
 

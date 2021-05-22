@@ -163,4 +163,3 @@ extern bool zenny_atomic_compare_exchange64(volatile atomic_llong *object, int64
 #endif // #if defined(_MSC_VER) && !defined(__cplusplus)
 
 #endif
-

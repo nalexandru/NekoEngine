@@ -1,21 +1,14 @@
-#define Handle __EngineHandle
-
-#include <Render/Device.h>
-#include <Render/Texture.h>
-
-#undef Handle
-
 #include "MTLDriver.h"
 
 struct Texture *
-MTL_CreateTextureInternal(id<MTLDevice> dev, const struct TextureCreateInfo *tci, bool transient, uint16_t location)
+MTL_CreateTextureInternal(id<MTLDevice> dev, struct Texture *tex, const struct TextureCreateInfo *tci, bool transient, uint16_t location)
 {
-	struct Texture *tex = malloc(sizeof(*tex));
 	MTLTextureDescriptor *desc = [[MTLTextureDescriptor alloc] init];
 	
 	desc.pixelFormat = NeToMTLTextureFormat(tci->desc.format);
 	if (desc.pixelFormat == MTLPixelFormatInvalid) {
 		[desc autorelease];
+		Sys_Free(tex);
 		return NULL;
 	}
 	
@@ -72,10 +65,12 @@ MTL_CreateTextureInternal(id<MTLDevice> dev, const struct TextureCreateInfo *tci
 		[cmdBuffer commit];
 		[cmdBuffer waitUntilCompleted];
 		
+	#if TARGET_OS_OSX
 		[encoder autorelease];
 		[cmdBuffer autorelease];
 		[queue autorelease];
 		[staging autorelease];
+	#endif
 	}
 	
 	return tex;
@@ -84,7 +79,10 @@ MTL_CreateTextureInternal(id<MTLDevice> dev, const struct TextureCreateInfo *tci
 struct Texture *
 MTL_CreateTexture(id<MTLDevice> dev, const struct TextureCreateInfo *tci, uint16_t location)
 {
-	return MTL_CreateTextureInternal(dev, tci, false, location);
+	struct Texture *tex = Sys_Alloc(sizeof(*tex), 1, MH_RenderDriver);
+	if (!tex)
+		return NULL;
+	return MTL_CreateTextureInternal(dev, tex, tci, false, location);
 }
 
 
@@ -99,5 +97,5 @@ MTL_DestroyTexture(id<MTLDevice> dev, struct Texture *tex)
 {
 	MTL_RemoveTexture(tex->tex);
 	[tex->tex autorelease];
-	free(tex);
+	Sys_Free(tex);
 }

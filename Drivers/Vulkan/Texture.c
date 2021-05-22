@@ -9,7 +9,7 @@ Vk_CreateImage(struct RenderDevice *dev, const struct TextureCreateInfo *tci, st
 	{
 		.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 		.format = NeToVkTextureFormat(tci->desc.format),
-		.extent = 
+		.extent =
 		{
 			.width = tci->desc.width,
 			.height = tci->desc.height,
@@ -64,7 +64,7 @@ Vk_CreateImageView(struct RenderDevice *dev, const struct TextureCreateInfo *tci
 		},
 		.image = tex->image
 	};
-	
+
 	switch (tci->desc.type) {
 	case TT_2D:
 		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
@@ -77,7 +77,7 @@ Vk_CreateImageView(struct RenderDevice *dev, const struct TextureCreateInfo *tci
 	//	imageInfo.samples = tci->desc.sam
 	break;
 	case TT_Cube:
-		viewInfo.sType = VK_IMAGE_VIEW_TYPE_CUBE;
+		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
 	break;
 	}
 
@@ -87,7 +87,7 @@ Vk_CreateImageView(struct RenderDevice *dev, const struct TextureCreateInfo *tci
 struct Texture *
 Vk_CreateTexture(struct RenderDevice *dev, const struct TextureCreateInfo *tci, uint16_t location)
 {
-	struct Texture *tex = malloc(sizeof(*tex));
+	struct Texture *tex = Sys_Alloc(1, sizeof(*tex), MH_RenderDriver);
 	if (!tex)
 		return NULL;
 
@@ -171,6 +171,9 @@ Vk_CreateTexture(struct RenderDevice *dev, const struct TextureCreateInfo *tci, 
 		Vkd_ExecuteCmdBuffer(dev, cmdBuffer);
 
 		tex->layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+
+		vkDestroyBuffer(dev->dev, staging, Vkd_allocCb);
+		vkFreeMemory(dev->dev, stagingMem, Vkd_allocCb);
 	}
 
 	// FIXME
@@ -178,7 +181,7 @@ Vk_CreateTexture(struct RenderDevice *dev, const struct TextureCreateInfo *tci, 
 	return tex;
 
 error:
-	free(tex);
+	Sys_Free(tex);
 	return NULL;
 }
 
@@ -199,6 +202,7 @@ Vk_DestroyTexture(struct RenderDevice *dev, struct Texture *tex)
 {
 	vkDestroyImageView(dev->dev, tex->imageView, Vkd_allocCb);
 	vkDestroyImage(dev->dev, tex->image, Vkd_allocCb);
-	free(tex);
-}
+	vkFreeMemory(dev->dev, tex->memory, Vkd_allocCb);
 
+	Sys_Free(tex);
+}

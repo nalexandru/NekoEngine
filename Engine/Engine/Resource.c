@@ -135,11 +135,13 @@ E_UnloadResource(Handle res)
 {
 	struct ResType *rt;
 	struct Resource *rptr = NULL;
-	
+
 	if (res == E_INVALID_HANDLE)
 		return;
-	
+
 	rptr = _DecodeHandle(res, &rt);
+	if (!rptr)
+		return;
 
 	if (rptr->info.references == 0)
 		return;
@@ -153,7 +155,7 @@ E_UnloadResource(Handle res)
 bool
 E_InitResourceSystem(void)
 {
-	if (!Rt_InitArray(&_ResTypes, 10, sizeof(struct ResType)))
+	if (!Rt_InitArray(&_ResTypes, 10, sizeof(struct ResType), MH_System))
 		return false;
 
 	return true;
@@ -277,7 +279,7 @@ _DecodeHandle(Handle res, struct ResType **rt)
 	if (!*rt)
 		return NULL;
 
-	return Rt_ArrayGet(&(*rt)->list.res, id);
+	return id < (*rt)->list.res.count ? Rt_ArrayGet(&(*rt)->list.res, id) : NULL;
 }
 
 static inline void
@@ -323,10 +325,10 @@ _UnloadAll(struct ResType *rt)
 static inline bool
 _InitResourceList(uint64_t count, size_t size, struct ResourceList *rl)
 {
-	if (!Rt_InitArray(&rl->res, (size_t)count, size))
+	if (!Rt_InitArray(&rl->res, (size_t)count, size, MH_System))
 		return false;
 
-	if (!Rt_InitArray(&rl->free, (size_t)count, sizeof(uint32_t)))
+	if (!Rt_InitArray(&rl->free, (size_t)count, sizeof(uint32_t), MH_System))
 		return false;
 
 	Sys_InitAtomicLock(&rl->lock);
@@ -369,4 +371,3 @@ _TermResourceList(struct ResourceList *rl)
 	Rt_TermArray(&rl->res);
 	Rt_TermArray(&rl->free);
 }
-

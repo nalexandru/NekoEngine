@@ -74,6 +74,14 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>NekoEngine.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <CustomBuild>
+      <Command>glslc --target-env=vulkan1.2 %(FullPath) -o $(SolutionDir)/bin/Data/Shaders/Vulkan/%(Filename).spv</Command>
+    </CustomBuild>
+    <CustomBuild>
+      <Message>glslc %(Filename)</Message>
+      <Outputs>$(SolutionDir)/bin/Data/Shaders/Vulkan/%(Filename).spv</Outputs>
+      <TreatOutputAsContent>true</TreatOutputAsContent>
+    </CustomBuild>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -122,6 +130,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Shaders\DrawInfo.h" />
     <ClInclude Include="Shaders\Material.h" />
     <ClInclude Include="Shaders\Object.h" />
     <ClInclude Include="Shaders\Texture.h" />
@@ -130,8 +139,12 @@
     <ClInclude Include="VulkanDriver.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Shaders\DefaultPBR_MR_FS.frag" />
-    <None Include="Shaders\DefaultPBR_VS.vert" />
+    <CustomBuild Include="Shaders\DefaultPBR_MR_FS.frag">
+      <FileType>Document</FileType>
+    </CustomBuild>
+    <CustomBuild Include="Shaders\DefaultPBR_VS.vert">
+      <FileType>Document</FileType>
+    </CustomBuild>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -31,5 +31,3 @@ Vk_CreateSurface(struct RenderDevice *dev, void *window)
 
 	return surface;
 }
-
-

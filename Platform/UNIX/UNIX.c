@@ -39,7 +39,7 @@ XVisualInfo X11_visualInfo;
 Atom X11_WM_PROTOCOLS, X11_WM_DELETE_WINDOW, X11_NET_WM_STATE, X11_NET_WM_PID,
 	X11_NET_WM_WINDOW_TYPE, X11_NET_WM_WINDOW_TYPE_NORMAL, X11_NET_WM_BYPASS_COMPOSITOR;
 
-static int32_t _numCpus = 0, _cpuFreq = 0;
+static uint32_t _cpuCount = 0, _cpuFreq = 0, _cpuThreadCount = 0;
 static char _cpuName[128] = "Unknown";
 static char _colors[4][8] =
 {
@@ -176,16 +176,22 @@ Sys_CpuName(void)
 	return _cpuName;
 }
 
-int32_t
+uint32_t
 Sys_CpuFreq(void)
 {
 	return _cpuFreq;
 }
 
-int
-Sys_NumCpus(void)
+uint32_t
+Sys_CpuCount(void)
 {
-	return _numCpus;
+	return _cpuCount;
+}
+
+uint32_t
+Sys_CpuThreadCount(void)
+{
+	return _cpuThreadCount;
 }
 
 const char *
@@ -279,11 +285,8 @@ Sys_ProcessEvents(void)
 			
 			if (ce.width == *E_screenWidth && ce.height == *E_screenHeight)
 				break;
-			
-			*E_screenWidth = ce.width;
-			*E_screenHeight = ce.height;
-			
-			//ScreenResized
+
+			E_ScreenResized(ce.width, ce.height);
 		} break;
 		case ClientMessage: {
 			if (ev.xclient.data.l[0] == X11_WM_DELETE_WINDOW)
@@ -378,10 +381,17 @@ Sys_DirectoryPath(enum SystemDirectory sd, char *out, size_t len)
 }
 
 bool
-Sys_DirectoryExists(const char *path)
+Sys_FileExists ( const char* path )
 {
 	struct stat st;
 	return !stat(path, &st);
+}
+
+bool
+Sys_DirectoryExists(const char *path)
+{
+	struct stat st;
+	return !stat(path, &st) && S_ISDIR(st.st_mode);
 }
 
 bool
@@ -456,16 +466,6 @@ Sys_ZeroMemory(void *mem, size_t len)
 bool
 Sys_InitPlatform(void)
 {
-#ifdef SYS_PLATFORM_IRIX
-	_numCpus = sysconf(_SC_NPROC_ONLN);
-#else
-	#ifndef _SC_NPROCESSORS_ONLN
-		_numCpus = sysconf(HW_NCPU);
-	#else
-		_numCpus = sysconf(_SC_NPROCESSORS_ONLN);
-	#endif
-#endif
-
 	uname(&_uname);
 
 	XInitThreads();
@@ -504,15 +504,24 @@ Sys_TermPlatform(void)
 void
 _CpuInfo(void)
 {
+#if defined(__i386__) || defined(__amd64__) || defined(__x86_64__)
+	uint32_t a = 11, b = 0, c = 1, d = 0;
+	asm volatile("cpuid" : "=a"(a), "=b"(b), "=c"(c), "=d"(d) : "0"(a), "2"(c) : );
+
+	_cpuCount = a;
+	_cpuThreadCount = b;
+#	define _HAVE_CPU_COUNT
+#endif
+
 #if defined(__linux__)
 	char buff[512];
-	char *cpuNameId = NULL, *cpuFreqId = NULL;
-//	int cpuFreqDiv = 1;
+	char *cpuNameId = NULL, *cpuFreqId = NULL, *cpuCoreId = NULL;
 	FILE *fp = fopen("/proc/cpuinfo", "r");
  
 #	if defined(__i386__) || defined(__amd64__) || defined(__x86_64__)
 		cpuNameId = "model name";
 		cpuFreqId = "cpu MHz";
+		cpuCoreId = "cpu cores";
 #	elif defined(SYS_ARCH_PPC) || defined(SYS_ARCH_PPC64)
 		cpuNameId = "cpu";
 		cpuFreqId = "clock";
@@ -554,6 +563,14 @@ _CpuInfo(void)
 					ptr[strlen(ptr) - 1] = 0x0;
 					_cpuFreq = atoi(ptr);
 				}
+			} else if (strstr(buff, cpuCoreId)) {
+				char *ptr = strchr(buff, ':');
+				if (ptr) {
+					ptr += 2;
+					ptr[strlen(ptr) - 1] = 0x0;
+					_cpuCount = atoi(ptr);
+					_cpuThreadCount = sysconf(_SC_NPROCESSORS_ONLN);
+				}
 				break;
 			}
 			memset(buff, 0x0, 512);
@@ -566,4 +583,17 @@ _CpuInfo(void)
 
 	if (_cpuName[strlen(_cpuName) - 1] == '\n')
 		_cpuName[strlen(_cpuName) - 1] = 0x0;
+
+#ifndef _HAVE_CPU_COUNT
+#	ifdef SYS_PLATFORM_IRIX
+		_cpuCount = sysconf(_SC_NPROC_ONLN);
+#	else
+	#	ifndef _SC_NPROCESSORS_ONLN
+			_cpuCount = sysconf(HW_NCPU);
+	#	else
+			_cpuCount = sysconf(_SC_NPROCESSORS_ONLN);
+#		endif
+#	endif
+	_cpuThreadCount = _cpuCount;
+#endif
 }

@@ -1,10 +1,9 @@
 #ifndef _RE_MODEL_H_
 #define _RE_MODEL_H_
 
-#include <Engine/Types.h>
+#include <Render/Types.h>
+#include <Render/Material.h>
 #include <Runtime/Runtime.h>
-
-#define RES_MODEL	"Model"
 
 #pragma pack(push,1)
 struct Vertex
@@ -22,32 +21,43 @@ struct Mesh
 	uint32_t vertexCount;
 	uint32_t indexOffset;
 	uint32_t indexCount;
-	struct Material *mat;
+	Handle materialResource;
 };
 
 struct Model
 {
 	struct Mesh *meshes;
 	uint32_t meshCount;
-	
-	struct Vertex *vertices;
-	uint32_t vertexCount;
-	
-	uint32_t *indices;
-	uint32_t indexCount;
+	uint32_t indexType;
+
+	struct {
+		BufferHandle vertexBuffer;
+		BufferHandle indexBuffer;
+	} gpu;
+
+	struct {
+		void *vertices;
+		uint32_t vertexSize;
+
+		void *indices;
+		uint32_t indexSize;
+	} cpu;
 };
 
 struct ModelCreateInfo
 {
-	struct Vertex *vertices;
-	uint32_t vertexCount;
-	
-	uint32_t *indices;
-	uint32_t indexCount;
-	
+	void *vertices;
+	uint32_t vertexSize;
+
+	void *indices;
+	uint32_t indexSize;
+	uint8_t indexType;
+
 	struct Mesh *meshes;
-	const wchar_t **materials;
+	const char **materials;
 	uint32_t meshCount;
+
+	bool keepData, loadMaterials;
 };
 
 bool Re_CreateModelResource(const char *name, const struct ModelCreateInfo *ci, struct Model *mdl, Handle h);

@@ -1,4 +1,9 @@
-file (GLOB src *.c Platform/X11.c)
+if(NOT WIN32)
+	file(GLOB src *.c Platform/X11.c)
+else()
+	file(GLOB src *.c Platform/Win32.c)
+endif()
+
 file(GLOB ShaderSrc
 	${CMAKE_CURRENT_SOURCE_DIR}/Shaders/*.vert
 	${CMAKE_CURRENT_SOURCE_DIR}/Shaders/*.frag
@@ -30,7 +35,12 @@ function(add_vulkan_shader INPUT_FILE)
 endfunction()
 
 add_library(VulkanDriver STATIC ${src})
-target_compile_options(VulkanDriver PRIVATE -Wno-int-to-pointer-cast -Wno-pointer-to-int-cast)
+
+if (NOT MSVC)
+	target_compile_options(VulkanDriver PRIVATE -Wno-int-to-pointer-cast -Wno-pointer-to-int-cast)
+else ()
+	target_compile_definitions(VulkanDriver PRIVATE _ENGINE_INTERNAL_)
+endif ()
 
 foreach(Shader ${ShaderSrc})
 	get_filename_component(ShaderFile ${Shader} NAME)

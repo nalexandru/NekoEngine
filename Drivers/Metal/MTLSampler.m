@@ -1,10 +1,3 @@
-#define Handle __EngineHandle
-
-#include <Render/Device.h>
-#include <Render/Sampler.h>
-
-#undef Handle
-
 #include "MTLDriver.h"
 
 id<MTLSamplerState>

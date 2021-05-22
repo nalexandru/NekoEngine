@@ -14,4 +14,3 @@ layout(std430, set = 0, binding = 2) readonly buffer ObjectBuffer
 }; Re_objectBuffers[];
 
 #endif /* _RE_OBJECT_H_ */
-

@@ -36,8 +36,14 @@ MTL_InitArgumentBuffer(id<MTLDevice> dev)
 	
 	[args release];
 	
+#if TARGET_OS_OSX
 	_argumentBuffer = [dev newBufferWithLength: _encoder.encodedLength
 									   options: MTLResourceStorageModeManaged];
+#else
+	_argumentBuffer = [dev newBufferWithLength: _encoder.encodedLength
+									   options: MTLResourceStorageModeShared];
+#endif
+	
 	[_encoder setArgumentBuffer: _argumentBuffer offset: 0];
 	
 	return true;
@@ -126,6 +132,21 @@ void MTL_SetComputeArguments(id<MTLComputeCommandEncoder> encoder)
 	for (uint16_t i = 0; i < _usedBuffers; ++i)
 		if (_buffers[i])
 			[encoder useResource: _buffers[i] usage: MTLResourceUsageWrite];
+}
+
+void
+MTL_SetIndirectArguments(id<MTLRenderCommandEncoder> encoder, id<MTLIndirectRenderCommand> cmd)
+{
+	[cmd setVertexBuffer: _argumentBuffer offset: 0 atIndex: 0];
+	[cmd setFragmentBuffer: _argumentBuffer offset: 0 atIndex: 0];
+	
+	for (uint16_t i = 0; i < _usedTextures; ++i)
+		if (_textures[i])
+			[encoder useResource: _textures[i] usage: MTLResourceUsageSample];
+	
+	for (uint16_t i = 0; i < _usedBuffers; ++i)
+		if (_buffers[i])
+			[encoder useResource: _buffers[i] usage: MTLResourceUsageRead];
 }
 
 void

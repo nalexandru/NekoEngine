@@ -174,21 +174,21 @@ In_Update(void)
 	memmove(_prevControllerState, In_controllerState, sizeof(_prevControllerState));
 
 	In_SysPollControllers();
-	
+
 	if (!_enableMouseAxis || !In_pointerCaptured)
 		return;
-	
+
 	uint16_t x = 0, y = 0, hwidth = *E_screenWidth / 2, hheight = *E_screenHeight / 2;
 	float dx = 0.f, dy = 0.f;
-	
+
 	In_PointerPosition(&x, &y);
 	dx = (float)(hwidth - x);
 	dy = (float)(hheight - y);
 	In_SetPointerPosition(hwidth, hheight);
-	
+
 	In_mouseAxis[AXIS_MOUSE_X - MOUSE_AXIS_START] = -(dx / hwidth);
 	In_mouseAxis[AXIS_MOUSE_Y - MOUSE_AXIS_START] = dy / hheight;
-	
+
 	// TODO: wheel support
 }
 
@@ -203,10 +203,10 @@ In_CreateVirtualAxis(const wchar_t *name, enum Button min, enum Button max)
 {
 	uint32_t axis = 0;
 	const struct KeyAxis ka = { max, min, Rt_HashStringW(name) };
-	
+
 	if (!_virtualAxis.count)
-		Rt_InitArray(&_virtualAxis, sizeof(struct KeyAxis), 10);
-	
+		Rt_InitArray(&_virtualAxis, sizeof(struct KeyAxis), 10, MH_System);
+
 	axis = (enum Axis)(_virtualAxis.count + VIRTUAL_AXIS_START);
 	Rt_ArrayAdd(&_virtualAxis, &ka);
 
@@ -238,7 +238,7 @@ In_CreateMap(const wchar_t *name)
 	m.hash = Rt_HashStringW(name);
 
 	if (!_map.size)
-		Rt_InitArray(&_map, 10, sizeof(struct Map));
+		Rt_InitArray(&_map, 10, sizeof(struct Map), MH_System);
 
 	for (i = 0; i < _map.count; ++i) {
 		em = Rt_ArrayGet(&_map, i);
@@ -358,4 +358,3 @@ In_UnmappedAxis(enum Axis axis, uint8_t controller)
 		return ret;
 	}
 }
-

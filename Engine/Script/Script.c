@@ -22,6 +22,8 @@ E_CreateVM(bool jit)
 
 	luaL_openlibs(vm);
 	
+	SIface_OpenSystem(vm);
+	SIface_OpenEngine(vm);
 	SIface_OpenRender(vm);
 
 	return vm;
@@ -81,4 +83,3 @@ E_TermScriptSystem(void)
 {
 	//
 }
-

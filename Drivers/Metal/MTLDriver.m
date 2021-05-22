@@ -1,8 +1,7 @@
 #define Handle __EngineHandle
 
-#include <Render/Driver.h>
-#include <Render/Device.h>
-#include <Render/Context.h>
+#include <Render/Render.h>
+#include <Render/Driver/Driver.h>
 
 #undef Handle
 
@@ -72,9 +71,12 @@ _EnumerateDevices(uint32_t *count, struct RenderDeviceInfo *info)
 		info[i].features.unifiedMemory = [dev hasUnifiedMemory];
 		info[i].features.discrete = ![dev isLowPower];
 		info[i].features.canPresent = ![dev isHeadless];
-		info[i].limits.maxTextureSize = [dev supportsFamily: MTLGPUFamilyApple3] || [dev supportsFamily: MTLGPUFamilyMac1] ? 16384 : 8192;
+		info[i].limits.maxTextureSize = 16384;
 		info[i].features.drawIndirectCount = false;
-		info[i].features.textureCompression = true;
+		info[i].features.bcTextureCompression = true;
+		info[i].features.astcTextureCompression = false;
+		info[i].features.secondaryCommandBuffers = false;
+		info[i].features.coherentMemory = true;
 		
 		info[i].private = (void *)devices[i];
 	}
@@ -92,12 +94,13 @@ _EnumerateDevices(uint32_t *count, struct RenderDeviceInfo *info)
 	if (!count)
 		return false;
 	
+	id<MTLDevice> dev = MTLCreateSystemDefaultDevice();
+	
 	if (!*count || !info) {
-		*count = 1;
+		*count = [dev supportsFamily: MTLGPUFamilyApple6] ? 1 : 0;
+		[dev release];
 		return true;
 	}
-	
-	id<MTLDevice> dev = MTLCreateSystemDefaultDevice();
 	
 	snprintf(info->deviceName, sizeof(info->deviceName), "%s", [[dev name] UTF8String]);
 	info->localMemorySize = 1024 * 1024 * 1024;
@@ -109,9 +112,11 @@ _EnumerateDevices(uint32_t *count, struct RenderDeviceInfo *info)
 	info->features.discrete = false;
 	info->features.canPresent = true;
 	info->features.drawIndirectCount = false;
-	info->features.textureCompression = false;
-	info->limits.maxTextureSize = [dev supportsFamily: MTLGPUFamilyApple3]
-					|| [dev supportsFamily: MTLGPUFamilyMac1] ? 16384 : 8192;
+	info->features.bcTextureCompression = false;
+	info->features.astcTextureCompression = true;
+	info->features.secondaryCommandBuffers = false;
+	info->limits.maxTextureSize = 16384;
+	info[i].features.coherentMemory = true;
 		
 	info->private = dev;
 	

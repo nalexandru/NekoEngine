@@ -6,7 +6,7 @@
 #include <Engine/Asset.h>
 #include <System/Endian.h>
 #include <System/Memory.h>
-#include <Render/Texture.h>
+#include <Render/Render.h>
 
 #pragma pack(push, 1)
 
@@ -148,7 +148,7 @@ E_LoadTGAAsset(struct Stream *stm, struct TextureCreateInfo *tci)
 	if (tci->dataSize < imgSize)
 		return false;
 
-	tci->data = calloc(sizeof(uint8_t), tci->dataSize);
+	tci->data = Sys_Alloc(sizeof(uint8_t), tci->dataSize, MH_Asset);
 	if (!tci->data)
 		return false;
 
@@ -156,7 +156,7 @@ E_LoadTGAAsset(struct Stream *stm, struct TextureCreateInfo *tci)
 	if (!data) {
 		data = Sys_Alloc(sizeof(uint8_t), dataSize, MH_Transient);
 		if (!data) {
-			free(tci->data);
+			Sys_Free(tci->data);
 			return false;
 		}
 
@@ -174,4 +174,3 @@ E_LoadTGAAsset(struct Stream *stm, struct TextureCreateInfo *tci)
 
 	return true;
 }
-

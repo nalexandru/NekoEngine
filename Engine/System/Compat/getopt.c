@@ -100,4 +100,3 @@ int getopt(int nargc, char *const nargv[], const char *ostr)
 	}
 	return (optopt);                        /* dump back option letter */
 }
-

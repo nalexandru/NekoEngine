@@ -24,6 +24,22 @@ struct Light
 	float4 data;		// x - inner radius, y - outer radius, z - inner spot cutoff, w - outer spot cutoff
 };
 
+struct Material
+{
+	float4 diffuseColor;
+
+	float4 emissionColor;
+	//float metallic;
+
+	float4 roughness;
+	//float _padding[3];
+
+	uint diffuseMap;
+	uint normalMap;
+	uint metallicMap;
+	uint roughnessMap;
+};
+
 #define LT_DIRECTIONAL	0
 #define LT_POINT		1
 #define LT_SPOT			2

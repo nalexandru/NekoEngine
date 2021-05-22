@@ -1,9 +1,3 @@
-#define Handle __EngineHandle
-
-#include <Render/Device.h>
-
-#undef Handle
-
 #include "MTLDriver.h"
 
 static id<MTLLibrary> _library;

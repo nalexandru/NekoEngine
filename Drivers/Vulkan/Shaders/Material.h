@@ -3,13 +3,23 @@
 
 struct Material
 {
-	float a;
+	vec4 diffuseColor;
+
+	vec3 emissionColor;
+	float metallic;
+
+	float roughness;
+	//float _padding[3];
+
+	uint diffuseMap;
+	uint normalMap;
+	uint metallicMap;
+	uint roughnessMap;
 };
 
-layout(std430, set = 0, binding = 2) readonly buffer MaterialBuffer
+layout(std430, buffer_reference) readonly buffer MaterialBuffer
 {
-	Material data[];
-} Re_materialBuffers[];
-
+	Material data;
+};
 
 #endif /* _RE_MATERIAL_H_ */

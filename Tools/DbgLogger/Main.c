@@ -173,4 +173,3 @@ _WndProc(HWND wnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 	return DefWindowProc(wnd, msg, wParam, lParam);
 }
-

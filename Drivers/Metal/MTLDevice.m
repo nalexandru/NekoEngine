@@ -1,9 +1,3 @@
-#define Handle __EngineHandle
-
-#include <Render/Device.h>
-
-#undef Handle
-
 #include "MTLDriver.h"
 
 struct RenderDevice *
@@ -26,9 +20,13 @@ MTL_CreateDevice(struct RenderDeviceInfo *info,
 	
 	devProcs->CreateBuffer = (struct Buffer *(*)(struct RenderDevice *, const struct BufferCreateInfo *, uint16_t))MTL_CreateBuffer;
 	devProcs->UpdateBuffer = (void(*)(struct RenderDevice *, struct Buffer *, uint64_t, void *, uint64_t))MTL_UpdateBuffer;
+	devProcs->MapBuffer = (void *(*)(struct RenderDevice *, struct Buffer *))MTL_MapBuffer;
+	devProcs->UnmapBuffer = (void (*)(struct RenderDevice *, struct Buffer *))MTL_UnmapBuffer;
+	devProcs->BufferAddress = (uint64_t(*)(struct RenderDevice *, const struct Buffer *, uint64_t))MTL_BufferAddress;
 	devProcs->DestroyBuffer = (void(*)(struct RenderDevice *, struct Buffer *))MTL_DestroyBuffer;
 	
 	devProcs->CreateAccelerationStructure = (struct AccelerationStructure *(*)(struct RenderDevice *, const struct AccelerationStructureCreateInfo *))MTL_CreateAccelerationStructure;
+	devProcs->AccelerationStructureHandle = (uint64_t(*)(struct RenderDevice *, const struct AccelerationStructure *)) MTL_AccelerationStructureHandle;
 	devProcs->DestroyAccelerationStructure = (void(*)(struct RenderDevice *, struct AccelerationStructure *))MTL_DestroyAccelerationStructure;
 	
 	devProcs->CreateSwapchain = (struct Swapchain *(*)(struct RenderDevice *, struct Surface *))MTL_CreateSwapchain;
@@ -44,9 +42,10 @@ MTL_CreateDevice(struct RenderDeviceInfo *info,
 	devProcs->RayTracingPipeline = (struct Pipeline *(*)(struct RenderDevice *, struct ShaderBindingTable *, uint32_t))MTL_RayTracingPipeline;
 	devProcs->LoadPipelineCache = (void(*)(struct RenderDevice *))MTL_LoadPipelineCache;
 	devProcs->SavePipelineCache = (void(*)(struct RenderDevice *))MTL_LoadPipelineCache;
+	devProcs->DestroyPipeline = (void(*)(struct RenderDevice *, struct Pipeline *))MTL_DestroyPipeline;
 	
-	devProcs->CreateRenderPass = (struct RenderPass *(*)(struct RenderDevice *, const struct RenderPassDesc *))MTL_CreateRenderPass;
-	devProcs->DestroyRenderPass = (void(*)(struct RenderDevice *, struct RenderPass *))MTL_DestroyRenderPass;
+	devProcs->CreateRenderPassDesc = (struct RenderPassDesc *(*)(struct RenderDevice *, const struct AttachmentDesc *, uint32_t, const struct AttachmentDesc *))MTL_CreateRenderPassDesc;
+	devProcs->DestroyRenderPassDesc = (void(*)(struct RenderDevice *, struct RenderPassDesc *))MTL_DestroyRenderPassDesc;
 	
 	devProcs->CreateFramebuffer = (struct Framebuffer *(*)(struct RenderDevice *, const struct FramebufferDesc *))MTL_CreateFramebuffer;
 	devProcs->SetAttachment = (void(*)(struct Framebuffer *, uint32_t, struct Texture *))MTL_SetAttachment;

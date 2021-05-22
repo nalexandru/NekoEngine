@@ -365,4 +365,3 @@ _mapKey(const int key)
 
 	return BTN_KEY_UNRECOGNIZED;
 }
-

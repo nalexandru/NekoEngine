@@ -10,12 +10,14 @@
 #include <Runtime/Array.h>
 #include <Runtime/Queue.h>
 
+#include <System/System.h>
+
 static inline wchar_t *
 Rt_MbsToWcs(const char *str)
 {
 	size_t len = strlen(str);
 
-	wchar_t *ret = (wchar_t *)calloc(len + 1, sizeof(*ret));
+	wchar_t *ret = Sys_Alloc(sizeof(*ret), len + 1, MH_Transient);
 	(void)mbstowcs(ret, str, len);
 
 	return ret;

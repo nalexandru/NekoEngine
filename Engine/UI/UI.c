@@ -28,7 +28,7 @@ UI_InitUI(void)
 		.attachments = &atDesc,
 	};
 	_renderPass = Re_CreateRenderPass(&desc);
-	
+
 	struct FramebufferAttachmentDesc fbAtDesc =
 	{
 		.usage = TU_COLOR_ATTACHMENT | TU_TRANSFER_DST,
@@ -44,7 +44,7 @@ UI_InitUI(void)
 		.renderPass = _renderPass
 	};
 	_framebuffer = Re_CreateFramebuffer(&fbDesc);
-	
+
 	struct BufferCreateInfo vtxInfo =
 	{
 		.desc =
@@ -55,7 +55,7 @@ UI_InitUI(void)
 		},
 	};
 	_vertexBuffer = Re_CreateBuffer(&vtxInfo);
-	
+
 	struct BufferCreateInfo idxInfo =
 	{
 		.desc =
@@ -66,9 +66,9 @@ UI_InitUI(void)
 		},
 	};
 	_indexBuffer = Re_CreateBuffer(&idxInfo);
-	
+
 	struct Shader *shader = Re_GetShader("UI");
-	
+
 	struct BlendAttachmentDesc blendAttachments[] =
 	{
 		{ .enableBlend = false, .writeMask = RE_WRITE_MASK_RGB }
@@ -83,9 +83,9 @@ UI_InitUI(void)
 		.attachments = blendAttachments
 	};
 	_pipeline = Re_GraphicsPipeline(&pipeDesc);
-	
+
 	m4_ortho(&_projection, 0.f, (float)*E_screenWidth, (float)*E_screenHeight, 0.f, 0.f, 1.f);*/
-	
+
 	return true;
 }
 
@@ -111,14 +111,14 @@ UI_InitContext(struct UIContext *ctx, const void **args)
 		else if (!strncmp(arg, "DrawCallCount", len))
 			drawCallCount = atoi((char *)*(++args));
 	}
-	
-	if (!Rt_InitArray(&ctx->vertices, vertexCount, sizeof(struct UIVertex)))
+
+	if (!Rt_InitArray(&ctx->vertices, vertexCount, sizeof(struct UIVertex), MH_Render))
 		return false;
 
-	if (!Rt_InitArray(&ctx->indices, indexCount, sizeof(uint16_t)))
+	if (!Rt_InitArray(&ctx->indices, indexCount, sizeof(uint16_t), MH_Render))
 		return false;
 
-	if (!Rt_InitArray(&ctx->draws, drawCallCount, sizeof(struct UIDrawCall)))
+	if (!Rt_InitArray(&ctx->draws, drawCallCount, sizeof(struct UIDrawCall), MH_Render))
 		return false;
 
 	return true;
@@ -141,4 +141,3 @@ UI_ResetContext(void **comp, void *args)
 	Rt_ClearArray(&ctx->indices, false);
 	Rt_ClearArray(&ctx->draws, false);
 }
-

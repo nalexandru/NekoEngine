@@ -84,4 +84,3 @@ _EnumerateDevices(uint32_t *count, struct AudioDeviceInfo *info)
 	
 	return true;
 }
-

@@ -31,7 +31,7 @@ Vk_ShaderModule(struct RenderDevice *dev, const char *name)
 bool
 Vk_LoadShaders(VkDevice dev)
 {
-	if (!Rt_InitArray(&_modules, 10, sizeof(struct ShaderModuleInfo)))
+	if (!Rt_InitArray(&_modules, 10, sizeof(struct ShaderModuleInfo), MH_RenderDriver))
 		return false;
 
 	_dev = dev;
@@ -116,4 +116,3 @@ _compare(const struct ShaderModuleInfo *item, const uint64_t *hash)
 	else
 		return 1;
 }
-

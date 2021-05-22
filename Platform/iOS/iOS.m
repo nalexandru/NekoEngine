@@ -65,11 +65,16 @@ Sys_MessageBox(const wchar_t *title, const wchar_t *message, int icon)
 																	 message: [NSString stringWithFormat: @"%s", m]
 															  preferredStyle: UIAlertControllerStyleAlert];
 
-		UIAlertAction *act = [UIAlertAction actionWithTitle: @"OK" style: UIAlertActionStyleDefault handler: nil];
+		//__block bool dismissed = false;
+		UIAlertAction *act = [UIAlertAction actionWithTitle: @"OK" style: UIAlertActionStyleDefault handler: ^(UIAlertAction * _Nonnull action) {
+			//dismissed = true;
+		}];
 		
 		[ctl addAction: act];
 		
 		[[(UIWindow *)E_screen rootViewController] presentViewController: ctl animated: true completion: nil];
+		
+		[ctl dismissViewControllerAnimated: true completion: nil];
 	}
 }
 

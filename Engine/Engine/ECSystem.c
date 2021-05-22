@@ -56,7 +56,7 @@ E_RegisterSystemId(const wchar_t *name, const wchar_t *group,
 	sys.name_hash = Rt_HashStringW(name);
 	sys.group_hash = Rt_HashStringW(group);
 
-	sys.comp_types = calloc(num_comp, sizeof(CompTypeId));
+	sys.comp_types = Sys_Alloc(num_comp, sizeof(CompTypeId), MH_System);
 	if (!sys.comp_types)
 		return false;
 
@@ -70,7 +70,7 @@ E_RegisterSystemId(const wchar_t *name, const wchar_t *group,
 		pos = _systems.count;
 
 	if (!Rt_ArrayInsert(&_systems, &sys, pos)) {
-		free(sys.comp_types);
+		Sys_Free(sys.comp_types);
 		return false;
 	}
 
@@ -117,10 +117,10 @@ E_ExecuteSystemGroupS(struct Scene *s, const wchar_t *name)
 bool
 E_InitECSystems(void)
 {
-	if (!Rt_InitArray(&_systems, 40, sizeof(struct ECSystem)))
+	if (!Rt_InitArray(&_systems, 40, sizeof(struct ECSystem), MH_System))
 		return false;
 
-	if (!Rt_InitPtrArray(&_filteredEntities, 100))
+	if (!Rt_InitPtrArray(&_filteredEntities, 100, MH_System))
 		return false;
 
 	return E_RegisterSystems();
@@ -132,7 +132,7 @@ E_TermECSystems(void)
 	size_t i = 0;
 
 	for (i = 0; i < _systems.count; ++i)
-		free(((struct ECSystem *)Rt_ArrayGet(&_systems, i))->comp_types);
+		Sys_Free(((struct ECSystem *)Rt_ArrayGet(&_systems, i))->comp_types);
 
 	Rt_TermArray(&_systems);
 	Rt_TermArray(&_filteredEntities);
@@ -236,4 +236,3 @@ _filterEntities(struct Scene *s, struct Array *ent, CompTypeId *comp_types, size
 			Rt_ArrayAddPtr(ent, comp->_owner);
 	}
 }
-

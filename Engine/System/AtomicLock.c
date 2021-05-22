@@ -39,4 +39,3 @@ Sys_AtomicUnlockWrite(struct AtomicLock *lock)
 {
 	atomic_fetch_sub(&lock->write, 1);
 }
-

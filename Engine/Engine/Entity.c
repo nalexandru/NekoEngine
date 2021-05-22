@@ -9,7 +9,7 @@
 
 #define ENT_MOD	L"Entity"
 
-static struct Array _entity_types;
+static struct Array _entityTypes;
 
 static int _TypeCmp(const void *, const void *);
 static inline bool _AddComponent(struct Scene *s, struct Entity *, CompTypeId, CompHandle);
@@ -24,17 +24,17 @@ E_CreateEntityS(struct Scene *s, const wchar_t *typeName)
 
 	if (typeName) {
 		hash = Rt_HashStringW(typeName);
-		type = Rt_ArrayFind(&_entity_types, &hash, _TypeCmp);
+		type = Rt_ArrayFind(&_entityTypes, &hash, _TypeCmp);
 		ent = E_CreateEntityWithArgsS(s, type->comp_types, NULL, type->comp_count);
 	} else {
-		ent = calloc(1, sizeof(*ent));
+		ent = Sys_Alloc(1, sizeof(*ent), MH_Scene);
 	}
 
 	if (!ent)
 		return ES_INVALID_ENTITY;
 
 	if (!Rt_ArrayAddPtr(&s->entities, ent)) {
-		free(ent);
+		Sys_Free(ent);
 		return ES_INVALID_ENTITY;
 	}
 
@@ -50,19 +50,19 @@ E_CreateEntityWithArgsS(struct Scene *s, const CompTypeId *compTypes, const void
 	if (count > MAX_ENTITY_COMPONENTS)
 		return ES_INVALID_ENTITY;
 
-	ent = calloc(1, sizeof(*ent));
+	ent = Sys_Alloc(1, sizeof(*ent), MH_Scene);
 	if (!ent)
 		return ES_INVALID_ENTITY;
 
 	for (i = 0; i < count; ++i) {
 		if (!_CreateComponent(s, ent, compTypes[i], compArgs ? compArgs[i] : NULL)) {
-			free(ent);
+			Sys_Free(ent);
 			return ES_INVALID_ENTITY;
 		}
 	}
 
 	if (!Rt_ArrayAddPtr(&s->entities, ent)) {
-		free(ent);
+		Sys_Free(ent);
 		return ES_INVALID_ENTITY;
 	}
 
@@ -78,19 +78,19 @@ E_CreateEntityVS(struct Scene *s, int count, const struct EntityCompInfo *info)
 	if (count > MAX_ENTITY_COMPONENTS)
 		return ES_INVALID_ENTITY;
 
-	ent = calloc(1, sizeof(*ent));
+	ent = Sys_Alloc(1, sizeof(*ent), MH_Scene);
 	if (!ent)
 		return ES_INVALID_ENTITY;
 
 	for (i = 0; i < count; ++i) {
 		if (!_CreateComponent(s, ent, E_ComponentTypeId(info[i].type), info[i].args)) {
-			free(ent);
+			Sys_Free(ent);
 			return ES_INVALID_ENTITY;
 		}
 	}
 
 	if (!Rt_ArrayAddPtr(&s->entities, ent)) {
-		free(ent);
+		Sys_Free(ent);
 		return ES_INVALID_ENTITY;
 	}
 
@@ -108,7 +108,7 @@ E_CreateEntityWithComponentsS(struct Scene *s, int count, ...)
 	if (count > MAX_ENTITY_COMPONENTS)
 		return ES_INVALID_ENTITY;
 
-	ent = calloc(1, sizeof(*ent));
+	ent = Sys_Alloc(1, sizeof(*ent), MH_Scene);
 	if (!ent)
 		return ES_INVALID_ENTITY;
 
@@ -117,13 +117,13 @@ E_CreateEntityWithComponentsS(struct Scene *s, int count, ...)
 		handle = va_arg(va, CompHandle);
 
 		if (!_AddComponent(s, ent, E_ComponentTypeS(s, handle), handle)) {
-			free(ent);
+			Sys_Free(ent);
 			return ES_INVALID_ENTITY;
 		}
 	}
 
 	if (!Rt_ArrayAddPtr(&s->entities, ent)) {
-		free(ent);
+		Sys_Free(ent);
 		return ES_INVALID_ENTITY;
 	}
 
@@ -188,7 +188,7 @@ E_DestroyEntityS(struct Scene *s, EntityHandle handle)
 		E_DestroyComponentS(s, ent->comp[i].handle);
 
 	dst_id = ent->id;
-	free(ent);
+	Sys_Free(ent);
 
 	memcpy(Rt_ArrayGet(&s->entities, dst_id), Rt_ArrayLast(&s->entities),
 		sizeof(void *));
@@ -210,7 +210,7 @@ E_RegisterEntityType(const wchar_t *typeName, const CompTypeId *compTypes, uint8
 	type.comp_count = typeCount;
 	memcpy(type.comp_types, compTypes, sizeof(CompTypeId) * typeCount);
 
-	return Rt_ArrayAdd(&_entity_types, &type);
+	return Rt_ArrayAdd(&_entityTypes, &type);
 }
 
 void *
@@ -223,9 +223,9 @@ E_EntityPtrS(struct Scene *s, EntityHandle handle)
 bool
 E_InitEntities(void)
 {
-	memset(&_entity_types, 0x0, sizeof(_entity_types));
+	memset(&_entityTypes, 0x0, sizeof(_entityTypes));
 
-	if (!Rt_InitArray(&_entity_types, 10, sizeof(struct EntityType)))
+	if (!Rt_InitArray(&_entityTypes, 10, sizeof(struct EntityType), MH_System))
 		return false;
 
 	return true;
@@ -234,13 +234,13 @@ E_InitEntities(void)
 void
 E_TermEntities(void)
 {
-	Rt_TermArray(&_entity_types);
+	Rt_TermArray(&_entityTypes);
 }
 
 bool
 E_InitSceneEntities(struct Scene *s)
 {
-	return Rt_InitArray(&s->entities, 100, sizeof(struct Entity *));
+	return Rt_InitArray(&s->entities, 100, sizeof(struct Entity *), MH_Scene);
 }
 
 void
@@ -248,7 +248,7 @@ E_TermSceneEntities(struct Scene *s)
 {
 	size_t i = 0;
 	for (i = 0; i < s->entities.count; ++i)
-		free(Rt_ArrayGetPtr(&s->entities, i));
+		Sys_Free(Rt_ArrayGetPtr(&s->entities, i));
 	Rt_TermArray(&s->entities);
 }
 

@@ -12,4 +12,3 @@ bool InitServer(void);
 void TermServer(void);
 
 #endif /* _DBG_LOGGER_H_ */
-

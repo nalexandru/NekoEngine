@@ -16,9 +16,9 @@
 #include <Scene/Scene.h>
 #include <Scene/Camera.h>
 #include <Render/Render.h>
-#include <Render/Device.h>
-#include <Render/Driver.h>
+#include <Render/Driver/Driver.h>
 #include <Engine/Event.h>
+#include <Engine/Events.h>
 #include <Engine/Entity.h>
 #include <Engine/Version.h>
 #include <Engine/Resource.h>
@@ -99,13 +99,13 @@ E_Init(int argc, char *argv[])
 
 	if (logFile)
 		E_SetCVarStr(L"Engine_LogFile", logFile);
-	
+
 	if (dataDir)
 		E_SetCVarStr(L"Engine_DataDir", dataDir);
-	
+
 	E_screenWidth = &E_GetCVarU32(L"Engine_ScreenWidth", 1280)->u32;
-	E_screenHeight = &E_GetCVarU32(L"Engine_ScreenHeight", 720)->u32;
-	
+	E_screenHeight = &E_GetCVarU32(L"Engine_ScreenHeight", 853)->u32;
+
 	if (App_applicationInfo.version.revision)
 		Sys_LogEntry(EMOD, LOG_INFORMATION, L"%ls v%d.%d.%d.%d", App_applicationInfo.name, App_applicationInfo.version.major,
 			App_applicationInfo.version.minor, App_applicationInfo.version.build, App_applicationInfo.version.revision);
@@ -122,14 +122,14 @@ E_Init(int argc, char *argv[])
 	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Platform: %hs %hs", Sys_OperatingSystem(), Sys_OperatingSystemVersion());
 	Sys_LogEntry(EMOD, LOG_INFORMATION, L"CPU: %hs", Sys_CpuName());
 	Sys_LogEntry(EMOD, LOG_INFORMATION, L"\tFrequency: %d MHz", Sys_CpuFreq());
-	Sys_LogEntry(EMOD, LOG_INFORMATION, L"\tCount: %d", Sys_NumCpus());
+	Sys_LogEntry(EMOD, LOG_INFORMATION, L"\tCount: %d / %d", Sys_CpuCount(), Sys_CpuThreadCount());
 	Sys_LogEntry(EMOD, LOG_INFORMATION, L"\tArchitecture: %hs", Sys_Machine());
 	Sys_LogEntry(EMOD, LOG_INFORMATION, L"\tBig Endian: %hs", Sys_BigEndian() ? "yes" : "no");
 
 	for (int32_t i = 0; i < _subsystemCount; ++i) {
 		if (!_subsystems[i].init)
 			continue;
-			
+
 		if (!_subsystems[i].init()) {
 			wchar_t *msg = Sys_Alloc(sizeof(*msg), 256, MH_Transient);
 			swprintf(msg, 256, L"Failed to initialize %hs. The program will now exit.", _subsystems[i].name);
@@ -142,24 +142,24 @@ E_Init(int argc, char *argv[])
 
 #ifdef _DEBUG
 	wchar_t titleBuff[256];
-	
+
 	swprintf(titleBuff, sizeof(titleBuff) / sizeof(wchar_t), L"%ls v%u.%u.%u", App_applicationInfo.name,
 		App_applicationInfo.version.major, App_applicationInfo.version.minor, App_applicationInfo.version.build);
 
 	if (App_applicationInfo.version.revision)
 		swprintf(titleBuff + wcslen(titleBuff), sizeof(titleBuff) / sizeof(wchar_t) - wcslen(titleBuff),
 			L".%u", App_applicationInfo.version.revision);
-	
+
 	swprintf(titleBuff + wcslen(titleBuff), sizeof(titleBuff) / sizeof(wchar_t) - wcslen(titleBuff),
 		L" - NekoEngine v%u.%u.%u", E_VER_MAJOR, E_VER_MINOR, E_VER_BUILD);
-	
+
 	if (E_VER_REVISION)
 		swprintf(titleBuff + wcslen(titleBuff), sizeof(titleBuff) / sizeof(wchar_t) - wcslen(titleBuff),
 			L".%u", E_VER_REVISION);
-	
+
 	swprintf(titleBuff + wcslen(titleBuff), sizeof(titleBuff) / sizeof(wchar_t) - wcslen(titleBuff),
 		L" - GPU: %hs (%ls)", Re_deviceInfo.deviceName, Re_driver->driverName);
-	
+
 	Sys_SetWindowTitle(titleBuff);
 #else
 	Sys_SetWindowTitle(App_applicationInfo.name);
@@ -171,10 +171,14 @@ E_Init(int argc, char *argv[])
 
 	if (!App_InitApplication(argc, argv))
 		return false;
-	
+
 	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Application started.");
-	
+
 	Sys_ResetHeap(MH_Transient);
+
+	lua_State *vm = E_CreateVM(true);
+	E_LoadScriptFile(vm, "/Scripts/test.lua");
+	E_DestroyVM(vm);
 
 	return true;
 }
@@ -183,26 +187,26 @@ void
 E_Term(void)
 {
 	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Shutting down...");
-	
+
 	Re_WaitIdle();
 
 	App_TermApplication();
 
 	if (Scn_activeScene)
 		Scn_UnloadScene(Scn_activeScene);
-	
+
 	for (int32_t i = _subsystemCount - 1; i >= 0; --i) {
 		if (!_subsystems[i].term)
 			continue;
 		_subsystems[i].term();
 	}
 
+	Sys_LogMemoryStatistics();
 	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Shut down complete.");
 
+	E_TermConfig();
 	Sys_TermMemory();
 	Sys_Term();
-
-	E_TermConfig();
 }
 
 int
@@ -216,7 +220,7 @@ E_Run(void)
 
 		if (Sys_ScreenVisible())
 			E_Frame();
-		
+
 		Sys_ResetHeap(MH_Transient);
 	}
 
@@ -239,9 +243,7 @@ E_Frame(void)
 	}
 
 	E_ExecuteSystemGroupS(Scn_activeScene, ECSYS_GROUP_LOGIC);
-
 	E_ProcessEvents();
-
 	E_ExecuteSystemGroupS(Scn_activeScene, ECSYS_GROUP_POST_LOGIC);
 
 	E_ExecuteSystemGroupS(Scn_activeScene, ECSYS_GROUP_PRE_RENDER);
@@ -261,4 +263,16 @@ void
 E_Shutdown(void)
 {
 	_shutdown = true;
+}
+
+void
+E_ScreenResized(uint32_t width, uint32_t height)
+{
+	*E_screenWidth = width;
+	*E_screenHeight = height;
+
+	if (Re_device)
+		Re_deviceProcs.ScreenResized(Re_device, Re_swapchain);
+
+	E_Broadcast(EVT_SCREEN_RESIZED, NULL);
 }

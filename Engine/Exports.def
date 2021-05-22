@@ -90,7 +90,8 @@ EXPORTS
 	Sys_Hostname
 	Sys_Machine
 	Sys_CpuName
-	Sys_NumCpus
+	Sys_CpuCount
+	Sys_CpuThreadCount
 	Sys_MachineType
 	Sys_Capabilities
 	Sys_ScreenVisible
@@ -98,6 +99,7 @@ EXPORTS
 	Sys_ProcessEvents
 
 	Sys_Alloc
+	Sys_ReAlloc
 	Sys_Free
 	Sys_AlignedAlloc
 	Sys_AlignedFree

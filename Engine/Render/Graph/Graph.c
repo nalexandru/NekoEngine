@@ -21,7 +21,6 @@ static void _BuildPassJob(int worker, struct BuildJobArgs *args);
 
 static struct RenderGraphPass *_renderPasses;
 
-
 void
 Re_BuildGraph(struct RenderGraph *graph)
 {
@@ -34,7 +33,7 @@ void
 Re_ExecuteGraph(struct RenderGraph *graph)
 {
 	for (uint32_t i = 0; i < graph->passCount; ++i) {
-		graph->passes[i].Execute(graph, NULL);
+//		graph->passes[i].Execute(graph, NULL);
 	}
 }
 
@@ -44,4 +43,3 @@ _BuildPassJob(int worker, struct BuildJobArgs *args)
 	for (uint32_t i = 0; i < args->count; ++i)
 		args->passes[i].Setup(NULL);
 }
-

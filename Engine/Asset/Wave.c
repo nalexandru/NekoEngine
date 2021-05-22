@@ -72,7 +72,7 @@ E_LoadWaveAsset(struct Stream *stm, struct AudioClip *ac)
 
 	size = Sys_BigEndian() ? Sys_SwapInt32(waveData.sub_chunk_2_size) : waveData.sub_chunk_2_size;
 
-	ac->data = Sys_Alloc(size, 1, MH_Persistent);
+	ac->data = Sys_Alloc(size, 1, MH_Asset);
 	if (!ac->data)
 		return false;
 

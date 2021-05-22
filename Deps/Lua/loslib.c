@@ -25,7 +25,7 @@
 // I'm too lazy to figgure out what #define is needed so ima just put these here
 struct tm *gmtime_r(const time_t *, struct tm *);
 struct tm *localtime_r(const time_t *, struct tm *);
-#endif 
+#endif
 
 /*
 ** {==================================================================
@@ -46,7 +46,7 @@ struct tm *localtime_r(const time_t *, struct tm *);
 #define L_STRFTIMEWIN "aAbBcdHIjmMpSUwWxXyYzZ%" \
     "||" "#c#x#d#H#I#j#m#M#S#U#w#W#y#Y"  /* two-char options */
 
-#if defined(LUA_USE_WINDOWS)
+#if defined(LUA_USE_WINDOWS) || defined(LUA_USE_XBOX)
 #define LUA_STRFTIMEOPTIONS	L_STRFTIMEWIN
 #elif defined(LUA_USE_C89)
 #define LUA_STRFTIMEOPTIONS	L_STRFTIMEC89
@@ -145,7 +145,7 @@ struct tm *localtime_r(const time_t *, struct tm *);
 
 
 static int os_execute (lua_State *L) {
-#if !defined(__PS3__) && !defined(LUA_IOS)
+#if !defined(__PS3__) && !defined(LUA_USE_XBOX) && !defined(LUA_IOS)
   const char *cmd = luaL_optstring(L, 1, NULL);
   int stat;
   errno = 0;
@@ -180,7 +180,7 @@ static int os_tmpname (lua_State *L) {
   char buff[LUA_TMPNAMBUFSIZE];
   int err;
   lua_tmpnam(buff, err);
-  if (err)
+  if (l_unlikely(err))
     return luaL_error(L, "unable to generate a unique filename");
   lua_pushstring(L, buff);
   return 1;
@@ -191,7 +191,11 @@ static int os_tmpname (lua_State *L) {
 
 
 static int os_getenv (lua_State *L) {
+#if !defined(__PS3__) && !defined(LUA_USE_XBOX)
   lua_pushstring(L, getenv(luaL_checkstring(L, 1)));  /* if NULL push nil */
+#else
+  lua_pushstring(L, NULL);  /* no such thing */
+#endif
   return 1;
 }
 
@@ -221,7 +225,7 @@ static int os_clock (lua_State *L) {
 */
 static void setfield (lua_State *L, const char *key, int value, int delta) {
   #if (defined(LUA_NUMTIME) && LUA_MAXINTEGER <= INT_MAX)
-    if (value > LUA_MAXINTEGER - delta)
+    if (l_unlikely(value > LUA_MAXINTEGER - delta))
       luaL_error(L, "field '%s' is out-of-bound", key);
   #endif
   lua_pushinteger(L, (lua_Integer)value + delta);
@@ -266,9 +270,9 @@ static int getfield (lua_State *L, const char *key, int d, int delta) {
   int t = lua_getfield(L, -1, key);  /* get field and its type */
   lua_Integer res = lua_tointegerx(L, -1, &isnum);
   if (!isnum) {  /* field is not an integer? */
-    if (t != LUA_TNIL)  /* some other value? */
+    if (l_unlikely(t != LUA_TNIL))  /* some other value? */
       return luaL_error(L, "field '%s' is not an integer", key);
-    else if (d < 0)  /* absent field; no default? */
+    else if (l_unlikely(d < 0))  /* absent field; no default? */
       return luaL_error(L, "field '%s' missing in date table", key);
     res = d;
   }

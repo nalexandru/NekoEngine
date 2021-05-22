@@ -8,6 +8,7 @@
 #include <pthread.h>
 
 #include <System/Thread.h>
+#include <System/Memory.h>
 
 #include "UNIXPlatform.h"
 
@@ -20,7 +21,7 @@ Sys_InitThread(Thread *t, const wchar_t *name, void (*proc)(void *), void *args)
 		return false;
 	
 	#if defined(__linux__)	
-	//	pthread_setname_np(_threads[i], name);
+	//	pthread_setname_np(t, name);
 	#else
 	#	warning "Thread naming not implemented for this platform"
 	#endif
@@ -80,7 +81,7 @@ Sys_TermMutex(Mutex mtx)
 bool
 Sys_InitFutex(Futex *ftx)
 {
-	pthread_mutex_t *m = malloc(sizeof(*m));
+	pthread_mutex_t *m = Sys_Alloc(sizeof(*m), 1, MH_System);
 	if (!m)
 		return false;
 	
@@ -105,13 +106,13 @@ void
 Sys_TermFutex(Futex ftx)
 {
 	pthread_mutex_destroy((pthread_mutex_t *)ftx);
-	free(ftx);
+	Sys_Free(ftx);
 }
 
 bool
 Sys_InitConditionVariable(ConditionVariable *cv)
 {
-	pthread_cond_t *c = malloc(sizeof(*c));
+	pthread_cond_t *c = Sys_Alloc(sizeof(*c), 1, MH_System);
 	if (!c)
 		return false;
 	
@@ -148,5 +149,5 @@ void
 Sys_TermConditionVariable(ConditionVariable cv)
 {
 	pthread_cond_destroy((pthread_cond_t *)cv);
-	free(cv);
+	Sys_Free(cv);
 }

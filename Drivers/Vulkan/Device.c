@@ -4,7 +4,7 @@
 
 #include "VulkanDriver.h"
 
-static const char *_devExtensions[10] = 
+static const char *_devExtensions[10] =
 {
 	VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 	VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME
@@ -15,7 +15,7 @@ struct RenderDevice *
 Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProcs, struct RenderContextProcs *ctxProcs)
 {
 	VkPhysicalDevice physDev = (VkPhysicalDevice)info->private;
-	struct RenderDevice *dev = calloc(1, sizeof(*dev));
+	struct RenderDevice *dev = Sys_Alloc(1, sizeof(*dev), MH_RenderDriver);
 
 	if (!dev)
 		return NULL;
@@ -64,7 +64,7 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 	vk12Features->imagelessFramebuffer = VK_TRUE;
 	vk12Features->descriptorIndexing = VK_TRUE;
 	vk12Features->descriptorBindingPartiallyBound = VK_TRUE;
-	vk12Features->bufferDeviceAddress = info->features.rayTracing ? VK_TRUE : VK_FALSE;
+	vk12Features->bufferDeviceAddress = VK_TRUE;
 	vk12Features->timelineSemaphore = VK_TRUE;
 	vk12Features->runtimeDescriptorArray = VK_TRUE;
 	vk12Features->descriptorBindingVariableDescriptorCount = VK_TRUE;
@@ -84,8 +84,11 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 	features->features.fullDrawIndexUint32 = VK_TRUE;
 	features->features.samplerAnisotropy = VK_TRUE;
 
-	if (info->features.textureCompression)
+	if (info->features.bcTextureCompression)
 		features->features.textureCompressionBC = VK_TRUE;
+
+	if (info->features.astcTextureCompression)
+		features->features.textureCompressionASTC_LDR = VK_TRUE;
 
 	// retrieve queue information
 	uint32_t count;
@@ -122,7 +125,7 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 	uint32_t families[3] = { dev->graphicsFamily, dev->computeFamily, dev->transferFamily };
 	uint32_t queueInfoCount = 0;
 	VkDeviceQueueCreateInfo *queueInfo = Sys_Alloc(sizeof(*queueInfo), 3, MH_Transient);
-	
+
 	for (uint32_t i = 0; i < 3; ++i) {
 		bool add = true;
 
@@ -155,7 +158,7 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 	};
 
 	if (vkCreateDevice((VkPhysicalDevice)info->private, &devInfo, Vkd_allocCb, &dev->dev) != VK_SUCCESS)
-		goto error;	
+		goto error;
 
 	volkLoadDevice(dev->dev);
 
@@ -163,14 +166,15 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 	vkGetDeviceQueue(dev->dev, dev->computeFamily, 0, &dev->computeQueue);
 	vkGetDeviceQueue(dev->dev, dev->transferFamily, 0, &dev->transferQueue);
 
-	devProcs->GraphicsPipeline = (struct Pipeline *(*)(struct RenderDevice *, const struct GraphicsPipelineDesc *))Vk_GraphicsPipeline;
-	devProcs->ComputePipeline = (struct Pipeline *(*)(struct RenderDevice *, struct Shader *))Vk_ComputePipeline;
-	devProcs->RayTracingPipeline = (struct Pipeline *(*)(struct RenderDevice *, struct ShaderBindingTable *, uint32_t))Vk_RayTracingPipeline;
-	
-	devProcs->AcquireNextImage = (void *(*)(struct RenderDevice *, struct Swapchain *))Vk_AcquireNextImage;
-	devProcs->Present = (bool(*)(struct RenderDevice *, struct RenderContext *ctx, struct Swapchain *, void *))Vk_Present;
-	devProcs->SwapchainFormat = (enum TextureFormat(*)(struct Swapchain *))Vk_SwapchainFormat;
-	devProcs->SwapchainTexture = (struct Texture *(*)(struct Swapchain *, void *))Vk_SwapchainTexture;
+	devProcs->GraphicsPipeline = Vk_GraphicsPipeline;
+	devProcs->ComputePipeline = Vk_ComputePipeline;
+	devProcs->RayTracingPipeline = Vk_RayTracingPipeline;
+	devProcs->DestroyPipeline = Vk_DestroyPipeline;
+
+	devProcs->AcquireNextImage = Vk_AcquireNextImage;
+	devProcs->Present = Vk_Present;
+	devProcs->SwapchainFormat = Vk_SwapchainFormat;
+	devProcs->SwapchainTexture = Vk_SwapchainTexture;
 	devProcs->ScreenResized = Vk_ScreenResized;
 
 	devProcs->CreateTexture = Vk_CreateTexture;
@@ -185,10 +189,10 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 	devProcs->DestroyBuffer = Vk_DestroyBuffer;
 
 	devProcs->CreateAccelerationStructure = Vk_CreateAccelerationStructure;
-	devProcs->DestroyAccelerationStructure = (void(*)(struct RenderDevice *, struct AccelerationStructure *))Vk_DestroyAccelerationStructure;
+	devProcs->DestroyAccelerationStructure = Vk_DestroyAccelerationStructure;
 
-	devProcs->LoadPipelineCache = (void(*)(struct RenderDevice *))Vk_LoadPipelineCache;
-	devProcs->SavePipelineCache = (void(*)(struct RenderDevice *))Vk_SavePipelineCache;
+	devProcs->LoadPipelineCache = Vk_LoadPipelineCache;
+	devProcs->SavePipelineCache = Vk_SavePipelineCache;
 
 	devProcs->CreateContext = Vk_CreateContext;
 	devProcs->ResetContext = Vk_ResetContext;
@@ -204,8 +208,8 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 	devProcs->SetAttachment = Vk_SetAttachment;
 	devProcs->DestroyFramebuffer = Vk_DestroyFramebuffer;
 
-	devProcs->CreateRenderPass = Vk_CreateRenderPass;
-	devProcs->DestroyRenderPass = Vk_DestroyRenderPass;
+	devProcs->CreateRenderPassDesc = Vk_CreateRenderPassDesc;
+	devProcs->DestroyRenderPassDesc = Vk_DestroyRenderPassDesc;
 
 	devProcs->ShaderModule = Vk_ShaderModule;
 
@@ -217,6 +221,10 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 	devProcs->InitTransientHeap = Vk_InitTransientHeap;
 	devProcs->ResizeTransientHeap = Vk_ResizeTransientHeap;
 	devProcs->TermTransientHeap = Vk_TermTransientHeap;
+
+	devProcs->MapBuffer = Vk_MapBuffer;
+	devProcs->UnmapBuffer = Vk_UnmapBuffer;
+	devProcs->BufferAddress = Vk_BufferAddress;
 
 	Vk_InitContextProcs(ctxProcs);
 
@@ -234,7 +242,7 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 	vkCreateSemaphore(dev->dev, &semInfo, Vkd_allocCb, &dev->frameSemaphore);
 
 	dev->semaphoreValue = 0;
-	dev->frameValues = calloc(RE_NUM_FRAMES, sizeof(*dev->frameValues));
+	dev->frameValues = Sys_Alloc(RE_NUM_FRAMES, sizeof(*dev->frameValues), MH_RenderDriver);
 
 	if (!Vk_CreateDescriptorSet(dev))
 		goto error;
@@ -242,7 +250,7 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 	if (!Vk_LoadShaders(dev->dev))
 		goto error;
 
-	VkFenceCreateInfo fenceInfo = 
+	VkFenceCreateInfo fenceInfo =
 	{
 		.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO
 	};
@@ -264,7 +272,7 @@ error:
 	if (dev->dev)
 		vkDestroyDevice(dev->dev, Vkd_allocCb);
 
-	free(dev);
+	Sys_Free(dev);
 
 	return NULL;
 }
@@ -272,7 +280,7 @@ error:
 bool
 Vk_Execute(struct RenderDevice *dev, struct RenderContext *ctx, bool wait)
 {
-	VkSubmitInfo si = 
+	VkSubmitInfo si =
 	{
 		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
 		.commandBufferCount = 1,
@@ -305,6 +313,6 @@ Vk_DestroyDevice(struct RenderDevice *dev)
 	vkDestroySemaphore(dev->dev, dev->frameSemaphore, Vkd_allocCb);
 	vkDestroyDevice(dev->dev, Vkd_allocCb);
 
-	free(dev->frameValues);
-	free(dev);
+	Sys_Free(dev->frameValues);
+	Sys_Free(dev);
 }

@@ -27,4 +27,3 @@ Sys_Term(void)
 
 	Sys_TermPlatform();
 }
-

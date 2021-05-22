@@ -3,18 +3,18 @@
 
 #include <Render/Types.h>
 
-#define NE_RENDER_DRIVER_ID		0xB15B00B5
-#define NE_RENDER_DRIVER_API	3
+#define NE_RENDER_DRIVER_ID		0xB16B00B5
+#define NE_RENDER_DRIVER_API	11
 
 struct RenderDriver
 {
 	uint32_t identifier;
 	uint32_t apiVersion;
 	wchar_t driverName[64];
-	
+
 	bool (*Init)(void);
 	void (*Term)(void);
-	
+
 	bool (*EnumerateDevices)(uint32_t *count, struct RenderDeviceInfo *devices);
 	struct RenderDevice *(*CreateDevice)(struct RenderDeviceInfo *info,
 										 struct RenderDeviceProcs *devProcs,

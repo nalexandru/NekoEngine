@@ -32,7 +32,7 @@ For a complete introduction to Lua programming, see the book
 
 <P>
 <SMALL>
-Copyright &copy; 2020 Lua.org, PUC-Rio.
+Copyright &copy; 2020&ndash;2021 Lua.org, PUC-Rio.
 Freely available under the terms of the
 <A HREF="http://www.lua.org/license.html">Lua license</A>.
 </SMALL>
@@ -198,7 +198,6 @@ Freely available under the terms of the
 <A HREF="manual.html#pdf-debug.getregistry">debug.getregistry</A><BR>
 <A HREF="manual.html#pdf-debug.getupvalue">debug.getupvalue</A><BR>
 <A HREF="manual.html#pdf-debug.getuservalue">debug.getuservalue</A><BR>
-<A HREF="manual.html#pdf-debug.setcstacklimit">debug.setcstacklimit</A><BR>
 <A HREF="manual.html#pdf-debug.sethook">debug.sethook</A><BR>
 <A HREF="manual.html#pdf-debug.setlocal">debug.setlocal</A><BR>
 <A HREF="manual.html#pdf-debug.setmetatable">debug.setmetatable</A><BR>
@@ -397,6 +396,7 @@ Freely available under the terms of the
 <A HREF="manual.html#lua_callk">lua_callk</A><BR>
 <A HREF="manual.html#lua_checkstack">lua_checkstack</A><BR>
 <A HREF="manual.html#lua_close">lua_close</A><BR>
+<A HREF="manual.html#lua_closeslot">lua_closeslot</A><BR>
 <A HREF="manual.html#lua_compare">lua_compare</A><BR>
 <A HREF="manual.html#lua_concat">lua_concat</A><BR>
 <A HREF="manual.html#lua_copy">lua_copy</A><BR>
@@ -476,7 +476,6 @@ Freely available under the terms of the
 <A HREF="manual.html#lua_resume">lua_resume</A><BR>
 <A HREF="manual.html#lua_rotate">lua_rotate</A><BR>
 <A HREF="manual.html#lua_setallocf">lua_setallocf</A><BR>
-<A HREF="manual.html#lua_setcstacklimit">lua_setcstacklimit</A><BR>
 <A HREF="manual.html#lua_setfield">lua_setfield</A><BR>
 <A HREF="manual.html#lua_setglobal">lua_setglobal</A><BR>
 <A HREF="manual.html#lua_sethook">lua_sethook</A><BR>
@@ -665,10 +664,10 @@ Freely available under the terms of the
 
 <P CLASS="footer">
 Last update:
-Wed Sep 30 06:45:10 -03 2020
+Wed Mar  3 13:04:44 UTC 2021
 </P>
 <!--
-Last change: revised for Lua 5.4.1
+Last change: revised for Lua 5.4.3
 -->
 
 </BODY>

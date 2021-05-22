@@ -17,10 +17,11 @@ struct Queue
 	size_t end;
 	size_t count;
 	size_t elemSize;
+	enum MemoryHeap heap;
 };
 
 static inline bool
-Rt_InitQueue(struct Queue *q, size_t size, size_t elemSize)
+Rt_InitQueue(struct Queue *q, size_t size, size_t elemSize, enum MemoryHeap heap)
 {
 	if (!q)
 		return false;
@@ -28,8 +29,9 @@ Rt_InitQueue(struct Queue *q, size_t size, size_t elemSize)
 	q->count = q->start = q->end = 0;
 	q->elemSize = elemSize;
 	q->size = size;
+	q->heap = heap;
 
-	if ((q->data = reallocarray(NULL, q->size, q->elemSize)) == NULL)
+	if ((q->data = Sys_Alloc(q->size, q->elemSize, q->heap)) == NULL)
 		return false;
 
 	return true;
@@ -38,12 +40,12 @@ Rt_InitQueue(struct Queue *q, size_t size, size_t elemSize)
 #define Rt_InitPtrQueue(a, size) Rt_InitQueue(a, size, sizeof(void *))
 
 static inline bool
-Rt_CloneQueue(struct Queue *dst, const struct Queue *src)
+Rt_CloneQueue(struct Queue *dst, const struct Queue *src, enum MemoryHeap heap)
 {
 	if (!dst || !src)
 		return false;
 
-	void *data = calloc(src->size, src->elemSize);
+	void *data = Sys_Alloc(src->size, src->elemSize, heap);
 	if (!data)
 		return false;
 
@@ -51,6 +53,7 @@ Rt_CloneQueue(struct Queue *dst, const struct Queue *src)
 	memcpy(dst, src, sizeof(*dst));
 
 	dst->data = data;
+	dst->heap = heap;
 
 	return true;
 }
@@ -64,7 +67,7 @@ Rt_ResizeQueue(struct Queue *q, size_t size)
 		return true;
 
 	tmp = q->data;
-	if ((q->data = reallocarray(q->data, size, q->elemSize)) == NULL) {
+	if ((q->data = Sys_ReAlloc(q->data, size, q->elemSize, q->heap)) == NULL) {
 		q->data = tmp;
 		return false;
 	}
@@ -159,7 +162,7 @@ Rt_ClearQueue(struct Queue *q, bool freeMemory)
 		return;
 
 	q->size = 0;
-	free(q->data);
+	Sys_Free(q->data);
 	q->data = NULL;
 }
 

@@ -2,11 +2,12 @@
 #include <Runtime/Runtime.h>
 #include <Scene/Scene.h>
 #include <Engine/Component.h>
+#include <Engine/Events.h>
 
 #include "ECS.h"
 
-static int64_t _next_handle;
-static struct Array _component_types;
+static int64_t _nextHandle;
+static struct Array _componentTypes;
 
 #define COMP_MOD	L"Component"
 
@@ -30,7 +31,7 @@ E_CreateComponentS(struct Scene *s, const wchar_t *typeName, EntityHandle owner,
 		Sys_LogEntry(COMP_MOD, LOG_CRITICAL, L"Type [%ls] does not exist", typeName);
 		return ES_INVALID_COMPONENT;
 	}
-	type = Rt_ArrayGet(&_component_types, id);
+	type = Rt_ArrayGet(&_componentTypes, id);
 
 	a = Rt_ArrayGet(&s->compData, id);
 	if (!a) {
@@ -52,7 +53,7 @@ E_CreateComponentS(struct Scene *s, const wchar_t *typeName, EntityHandle owner,
 	}
 
 	handle->type = id;
-	handle->handle = _next_handle++;
+	handle->handle = _nextHandle++;
 	handle->index = a->count - 1;
 
 	comp->_owner = owner;
@@ -60,7 +61,7 @@ E_CreateComponentS(struct Scene *s, const wchar_t *typeName, EntityHandle owner,
 
 	if (type->create && !type->create(comp, args)) {
 		--a->count;
-		--_next_handle;
+		--_nextHandle;
 		--s->compHandle.count;
 		Sys_LogEntry(COMP_MOD, LOG_CRITICAL, L"Failed to create component of type [%ls]", typeName);
 		return ES_INVALID_COMPONENT;
@@ -77,7 +78,7 @@ E_CreateComponentIdS(struct Scene *s, CompTypeId id, EntityHandle owner, const v
 	struct CompBase *comp = NULL;
 	struct CompHandleData *handle = NULL;
 
-	type = Rt_ArrayGet(&_component_types, id);
+	type = Rt_ArrayGet(&_componentTypes, id);
 	if (!type)
 		return -1;
 
@@ -94,7 +95,7 @@ E_CreateComponentIdS(struct Scene *s, CompTypeId id, EntityHandle owner, const v
 		return ES_INVALID_COMPONENT;
 
 	handle->type = id;
-	handle->handle = _next_handle++;
+	handle->handle = _nextHandle++;
 	handle->index = a->count - 1;
 
 	comp->_owner = owner;
@@ -102,7 +103,7 @@ E_CreateComponentIdS(struct Scene *s, CompTypeId id, EntityHandle owner, const v
 
 	if (type->create && !type->create(comp, args)) {
 		--a->count;
-		--_next_handle;
+		--_nextHandle;
 		--s->compHandle.count;
 		return ES_INVALID_COMPONENT;
 	}
@@ -123,7 +124,7 @@ E_DestroyComponentS(struct Scene *s, CompHandle comp)
 	if (!handle)
 		return;
 
-	type = Rt_ArrayGet(&_component_types, handle->type);
+	type = Rt_ArrayGet(&_componentTypes, handle->type);
 	if (!type)
 		return;
 
@@ -188,7 +189,7 @@ E_ComponentTypeId(const wchar_t *type_name)
 {
 	uint64_t hash = 0;
 	hash = Rt_HashStringW(type_name);
-	return Rt_ArrayFindId(&_component_types, &hash, _CompType_cmp);
+	return Rt_ArrayFindId(&_componentTypes, &hash, _CompType_cmp);
 }
 
 size_t
@@ -225,10 +226,15 @@ E_RegisterComponent(const wchar_t *name, size_t size, size_t alignment, CompInit
 	if (size < sizeof(struct CompBase))
 		return false;
 
-	if (Rt_ArrayFindId(&_component_types, &type.hash, _CompType_cmp) != RT_NOT_FOUND)
+	if (Rt_ArrayFindId(&_componentTypes, &type.hash, _CompType_cmp) != RT_NOT_FOUND)
 		return false;
 
-	return Rt_ArrayAdd(&_component_types, &type);
+	if (!Rt_ArrayAdd(&_componentTypes, &type))
+		return false;
+
+	E_Broadcast(EVT_COMPONENT_REGISTERED, &type.hash);
+
+	return true;
 }
 
 const struct Array *
@@ -243,7 +249,7 @@ E_GetAllComponentsS(struct Scene *s, CompTypeId type)
 bool
 E_InitComponents(void)
 {
-	if (!Rt_InitArray(&_component_types, 40, sizeof(struct CompType)))
+	if (!Rt_InitArray(&_componentTypes, 40, sizeof(struct CompType), MH_System))
 		return false;
 
 	return E_LoadComponents();
@@ -252,7 +258,7 @@ E_InitComponents(void)
 void
 E_TermComponents(void)
 {
-	Rt_TermArray(&_component_types);
+	Rt_TermArray(&_componentTypes);
 }
 
 bool
@@ -260,15 +266,15 @@ E_InitSceneComponents(struct Scene *s)
 {
 	size_t i = 0;
 
-	if (!Rt_InitArray(&s->compData, _component_types.count, sizeof(struct Array)))
+	if (!Rt_InitArray(&s->compData, _componentTypes.count, sizeof(struct Array), MH_Scene))
 		return false;
 
-	if (!Rt_InitArray(&s->compHandle, 100, sizeof(struct CompHandleData)))
+	if (!Rt_InitArray(&s->compHandle, 100, sizeof(struct CompHandleData), MH_Scene))
 		return false;
 
 	Rt_FillArray(&s->compData);
-	for (i = 0; i < _component_types.count; ++i) {
-		struct CompType *type = Rt_ArrayGet(&_component_types, i);
+	for (i = 0; i < _componentTypes.count; ++i) {
+		struct CompType *type = Rt_ArrayGet(&_componentTypes, i);
 		struct Array *a = Rt_ArrayGet(&s->compData, i);
 
 		if (!Rt_InitAlignedArray(a, 10, type->size, type->alignment))
@@ -283,7 +289,7 @@ E_TermSceneComponents(struct Scene *s)
 {
 	size_t i = 0, j = 0;
 	for (i = 0; i < s->compData.count; ++i) {
-		struct CompType *type = Rt_ArrayGet(&_component_types, i);
+		struct CompType *type = Rt_ArrayGet(&_componentTypes, i);
 		struct Array *a = Rt_ArrayGet(&s->compData, i);
 
 		if (type->destroy)

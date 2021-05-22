@@ -81,7 +81,7 @@ void *
 E_ReadFileBlob(File f, int64_t *size, bool transient)
 {
 	uint8_t *ret = NULL;
-	enum MemoryHeap heap = transient ? MH_Transient : MH_Persistent;
+	enum MemoryHeap heap = transient ? MH_Transient : MH_System;
 
 	*size = PHYSFS_fileLength((PHYSFS_file *)f);
 	if (!*size)
@@ -92,7 +92,7 @@ E_ReadFileBlob(File f, int64_t *size, bool transient)
 		return NULL;
 
 	if (PHYSFS_readBytes((PHYSFS_file *)f, ret, *size) != *size) {
-		free(ret);
+		Sys_Free(ret);
 		return NULL;
 	}
 
@@ -103,7 +103,7 @@ char *
 E_ReadFileText(File f, int64_t *size, bool transient)
 {
 	char *ret = NULL;
-	enum MemoryHeap heap = transient ? MH_Transient : MH_Persistent;
+	enum MemoryHeap heap = transient ? MH_Transient : MH_System;
 
 	*size = PHYSFS_fileLength((PHYSFS_file *)f) - PHYSFS_tell((PHYSFS_file *)f);
 	if (!*size)
@@ -114,7 +114,7 @@ E_ReadFileText(File f, int64_t *size, bool transient)
 		return NULL;
 
 	if (PHYSFS_readBytes((PHYSFS_file *)f, ret, *size) != *size) {
-		free(ret);
+		Sys_Free(ret);
 		return NULL;
 	}
 
@@ -382,6 +382,12 @@ E_InitIOSystem(void)
 
 	size_t len = 4096;
 	char *dir = Sys_Alloc(sizeof(*dir), len, MH_Transient);
+	
+	Sys_DirectoryPath(SD_APP_DATA, dir, len);
+	strncat(dir, "/GameData.zip", 14);
+
+	if (Sys_FileExists(dir))
+		PHYSFS_mount(dir, "/", 0);
 	
 	Sys_DirectoryPath(SD_TEMP, dir, len);
 	if (!PHYSFS_mount(dir, "/Temp", 1))

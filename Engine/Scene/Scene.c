@@ -13,7 +13,6 @@
 #include <Runtime/Runtime.h>
 #include <Engine/Resource.h>
 #include <Render/Render.h>
-#include <Render/Buffer.h>
 
 #include "../Engine/ECS.h"
 
@@ -38,7 +37,7 @@ struct SceneData
 		uint32_t xTileCount;
 		uint32_t __padding[2];
 	} lighting;
-	
+
 	struct {
 		float exposure;
 		float gamma;
@@ -57,7 +56,7 @@ static inline void _ReadEntity(struct Scene *s, struct Stream *stm, char *data, 
 struct Scene *
 Scn_CreateScene(const wchar_t *name)
 {
-	/*struct Scene *s = Sys_Alloc(RE_APPEND_DATA_SIZE(struct Scene, Re.sceneRenderDataSize), 1, MH_Persistent);
+	struct Scene *s = Sys_Alloc(sizeof(struct Scene), 1, MH_Scene);
 	if (!s)
 		return NULL;
 
@@ -68,14 +67,13 @@ Scn_CreateScene(const wchar_t *name)
 		return NULL;
 	}
 
-	return s;*/
-	return NULL;
+	return s;
 }
 
 struct Scene *
 Scn_StartSceneLoad(const char *path)
 {
-	struct Scene *s = Sys_Alloc(sizeof(struct Scene), 1, MH_Persistent);
+	struct Scene *s = Sys_Alloc(sizeof(struct Scene), 1, MH_Scene);
 	if (!s)
 		return NULL;
 
@@ -97,8 +95,7 @@ Scn_StartSceneLoad(const char *path)
 void
 Scn_UnloadScene(struct Scene *s)
 {
-	/*Re_Destroy(s->sceneData);
-	Re_Destroy(s->descriptorSet);*/
+	Re_Destroy(s->sceneData);
 
 	E_TermSceneEntities(s);
 	E_TermSceneComponents(s);
@@ -122,10 +119,6 @@ _InitScene(struct Scene *s)
 {
 	if (!E_InitSceneComponents(s) || !E_InitSceneEntities(s))
 		goto error;
-	
-/*	s->descriptorSet = Re_CreateDescriptorSet(_sceneLayout);
-	if (!s->descriptorSet)
-		goto error;
 
 	struct BufferCreateInfo bci =
 	{
@@ -136,18 +129,15 @@ _InitScene(struct Scene *s)
 			.memoryType = MT_GPU_LOCAL
 		}
 	};
-	s->sceneData = Re_CreateBuffer(&bci);
-	if (!s->sceneData)
-		goto error;*/
+
+	if (!Re_CreateBuffer(&bci, &s->sceneData))
+		goto error;
 
 	return true;
 
 error:
-/*	if (s->descriptorSet)
-		Re_DestroyDescriptorSet(s->descriptorSet);
-
 	if (s->sceneData)
-		Re_DestroyBuffer(s->sceneData);*/
+		Re_Destroy(s->sceneData);
 
 	E_TermSceneEntities(s);
 	E_TermSceneComponents(s);
@@ -173,7 +163,7 @@ _LoadJob(int wid, struct Scene *s)
 	data = Sys_Alloc(sizeof(char), BUFF_SZ, MH_Transient);
 	wbuff = Sys_Alloc(sizeof(wchar_t), BUFF_SZ, MH_Transient);
 
-	Rt_InitPtrArray(&args, 10);
+	Rt_InitPtrArray(&args, 10, MH_Scene);
 
 	while (!E_EndOfStream(&stm)) {
 		char *line = E_ReadStreamLine(&stm, data, BUFF_SZ);
@@ -181,7 +171,7 @@ _LoadJob(int wid, struct Scene *s)
 
 		if (!*(line = Rt_SkipWhitespace(line)) || line[0] == '#')
 			continue;
-		
+
 		len = strlen(line);
 
 		if (!strncmp(line, "SceneInfo", len)) {
@@ -199,7 +189,7 @@ _LoadJob(int wid, struct Scene *s)
 
 	s->loaded = true;
 	E_Broadcast(EVT_SCENE_LOADED, s);
-	
+
 	Rt_TermArray(&args);
 }
 
@@ -212,7 +202,7 @@ _ReadSceneInfo(struct Scene *s, struct Stream *stm, char *data, wchar_t *buff)
 
 		if (!*(line = Rt_SkipWhitespace(line)) || line[0] == '#')
 			continue;
-		
+
 		len = strlen(line);
 
 		memset(buff, 0x0, BUFF_SZ * sizeof(*buff));
@@ -242,7 +232,7 @@ _ReadEntity(struct Scene *s, struct Stream *stm, char *data, wchar_t *wbuff, str
 
 		if (!*(line = Rt_SkipWhitespace(line)) || line[0] == '#')
 			continue;
-		
+
 		len = strlen(line);
 
 		if (!strncmp(line, "Component=", 10)) {

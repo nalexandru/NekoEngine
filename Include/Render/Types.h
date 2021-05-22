@@ -3,6 +3,11 @@
 
 #include <Engine/Types.h>
 
+// Resource definitions
+#define RES_MODEL		"Model"
+#define RES_MATERIAL	"Material"
+#define RES_TEXTURE		"Texture"
+
 // Acceleration Structure
 
 enum AccelerationStructureType
@@ -11,8 +16,40 @@ enum AccelerationStructureType
 	AS_BOTTOM_LEVEL
 };
 
+enum AccelerationStructureFlags
+{
+	ASF_ALLOW_UPDATE		= 0x00000001,
+	ASF_ALLOW_COMPACTION	= 0x00000002,
+	ASF_FAST_TRACE			= 0x00000004,
+	ASF_FAST_BUILD			= 0x00000008,
+	ASF_LOW_MEMORY			= 0x00000010
+};
+
+enum AccelerationStructureBuildMode
+{
+	ASB_BUILD	= 0,
+	ASB_UPDATE	= 1
+};
+
+enum AccelerationStructureGeometryType
+{
+	ASG_TRIANGLES	= 0,
+	ASG_AABBS		= 1,
+	ASG_INSTANCES	= 2
+};
+
+enum AccelerationStructureGeometryFlags
+{
+	ASGF_OPAQUE								= 0x00000001,
+	ASGF_NO_DUPLICATE_ANY_HIT_INVOCATION	= 0x00000002
+};
+
 struct AccelerationStructure;
+struct AccelerationStructureAABB;
+struct AccelerationStructureInstance;
 struct AccelerationStructureGeometryDesc;
+struct AccelerationStructureBuildInfo;
+struct AccelerationStructureRangeInfo;
 struct AccelerationStructureDesc;
 struct AccelerationStructureCreateInfo;
 
@@ -40,8 +77,8 @@ typedef uint16_t BufferHandle;
 
 enum IndexType
 {
-	IT_UINT_16,
-	IT_UINT_32
+	IT_UINT_16 = 0,
+	IT_UINT_32 = 1
 };
 
 enum ImageFilter
@@ -58,11 +95,18 @@ enum ImageAspect
 	IA_STENCIL	= 0x00000004
 };
 
+enum RenderCommandContents
+{
+	RENDER_COMMANDS_INLINE = 0,
+	RENDER_COMMANDS_SECONDARY_COMMAND_BUFFERS = 1
+};
+
 struct BlitRegion;
 struct BufferImageCopy;
 struct ImageSubresource;
 struct RenderContextProcs;
 struct RenderContext;
+typedef void * CommandBufferHandle;
 
 // Device
 
@@ -91,6 +135,7 @@ enum GPUMemoryType
 struct Mesh;
 struct Model;
 struct Vertex;
+struct ModelRender;
 struct ModelCreateInfo;
 
 // Pipeline
@@ -227,7 +272,8 @@ enum ShaderStage
 	SS_INTERSECTION = 0x00001000,
 	SS_CALLABLE		= 0x00002000,
 	SS_TASK			= 0x00000040,
-	SS_MESH			= 0x00000080
+	SS_MESH			= 0x00000080,
+    SS_ALL			= 0x7FFFFFFF
 };
 
 struct Shader;
@@ -268,20 +314,23 @@ enum TextureFormat
 	TF_B8G8R8A8_SRGB,
 	TF_R16G16B16A16_SFLOAT,
 	TF_R32G32B32A32_SFLOAT,
-	
+
+	TF_D32_SFLOAT,
+	TF_D24_STENCIL8,
+
 	TF_A2R10G10B10_UNORM,
-	
+
 	TF_R8G8_UNORM,
-	
+
 	TF_R8_UNORM,
-	
+
 	TF_BC5_UNORM,
 	TF_BC5_SNORM,
 	TF_BC6H_UF16,
 	TF_BC6H_SF16,
 	TF_BC7_UNORM,
 	TF_BC7_SRGB,
-	
+
 	TF_ETC2_R8G8B8_UNORM,
 	TF_ETC2_R8G8B8_SRGB,
 	TF_ETC2_R8G8B8A1_UNORM,
@@ -290,7 +339,7 @@ enum TextureFormat
 	TF_EAC_R11_SNORM,
 	TF_EAC_R11G11_UNORM,
 	TF_EAC_R11G11_SNORM,
-	
+
 	TF_INVALID
 };
 
@@ -312,10 +361,14 @@ enum TextureLayout
 	TL_UNKNOWN = 0,
 	TL_COLOR_ATTACHMENT,
 	TL_DEPTH_STENCIL_ATTACHMENT,
-	TL_DEPTH_STENCIL_READ_ONLY,
+	TL_DEPTH_STENCIL_READ_ONLY_ATTACHMENT,
+	TL_DEPTH_ATTACHMENT,
+	TL_STENCIL_ATTACHMENT,
+	TL_DEPTH_READ_ONLY_ATTACHMENT,
 	TL_TRANSFER_SRC,
 	TL_TRANSFER_DST,
-	TL_SHADER_READ_ONLY
+	TL_SHADER_READ_ONLY,
+	TL_PRESENT_SRC
 };
 
 struct Texture;

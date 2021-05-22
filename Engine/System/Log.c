@@ -85,4 +85,3 @@ Sys_LogEntry(const wchar_t *module, uint8_t severity, const wchar_t *format, ...
 
 	fclose(fp);
 }
-

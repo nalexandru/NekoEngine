@@ -3,7 +3,7 @@
 
 #include <Engine/Types.h>
 
-#define NE_AUDIO_DRIVER_ID		0xA55B00B5
+#define NE_AUDIO_DRIVER_ID		0x0B16D1C5
 #define NE_AUDIO_DRIVER_API		1
 
 struct AudioDriver 

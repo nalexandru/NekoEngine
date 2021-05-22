@@ -1,7 +1,9 @@
 file (GLOB src *.c)
 
-set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD 11)
 
-add_definitions(-DLUA_USE_LINUX)
+if(NOT WIN32)
+	add_definitions(-DLUA_USE_LINUX)
+endif()
 
 add_library(Lua STATIC ${src})

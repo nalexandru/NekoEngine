@@ -20,6 +20,8 @@ struct Camera
 
 	float fov, zNear, zFar, aperture;
 	enum ProjectionType projection;
+	
+	uint64_t evt;
 };
 
 ENGINE_API extern struct Camera *Scn_activeCamera;

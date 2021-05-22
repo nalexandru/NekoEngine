@@ -1,11 +1,13 @@
 #include <stdlib.h>
 
+#include <System/Memory.h>
+
 #include "AVFDriver.h"
 
 struct AudioDevice *
 AVF_CreateDevice(struct AudioDeviceInfo *info, struct AudioDeviceProcs *devProcs, struct AudioSourceProcs *srcProcs)
 {
-	struct AudioDevice *ad = calloc(1, sizeof(*ad));
+	struct AudioDevice *ad = Sys_Alloc(sizeof(*ad), 1, MH_AudioDriver);
 
 	return ad;
 }
@@ -13,5 +15,5 @@ AVF_CreateDevice(struct AudioDeviceInfo *info, struct AudioDeviceProcs *devProcs
 void
 AVF_DestroyDevice(struct AudioDevice *dev)
 {
-	free(dev);
+	Sys_Free(dev);
 }

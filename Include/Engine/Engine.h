@@ -21,4 +21,6 @@ double E_Time(void);
 
 void E_Shutdown(void);
 
+void E_ScreenResized(uint32_t width, uint32_t height);
+
 #endif /* _E_ENGINE_H_ */

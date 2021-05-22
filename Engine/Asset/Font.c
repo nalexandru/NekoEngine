@@ -41,7 +41,7 @@ E_LoadFontAsset(struct Stream *stm, struct Font *fnt)
 
 	fnt->glyphCount = hdr.glyphCount;
 
-	fnt->glyphs = calloc(fnt->glyphCount, sizeof(*fnt->glyphs));
+	fnt->glyphs = Sys_Alloc(fnt->glyphCount, sizeof(*fnt->glyphs), MH_Asset);
 	if (E_ReadStream(stm, fnt->glyphs, sizeof(*fnt->glyphs) * fnt->glyphCount) != sizeof(*fnt->glyphs) * fnt->glyphCount)
 		goto error;
 
@@ -73,7 +73,7 @@ E_LoadFontAsset(struct Stream *stm, struct Font *fnt)
 	}
 
 	texDataSize = texSize * texSize;
-	texData = malloc(texDataSize);
+	texData = Sys_Alloc(texDataSize, 1, MH_Asset);
 	if (E_ReadStream(stm, texData, texDataSize) != texDataSize)
 		goto error;
 
@@ -93,8 +93,8 @@ E_LoadFontAsset(struct Stream *stm, struct Font *fnt)
 	return true;
 
 /*error:
-	free(texData);
-	free(fnt->glyphs);
+	Sys_Free(texData);
+	Sys_Free(fnt->glyphs);
 
 	memset(fnt, 0x0, sizeof(*fnt));
 

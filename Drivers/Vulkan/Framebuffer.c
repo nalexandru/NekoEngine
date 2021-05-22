@@ -7,13 +7,15 @@
 struct Framebuffer *
 Vk_CreateFramebuffer(struct RenderDevice *dev, const struct FramebufferDesc *desc)
 {
-	struct Framebuffer *fb = calloc(1, sizeof(*fb));
+	enum MemoryHeap heap = MH_Frame;
+
+	struct Framebuffer *fb = Sys_Alloc(1, sizeof(*fb), heap);
 	if (!fb)
 		return NULL;
 
-	fb->attachments = calloc(desc->attachmentCount, sizeof(*fb->attachments));
+	fb->attachments = Sys_Alloc(desc->attachmentCount, sizeof(*fb->attachments), heap);
 	if (!fb->attachments) {
-		free(fb);
+		Sys_Free(fb);
 		return NULL;
 	}
 
@@ -39,12 +41,12 @@ Vk_CreateFramebuffer(struct RenderDevice *dev, const struct FramebufferDesc *des
 		.pAttachmentImageInfos = imgInfo
 	};
 
-	VkFramebufferCreateInfo fbInfo = 
+	VkFramebufferCreateInfo fbInfo =
 	{
 		.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
 		.pNext = &atInfo,
 		.flags = VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT,
-		.renderPass = desc->renderPass->rp,
+		.renderPass = desc->renderPassDesc->rp,
 		.attachmentCount = desc->attachmentCount,
 		.width = desc->width,
 		.height = desc->height,
@@ -52,8 +54,8 @@ Vk_CreateFramebuffer(struct RenderDevice *dev, const struct FramebufferDesc *des
 	};
 
 	if (vkCreateFramebuffer(dev->dev, &fbInfo, Vkd_allocCb, &fb->fb) != VK_SUCCESS) {
-		free(fb->attachments);
-		free(fb);
+		Sys_Free(fb->attachments);
+		Sys_Free(fb);
 		return NULL;
 	}
 
@@ -76,7 +78,6 @@ Vk_DestroyFramebuffer(struct RenderDevice *dev, struct Framebuffer *fb)
 {
 	vkDestroyFramebuffer(dev->dev, fb->fb, Vkd_allocCb);
 
-	free(fb->attachments);
-	free(fb);
+	Sys_Free(fb->attachments);
+	Sys_Free(fb);
 }
-

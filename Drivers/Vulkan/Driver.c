@@ -4,11 +4,11 @@
 #include <Engine/Job.h>
 #include <System/Log.h>
 #include <System/Memory.h>
-#include <Render/Driver.h>
 #include <Runtime/Runtime.h>
 #include <Engine/Config.h>
 #include <Engine/Version.h>
 #include <Engine/Application.h>
+#include <Render/Driver/Driver.h>
 
 #include "VulkanDriver.h"
 
@@ -78,7 +78,7 @@ _Init(void)
 
 	char *appName = Sys_Alloc(sizeof(char), wcslen(App_applicationInfo.name), MH_Transient);
 	wcstombs(appName, App_applicationInfo.name, wcslen(App_applicationInfo.name));
-	VkApplicationInfo appInfo = 
+	VkApplicationInfo appInfo =
 	{
 		.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
 		.pApplicationName = appName,
@@ -86,9 +86,9 @@ _Init(void)
 			App_applicationInfo.version.minor, App_applicationInfo.version.build),
 		.pEngineName = "NekoEngine",
 		.engineVersion = VK_MAKE_VERSION(E_VER_MAJOR, E_VER_MINOR, E_VER_BUILD),
-		.apiVersion = VK_API_VERSION_1_2 
+		.apiVersion = VK_API_VERSION_1_2
 	};
-	VkInstanceCreateInfo instInfo = 
+	VkInstanceCreateInfo instInfo =
 	{
 		.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
 		.pApplicationInfo = &appInfo,
@@ -114,12 +114,21 @@ _Init(void)
 
 	rc = vkCreateInstance(&instInfo, Vkd_allocCb, &Vkd_inst);
 	if (rc != VK_SUCCESS) {
-		return false;
+		if (rc == VK_ERROR_LAYER_NOT_PRESENT) {
+			Sys_LogEntry(VKDMOD, LOG_WARNING, L"Failed to create instance with validation layers, disabling layers.");
+			instInfo.enabledLayerCount = 0;
+
+			rc = vkCreateInstance(&instInfo, Vkd_allocCb, &Vkd_inst);
+			if (rc != VK_SUCCESS)
+				return false;
+		} else {
+			return false;
+		}
 	}
 
 	volkLoadInstance(Vkd_inst);
 
-	Rt_InitPtrArray(&Vkd_contexts, E_JobWorkerThreads() + 1);
+	Rt_InitPtrArray(&Vkd_contexts, E_JobWorkerThreads() + 1, MH_RenderDriver);
 
 	return true;
 }
@@ -127,13 +136,14 @@ _Init(void)
 static void
 _Term(void)
 {
+	Rt_TermArray(&Vkd_contexts);
 	vkDestroyInstance(Vkd_inst, Vkd_allocCb);
 }
 
 static bool
 _EnumerateDevices(uint32_t *count, struct RenderDeviceInfo *info)
 {
-	if (!*count || !info) 
+	if (!*count || !info)
 		return vkEnumeratePhysicalDevices(Vkd_inst, count, NULL) == VK_SUCCESS;
 
 	VkPhysicalDevice *dev = Sys_Alloc(sizeof(VkPhysicalDevice), *count, MH_Transient);
@@ -182,7 +192,7 @@ _EnumerateDevices(uint32_t *count, struct RenderDeviceInfo *info)
 				!vk12Features->descriptorBindingPartiallyBound || !vk12Features->timelineSemaphore ||
 				!vk12Features->shaderSampledImageArrayNonUniformIndexing || !vk12Features->runtimeDescriptorArray ||
 				!vk12Features->descriptorBindingSampledImageUpdateAfterBind || !vk12Features->descriptorBindingStorageBufferUpdateAfterBind ||
-				!vk12Features->shaderStorageBufferArrayNonUniformIndexing)
+				!vk12Features->shaderStorageBufferArrayNonUniformIndexing || !vk12Features->bufferDeviceAddress)
 			continue;
 
 		if (!edsFeatures->extendedDynamicState)
@@ -191,11 +201,13 @@ _EnumerateDevices(uint32_t *count, struct RenderDeviceInfo *info)
 		snprintf(info[i].deviceName, sizeof(info[i].deviceName), "%s", props->deviceName);
 
 		info[i].features.meshShading = msFeatures->meshShader;
-		info[i].features.rayTracing = rtFeatures->rayTracingPipeline && vk12Features->bufferDeviceAddress;
+		info[i].features.rayTracing = rtFeatures->rayTracingPipeline;
 		info[i].features.discrete = props->deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
 		info[i].features.drawIndirectCount = vk12Features->drawIndirectCount;
-		info[i].features.textureCompression = features->features.textureCompressionBC;
+		info[i].features.bcTextureCompression = features->features.textureCompressionBC;
+		info[i].features.astcTextureCompression = features->features.textureCompressionASTC_LDR;
 		info[i].features.multiDrawIndirect = vk11Features->shaderDrawParameters && vk12Features->drawIndirectCount;
+		info[i].features.secondaryCommandBuffers = true;
 
 		info[i].limits.maxTextureSize = props->limits.maxImageDimension2D;
 
@@ -211,12 +223,21 @@ _EnumerateDevices(uint32_t *count, struct RenderDeviceInfo *info)
 			if (memProps->memoryHeaps[j].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
 				info[i].localMemorySize += memProps->memoryHeaps[j].size;
 
+		info[i].features.coherentMemory = false;
+		const VkMemoryPropertyFlags coherentFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+		for (uint32_t j = 0; j < memProps->memoryTypeCount; ++j) {
+			if (memProps->memoryTypes[j].propertyFlags & coherentFlags) {
+				info[i].features.coherentMemory = true;
+				break;
+			}
+		}
+
 		// this might not be 100% correct
 		info[i].features.unifiedMemory = memProps->memoryHeapCount == 1;
 
 		info[i].private = dev[i];
 	}
-	
+
 	return true;
 }
 

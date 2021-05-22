@@ -2,13 +2,13 @@
 
 #include "VulkanDriver.h"
 
-static VkDeviceMemory _heapMemory;
-static VkDeviceSize *_heapSize, _heapOffset, _peakSize;
+/*static VkDeviceMemory _heapMemory;
+static VkDeviceSize *_heapSize, _heapOffset, _peakSize;*/
 
 struct Texture *
 Vk_CreateTransientTexture(struct RenderDevice *dev, const struct TextureCreateInfo *tci, uint64_t offset)
 {
-	struct Texture *tex = malloc(sizeof(*tex));
+	struct Texture *tex = Sys_Alloc(1, sizeof(*tex), MH_RenderDriver);
 	if (!tex)
 		return NULL;
 
@@ -21,7 +21,7 @@ Vk_CreateTransientTexture(struct RenderDevice *dev, const struct TextureCreateIn
 		goto error;
 
 error:
-	free(tex);
+	Sys_Free(tex);
 	return NULL;
 }
 

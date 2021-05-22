@@ -7,10 +7,6 @@
 #include <Engine/Entity.h>
 #include <Engine/Component.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct EntityComp
 {
 	CompTypeId type;
@@ -77,9 +73,5 @@ void E_TermSceneEntities(struct Scene *s);
 
 bool E_InitECSystems(void);
 void E_TermECSystems(void);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* _ECS_H_ */

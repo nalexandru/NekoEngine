@@ -118,7 +118,7 @@ void
 UI_TermText(void)
 {
 	E_UnloadResource(_sysFont.texture);
-	free(_sysFont.glyphs);
+	Sys_Free(_sysFont.glyphs);
 }
 
 int
@@ -127,4 +127,3 @@ _compare(const void *key, const void *elem)
 	return 0;
 //	return *(uint8_t *)key - 
 }
-

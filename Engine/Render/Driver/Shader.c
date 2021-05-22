@@ -1,10 +1,10 @@
 #include <Engine/IO.h>
 #include <Engine/Asset.h>
-#include <Render/Device.h>
-#include <Render/Shader.h>
+#include <Render/Render.h>
 #include <Runtime/Array.h>
 #include <Runtime/Json.h>
 #include <System/Log.h>
+#include <System/Memory.h>
 
 #define SHMOD					L"Shader"
 
@@ -51,23 +51,27 @@ static int32_t _shaderCompare(const struct Shader *item, const uint64_t *hash);
 bool
 Re_LoadShaders(void)
 {
-	if (!Rt_InitArray(&_shaders, 10, sizeof(struct Shader)))
+	if (!Rt_InitArray(&_shaders, 10, sizeof(struct Shader), MH_Render))
 		return false;
-	
-	if (!Rt_InitArray(&_modules, 10, sizeof(struct ShaderModuleInfo))) {
+
+	if (!Rt_InitArray(&_modules, 10, sizeof(struct ShaderModuleInfo), MH_Render)) {
 		Rt_TermArray(&_shaders);
 		return false;
 	}
-	
+
 	E_ProcessFiles("/Shaders", "shader", true, _loadShader);
 	Rt_ArraySort(&_shaders, (RtSortFunc)&_sortShaders);
-	
+
 	return true;
 }
 
 void
 Re_UnloadShaders(void)
 {
+	struct Shader *s;
+	Rt_ArrayForEach(s, &_shaders)
+		Sys_Free(s->stages);
+
 	Rt_TermArray(&_modules);
 	Rt_TermArray(&_shaders);
 }
@@ -109,10 +113,10 @@ _loadShader(const char *path)
 		.version = SHADER_META_VER,
 		.id = SHADER_META_ID
 	};
-	
+
 	if (!E_LoadMetadata(&meta, path))
 		return;
-	
+
 	struct Shader s = { 0 };
 
 	for (uint32_t i = 0; i < meta.tokenCount; ++i) {
@@ -131,25 +135,25 @@ _loadShader(const char *path)
 		} else if (JSON_STRING("modules", key, meta.json)) {
 			if (val.type != JSMN_ARRAY)
 				continue;
-			
+
 			s.stageCount = val.size;
-			s.stages = calloc(s.stageCount, sizeof(*s.stages));
-			
+			s.stages = Sys_Alloc(s.stageCount, sizeof(*s.stages), MH_Render);
+
 			uint32_t pos = i;
 			for (int j = 0; j < val.size; ++j) {
 				while (meta.tokens[++pos].type != JSMN_OBJECT) ;
-				
+
 				do {
 					jsmntok_t mKey = meta.tokens[++pos];
 					jsmntok_t mVal = meta.tokens[++pos];
-					
+
 					if (JSON_STRING("name", mKey, meta.json)) {
 						char *tmp = meta.json + mVal.start;
 						meta.json[mVal.end] = 0x0;
-						
+
 						uint64_t hash = Rt_HashString(tmp);
 						struct ShaderModuleInfo *modInfo = Rt_ArrayBSearch(&_shaders, &hash, (RtCmpFunc)_shaderModuleCompare);
-						
+
 						if (modInfo) {
 							s.stages[j].module = modInfo->module;
 						} else {
@@ -158,13 +162,13 @@ _loadShader(const char *path)
 								.hash = hash,
 								.module = Re_deviceProcs.ShaderModule(Re_device, tmp)
 							};
-							
+
 							if (!info.module) {
 								return;
 							}
-							
+
 							s.stages[j].module = info.module;
-							
+
 							Rt_ArrayAdd(&_modules, &info);
 							Rt_ArraySort(&_modules, (RtSortFunc)_sortShaderModules);
 						}
@@ -200,11 +204,11 @@ _loadShader(const char *path)
 					}
 				} while (pos + 1 < meta.tokenCount && meta.tokens[pos + 1].type != JSMN_OBJECT);
 			}
-			
+
 			i = pos;
 		}
 	}
-	
+
 	s.hash = Rt_HashString(s.name);
 	Rt_ArrayAdd(&_shaders, &s);
 }

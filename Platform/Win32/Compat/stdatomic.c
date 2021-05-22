@@ -279,4 +279,3 @@ void atomic_flag_clear_explicit(volatile atomic_flag* object, memory_order order
 }
 
 #endif
-

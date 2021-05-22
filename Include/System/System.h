@@ -54,8 +54,9 @@ void Sys_UnmapFile(const void *ptr, uint64_t size);
 const char *Sys_Hostname(void);
 const char *Sys_Machine(void);
 const char *Sys_CpuName(void);
-int32_t Sys_CpuFreq(void);
-int32_t Sys_NumCpus(void);
+uint32_t Sys_CpuFreq(void);
+uint32_t Sys_CpuCount(void);
+uint32_t Sys_CpuThreadCount(void);
 
 const char *Sys_OperatingSystem(void);
 const char *Sys_OperatingSystemVersion(void);
@@ -76,6 +77,7 @@ void Sys_MSleep(uint32_t msec);
 void Sys_USleep(uint32_t usec);
 
 void Sys_DirectoryPath(enum SystemDirectory sd, char *out, size_t len);
+bool Sys_FileExists(const char *path);
 bool Sys_DirectoryExists(const char *path);
 bool Sys_CreateDirectory(const char *path);
 

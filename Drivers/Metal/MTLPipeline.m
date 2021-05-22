@@ -2,8 +2,6 @@
 
 #include <Engine/IO.h>
 #include <System/Log.h>
-#include <Render/Device.h>
-#include <Render/Pipeline.h>
 
 #undef Handle
 
@@ -34,7 +32,7 @@ MTL_GraphicsPipeline(id<MTLDevice> dev, const struct GraphicsPipelineDesc *gpDes
 	desc.rasterizationEnabled = true;
 	
 	for (uint32_t i = 0; i < gpDesc->attachmentCount; ++i) {
-		desc.colorAttachments[i].pixelFormat = gpDesc->renderPass->attachmentFormats[i];
+		desc.colorAttachments[i].pixelFormat = gpDesc->renderPassDesc->attachmentFormats[i];
 		desc.colorAttachments[i].blendingEnabled = gpDesc->attachments[i].enableBlend;
 	
 		desc.colorAttachments[i].rgbBlendOperation = NeToMTLBlendOperation(gpDesc->attachments[i].colorOp);
@@ -59,7 +57,7 @@ MTL_GraphicsPipeline(id<MTLDevice> dev, const struct GraphicsPipelineDesc *gpDes
 		return NULL;
 	}
 		
-	struct Pipeline *p = malloc(sizeof(*p));
+	struct Pipeline *p = Sys_Alloc(sizeof(*p), 1, MH_RenderDriver);
 	p->type = PS_RENDER;
 		
 	switch (gpDesc->flags & RE_TOPOLOGY_BITS) {
@@ -103,7 +101,7 @@ MTL_ComputePipeline(id<MTLDevice> dev, struct Shader *sh)
 	[_cache addComputePipelineFunctionsWithDescriptor: desc error: nil];
 	
 	if (pso) {
-		struct Pipeline *p = malloc(sizeof(*p));
+		struct Pipeline *p = Sys_Alloc(sizeof(*p), 1, MH_RenderDriver);
 		p->type = PS_COMPUTE;
 		p->computeState = pso;
 		
@@ -132,7 +130,7 @@ MTL_RayTracingPipeline(id<MTLDevice> dev, struct ShaderBindingTable *sbt, uint32
 	[desc autorelease];
 	
 	if (pso) {
-		struct Pipeline *p = malloc(sizeof(*p));
+		struct Pipeline *p = Sys_Alloc(sizeof(*p), 1, MH_RenderDriver);
 		p->type = PS_RAY_TRACING;
 		p->render.state = pso;
 		
@@ -174,4 +172,15 @@ MTL_SavePipelineCache(id<MTLDevice> dev)
 	[desc release];
 	[_cache release];
 	[cacheUrl release];
+}
+
+void
+MTL_DestroyPipeline(id<MTLDevice> dev, struct Pipeline *p)
+{
+	switch (p->type) {
+	case PS_RENDER:
+	case PS_RAY_TRACING: [p->render.state release]; break;
+	case PS_COMPUTE: [p->computeState release]; break;
+	}
+	Sys_Free(p);
 }

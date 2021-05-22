@@ -1,15 +1,16 @@
 #include <Scene/Camera.h>
 #include <Scene/Transform.h>
 #include <Engine/Engine.h>
-//#include <Render/Render.h>
+#include <Engine/Event.h>
+#include <Engine/Events.h>
 
 struct Camera *Scn_activeCamera = NULL;
+
+static void _RebuildProjection(struct Camera *cam, void *args);
 
 bool
 Scn_InitCamera(struct Camera *cam, const void **args)
 {
-/*	bool infinite = false;
-
 	m4_ident(&cam->viewMatrix);
 
 	cam->fov = 90.f;
@@ -17,33 +18,27 @@ Scn_InitCamera(struct Camera *cam, const void **args)
 	cam->zFar = 1024.f;
 	cam->aperture = 0.0016f;
 
-	for (; *args; ++args) {
+	for (; args && *args; ++args) {
 		const char *arg = *args;
 		size_t len = strlen(arg);
 
 		if (!strncmp(arg, "Active", len)) {
 			if (!strncmp(*(++args), "true", 4))
-				Scn_ActiveCamera = cam;
+				Scn_activeCamera = cam;
 		} else if (!strncmp(arg, "Fov", len)) {
 			cam->fov = (float)atof(*(++args));
 		} else if (!strncmp(arg, "Near", len)) {
 			cam->zNear = (float)atof(*(++args));
 		} else if (!strncmp(arg, "Far", len)) {
 			cam->zFar = (float)atof(*(++args));
-		} else if (!strncmp(arg, "InfinitePerspective", len)) {
-			infinite = !strncmp(*(++args), "true", 4);
 		} else if (!strncmp(arg, "Aperture", len)) {
 			cam->zFar = (float)atof(*(++args));
 		}
 	}
 
-	if (infinite) {
-	} else {
-		if (!Re.info.negativeDepth)
-			m4_perspective(&cam->projMatrix, cam->fov, (float)*E_screenWidth / (float)*E_screenHeight, cam->zNear, cam->zFar);
-		else
-			m4_perspective_nd(&cam->projMatrix, cam->fov, (float)*E_screenWidth / (float)*E_screenHeight, cam->zNear, cam->zFar);
-	}*/
+	m4_infinite_perspective_rz(&cam->projMatrix, cam->fov, (float)*E_screenWidth / (float)*E_screenHeight, cam->zNear);
+
+	cam->evt = E_RegisterHandler(EVT_SCREEN_RESIZED, (EventHandlerProc)_RebuildProjection, cam);
 
 	return true;
 }
@@ -51,7 +46,7 @@ Scn_InitCamera(struct Camera *cam, const void **args)
 void
 Scn_TermCamera(struct Camera *cam)
 {
-
+	E_UnregisterHandler(cam->evt);
 }
 
 void
@@ -79,3 +74,8 @@ Scn_UpdateCamera(void **comp, void *args)
 	m4_mul(&cam->viewMatrix, &m_rot, &m_pos);
 }
 
+static void
+_RebuildProjection(struct Camera *cam, void *args)
+{
+	m4_infinite_perspective_rz(&cam->projMatrix, cam->fov, (float)*E_screenWidth / (float)*E_screenHeight, cam->zNear);
+}

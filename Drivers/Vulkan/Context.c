@@ -14,7 +14,7 @@ struct SubmitInfo
 struct RenderContext *
 Vk_CreateContext(struct RenderDevice *dev)
 {
-	struct RenderContext *ctx = calloc(1, sizeof(*ctx));
+	struct RenderContext *ctx = Sys_Alloc(1, sizeof(*ctx), MH_RenderDriver);
 	if (!ctx)
 		return NULL;
 
@@ -24,15 +24,16 @@ Vk_CreateContext(struct RenderDevice *dev)
 		.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,
 	};
 
-	struct Array *arrays = calloc(RE_NUM_FRAMES * 3, sizeof(*arrays));
+	struct Array *arrays = Sys_Alloc(RE_NUM_FRAMES * 4, sizeof(*arrays), MH_RenderDriver);
 	if (!arrays)
 		return NULL;
 
 	ctx->graphicsCmdBuffers = arrays;
-	ctx->computeCmdBuffers = &arrays[RE_NUM_FRAMES];
-	ctx->transferCmdBuffers = &arrays[RE_NUM_FRAMES * 2];
+	ctx->secondaryCmdBuffers = &arrays[RE_NUM_FRAMES];
+	ctx->computeCmdBuffers = &arrays[RE_NUM_FRAMES * 2];
+	ctx->transferCmdBuffers = &arrays[RE_NUM_FRAMES * 3];
 
-	VkCommandPool *pools = calloc(RE_NUM_FRAMES * 3, sizeof(*pools));
+	VkCommandPool *pools = Sys_Alloc(RE_NUM_FRAMES * 3, sizeof(*pools), MH_RenderDriver);
 	if (!pools)
 		return NULL;
 
@@ -53,13 +54,16 @@ Vk_CreateContext(struct RenderDevice *dev)
 		if (vkCreateCommandPool(dev->dev, &poolInfo, Vkd_allocCb, &ctx->transferPools[i]) != VK_SUCCESS)
 			goto error;
 
-		if (!Rt_InitPtrArray(&ctx->graphicsCmdBuffers[i], 10))
+		if (!Rt_InitPtrArray(&ctx->graphicsCmdBuffers[i], 10, MH_RenderDriver))
 			goto error;
-	
-		if (!Rt_InitPtrArray(&ctx->transferCmdBuffers[i], 10))
+
+		if (!Rt_InitPtrArray(&ctx->transferCmdBuffers[i], 10, MH_RenderDriver))
 			goto error;
-	
-		if (!Rt_InitPtrArray(&ctx->computeCmdBuffers[i], 10))
+
+		if (!Rt_InitPtrArray(&ctx->computeCmdBuffers[i], 10, MH_RenderDriver))
+			goto error;
+
+		if (!Rt_InitPtrArray(&ctx->secondaryCmdBuffers[i], 10, MH_RenderDriver))
 			goto error;
 	}
 
@@ -78,8 +82,9 @@ error:
 				vkDestroyCommandPool(dev->dev, pools[i], Vkd_allocCb);
 	}
 
-	free(pools);
-	free(ctx);
+	Sys_Free(arrays);
+	Sys_Free(pools);
+	Sys_Free(ctx);
 
 	return NULL;
 }
@@ -87,20 +92,26 @@ error:
 void
 Vk_ResetContext(struct RenderDevice *dev, struct RenderContext *ctx)
 {
+	if (ctx->secondaryCmdBuffers[Re_frameId].count) {
+		vkFreeCommandBuffers(dev->dev, ctx->graphicsPools[Re_frameId],
+			(uint32_t)ctx->secondaryCmdBuffers[Re_frameId].count, (const VkCommandBuffer *)ctx->secondaryCmdBuffers[Re_frameId].data);
+		Rt_ClearArray(&ctx->secondaryCmdBuffers[Re_frameId], false);
+	}
+
 	if (ctx->graphicsCmdBuffers[Re_frameId].count) {
 		vkFreeCommandBuffers(dev->dev, ctx->graphicsPools[Re_frameId],
 			(uint32_t)ctx->graphicsCmdBuffers[Re_frameId].count, (const VkCommandBuffer *)ctx->graphicsCmdBuffers[Re_frameId].data);
 		vkResetCommandPool(dev->dev, ctx->graphicsPools[Re_frameId], VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
 		Rt_ClearArray(&ctx->graphicsCmdBuffers[Re_frameId], false);
 	}
-	
+
 	if (ctx->transferCmdBuffers[Re_frameId].count) {
 		vkFreeCommandBuffers(dev->dev, ctx->transferPools[Re_frameId],
 			(uint32_t)ctx->transferCmdBuffers[Re_frameId].count, (const VkCommandBuffer *)ctx->transferCmdBuffers[Re_frameId].data);
 		vkResetCommandPool(dev->dev, ctx->transferPools[Re_frameId], VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
 		Rt_ClearArray(&ctx->transferCmdBuffers[Re_frameId], false);
 	}
-	
+
 	if (ctx->computeCmdBuffers[Re_frameId].count) {
 		vkFreeCommandBuffers(dev->dev, ctx->computePools[Re_frameId],
 			(uint32_t)ctx->computeCmdBuffers[Re_frameId].count, (const VkCommandBuffer *)ctx->computeCmdBuffers[Re_frameId].data);
@@ -119,13 +130,37 @@ Vk_DestroyContext(struct RenderDevice *dev, struct RenderContext *ctx)
 		vkDestroyCommandPool(dev->dev, ctx->computePools[i], Vkd_allocCb);
 		vkDestroyCommandPool(dev->dev, ctx->transferPools[i], Vkd_allocCb);
 		Rt_TermArray(&ctx->graphicsCmdBuffers[i]);
+		Rt_TermArray(&ctx->secondaryCmdBuffers[i]);
 		Rt_TermArray(&ctx->transferCmdBuffers[i]);
 		Rt_TermArray(&ctx->computeCmdBuffers[i]);
 	}
 
-	free(ctx->graphicsCmdBuffers);
-	free(ctx->graphicsPools);
-	free(ctx);
+	Sys_Free(ctx->graphicsCmdBuffers);
+	Sys_Free(ctx->graphicsPools);
+	Sys_Free(ctx);
+}
+
+static CommandBufferHandle
+_BeginSecondary(struct RenderContext *ctx, struct RenderPassDesc *passDesc)
+{
+	ctx->cmdBuffer = Vkd_AllocateCmdBuffer(ctx->dev, VK_COMMAND_BUFFER_LEVEL_SECONDARY,
+														ctx->graphicsPools[Re_frameId], &ctx->secondaryCmdBuffers[Re_frameId]);
+	assert(ctx->cmdBuffer);
+
+	VkCommandBufferInheritanceInfo inheritanceInfo =
+	{
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+		.renderPass = passDesc->rp,
+	};
+	VkCommandBufferBeginInfo beginInfo =
+	{
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT | VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT,
+		.pInheritanceInfo = &inheritanceInfo
+	};
+	vkBeginCommandBuffer(ctx->cmdBuffer, &beginInfo);
+
+	return ctx->cmdBuffer;
 }
 
 static void
@@ -195,22 +230,19 @@ _PushConstants(struct RenderContext *ctx, enum ShaderStage stage, uint32_t size,
 static void
 _BindIndexBuffer(struct RenderContext *ctx, struct Buffer *buff, uint64_t offset, enum IndexType type)
 {
-	vkCmdBindIndexBuffer(ctx->cmdBuffer, buff->buff, offset, type == IT_UINT_32 ? VK_INDEX_TYPE_UINT32 : VK_INDEX_TYPE_UINT16);
+	vkCmdBindIndexBuffer(ctx->cmdBuffer, buff->buff, offset, type);
 }
 
 static void
-_ExecuteSecondary(struct RenderContext *ctx, struct RenderContext **contexts, uint32_t count)
+_ExecuteSecondary(struct RenderContext *ctx, CommandBufferHandle *cmdBuffers, uint32_t count)
 {
-	VkCommandBuffer *buffers = Sys_Alloc(sizeof(*buffers), count, MH_Transient);
-	for (uint32_t i = 0; i < count; ++i)
-		buffers[i] = contexts[i]->cmdBuffer;
-	vkCmdExecuteCommands(ctx->cmdBuffer, count, buffers);
+	vkCmdExecuteCommands(ctx->cmdBuffer, count, (VkCommandBuffer *)cmdBuffers);
 }
 
 static void
-_BeginRenderPass(struct RenderContext *ctx, struct RenderPass *pass, struct Framebuffer *fb)
+_BeginRenderPass(struct RenderContext *ctx, struct RenderPassDesc *passDesc, struct Framebuffer *fb, enum RenderCommandContents contents)
 {
-	VkRenderPassAttachmentBeginInfo atbi = 
+	VkRenderPassAttachmentBeginInfo atbi =
 	{
 		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO,
 		.attachmentCount = fb->attachmentCount,
@@ -220,13 +252,13 @@ _BeginRenderPass(struct RenderContext *ctx, struct RenderPass *pass, struct Fram
 	{
 		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
 		.pNext = &atbi,
-		.renderPass = pass->rp,
+		.renderPass = passDesc->rp,
 		.framebuffer = fb->fb,
 		.renderArea = { { 0, 0 }, { fb->width, fb->height } },
 		.clearValueCount = 1,
-		.pClearValues = pass->clearValues
+		.pClearValues = passDesc->clearValues
 	};
-	vkCmdBeginRenderPass(ctx->cmdBuffer, &rpbi, VK_SUBPASS_CONTENTS_INLINE);
+	vkCmdBeginRenderPass(ctx->cmdBuffer, &rpbi, contents);
 }
 
 static void
@@ -298,9 +330,55 @@ _TraceRaysIndirect(struct RenderContext *ctx, struct Buffer *buff, uint64_t offs
 }
 
 static void
-_BuildAccelerationStructure(struct RenderContext *ctx, struct AccelerationStructure *as, struct Buffer *scratch)
+_BuildAccelerationStructures(struct RenderContext *ctx, uint32_t count, struct AccelerationStructureBuildInfo *buildInfo, const struct AccelerationStructureRangeInfo **rangeInfo)
 {
-//	vkCmdBuildAccelerationStructuresKHR(ctx->cmdBuffer)
+	VkAccelerationStructureBuildGeometryInfoKHR *geomInfo = Sys_Alloc(count, sizeof(*geomInfo), MH_Transient);
+
+	for (uint32_t i = 0; i < count; ++i) {
+		const struct AccelerationStructureBuildInfo *src = &buildInfo[i];
+		VkAccelerationStructureBuildGeometryInfoKHR *dst = &geomInfo[i];
+
+		dst->sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+		dst->type = src->type;
+		dst->flags = src->flags;
+		dst->mode = src->mode;
+		dst->srcAccelerationStructure = src->src ? src->src->as : VK_NULL_HANDLE;
+		dst->dstAccelerationStructure = src->dst ? src->dst->as : VK_NULL_HANDLE;
+		dst->geometryCount = src->geometryCount;
+		dst->scratchData.deviceAddress = src->scratchAddress;
+
+		VkAccelerationStructureGeometryKHR *geom = Sys_Alloc(src->geometryCount, sizeof(*geom), MH_Transient);
+		dst->pGeometries = geom;
+
+		for (uint32_t j = 0; j < src->geometryCount; ++j) {
+			const struct AccelerationStructureGeometryDesc *srcGeom = &src->geometries[j];
+			VkAccelerationStructureGeometryKHR *dstGeom = &geom[j];
+
+			dstGeom->sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
+			dstGeom->geometryType = srcGeom->type;
+
+			if (srcGeom->type == ASG_TRIANGLES) {
+				dstGeom->geometry.triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
+				dstGeom->geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT; // FIXME
+				dstGeom->geometry.triangles.vertexData.deviceAddress = srcGeom->triangles.vertexBufferAddress;
+				dstGeom->geometry.triangles.vertexStride = srcGeom->triangles.stride;
+				dstGeom->geometry.triangles.maxVertex = srcGeom->triangles.vertexCount;
+				dstGeom->geometry.triangles.indexType = srcGeom->triangles.indexType;
+				dstGeom->geometry.triangles.indexData.deviceAddress = srcGeom->triangles.indexBufferAddress;
+				dstGeom->geometry.triangles.transformData.deviceAddress = srcGeom->triangles.transformBufferAddress;
+			} else if (srcGeom->type == ASG_INSTANCES) {
+				dstGeom->geometry.instances.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR;
+				dstGeom->geometry.instances.arrayOfPointers = VK_FALSE;
+				dstGeom->geometry.instances.data.deviceAddress = srcGeom->instances.address;
+			} else if (srcGeom->type == ASG_AABBS) {
+				dstGeom->geometry.aabbs.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_AABBS_DATA_KHR;
+				dstGeom->geometry.aabbs.stride = srcGeom->aabbs.stride;
+				dstGeom->geometry.aabbs.data.deviceAddress = srcGeom->aabbs.address;
+			}
+		}
+	}
+
+	vkCmdBuildAccelerationStructuresKHR(ctx->cmdBuffer, count, geomInfo, (const VkAccelerationStructureBuildRangeInfoKHR * const *)rangeInfo);
 }
 
 static void
@@ -342,7 +420,7 @@ _CopyBufferToImage(struct RenderContext *ctx, const struct Buffer *src, struct T
 		.bufferOffset = bic->bufferOffset,
 		.bufferRowLength = bic->rowLength,
 		.bufferImageHeight = bic->imageHeight,
-		.imageSubresource = 
+		.imageSubresource =
 		{
 			.aspectMask = bic->subresource.aspect,
 			.mipLevel = bic->subresource.mipLevel,
@@ -363,7 +441,7 @@ _CopyImageToBuffer(struct RenderContext *ctx, const struct Texture *src, struct 
 		.bufferOffset = bic->bufferOffset,
 		.bufferRowLength = bic->rowLength,
 		.bufferImageHeight = bic->imageHeight,
-		.imageSubresource = 
+		.imageSubresource =
 		{
 			.aspectMask = bic->subresource.aspect,
 			.mipLevel = bic->subresource.mipLevel,
@@ -417,6 +495,7 @@ _Submit(struct RenderDevice *dev, struct RenderContext *ctx)
 void
 Vk_InitContextProcs(struct RenderContextProcs *p)
 {
+	p->BeginSecondary = _BeginSecondary;
 	p->BeginDrawCommandBuffer = _BeginDrawCommandBuffer;
 	p->BeginComputeCommandBuffer = _BeginComputeCommandBuffer;
 	p->BeginTransferCommandBuffer = _BeginTransferCommandBuffer;
@@ -437,7 +516,7 @@ Vk_InitContextProcs(struct RenderContextProcs *p)
 	p->DispatchIndirect = _DispatchIndirect;
 	p->TraceRays = _TraceRays;
 	p->TraceRaysIndirect = _TraceRaysIndirect;
-	p->BuildAccelerationStructure = _BuildAccelerationStructure;
+	p->BuildAccelerationStructures = _BuildAccelerationStructures;
 	p->Barrier = _Barrier;
 	p->Transition = _Transition;
 	p->CopyBuffer = _CopyBuffer;
@@ -447,4 +526,3 @@ Vk_InitContextProcs(struct RenderContextProcs *p)
 	p->Blit = _Blit;
 	p->Submit = _Submit;
 }
-

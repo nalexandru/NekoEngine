@@ -2,7 +2,6 @@
 #define _AU_DEVICE_H_
 
 #include <Engine/Types.h>
-#include <Render/Context.h>
 
 struct AudioDeviceInfo
 {

@@ -8,8 +8,8 @@ typedef void (*JobProc)(int, void *);
 
 bool E_InitJobSystem(void);
 
-int E_JobWorkerThreads(void);
-int E_WorkerId(void);
+uint32_t E_JobWorkerThreads(void);
+uint32_t E_WorkerId(void);
 
 uint64_t E_ExecuteJob(JobProc proc, void *args, void (*completed)(uint64_t));
 uint64_t E_DispatchJobs(uint64_t count, JobProc proc, void **args, void (*completed)(uint64_t));

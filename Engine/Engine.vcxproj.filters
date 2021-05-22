@@ -100,6 +100,24 @@
     <Filter Include="Header Files\Render\Graph">
       <UniqueIdentifier>{63ef7c67-fbdd-4c68-8769-6c6b0b3e2098}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Render\Driver">
+      <UniqueIdentifier>{be849537-2896-421d-8261-40cdf33e34e1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Render\Driver">
+      <UniqueIdentifier>{111cfef9-0150-40bb-af27-51629c0e2882}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Render\Graph">
+      <UniqueIdentifier>{c3e7f9ab-45d3-4569-8e49-5eb3410ea621}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Render\Pass">
+      <UniqueIdentifier>{47b0f0d4-ac1d-4f9f-b22c-79722f5e6a89}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Render\Components">
+      <UniqueIdentifier>{440ccbb9-dc58-4f3e-9947-79bfa91e0900}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Render\Components">
+      <UniqueIdentifier>{a051034a-1b2f-401c-ae89-e38bf8808dd3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Include\System\System.h">
@@ -119,9 +137,6 @@
     </ClInclude>
     <ClInclude Include="..\Include\Runtime\Array.h">
       <Filter>Header Files\Runtime</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Render\Device.h">
-      <Filter>Header Files\Render</Filter>
     </ClInclude>
     <ClInclude Include="..\Include\Engine\Job.h">
       <Filter>Header Files\Engine</Filter>
@@ -230,9 +245,6 @@
     </ClInclude>
     <ClInclude Include="..\Include\Math\sse\vec4_sse.h">
       <Filter>Header Files\Math\sse</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Render\Texture.h">
-      <Filter>Header Files\Render</Filter>
     </ClInclude>
     <ClInclude Include="..\Include\System\AtomicLock.h">
       <Filter>Header Files\System</Filter>
@@ -390,46 +402,10 @@
     <ClInclude Include="..\Platform\Win32\Win32Platform.h">
       <Filter>Source Files\Platform</Filter>
     </ClInclude>
-    <ClInclude Include="..\Include\Render\Context.h">
-      <Filter>Header Files\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Render\Driver.h">
-      <Filter>Header Files\Render</Filter>
-    </ClInclude>
     <ClInclude Include="..\Platform\Win32\Compat\stdatomic.h">
       <Filter>Source Files\Platform\Compat</Filter>
     </ClInclude>
-    <ClInclude Include="..\Include\Render\AccelerationStructure.h">
-      <Filter>Header Files\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Render\Buffer.h">
-      <Filter>Header Files\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Render\Pipeline.h">
-      <Filter>Header Files\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Render\ShaderBindingTable.h">
-      <Filter>Header Files\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Render\TransientResources.h">
-      <Filter>Header Files\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Render\Framebuffer.h">
-      <Filter>Header Files\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Render\RenderPass.h">
-      <Filter>Header Files\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Render\Swapchain.h">
-      <Filter>Header Files\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Render\DescriptorSet.h">
-      <Filter>Header Files\Render</Filter>
-    </ClInclude>
     <ClInclude Include="..\Include\Render\Model.h">
-      <Filter>Header Files\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Render\Shader.h">
       <Filter>Header Files\Render</Filter>
     </ClInclude>
     <ClInclude Include="..\Include\Runtime\Queue.h">
@@ -444,9 +420,6 @@
     <ClInclude Include="..\Include\Audio\Device.h">
       <Filter>Header Files\Audio</Filter>
     </ClInclude>
-    <ClInclude Include="..\Include\Render\Sampler.h">
-      <Filter>Header Files\Render</Filter>
-    </ClInclude>
     <ClInclude Include="..\Include\Render\Types.h">
       <Filter>Header Files\Render</Filter>
     </ClInclude>
@@ -457,6 +430,33 @@
       <Filter>Header Files\Render\Graph</Filter>
     </ClInclude>
     <ClInclude Include="..\Include\Render\DestroyResource.h">
+      <Filter>Header Files\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Render\Driver\Driver.h">
+      <Filter>Header Files\Render\Driver</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Render\Driver\Context.h">
+      <Filter>Header Files\Render\Driver</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Render\Driver\Core.h">
+      <Filter>Header Files\Render\Driver</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Render\Driver\Device.h">
+      <Filter>Header Files\Render\Driver</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Render\Driver\RayTracing.h">
+      <Filter>Header Files\Render\Driver</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Render\Driver\TransientResources.h">
+      <Filter>Header Files\Render\Driver</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Render\Driver\RenderPassDesc.h">
+      <Filter>Header Files\Render\Driver</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Render\Components\ModelRender.h">
+      <Filter>Header Files\Render\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Render\Systems.h">
       <Filter>Header Files\Render</Filter>
     </ClInclude>
   </ItemGroup>
@@ -728,13 +728,7 @@
     <ClCompile Include="..\Platform\Win32\Compat\stdatomic.c">
       <Filter>Source Files\Platform\Compat</Filter>
     </ClCompile>
-    <ClCompile Include="Render\Pipeline.c">
-      <Filter>Source Files\Render</Filter>
-    </ClCompile>
     <ClCompile Include="Render\Frame.c">
-      <Filter>Source Files\Render</Filter>
-    </ClCompile>
-    <ClCompile Include="Render\Shader.c">
       <Filter>Source Files\Render</Filter>
     </ClCompile>
     <ClCompile Include="Asset\Metadata.c">
@@ -743,20 +737,50 @@
     <ClCompile Include="Script\l_Render.c">
       <Filter>Source Files\Script</Filter>
     </ClCompile>
-    <ClCompile Include="Render\Texture.c">
-      <Filter>Source Files\Render</Filter>
-    </ClCompile>
     <ClCompile Include="Render\Model.c">
       <Filter>Source Files\Render</Filter>
     </ClCompile>
-    <ClCompile Include="Render\Graph.c">
+    <ClCompile Include="Script\l_Engine.c">
+      <Filter>Source Files\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\l_System.c">
+      <Filter>Source Files\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Material.c">
       <Filter>Source Files\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Driver\Buffer.c">
+      <Filter>Source Files\Render\Driver</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Driver\Pipeline.c">
+      <Filter>Source Files\Render\Driver</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Driver\Shader.c">
+      <Filter>Source Files\Render\Driver</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Driver\Texture.c">
+      <Filter>Source Files\Render\Driver</Filter>
     </ClCompile>
     <ClCompile Include="Render\DestroyResource.c">
+      <Filter>Source Files\Render\Driver</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Graph\Graph.c">
+      <Filter>Source Files\Render\Graph</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Pass\Depth.c">
+      <Filter>Source Files\Render\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Systems.c">
       <Filter>Source Files\Render</Filter>
     </ClCompile>
-    <ClCompile Include="Render\Buffer.c">
-      <Filter>Source Files\Render</Filter>
+    <ClCompile Include="Render\Pass\Lighting.c">
+      <Filter>Source Files\Render\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Pass\LightCulling.c">
+      <Filter>Source Files\Render\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Components\ModelRender.c">
+      <Filter>Source Files\Render\Components</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

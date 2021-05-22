@@ -40,6 +40,30 @@ Re_UpdateBuffer(BufferHandle handle, uint64_t offset, uint8_t *data, uint64_t si
 	Re_deviceProcs.UpdateBuffer(Re_device, _buffers[handle].buff, offset, data, size);
 }
 
+void
+Re_CmdCopyBuffer(BufferHandle src, uint64_t srcOffset, BufferHandle dst, uint64_t dstOffset, uint64_t size)
+{
+	Re_contextProcs.CopyBuffer(Re_CurrentContext(), _buffers[src].buff, srcOffset, _buffers[dst].buff, dstOffset, size);
+}
+
+void *
+Re_MapBuffer(BufferHandle handle)
+{
+	return Re_deviceProcs.MapBuffer(Re_device, _buffers[handle].buff);
+}
+
+void
+Re_UnmapBuffer(BufferHandle handle)
+{
+	Re_deviceProcs.UnmapBuffer(Re_device, _buffers[handle].buff);
+}
+
+uint64_t
+Re_BufferAddress(BufferHandle handle, uint64_t offset)
+{
+	return Re_deviceProcs.BufferAddress(Re_device, _buffers[handle].buff, offset);
+}
+
 const struct BufferDesc *
 Re_BufferDesc(BufferHandle handle)
 {
@@ -54,20 +78,19 @@ Re_DestroyBuffer(BufferHandle handle)
 }
 
 void
-Re_BindIndexBuffer(BufferHandle handle, uint64_t offset, enum IndexType type)
+Re_CmdBindIndexBuffer(BufferHandle handle, uint64_t offset, enum IndexType type)
 {
 	Re_contextProcs.BindIndexBuffer(Re_CurrentContext(), _buffers[handle].buff, offset, type);
 }
 
 bool
-Re_InitBuffers(void)
+Re_InitBufferSystem(void)
 {
-	return Rt_InitQueue(&_freeList, UINT16_MAX, sizeof(struct BufferInfo));
+	return Rt_InitQueue(&_freeList, UINT16_MAX, sizeof(struct BufferInfo), MH_Render);
 }
 
 void
-Re_TermBuffers(void)
+Re_TermBufferSystem(void)
 {
 	Rt_TermQueue(&_freeList);
 }
-

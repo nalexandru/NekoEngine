@@ -8,7 +8,7 @@
 
 #include "VulkanDriver.h"
 
-static inline bool _Create(VkDevice dev, struct Swapchain *sw);
+static inline bool _Create(VkDevice dev, VkPhysicalDevice physDev, struct Swapchain *sw);
 
 struct Swapchain *
 Vk_CreateSwapchain(struct RenderDevice *dev, VkSurfaceKHR surface)
@@ -18,8 +18,8 @@ Vk_CreateSwapchain(struct RenderDevice *dev, VkSurfaceKHR surface)
 	if (!present)
 		return NULL;
 
-	struct Swapchain *sw = calloc(1, sizeof(*sw));
-	
+	struct Swapchain *sw = Sys_Alloc(1, sizeof(*sw), MH_RenderDriver);
+
 	sw->surface = surface;
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(dev->physDev, surface, &sw->surfaceCapabilities);
 
@@ -29,7 +29,7 @@ Vk_CreateSwapchain(struct RenderDevice *dev, VkSurfaceKHR surface)
 
 	if (sw->surfaceCapabilities.maxImageCount && sw->imageCount > sw->surfaceCapabilities.maxImageCount)
 		sw->imageCount = sw->surfaceCapabilities.maxImageCount;
-	
+
 	uint32_t count = 0;
 	vkGetPhysicalDeviceSurfaceFormatsKHR(dev->physDev, surface, &count, NULL);
 
@@ -50,16 +50,16 @@ Vk_CreateSwapchain(struct RenderDevice *dev, VkSurfaceKHR surface)
 	sw->presentMode = VK_PRESENT_MODE_FIFO_KHR;
 	if (!E_GetCVarBln(L"Render_VerticalSync", false)->bln) {
 		vkGetPhysicalDeviceSurfacePresentModesKHR(dev->physDev, surface, &count, NULL);
-		
+
 		VkPresentModeKHR *pm = Sys_Alloc(sizeof(*pm), count, MH_Transient);
 		vkGetPhysicalDeviceSurfacePresentModesKHR(dev->physDev, surface, &count, pm);
-		
+
 		for (uint32_t i = 0; i < count; ++i) {
 			if (pm[i] == VK_PRESENT_MODE_MAILBOX_KHR) {
 				sw->presentMode = VK_PRESENT_MODE_MAILBOX_KHR;
 				break;
 			}
-			
+
 			if (sw->presentMode != VK_PRESENT_MODE_MAILBOX_KHR && pm[i] == VK_PRESENT_MODE_IMMEDIATE_KHR)
 				sw->presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
 		}
@@ -72,7 +72,7 @@ Vk_CreateSwapchain(struct RenderDevice *dev, VkSurfaceKHR surface)
 	if (vkCreateSemaphore(dev->dev, &sci, Vkd_allocCb, &sw->frameEnd) != VK_SUCCESS)
 		goto error;
 
-	if (!_Create(dev->dev, sw))
+	if (!_Create(dev->dev, dev->physDev, sw))
 		goto error;
 
 	return sw;
@@ -80,11 +80,11 @@ Vk_CreateSwapchain(struct RenderDevice *dev, VkSurfaceKHR surface)
 error:
 	if (sw->frameStart)
 		vkDestroySemaphore(dev->dev, sw->frameStart, Vkd_allocCb);
-		
+
 	if (sw->frameEnd)
 		vkDestroySemaphore(dev->dev, sw->frameEnd, Vkd_allocCb);
 
-	free(sw);
+	Sys_Free(sw);
 	return NULL;
 }
 
@@ -97,9 +97,9 @@ Vk_DestroySwapchain(struct RenderDevice *dev, struct Swapchain *sw)
 		vkDestroyImageView(dev->dev, sw->views[i], Vkd_allocCb);
 	vkDestroySwapchainKHR(dev->dev, sw->sw, Vkd_allocCb);
 
-	free(sw->images);
-	free(sw->views);
-	free(sw);
+	Sys_Free(sw->images);
+	Sys_Free(sw->views);
+	Sys_Free(sw);
 }
 
 void *
@@ -111,12 +111,12 @@ Vk_AcquireNextImage(struct RenderDevice *dev, struct Swapchain *sw)
 		switch (rc) {
 		case VK_SUBOPTIMAL_KHR:
 		case VK_ERROR_OUT_OF_DATE_KHR:
-			_Create(dev->dev, sw);
+			_Create(dev->dev, dev->physDev, sw);
 			return RE_INVALID_IMAGE;
 		default: return RE_INVALID_IMAGE;
 		}
 	}
-	
+
 	VkSemaphoreWaitInfo waitInfo =
 	{
 		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,
@@ -148,7 +148,7 @@ Vk_Present(struct RenderDevice *dev, struct RenderContext *ctx, struct Swapchain
 		.signalSemaphoreValueCount = 2,
 		.pSignalSemaphoreValues = signalValues
 	};
-	VkSubmitInfo si = 
+	VkSubmitInfo si =
 	{
 		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
 		.pNext = &timelineInfo,
@@ -179,7 +179,7 @@ Vk_Present(struct RenderDevice *dev, struct RenderContext *ctx, struct Swapchain
 	case VK_SUCCESS: return true;
 	case VK_SUBOPTIMAL_KHR:
 	case VK_ERROR_OUT_OF_DATE_KHR:
-		return _Create(dev->dev, sw);
+		return _Create(dev->dev, dev->physDev, sw);
 	default: return false;
 	}
 
@@ -207,15 +207,15 @@ Vk_SwapchainTexture(struct Swapchain *sw, void *image)
 void
 Vk_ScreenResized(struct RenderDevice *dev, struct Swapchain *sw)
 {
-	assert(_Create(dev->dev, sw));
+	assert(_Create(dev->dev, dev->physDev, sw));
 }
 
 static inline bool
-_Create(VkDevice dev, struct Swapchain *sw)
+_Create(VkDevice dev, VkPhysicalDevice physDev, struct Swapchain *sw)
 {
 	vkDeviceWaitIdle(dev);
 
-	VkSwapchainCreateInfoKHR createInfo = 
+	VkSwapchainCreateInfoKHR createInfo =
 	{
 		.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
 		.surface = sw->surface,
@@ -232,6 +232,18 @@ _Create(VkDevice dev, struct Swapchain *sw)
 		.presentMode = sw->presentMode
 	};
 
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physDev, sw->surface, &sw->surfaceCapabilities);
+
+	if (createInfo.imageExtent.width < sw->surfaceCapabilities.minImageExtent.width)
+		createInfo.imageExtent.width = sw->surfaceCapabilities.minImageExtent.width;
+	else if (createInfo.imageExtent.width > sw->surfaceCapabilities.maxImageExtent.width)
+		createInfo.imageExtent.width = sw->surfaceCapabilities.maxImageExtent.width;
+
+	if (createInfo.imageExtent.height < sw->surfaceCapabilities.minImageExtent.height)
+		createInfo.imageExtent.height = sw->surfaceCapabilities.minImageExtent.height;
+	else if (createInfo.imageExtent.height > sw->surfaceCapabilities.maxImageExtent.height)
+		createInfo.imageExtent.height = sw->surfaceCapabilities.maxImageExtent.height;
+
 	VkSwapchainKHR new;
 	if (vkCreateSwapchainKHR(dev, &createInfo, Vkd_allocCb, &new) != VK_SUCCESS)
 		return false;
@@ -243,11 +255,11 @@ _Create(VkDevice dev, struct Swapchain *sw)
 
 	if (sw->imageCount != count || !sw->images || !sw->views) {
 		void *ptr;
-		
-		ptr = reallocarray(sw->images, count, sizeof(*sw->images));
+
+		ptr = Sys_ReAlloc(sw->images, count, sizeof(*sw->images), MH_RenderDriver);
 		assert(ptr); sw->images = ptr;
 
-		ptr = reallocarray(sw->views, count, sizeof(*sw->views));
+		ptr = Sys_ReAlloc(sw->views, count, sizeof(*sw->views), MH_RenderDriver);
 		assert(ptr); sw->views = ptr;
 
 		sw->imageCount = count;
@@ -284,4 +296,3 @@ _Create(VkDevice dev, struct Swapchain *sw)
 
 	return true;
 }
-

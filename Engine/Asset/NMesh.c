@@ -53,7 +53,7 @@ E_LoadNMeshAsset(struct Stream *stm, struct Model *m)
 	uint64_t count = 0;
 
 	READ_UINT32(count, data, pos, dataSize);
-	m->vertices = calloc(count, sizeof(*m->vertices));
+	m->vertices = Sys_Alloc(count, sizeof(*m->vertices), MH_Asset);
 
 	size = sizeof(struct Vertex) * count;
 	CHECK_SIZE(pos + size < dataSize);

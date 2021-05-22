@@ -8,4 +8,3 @@
 #define UI_CONTEXT_COMP		L"UIContext"
 
 #endif /* _SCN_COMPONENTS_H_ */
-

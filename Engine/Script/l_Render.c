@@ -1,85 +1,69 @@
 #include <Script/Script.h>
-#include <Render/Context.h>
-#include <Render/RenderPass.h>
+#include <Render/Render.h>
+
+#include "Interface.h"
 
 // Context
 
-static int _S_Re_BeginDrawCommandBuffer(lua_State *vm) { Re_BeginDrawCommandBuffer(); return 0; }
-static int _S_Re_BeginComputeCommandBuffer(lua_State *vm) { Re_BeginComputeCommandBuffer(); return 0; }
-static int _S_Re_BeginTransferCommandBuffer(lua_State *vm) { Re_BeginTransferCommandBuffer(); return 0; }
-static int _S_Re_EndCommandBuffer(lua_State *vm) { Re_EndCommandBuffer(); return 0; }
+SIF_FUNC(BeginDrawCommandBuffer) { Re_BeginDrawCommandBuffer(); return 0; }
+SIF_FUNC(BeginComputeCommandBuffer) { Re_BeginComputeCommandBuffer(); return 0; }
+SIF_FUNC(BeginTransferCommandBuffer) { Re_BeginTransferCommandBuffer(); return 0; }
+SIF_FUNC(EndCommandBuffer) { Re_EndCommandBuffer(); return 0; }
 
-static int
-_S_Re_BindPipeline(lua_State *vm)
+SIF_FUNC(BindPipeline)
 {
-	Re_BindPipeline(luaL_checkudata(vm, 1, NULL));
+	Re_CmdBindPipeline(luaL_checkudata(vm, 1, NULL));
 	return 0;
 }
 
-static int
-_S_Re_BindDescriptorSets(lua_State *vm)
-{
-	//Re_BindDescriptorSets(<#struct PipelineLayout *layout#>, <#uint32_t firstSet#>, <#uint32_t count#>, <#struct DescriptorSet *sets#>)
-	return 0;
-}
-
-static int
-_S_Re_PushConstants(lua_State *vm)
+SIF_FUNC(PushConstants)
 {
 	//Re_PushConstants(<#struct PipelineLayout *layout#>, <#enum ShaderStage stage#>, <#uint32_t size#>, <#const void *data#>)
 	return 0;
 }
 
-static int
-_S_Re_BindIndexBuffer(lua_State *vm)
+SIF_FUNC(BindIndexBuffer)
 {
 	return 0;
 }
 
-static int
-_S_Re_ExecuteSecondary(lua_State *vm)
+SIF_FUNC(ExecuteSecondary)
 {
 	return 0;
 }
 
-static int
-_S_Re_BeginRenderPass(lua_State *vm)
+SIF_FUNC(BeginRenderPass)
 {
 	return 0;
 }
 
-static int
-_S_Re_EndRenderPass(lua_State *vm)
+SIF_FUNC(EndRenderPass)
 {
 	return 0;
 }
 
-static int
-_S_Re_SetViewport(lua_State *vm)
+SIF_FUNC(SetViewport)
 {
 	return 0;
 }
 
-static int
-_S_Re_SetScissor(lua_State *vm)
+SIF_FUNC(SetScissor)
 {
 	return 0;
 }
 
-static int
-_S_Re_Draw(lua_State *vm)
+SIF_FUNC(Draw)
 {
-	Re_Draw((int32_t)luaL_checkinteger(vm, 1),
+	Re_CmdDraw((int32_t)luaL_checkinteger(vm, 1),
 			(int32_t)luaL_checkinteger(vm, 2),
 			(int32_t)luaL_checkinteger(vm, 3),
 			(int32_t)luaL_checkinteger(vm, 4));
 	return 0;
 }
 
-static int
-_S_Re_DrawIndexed(lua_State *vm)
+SIF_FUNC(DrawIndexed)
 {
-	Re_DrawIndexed((int32_t)luaL_checkinteger(vm, 1),
+	Re_CmdDrawIndexed((int32_t)luaL_checkinteger(vm, 1),
 				   (int32_t)luaL_checkinteger(vm, 2),
 				   (int32_t)luaL_checkinteger(vm, 3),
 				   (int32_t)luaL_checkinteger(vm, 4),
@@ -87,188 +71,147 @@ _S_Re_DrawIndexed(lua_State *vm)
 	return 0;
 }
 
-static int
-_S_Re_DrawIndirect(lua_State *vm)
+SIF_FUNC(DrawIndirect)
 {
 	return 0;
 }
 
-static int
-_S_Re_DrawIndexedIndirect(lua_State *vm)
+SIF_FUNC(DrawIndexedIndirect)
 {
 	return 0;
 }
 
-static int
-_S_Re_Dispatch(lua_State *vm)
+SIF_FUNC(Dispatch)
 {
 	return 0;
 }
 
-static int
-_S_Re_DispatchIndirect(lua_State *vm)
+SIF_FUNC(DispatchIndirect)
 {
 	return 0;
 }
 
-static int
-_S_Re_TraceRays(lua_State *vm)
+SIF_FUNC(TraceRays)
 {
 	return 0;
 }
 
-static int
-_S_Re_TraceRaysIndirect(lua_State *vm)
+SIF_FUNC(TraceRaysIndirect)
 {
 	return 0;
 }
 
-static int
-_S_Re_Barrier(lua_State *vm)
+SIF_FUNC(Barrier)
 {
 	return 0;
 }
 
-static int
-_S_Re_Transition(lua_State *vm)
+SIF_FUNC(Transition)
 {
 	return 0;
 }
 
-static int
-_S_Re_CopyBuffer(lua_State *vm)
+SIF_FUNC(CopyBuffer)
 {
 	return 0;
 }
 
-static int
-_S_Re_CopyImage(lua_State *vm)
+SIF_FUNC(CopyImage)
 {
 	return 0;
 }
 
-static int
-_S_Re_CopyBufferToImage(lua_State *vm)
+SIF_FUNC(CopyBufferToImage)
 {
 	return 0;
 }
 
-static int
-_S_Re_CopyImageToBuffer(lua_State *vm)
+SIF_FUNC(CopyImageToBuffer)
 {
 	return 0;
 }
 
-static int
-_S_Re_Blit(lua_State *vm)
+SIF_FUNC(Blit)
 {
 	return 0;
 }
 
 // Pipeline
-
-static int
-_S_Re_CreatePipelineLayout(lua_State *vm)
+SIF_FUNC(GraphicsPipeline)
 {
 	return 0;
 }
 
-static int
-_S_Re_DestroyPipelineLayout(lua_State *vm)
+SIF_FUNC(ComputePipeline)
 {
 	return 0;
 }
 
-static int
-_S_Re_GraphicsPipeline(lua_State *vm)
-{
-	return 0;
-}
-
-static int
-_S_Re_ComputePipeline(lua_State *vm)
-{
-	return 0;
-}
-
-static int
-_S_Re_RayTracingPipeline(lua_State *vm)
+SIF_FUNC(RayTracingPipeline)
 {
 	return 0;
 }
 
 // Texture
-static int
-_S_Re_CreateTexture(lua_State *vm)
+SIF_FUNC(CreateTexture)
 {
 	return 0;
 }
 
-static int
-_S_Re_TextureDesc(lua_State *vm)
+SIF_FUNC(TextureDesc)
 {
 	return 0;
 }
 
-static int
-_S_Re_TextureLayout(lua_State *vm)
+SIF_FUNC(TextureLayout)
 {
 	return 0;
 }
 
-static int
-_S_Re_DestroyTexture(lua_State *vm)
+SIF_FUNC(DestroyTexture)
 {
 	return 0;
 }
 
 // Buffer
-static int
-_S_Re_CreateBuffer(lua_State *vm)
+SIF_FUNC(CreateBuffer)
 {
 	return 0;
 }
 
-static int
-_S_Re_UpdateBuffer(lua_State *vm)
+SIF_FUNC(UpdateBuffer)
 {
 	return 0;
 }
 
-static int
-_S_Re_BufferDesc(lua_State *vm)
+SIF_FUNC(BufferDesc)
 {
 	return 0;
 }
 
-static int
-_S_Re_DestroyBuffer(lua_State *vm)
+SIF_FUNC(DestroyBuffer)
 {
 	return 0;
 }
 
 // Framebuffer
-static int
-_S_Re_CreateFramebuffer(lua_State *vm)
+SIF_FUNC(CreateFramebuffer)
 {
 	return 0;
 }
 
-static int
-_S_Re_SetAttachment(lua_State *vm)
+SIF_FUNC(SetAttachment)
 {
 	return 0;
 }
 
-static int
-_S_Re_DestroyFramebuffer(lua_State *vm)
+SIF_FUNC(DestroyFramebuffer)
 {
 	return 0;
 }
 
 // RenderPass
-static int
-_S_Re_CreateRenderPass(lua_State *vm)
+SIF_FUNC(CreateRenderPassDesc)
 {
 	/*struct RenderPassDesc desc =
 	{
@@ -276,78 +219,41 @@ _S_Re_CreateRenderPass(lua_State *vm)
 		.attachments = &atDesc,
 	};*/
 	
-	struct RenderPass *rp = Re_CreateRenderPass(NULL);
+	struct RenderPassDesc *rp = Re_CreateRenderPassDesc(NULL, 0, NULL);
 	
 	lua_pushlightuserdata(vm, rp);
 	
 	return 1;
 }
 
-static int
-_S_Re_DestroyRenderPass(lua_State *vm)
+SIF_FUNC(DestroyRenderPassDesc)
 {
 	return 0;
 }
 
 // Swapchain
-static int
-_S_Re_AcquireNextImage(lua_State *vm)
+SIF_FUNC(AcquireNextImage)
 {
 	return 0;
 }
 
-static int
-_S_Re_SwapchainFormat(lua_State *vm)
+SIF_FUNC(SwapchainFormat)
 {
 	return 0;
 }
 
-static int
-_S_Re_SwapchainTexture(lua_State *vm)
+SIF_FUNC(SwapchainTexture)
 {
 	return 0;
 }
 
-static int
-_S_Re_Present(lua_State *vm)
-{
-	return 0;
-}
-
-// Descriptor Set
-static int
-_S_Re_CreateDescriptorSetLayout(lua_State *vm)
-{
-	return 0;
-}
-
-static int
-_S_Re_DestroyDescriptorSetLayout(lua_State *vm)
-{
-	return 0;
-}
-
-static int
-_S_Re_CreateDescriptorSet(lua_State *vm)
-{
-	return 0;
-}
-
-static int
-_S_Re_WriteDescriptorSet(lua_State *vm)
-{
-	return 0;
-}
-
-static int
-_S_Re_DestroyDescriptorSet(lua_State *vm)
+SIF_FUNC(Present)
 {
 	return 0;
 }
 
 // Shader
-static int
-_S_Re_GetShader(lua_State *vm)
+SIF_FUNC(GetShader)
 {
 	struct Shader *s = Re_GetShader(luaL_checkstring(vm, 1));
 	lua_pushlightuserdata(vm, s);
@@ -360,78 +266,72 @@ SIface_OpenRender(lua_State *vm)
 	luaL_Reg reg[] =
 	{
 		// Render Context
-		{ "BeginDrawCommandBuffer", _S_Re_BeginDrawCommandBuffer },
-		{ "BeginComputeCommandBuffer", _S_Re_BeginComputeCommandBuffer },
-		{ "BeginTransferCommandBuffer", _S_Re_BeginTransferCommandBuffer },
-		{ "EndCommandBuffer", _S_Re_EndCommandBuffer },
-		{ "BindPipeline", _S_Re_BindPipeline },
-		{ "BindDescriptorSets", _S_Re_BindDescriptorSets },
-		{ "PushConstants", _S_Re_PushConstants },
-		{ "BindIndexBuffer",  _S_Re_BindIndexBuffer },
-		{ "ExecuteSecondary", _S_Re_ExecuteSecondary },
-		{ "BeginRenderPass", _S_Re_BeginRenderPass },
-		{ "EndRenderPass", _S_Re_EndRenderPass },
-		{ "SetViewport", _S_Re_SetViewport },
-		{ "SetScissor", _S_Re_SetScissor },
-		{ "Draw", _S_Re_Draw },
-		{ "DrawIndexed", _S_Re_DrawIndexed },
-		{ "DrawIndirect", _S_Re_DrawIndirect },
-		{ "DrawIndexedIndirect", _S_Re_DrawIndexedIndirect },
-		{ "Dispatch", _S_Re_Dispatch },
-		{ "DispatchIndirect", _S_Re_DispatchIndirect },
-		{ "TraceRays", _S_Re_TraceRays },
-		{ "TraceRaysIndirect", _S_Re_TraceRaysIndirect },
-		{ "Barrier", _S_Re_Barrier },
-		{ "Transition", _S_Re_Transition },
-		{ "CopyBuffer", _S_Re_CopyBuffer },
-		{ "CopyImage", _S_Re_CopyImage },
-		{ "CopyBufferToImage", _S_Re_CopyBufferToImage },
-		{ "CopyImageToBuffer", _S_Re_CopyImageToBuffer },
-		{ "Blit", _S_Re_Blit },
+		SIF_REG(BeginDrawCommandBuffer),
+		SIF_REG(BeginComputeCommandBuffer),
+		SIF_REG(BeginTransferCommandBuffer),
+		SIF_REG(EndCommandBuffer),
+		SIF_REG(BindPipeline),
+
+		// Render Context
+		SIF_REG(PushConstants),
+		SIF_REG(BindIndexBuffer),
+		SIF_REG(ExecuteSecondary),
+		SIF_REG(BeginRenderPass),
+		SIF_REG(EndRenderPass),
+		SIF_REG(SetViewport),
+		SIF_REG(SetScissor),
+		SIF_REG(Draw),
+		SIF_REG(DrawIndexed),
+		SIF_REG(DrawIndirect),
+		SIF_REG(DrawIndexedIndirect),
+		SIF_REG(Dispatch),
+		SIF_REG(DispatchIndirect),
+		SIF_REG(TraceRays),
+		SIF_REG(TraceRaysIndirect),
+		SIF_REG(Barrier),
+		SIF_REG(Transition),
+		SIF_REG(CopyBuffer),
+		SIF_REG(CopyImage),
+		SIF_REG(CopyBufferToImage),
+		SIF_REG(CopyImageToBuffer),
+		SIF_REG(Blit),
 		
 		// Pipeline
-		{ "CreatePipelineLayout", _S_Re_CreatePipelineLayout },
-		{ "DestroyPipelineLayout", _S_Re_DestroyPipelineLayout },
-		{ "GraphicsPipeline", _S_Re_GraphicsPipeline },
-		{ "ComputePipeline", _S_Re_ComputePipeline },
-		{ "RayTracingPipeline", _S_Re_RayTracingPipeline },
+		SIF_REG(GraphicsPipeline),
+		SIF_REG(ComputePipeline),
+		SIF_REG(RayTracingPipeline),
 
 		// Texture
-		{ "CreateTexture", _S_Re_CreateTexture },
-		{ "TextureDesc", _S_Re_TextureDesc },
-		{ "TextureLayout", _S_Re_TextureLayout },
-		{ "DestroyTexture", _S_Re_DestroyTexture },
+		SIF_REG(CreateTexture),
+		SIF_REG(TextureDesc),
+		SIF_REG(TextureLayout),
+		SIF_REG(DestroyTexture),
 		
 		// Buffer
-		{ "CreateBuffer", _S_Re_CreateBuffer },
-		{ "UpdateBuffer", _S_Re_UpdateBuffer },
-		{ "BufferDesc", _S_Re_BufferDesc },
-		{ "DestroyBuffer", _S_Re_DestroyBuffer },
+		SIF_REG(CreateBuffer),
+		SIF_REG(UpdateBuffer),
+		SIF_REG(BufferDesc),
+		SIF_REG(DestroyBuffer),
 
 		// Framebuffer
-		{ "CreateFramebuffer", _S_Re_CreateFramebuffer },
-		{ "SetAttachment", _S_Re_SetAttachment },
-		{ "DestroyFramebuffer", _S_Re_DestroyFramebuffer },
+		SIF_REG(CreateFramebuffer),
+		SIF_REG(SetAttachment),
+		SIF_REG(DestroyFramebuffer),
 		
 		// Render Pass
-		{ "CreateRenderPass", _S_Re_CreateRenderPass },
-		{ "DestroyRenderPass", _S_Re_DestroyRenderPass },
+		SIF_REG(CreateRenderPassDesc),
+		SIF_REG(DestroyRenderPassDesc),
 		
 		// Swapchain
-		{ "AcquireNextImage", _S_Re_AcquireNextImage },
-		{ "SwapchainFormat", _S_Re_SwapchainFormat },
-		{ "SwapchainTexture", _S_Re_SwapchainTexture },
-		{ "Present", _S_Re_Present },
-		
-		// Swapchain
-		{ "CreateDescriptorSetLayout", _S_Re_CreateDescriptorSetLayout },
-		{ "DestroyDescriptorSetLayout", _S_Re_DestroyDescriptorSetLayout },
-		{ "CreateDescriptorSet", _S_Re_CreateDescriptorSet },
-		{ "WriteDescriptorSet", _S_Re_WriteDescriptorSet },
-		{ "DestroyDescriptorSet", _S_Re_DestroyDescriptorSet },
+		SIF_REG(AcquireNextImage),
+		SIF_REG(SwapchainFormat),
+		SIF_REG(SwapchainTexture),
+		SIF_REG(Present),
 		
 		// Shader
-		{ "GetShader", _S_Re_GetShader }
+		SIF_REG(GetShader),
+
+		SIF_ENDREG()
 	};
 
 	luaL_newlib(vm, reg);

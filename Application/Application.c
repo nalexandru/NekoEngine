@@ -1,3 +1,5 @@
+#include <assert.h>
+
 #include <Scene/Scene.h>
 #include <Scene/Transform.h>
 #include <Scene/Components.h>
@@ -12,6 +14,15 @@
 #include <System/Log.h>
 
 #include <UI/UI.h>
+
+//
+
+#include <Engine/Entity.h>
+#include <Engine/Component.h>
+#include <Engine/Resource.h>
+
+#include <Render/Render.h>
+#include <Render/Components/ModelRender.h>
 
 #include "TestApplication.h"
 
@@ -55,6 +66,19 @@ static bool App_InitStatistics(struct PlayerMovement *comp, const void **args) {
 static void App_TermStatistics(struct PlayerMovement *comp) { }
 static void App_DrawStatistics(void **comp, void *args);
 
+static struct Vertex _vertices[] =
+{
+	{ -.5f, -.5f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f },
+	{ -.5f,  .5f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 1.f },
+	{  .5f,  .5f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 1.f, 1.f },
+	{  .5f, -.5f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f }
+};
+static uint16_t _indices[] =
+{
+	0, 1, 2, 0, 2, 3
+};
+static struct Mesh _mesh = { 0, 4, 0, 6 };
+
 bool
 App_InitApplication(int argc, char *argv[])
 {
@@ -68,7 +92,54 @@ App_InitApplication(int argc, char *argv[])
 	E_RegisterSystem(L"App_DrawStatistics", ECSYS_GROUP_LOGIC, comp, _countof(comp), (ECSysExecProc)App_DrawStatistics, 0);
 
 	_sceneLoadedEvt = E_RegisterHandler(EVT_SCENE_LOADED, App_SceneLoaded, NULL);
-	Scn_StartSceneLoad("/Scenes/Sponza.scn");
+
+	//Scn_StartSceneLoad("/Scenes/Sponza.scn");
+
+	struct Scene *scn = Scn_CreateScene(L"TestScene");
+	assert(scn);
+
+	const void *xfArgs[] =
+	{
+		"Position", "0.0, 0.0, 0.0",
+		"Rotation", "0.0, 0.0, 0.0",
+		"Scale", "1.0, 1.0, 1.0",
+		NULL
+	};
+	EntityHandle ent = E_CreateEntityS(scn, NULL);
+	E_AddNewComponentS(scn, ent, E_ComponentTypeId(TRANSFORM_COMP), xfArgs);
+	E_AddNewComponentS(scn, ent, E_ComponentTypeId(MODEL_RENDER_COMP), NULL);
+
+	const char *mat = "/Materials/Anna.mat";
+	struct ModelRender *mr = E_GetComponentS(scn, ent, E_ComponentTypeId(MODEL_RENDER_COMP));
+	struct ModelCreateInfo mci =
+	{
+		.vertices = _vertices,
+		.vertexSize = sizeof(_vertices),
+		.indices = _indices,
+		.indexSize = sizeof(_indices),
+		.indexType = IT_UINT_16,
+		.meshes = &_mesh,
+		.materials = &mat,
+		.meshCount = 1,
+		.keepData = true,
+		.loadMaterials = true
+	};
+	Re_SetModel(mr, E_CreateResource("Anna", RES_MODEL, &mci));
+
+	ent = E_CreateEntityS(scn, NULL);
+
+	const void *camArgs[] =
+	{
+		"Active", "true",
+		NULL
+	};
+	xfArgs[1] = "0.0, 0.5, -1.0";
+	E_AddNewComponentS(scn, ent, E_ComponentTypeId(L"PlayerMovement"), NULL);
+	E_AddNewComponentS(scn, ent, E_ComponentTypeId(TRANSFORM_COMP), xfArgs);
+	E_AddNewComponentS(scn, ent, E_ComponentTypeId(CAMERA_COMP), camArgs);
+
+	scn->loaded = true;
+	Scn_ActivateScene(scn);
 
 	return true;
 }
@@ -84,7 +155,7 @@ App_InitPlayerMovement(struct PlayerMovement *comp, const void **args)
 	comp->movementSpeed = 100.f;
 	comp->rotationSpeed = 50.f;
 
-	for (; *args; ++args) {
+	for (; args && *args; ++args) {
 		const char *arg = *args;
 		size_t len = strlen(arg);
 
@@ -118,7 +189,7 @@ App_PlayerMovement(void **comp, void *args)
 
 	v3_copy(&raxis, &xform->right);
 	xform_rotate(xform, (In_Axis(mvmt->rotateVertical) * -1.f) * rot, &raxis);
-	
+
 	xform_move_forward(xform, In_Axis(mvmt->moveForward) * xlate);
 	xform_move_right(xform, In_Axis(mvmt->moveRight) * xlate);
 	xform_move_up(xform, In_Axis(mvmt->moveUp) * -xlate);
@@ -141,7 +212,7 @@ App_DrawStatistics(void **comp, void *args)
 
 	if (delta > 1.0) {
 		double ft = (delta / (double)stats->frames) * 1000;
-	
+
 		swprintf(stats->fpsBuff, sizeof(stats->fpsBuff) / 2, L"FPS: %d", stats->frames);
 		swprintf(stats->ftBuff, sizeof(stats->ftBuff) / 2, L"Frame Time: %.02f ms", ft);
 

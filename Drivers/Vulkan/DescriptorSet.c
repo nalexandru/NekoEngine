@@ -154,4 +154,3 @@ Vk_TermDescriptorSet(struct RenderDevice *dev)
 	vkDestroyDescriptorPool(dev->dev, dev->descriptorPool, Vkd_allocCb);
 	vkDestroyDescriptorSetLayout(dev->dev, dev->setLayout, Vkd_allocCb);
 }
-

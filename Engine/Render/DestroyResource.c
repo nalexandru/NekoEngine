@@ -1,6 +1,5 @@
 #include <Render/Render.h>
-#include <Render/Texture.h>
-#include <Render/DestroyResource.h>
+#include <Render/Driver/RayTracing.h>
 #include <Runtime/Runtime.h>
 
 #define DT_OBJECT	0
@@ -25,7 +24,7 @@ bool
 Re_InitResourceDestructor(void)
 {
 	for (uint32_t i = 0; i < RE_NUM_FRAMES; ++i)
-		if (!Rt_InitArray(&_destroyedResources[i], 50, sizeof(struct TDestroy)))
+		if (!Rt_InitArray(&_destroyedResources[i], 50, sizeof(struct TDestroy), MH_Render))
 			return false;
 	return true;
 }

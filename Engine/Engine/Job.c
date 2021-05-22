@@ -38,11 +38,11 @@ struct DispatchArgs
 static ConditionVariable _wakeCond;
 static Futex _wakeLock;
 static Thread *_threads;
-static int _numThreads;
+static uint32_t _numThreads;
 static bool _shutdown;
 static struct JobQueue _jobQueue;
 static ALIGN(16) volatile uint64_t _submittedJobs; 
-static THREAD_LOCAL int _workerId;
+static THREAD_LOCAL uint32_t _workerId;
 
 static void _ThreadProc(void *args);
 static void _DispatchWrapper(int worker, struct DispatchArgs *args);
@@ -51,10 +51,7 @@ static inline bool _JQ_Push(struct JobQueue *jq, JobProc exec, void *args, void 
 bool
 E_InitJobSystem(void)
 {
-	int i = 0;
-	wchar_t name[10];
-	
-	_numThreads = Sys_NumCpus() - 2;
+	_numThreads = Sys_CpuCount() - 1;
 	_numThreads = _numThreads > 1 ? _numThreads : 1;
 
 	Sys_InitConditionVariable(&_wakeCond);
@@ -63,21 +60,25 @@ E_InitJobSystem(void)
 	_jobQueue.head = 0;
 	_jobQueue.tail = 0;
 	_jobQueue.size = 1000;
-	_jobQueue.jobs = calloc((size_t)_jobQueue.size, sizeof(*_jobQueue.jobs));
+	_jobQueue.jobs = Sys_Alloc((size_t)_jobQueue.size, sizeof(*_jobQueue.jobs), MH_System);
 
 	if (!_jobQueue.jobs)
 		return false;
 
 	Sys_InitFutex(&_jobQueue.lock);
 
-	_threads = calloc(_numThreads, sizeof(Thread));
+	_threads = Sys_Alloc(_numThreads, sizeof(Thread), MH_System);
 	if (!_threads)
 		return false;
 
-	for (i = 0; i < _numThreads; ++i) {
+	int step = Sys_CpuCount() == Sys_CpuThreadCount() ? 1 : 2;
+	int coreId = 2;
+	for (uint32_t i = 0; i < _numThreads; ++i) {
+		wchar_t name[10];
 		swprintf(name, 10, L"Worker %d", i);
 		Sys_InitThread(&_threads[i], name, _ThreadProc, &i);
-		Sys_SetThreadAffinity(_threads[i], i + 2);
+		Sys_SetThreadAffinity(_threads[i], coreId);
+		coreId += step;
 	}
 
 	_workerId = _numThreads;
@@ -85,13 +86,13 @@ E_InitJobSystem(void)
 	return true;
 }
 
-int
+uint32_t
 E_JobWorkerThreads()
 {
 	return _numThreads;
 }
 
-int
+uint32_t
 E_WorkerId(void)
 {
 	return _workerId;
@@ -152,8 +153,6 @@ E_DispatchJobs(uint64_t count, JobProc proc, void **args, void (*completed)(uint
 void
 E_TermJobSystem(void)
 {
-	int i = 0;
-
 	_shutdown = true;
 
 	Sys_LockFutex(_jobQueue.lock);
@@ -163,7 +162,7 @@ E_TermJobSystem(void)
 
 	Sys_Broadcast(_wakeCond);
 
-	for (i = 0; i < _numThreads; ++i)
+	for (uint32_t i = 0; i < _numThreads; ++i)
 		Sys_JoinThread(_threads[i]);
 
 	Sys_TermFutex(_jobQueue.lock);
@@ -171,15 +170,15 @@ E_TermJobSystem(void)
 	Sys_TermConditionVariable(_wakeCond);
 	Sys_TermFutex(_wakeLock);
 
-	free(_jobQueue.jobs);
-	free(_threads);
+	Sys_Free(_jobQueue.jobs);
+	Sys_Free(_threads);
 }
 
 static void
 _ThreadProc(void *args)
 {
-	static _Atomic int32_t workerId = -1;
-	int32_t id = atomic_fetch_add(&workerId, 1);
+	static _Atomic uint32_t workerId = 0;
+	uint32_t id = atomic_fetch_add(&workerId, 1);
 	struct Job job = { 0, 0 };
 
 	_workerId = id;

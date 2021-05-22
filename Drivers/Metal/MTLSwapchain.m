@@ -1,15 +1,14 @@
 #define Handle __EngineHandle
 
-#include <Render/Device.h>
 #include <System/Memory.h>
 
 #undef Handle
 
 #include "MTLDriver.h"
 
-#if TARGET_OS_OSX
-
 static NSAutoreleasePool *pool;
+
+#if TARGET_OS_OSX
 
 void *
 MTL_CreateSurface(id<MTLDevice> dev, NSWindow *window)
