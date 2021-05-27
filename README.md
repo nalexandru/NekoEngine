@@ -11,11 +11,13 @@
 Cross-platform game engine.
 
 Supported platforms:
-* Windows Vista 64-bit or newer
+* Windows 7 64-bit or newer*
 * Linux on x86_64
 * macOS 11.0+ arm64 (x86_64 with a Metal 3 GPU should work too)
 * iOS 14.4+
 
+  \* Windows 7 is supported only on AMD GPUs, for Nvidia Windows 10 is required (there is no heap that is host coherent and device local exposed on Windows 7, 8 or 8.1 by Nvidia drivers).
+  
 Supported rendering APIs:
 * Vulkan (in-progress)
 * Metal (in-progress)
@@ -33,7 +35,6 @@ This repository is a mirror which is not frequently updated.
 #### Prerequisites
 * Visual Studio 2019
 * Vulkan SDK
-* (Optional) Vulkan driver with support for VK_KHR_ray_tracing
 * (Optional) FreeType for building the FontGen tool
 
 #### Build
@@ -72,7 +73,7 @@ pacman -S gcc libx11 vulkan-devel openal cmake
 3. Build NekoEngine.xcodeproj
 
 #### Notes
-* It has only been tested on a M1 Mac Mini.
+* It has only been tested on a M1 Mac Mini / iPhone 11.
 
 ## 3rd Party libraries
 
