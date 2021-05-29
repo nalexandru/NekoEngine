@@ -76,9 +76,14 @@ _BindPipeline(struct RenderContext *ctx, struct Pipeline *pipeline)
 	if (ctx->type == RC_RENDER) {
 		[ctx->encoders.render setRenderPipelineState: pipeline->render.state];
 		MTL_SetRenderArguments(ctx->encoders.render);
+		
+		if (pipeline->render.depthStencil)
+			[ctx->encoders.render setDepthStencilState: pipeline->render.depthStencil];
 	} else if (ctx->type == RC_COMPUTE) {
-		[ctx->encoders.compute setComputePipelineState: pipeline->computeState];
+		[ctx->encoders.compute setComputePipelineState: pipeline->compute.state];
 		MTL_SetComputeArguments(ctx->encoders.compute);
+		
+		ctx->threadsPerThreadgroup = pipeline->compute.threadsPerThreadgroup;
 	}
 }
 
@@ -113,8 +118,11 @@ _ExecuteSecondary(struct RenderContext *ctx, CommandBufferHandle *cmdBuffers, ui
 static void
 _BeginRenderPass(struct RenderContext *ctx, struct RenderPassDesc *passDesc, struct Framebuffer *fb, enum RenderCommandContents contents)
 {
-	for (uint32_t i = 0; i < fb->attachmentCount; ++i)
+	for (uint32_t i = 0; i < passDesc->attachmentCount; ++i)
 		passDesc->desc.colorAttachments[i].texture = fb->attachments[i];
+	
+	if (passDesc->depthFormat != MTLPixelFormatInvalid && passDesc->attachmentCount < fb->attachmentCount)
+		passDesc->desc.depthAttachment.texture = fb->attachments[passDesc->attachmentCount];
 
 	ctx->encoders.render = [ctx->cmdBuffer renderCommandEncoderWithDescriptor: passDesc->desc];
 }
@@ -192,7 +200,7 @@ static void
 _Dispatch(struct RenderContext *ctx, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
 {
 	[ctx->encoders.compute dispatchThreadgroups: MTLSizeMake(groupCountX, groupCountY, groupCountZ)
-						  threadsPerThreadgroup: MTLSizeMake(16, 16, 1)];
+						  threadsPerThreadgroup: ctx->threadsPerThreadgroup];
 }
 
 static void
@@ -200,7 +208,7 @@ _DispatchIndirect(struct RenderContext *ctx, struct Buffer *buff, uint64_t offse
 {
 	[ctx->encoders.compute dispatchThreadgroupsWithIndirectBuffer: buff->buff
 											 indirectBufferOffset: offset
-											threadsPerThreadgroup: MTLSizeMake(16, 16, 1)];
+											threadsPerThreadgroup: ctx->threadsPerThreadgroup];
 }
 
 static void

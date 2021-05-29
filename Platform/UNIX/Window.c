@@ -73,7 +73,7 @@ Sys_CreateWindow(void)
 	XSetWMProtocols(X11_display, win, &X11_WM_DELETE_WINDOW, 1);
 
 	XMapWindow(X11_display, win);
-	XStoreName(X11_display, win, "ProjectClaire");
+	XStoreName(X11_display, win, "Olivia");
 
 	memset(&xev, 0x0, sizeof(xev));
 	xev.type = ClientMessage;

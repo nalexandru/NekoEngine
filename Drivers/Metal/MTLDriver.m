@@ -116,7 +116,7 @@ _EnumerateDevices(uint32_t *count, struct RenderDeviceInfo *info)
 	info->features.astcTextureCompression = true;
 	info->features.secondaryCommandBuffers = false;
 	info->limits.maxTextureSize = 16384;
-	info[i].features.coherentMemory = true;
+	info->features.coherentMemory = true;
 		
 	info->private = dev;
 	

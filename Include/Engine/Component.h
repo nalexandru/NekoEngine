@@ -1,5 +1,5 @@
-#ifndef _E_COMPONENT_H_
-#define _E_COMPONENT_H_
+#ifndef _NE_ENGINE_COMPONENT_H_
+#define _NE_ENGINE_COMPONENT_H_
 
 #include <Engine/Types.h>
 
@@ -46,4 +46,4 @@ bool E_RegisterComponent(const wchar_t *name, size_t size, size_t alignment, Com
 
 #define REGISTER_COMPONENT(name, type, init_proc, release_proc)
 
-#endif /* _E_COMPONENT_H_ */
+#endif /* _NE_ENGINE_COMPONENT_H_ */

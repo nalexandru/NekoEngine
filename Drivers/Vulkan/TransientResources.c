@@ -2,13 +2,10 @@
 
 #include "VulkanDriver.h"
 
-/*static VkDeviceMemory _heapMemory;
-static VkDeviceSize *_heapSize, _heapOffset, _peakSize;*/
-
 struct Texture *
-Vk_CreateTransientTexture(struct RenderDevice *dev, const struct TextureCreateInfo *tci, uint64_t offset)
+Vk_CreateTransientTexture(struct RenderDevice *dev, const struct TextureCreateInfo *tci, uint16_t location, uint64_t offset)
 {
-	struct Texture *tex = Sys_Alloc(1, sizeof(*tex), MH_RenderDriver);
+	struct Texture *tex = Sys_Alloc(1, sizeof(*tex), MH_Frame);
 	if (!tex)
 		return NULL;
 
@@ -20,15 +17,40 @@ Vk_CreateTransientTexture(struct RenderDevice *dev, const struct TextureCreateIn
 	if (!Vk_CreateImageView(dev, tci, tex))
 		goto error;
 
+	if (location)
+			Vk_SetTexture(dev, location, tex->imageView);
+
+	return tex;
+
 error:
+	if (tex->image)
+		vkDestroyImage(dev->dev, tex->image, Vkd_allocCb);
 	Sys_Free(tex);
 	return NULL;
 }
 
 struct Buffer *
-Vk_CreateTransientBuffer(struct RenderDevice *dev, const struct BufferCreateInfo *bci, uint64_t offset)
+Vk_CreateTransientBuffer(struct RenderDevice *dev, const struct BufferCreateInfo *bci, uint16_t location, uint64_t offset)
 {
-	return NULL;
+	struct Buffer *buff = Sys_Alloc(1, sizeof(*buff), MH_Frame);
+	if (!buff)
+		return NULL;
+
+	VkBufferCreateInfo buffInfo =
+	{
+		.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+		.size = bci->desc.size,
+		.usage = bci->desc.usage | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+		.sharingMode = VK_SHARING_MODE_EXCLUSIVE
+	};
+	vkCreateBuffer(dev->dev, &buffInfo, Vkd_allocCb, &buff->buff);
+
+	vkBindBufferMemory(dev->dev, buff->buff, dev->transientHeap, offset);
+
+	if (location)
+		Vk_SetBuffer(dev, location, buff->buff);
+
+	return buff;
 }
 
 bool
@@ -38,7 +60,7 @@ Vk_InitTransientHeap(struct RenderDevice *dev, uint64_t size)
 	{
 		.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
 		.allocationSize = size,
-		.memoryTypeIndex = 0
+		.memoryTypeIndex = Vkd_MemoryTypeIndex(dev, 0x90, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) // this *might* break
 	};
 	return vkAllocateMemory(dev->dev, &ai, Vkd_allocCb, &dev->transientHeap) == VK_SUCCESS;
 }

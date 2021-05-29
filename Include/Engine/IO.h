@@ -1,5 +1,5 @@
-#ifndef _E_IO_H_
-#define _E_IO_H_
+#ifndef _NE_ENGINE_IO_H_
+#define _NE_ENGINE_IO_H_
 
 #include <stdio.h>
 #include <string.h>
@@ -187,4 +187,4 @@ E_EndOfStream(const struct Stream *stm)
 		return true;
 }
 
-#endif /* _E_IO_H_ */
+#endif /* _NE_ENGINE_IO_H_ */

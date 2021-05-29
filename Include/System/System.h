@@ -1,5 +1,5 @@
-#ifndef _SYS_SYSTEM_H_
-#define _SYS_SYSTEM_H_
+#ifndef _NE_SYSTEM_SYSTEM_H_
+#define _NE_SYSTEM_SYSTEM_H_
 
 #include <wchar.h>
 #include <string.h>
@@ -38,6 +38,14 @@ enum SystemDirectory
 	SD_APP_DATA,
 	SD_TEMP
 };
+
+#if defined(__GNUC__) || defined(__clang__)
+#	define likely(x)		__builtin_expect(!!(x), 1)
+#	define unlikely(x)		__builtin_expect(!!(x), 0)
+#else
+#	define likely(x)		x
+#	define unlikely(x)		x
+#endif
 
 bool Sys_Init(void);
 void Sys_Term(void);
@@ -89,4 +97,4 @@ int getopt(int nargc, char *const nargv[], const char *ostr);
 extern int opterr, optind, optopt, optreset;
 extern char *optarg;
 
-#endif /* _SYS_SYSTEM_H_ */
+#endif /* _NE_SYSTEM_SYSTEM_H_ */

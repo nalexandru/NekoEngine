@@ -79,6 +79,21 @@ static uint16_t _indices[] =
 };
 static struct Mesh _mesh = { 0, 4, 0, 6 };
 
+static volatile uint64_t _jobStart;
+
+static void
+_SleepJob(int worker, void *args)
+{
+	Sys_Sleep(1);
+	Sys_LogEntry(L"JOB", LOG_DEBUG, L"Worker %d completed", worker);
+}
+
+static void
+_SleepCompleted(uint64_t id)
+{
+	Sys_LogEntry(L"JOB", LOG_DEBUG, L"Time: %f", ((double)Sys_Time() - (double)_jobStart) * 0.000000001);
+}
+
 bool
 App_InitApplication(int argc, char *argv[])
 {
@@ -133,13 +148,32 @@ App_InitApplication(int argc, char *argv[])
 		"Active", "true",
 		NULL
 	};
-	xfArgs[1] = "0.0, 0.5, -1.0";
+	xfArgs[1] = "0.0, 0.0, -1.0";
 	E_AddNewComponentS(scn, ent, E_ComponentTypeId(L"PlayerMovement"), NULL);
 	E_AddNewComponentS(scn, ent, E_ComponentTypeId(TRANSFORM_COMP), xfArgs);
 	E_AddNewComponentS(scn, ent, E_ComponentTypeId(CAMERA_COMP), camArgs);
 
+	ent = E_CreateEntityS(scn, NULL);
+
+	xfArgs[1] = "0.0, 0.0, -2.0";
+	xfArgs[3] = "90.0, 0.0, 0.0";
+
+	E_AddNewComponentS(scn, ent, E_ComponentTypeId(TRANSFORM_COMP), xfArgs);
+
+	const void *mrArgs[] =
+	{
+		"Model", "/Models/Kat.glb",
+		NULL
+	};
+	E_AddNewComponentS(scn, ent, E_ComponentTypeId(MODEL_RENDER_COMP), mrArgs);
+
 	scn->loaded = true;
 	Scn_ActivateScene(scn);
+
+	_jobStart = Sys_Time();
+	E_DispatchJobs(E_JobWorkerThreads(), _SleepJob, NULL, _SleepCompleted);
+	
+	Sys_LogEntry(L"JOB", LOG_DEBUG, L"Dispatched %d workers", E_JobWorkerThreads());
 
 	return true;
 }
@@ -182,17 +216,20 @@ App_PlayerMovement(void **comp, void *args)
 	struct vec3 raxis = { 0.f, -1.f, 0.f };
 	float xlate, rot;
 
+	if (In_UnmappedButtonDown(BTN_KEY_ESCAPE, 0))
+		E_Shutdown();
+
 	xlate = mvmt->movementSpeed * (float)E_deltaTime;
 	rot = mvmt->rotationSpeed * (float)E_deltaTime;
 
 	xform_rotate(xform, In_Axis(mvmt->rotateHorizontal) * rot, &raxis);
 
 	v3_copy(&raxis, &xform->right);
-	xform_rotate(xform, (In_Axis(mvmt->rotateVertical) * -1.f) * rot, &raxis);
+	xform_rotate(xform, In_Axis(mvmt->rotateVertical) * rot, &raxis);
 
 	xform_move_forward(xform, In_Axis(mvmt->moveForward) * xlate);
 	xform_move_right(xform, In_Axis(mvmt->moveRight) * xlate);
-	xform_move_up(xform, In_Axis(mvmt->moveUp) * -xlate);
+	xform_move_up(xform, In_Axis(mvmt->moveUp) * xlate);
 }
 
 void

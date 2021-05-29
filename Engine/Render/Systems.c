@@ -10,6 +10,8 @@
 #include <Scene/Transform.h>
 #include <System/Thread.h>
 
+static THREAD_LOCAL size_t _transparentDrawableCount = 10;
+
 void
 Re_CollectDrawables(void **comp, struct CollectDrawablesArgs *args)
 {
@@ -17,9 +19,12 @@ Re_CollectDrawables(void **comp, struct CollectDrawablesArgs *args)
 	struct ModelRender *mr = comp[1];
 	struct Model *mdl = NULL;
 	struct mat4 mvp;
+	struct Array transparentDrawables;
+	size_t usedTransparentDrawables = 0;
+
+	Rt_InitArray(&transparentDrawables, _transparentDrawableCount, sizeof(struct Drawable), MH_Transient);
 
 	// TODO: visibility
-
 	struct Array *drawables = &args->arrays[atomic_fetch_add(&args->nextArray, 1)];
 	mdl = E_ResourcePtr(mr->model);
 	if (!mdl)
@@ -30,9 +35,20 @@ Re_CollectDrawables(void **comp, struct CollectDrawablesArgs *args)
 	for (uint32_t i = 0; i < mdl->meshCount; ++i) {
 		// TODO: visibility
 
-		struct Drawable *d = Rt_ArrayAllocate(drawables);
+		struct Drawable *d = NULL;
+		
+		if (!mr->materials[i].alphaBlend) {
+			d = Rt_ArrayAllocate(drawables);
+		} else {
+			++usedTransparentDrawables;
+			
+			if (transparentDrawables.count == transparentDrawables.size)
+				continue;
 
-		d->vertexBuffer = mdl->gpu.vertexBuffer;
+			d = Rt_ArrayAllocate(&transparentDrawables);
+		}
+
+		d->vertexAddress = Re_BufferAddress(mdl->gpu.vertexBuffer, sizeof(struct Vertex) * mdl->meshes[i].vertexOffset);
 		d->indexBuffer = mdl->gpu.indexBuffer;
 		d->indexType = mdl->indexType;
 
@@ -44,5 +60,10 @@ Re_CollectDrawables(void **comp, struct CollectDrawablesArgs *args)
 		d->materialAddress = Re_MaterialAddress(&mr->materials[i]);
 
 		m4_copy(&d->mvp, &mvp);
+	}
+
+	if (transparentDrawables.count) {
+		// TODO: sort transparent drawables
+		Rt_ArrayAddArray(drawables, &transparentDrawables);
 	}
 }

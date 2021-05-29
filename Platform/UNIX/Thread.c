@@ -7,8 +7,18 @@
 #include <sched.h>
 #include <pthread.h>
 
+#if defined(__FreeBSD__)
+#	include <sys/param.h>
+#	include <sys/cpuset.h>
+#	include <pthread_np.h>
+#elif defined(__OpenBSD__)
+#	include <pthread_np.h>
+#endif
+
+#include <System/System.h>
 #include <System/Thread.h>
 #include <System/Memory.h>
+#include <Runtime/Runtime.h>
 
 #include "UNIXPlatform.h"
 
@@ -20,8 +30,12 @@ Sys_InitThread(Thread *t, const wchar_t *name, void (*proc)(void *), void *args)
 	if (!pthread_create((pthread_t *)t, NULL, (void *(*)(void *))proc, args))
 		return false;
 	
-	#if defined(__linux__)	
-	//	pthread_setname_np(t, name);
+	char *mbName = Rt_WcsToMbs(name);
+	
+	#if defined(__linux__) || defined(__NetBSD__)
+		pthread_setname_np(*((pthread_t *)t), mbName);
+	#elif defined(__FreeBSD__) || defined(__OpenBSD__)
+		pthread_set_name_np(*((pthread_t *)t), mbName);
 	#else
 	#	warning "Thread naming not implemented for this platform"
 	#endif
@@ -33,10 +47,18 @@ void
 Sys_SetThreadAffinity(Thread t, int cpu)
 {
 #if defined(__linux__)
-	cpu_set_t cpu_set;
-	CPU_ZERO(&cpu_set);
-	CPU_SET(cpu, &cpu_set);
-	pthread_setaffinity_np((pthread_t)t, sizeof(cpu_set_t), &cpu_set);
+	cpu_set_t set;
+	CPU_ZERO(&set);
+	CPU_SET(cpu, &set);
+	pthread_setaffinity_np((pthread_t)t, sizeof(set), &set);
+#elif defined(__FreeBSD__)
+	cpuset_t set;
+	CPU_ZERO(&set);
+	CPU_SET(cpu, &set);
+	pthread_setaffinity_np((pthread_t)t, sizeof(set), &set);
+	//cpuset_setaffinity(CPU_LEVEL_WHICH, CPU_WHICH_TID, -1, sizeof(set), &set);
+#elif defined(__OpenBSD__)
+	// cpu affinity is not exposed in userland on OpenBSD
 #else
 #	warning "Thread affinity not implemented for this platform"
 #endif

@@ -20,16 +20,35 @@ list(FILTER src EXCLUDE REGEX ".*volk.c$")
 
 set(CMAKE_C_STANDARD 11)
 
+find_program(GLSLC glslc)
+find_program(GLSLV glslangValidator)
+
+if (GLSLC)
+	message(STATUS "Using glslc")
+elseif (GLSLV)
+	message(STATUS "Using glslangValidator")
+else ()
+	message(FATAL_ERROR "No shader compiler found")
+endif ()
+
 function(add_vulkan_shader INPUT_FILE)
-	find_program(GLSLC glslc)
-		
 	get_filename_component(NAME ${INPUT_FILE} NAME_WE)
 		
-	add_custom_target(${NAME}
-		COMMAND ${GLSLC} --target-env=vulkan1.2 -O Shaders/${INPUT_FILE} -o ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Data/Shaders/Vulkan/${NAME}.spv
-		DEPENDS Shaders/${INPUT_FILE}
-		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-	)
+	if (GLSLC)
+		add_custom_target(${NAME}
+			COMMAND ${GLSLC} --target-env=vulkan1.2 -O Shaders/${INPUT_FILE} -o ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Data/Shaders/Vulkan/${NAME}.spv
+			DEPENDS Shaders/${INPUT_FILE}
+			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+		)
+	elseif (GLSLV)
+		add_custom_target(${NAME}
+			COMMAND ${GLSLV} --target-env vulkan1.2 -o ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Data/Shaders/Vulkan/${NAME}.spv Shaders/${INPUT_FILE}
+			DEPENDS Shaders/${INPUT_FILE}
+			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+		)
+	else ()
+		message(FATAL_ERROR "No shader compiler found")
+	endif ()
 	
 	add_dependencies(VulkanDriver ${NAME})
 endfunction()

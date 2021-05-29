@@ -1,5 +1,5 @@
-#ifndef _SCN_SCENE_H_
-#define _SCN_SCENE_H_
+#ifndef _NE_SCENE_SCENE_H_
+#define _NE_SCENE_SCENE_H_
 
 #include <Engine/Types.h>
 #include <Scene/Scene.h>
@@ -29,4 +29,4 @@ void Scn_UnloadScene(struct Scene *scn);
 
 bool Scn_ActivateScene(struct Scene *scn);
 
-#endif /* _SCN_SCENE_H_ */
+#endif /* _NE_SCENE_SCENE_H_ */

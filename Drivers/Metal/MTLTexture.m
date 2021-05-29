@@ -1,14 +1,13 @@
 #include "MTLDriver.h"
 
-struct Texture *
-MTL_CreateTextureInternal(id<MTLDevice> dev, struct Texture *tex, const struct TextureCreateInfo *tci, bool transient, uint16_t location)
+MTLTextureDescriptor *
+MTL_TextureDescriptor(id<MTLDevice> dev, const struct TextureCreateInfo *tci)
 {
 	MTLTextureDescriptor *desc = [[MTLTextureDescriptor alloc] init];
 	
 	desc.pixelFormat = NeToMTLTextureFormat(tci->desc.format);
 	if (desc.pixelFormat == MTLPixelFormatInvalid) {
-		[desc autorelease];
-		Sys_Free(tex);
+		[desc release];
 		return NULL;
 	}
 	
@@ -34,8 +33,21 @@ MTL_CreateTextureInternal(id<MTLDevice> dev, struct Texture *tex, const struct T
 	desc.arrayLength = tci->desc.arrayLayers;
 	desc.mipmapLevelCount = tci->desc.mipLevels;
 	
-	if (transient)
-		desc.resourceOptions |= MTLResourceStorageModeMemoryless;
+	return desc;
+}
+
+struct Texture *
+MTL_CreateTexture(id<MTLDevice> dev, const struct TextureCreateInfo *tci, uint16_t location)
+{
+	MTLTextureDescriptor *desc = MTL_TextureDescriptor(dev, tci);
+	if (!desc)
+		return NULL;
+	
+	struct Texture *tex = Sys_Alloc(sizeof(*tex), 1, MH_RenderDriver);
+	if (!tex) {
+		[desc release];
+		return NULL;
+	}
 	
 	memcpy(&tex->desc, &tci->desc, sizeof(tex->desc));
 	tex->tex = [dev newTextureWithDescriptor: desc];
@@ -44,47 +56,42 @@ MTL_CreateTextureInternal(id<MTLDevice> dev, struct Texture *tex, const struct T
 	
 	MTL_SetTexture(location, tex->tex);
 	
-	if (tci->data) {
-		id<MTLBuffer> staging = [dev newBufferWithBytes: tci->data length: tci->dataSize options: MTLResourceStorageModeShared];
-		
-		id<MTLCommandQueue> queue = [dev newCommandQueue];
-		id<MTLCommandBuffer> cmdBuffer = [queue commandBuffer];
-		id<MTLBlitCommandEncoder> encoder = [cmdBuffer blitCommandEncoder];
-		
-		[encoder copyFromBuffer: staging
-				   sourceOffset: 0
-			  sourceBytesPerRow: tci->desc.width * 4 * sizeof(uint8_t)
-			sourceBytesPerImage: 0
-					 sourceSize: MTLSizeMake(tci->desc.width, tci->desc.height, tci->desc.depth)
-					  toTexture: tex->tex
-			   destinationSlice: 0
-			   destinationLevel: 0
-			  destinationOrigin: MTLOriginMake(0, 0, 0)];
-		[encoder endEncoding];
-		
-		[cmdBuffer commit];
-		[cmdBuffer waitUntilCompleted];
-		
-	#if TARGET_OS_OSX
-		[encoder autorelease];
-		[cmdBuffer autorelease];
-		[queue autorelease];
-		[staging autorelease];
-	#endif
-	}
+	if (tci->data)
+		MTL_UploadTexture(dev, tex->tex, tci->data, tci->dataSize, tci->desc.width, tci->desc.height, tci->desc.depth);
 	
 	return tex;
 }
 
-struct Texture *
-MTL_CreateTexture(id<MTLDevice> dev, const struct TextureCreateInfo *tci, uint16_t location)
+void
+MTL_UploadTexture(id<MTLDevice> dev, id<MTLTexture> tex, const void *data, NSUInteger size, uint32_t width, uint32_t height, uint32_t depth)
 {
-	struct Texture *tex = Sys_Alloc(sizeof(*tex), 1, MH_RenderDriver);
-	if (!tex)
-		return NULL;
-	return MTL_CreateTextureInternal(dev, tex, tci, false, location);
+	id<MTLBuffer> staging = [dev newBufferWithBytes: data length: size options: MTLResourceStorageModeShared];
+		
+	id<MTLCommandQueue> queue = [dev newCommandQueue];
+	id<MTLCommandBuffer> cmdBuffer = [queue commandBuffer];
+	id<MTLBlitCommandEncoder> encoder = [cmdBuffer blitCommandEncoder];
+		
+	[encoder copyFromBuffer: staging
+			   sourceOffset: 0
+		  sourceBytesPerRow: width * 4 * sizeof(uint8_t)
+		sourceBytesPerImage: 0
+				 sourceSize: MTLSizeMake(width, height, depth)
+				  toTexture: tex
+		   destinationSlice: 0
+		   destinationLevel: 0
+		  destinationOrigin: MTLOriginMake(0, 0, 0)];
+	[encoder endEncoding];
+		
+	[cmdBuffer commit];
+	[cmdBuffer waitUntilCompleted];
+		
+#if TARGET_OS_OSX
+	[encoder autorelease];
+	[cmdBuffer autorelease];
+	[queue autorelease];
+	[staging autorelease];
+#endif
 }
-
 
 enum TextureLayout
 MTL_TextureLayout(const struct Texture *tex)

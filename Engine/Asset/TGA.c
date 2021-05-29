@@ -154,7 +154,7 @@ E_LoadTGAAsset(struct Stream *stm, struct TextureCreateInfo *tci)
 
 	data = stm->ptr;
 	if (!data) {
-		data = Sys_Alloc(sizeof(uint8_t), dataSize, MH_Transient);
+		data = Sys_Alloc(sizeof(uint8_t), dataSize, MH_Asset);
 		if (!data) {
 			Sys_Free(tci->data);
 			return false;
@@ -171,6 +171,9 @@ E_LoadTGAAsset(struct Stream *stm, struct TextureCreateInfo *tci)
 	tci->desc.width = hdr.width;
 	tci->desc.height = hdr.height;
 	tci->desc.format = hdr.bits == 8 ? TF_R8_UNORM : TF_R8G8B8A8_UNORM;
+	
+	if (data != stm->ptr)
+		Sys_Free(data);
 
 	return true;
 }

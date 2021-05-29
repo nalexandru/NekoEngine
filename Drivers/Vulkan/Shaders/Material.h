@@ -9,12 +9,23 @@ struct Material
 	float metallic;
 
 	float roughness;
-	//float _padding[3];
+	float alphaCutoff;
+	float clearCoat;
+	float clearCoatRoughness;
 
+	float transmission;
 	uint diffuseMap;
 	uint normalMap;
-	uint metallicMap;
-	uint roughnessMap;
+	uint metallicRoughnessMap;
+
+	uint occlusionMap;
+	uint transmissionMap;
+	uint emissionMap;
+	uint clearCoatNormalMap;
+
+	uint clearCoatRoughnessMap;
+	uint clearCoatMap;
+	uint alphaMaskMap;
 };
 
 layout(std430, buffer_reference) readonly buffer MaterialBuffer

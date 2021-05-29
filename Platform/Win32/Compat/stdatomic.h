@@ -7,7 +7,7 @@
 #include <stdint.h>
 #include <uchar.h>
 
-#define _Atomic volatile
+#define _Atomic
 
 #define ATOMIC_VAR_INIT(value)      (value)
 #define atomic_init(object, value)  (void)(*(object) = (value))

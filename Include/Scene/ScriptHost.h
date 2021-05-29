@@ -1,5 +1,5 @@
-#ifndef _SCN_SCRIPT_HOST_H_
-#define _SCN_SCRIPT_HOST_H_
+#ifndef _NE_SCENE_SCRIPT_HOST_H_
+#define _NE_SCENE_SCRIPT_HOST_H_
 
 #include <lua.h>
 
@@ -17,4 +17,4 @@ void Scn_TermScriptHost(struct ScriptHost *s);
 
 void Scn_ExecScriptHosts(void **comp, void *args);
 
-#endif /* _SCN_SCRIPT_HOST_H_ */
+#endif /* _NE_SCENE_SCRIPT_HOST_H_ */

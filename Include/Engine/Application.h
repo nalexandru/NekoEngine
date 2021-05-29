@@ -1,5 +1,5 @@
-#ifndef _E_APPLICATION_H_
-#define _E_APPLICATION_H_
+#ifndef _NE_ENGINE_APPLICATION_H_
+#define _NE_ENGINE_APPLICATION_H_
 
 #include <Engine/Types.h>
 
@@ -16,4 +16,4 @@ bool App_InitApplication(int argc, char *argv[]);
 void App_Render(uint32_t frameId);
 void App_TermApplication(void);
 
-#endif /* _E_APPLICATION_H_ */
+#endif /* _NE_ENGINE_APPLICATION_H_ */

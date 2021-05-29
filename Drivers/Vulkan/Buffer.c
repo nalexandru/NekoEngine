@@ -42,11 +42,58 @@ Vk_CreateBuffer(struct RenderDevice *dev, const struct BufferCreateInfo *bci, ui
 	if (!bci->data)
 		return buff;
 
-	VkCommandBuffer cb = Vkd_TransferCmdBuffer(dev);
+	if (bci->dataSize < 65535) {
+		VkCommandBuffer cb = Vkd_TransferCmdBuffer(dev);
+		vkCmdUpdateBuffer(cb, buff->buff, 0, bci->dataSize, bci->data);
+		Vkd_ExecuteCmdBuffer(dev, cb);
+	} else {
+		VkBufferCreateInfo stagingInfo =
+		{
+			.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+			.size = bci->dataSize,
+			.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+		};
 
-	vkCmdUpdateBuffer(cb, buff->buff, 0, bci->dataSize, bci->data);
+		VkBuffer staging;
+		vkCreateBuffer(dev->dev, &stagingInfo, Vkd_allocCb, &staging);
 
-	Vkd_ExecuteCmdBuffer(dev, cb);
+		VkMemoryRequirements bMemReq;
+		vkGetBufferMemoryRequirements(dev->dev, staging, &bMemReq);
+
+		VkMemoryAllocateInfo bMemAI =
+		{
+			.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+			.allocationSize = bMemReq.size,
+			.memoryTypeIndex = Vkd_MemoryTypeIndex(dev, req.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
+		};
+
+		VkDeviceMemory stagingMem;
+		vkAllocateMemory(dev->dev, &bMemAI, Vkd_allocCb, &stagingMem);
+
+		vkBindBufferMemory(dev->dev, staging, stagingMem, 0);
+
+		void *stagingData = NULL;
+		vkMapMemory(dev->dev, stagingMem, 0, VK_WHOLE_SIZE, 0, &stagingData);
+
+		memcpy(stagingData, bci->data, bci->dataSize);
+
+		vkUnmapMemory(dev->dev, stagingMem);
+
+		VkCommandBuffer cb = Vkd_TransferCmdBuffer(dev);
+
+		VkBufferCopy copy =
+		{
+			.srcOffset = 0,
+			.dstOffset = 0,
+			.size = bci->dataSize
+		};
+		vkCmdCopyBuffer(cb, staging, buff->buff, 1, &copy);
+
+		Vkd_ExecuteCmdBuffer(dev, cb);
+
+		vkDestroyBuffer(dev->dev, staging, Vkd_allocCb);
+		vkFreeMemory(dev->dev, stagingMem, Vkd_allocCb);
+	}
 
 	return buff;
 }

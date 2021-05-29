@@ -16,11 +16,7 @@ static struct Queue _freeList;
 bool
 Re_CreateBuffer(const struct BufferCreateInfo *bci, BufferHandle *handle)
 {
-	if (_freeList.count)
-		*handle = *(uint16_t *)Rt_QueuePop(&_freeList);
-	else if (_nextId < UINT16_MAX)
-		*handle = _nextId++;
-	else
+	if (!Re_ReserveBufferId(handle))
 		return false;
 
 	struct BufferInfo *info = &_buffers[*handle];
@@ -74,6 +70,25 @@ void
 Re_DestroyBuffer(BufferHandle handle)
 {
 	Re_deviceProcs.DestroyBuffer(Re_device, _buffers[handle].buff);
+	Re_ReleaseBufferId(handle);
+}
+
+bool
+Re_ReserveBufferId(BufferHandle *handle)
+{
+	if (_freeList.count)
+		*handle = *(BufferHandle *)Rt_QueuePop(&_freeList);
+	else if (_nextId < UINT16_MAX)
+		*handle = _nextId++;
+	else
+		return false;
+
+	return true;
+}
+
+void
+Re_ReleaseBufferId(BufferHandle handle)
+{
 	Rt_QueuePush(&_freeList, &handle);
 }
 
@@ -86,7 +101,7 @@ Re_CmdBindIndexBuffer(BufferHandle handle, uint64_t offset, enum IndexType type)
 bool
 Re_InitBufferSystem(void)
 {
-	return Rt_InitQueue(&_freeList, UINT16_MAX, sizeof(struct BufferInfo), MH_Render);
+	return Rt_InitQueue(&_freeList, UINT16_MAX, sizeof(BufferHandle), MH_Render);
 }
 
 void

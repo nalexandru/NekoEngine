@@ -6,12 +6,16 @@
 #include <Engine/Resource.h>
 #include <Render/Render.h>
 
+static Handle _placeholderTexture;
 static struct Sampler *_sceneSampler;
 
+static bool _CreateTextureResource(const char *name, const struct TextureCreateInfo *ci, struct TextureResource *tex, Handle h);
+static bool _LoadTextureResource(struct ResourceLoadInfo *li, const char *args, struct TextureResource *tex, Handle h);
+static void _UnloadTextureResource(struct TextureResource *tex, Handle h);
 static inline struct Texture *_CreateTexture(const struct TextureCreateInfo *tci, uint16_t location) { return Re_deviceProcs.CreateTexture(Re_device, tci, location); };
 
-bool
-Re_CreateTextureResource(const char *name, const struct TextureCreateInfo *ci, struct TextureResource *tex, Handle h)
+static bool
+_CreateTextureResource(const char *name, const struct TextureCreateInfo *ci, struct TextureResource *tex, Handle h)
 {
 	if ((h & 0x00000000FFFFFFFF) > (uint64_t)65535)
 		return false;
@@ -26,8 +30,8 @@ Re_CreateTextureResource(const char *name, const struct TextureCreateInfo *ci, s
 	return true;
 }
 
-bool
-Re_LoadTextureResource(struct ResourceLoadInfo *li, const char *args, struct TextureResource *tex, Handle h)
+static bool
+_LoadTextureResource(struct ResourceLoadInfo *li, const char *args, struct TextureResource *tex, Handle h)
 {
 	if ((h & 0x00000000FFFFFFFF) > (uint64_t)65535)
 		return false;
@@ -60,8 +64,8 @@ Re_LoadTextureResource(struct ResourceLoadInfo *li, const char *args, struct Tex
 	return tex->texture != NULL;
 }
 
-void
-Re_UnloadTextureResource(struct TextureResource *tex, Handle h)
+static void
+_UnloadTextureResource(struct TextureResource *tex, Handle h)
 {
 	Re_Destroy(tex->texture);
 }
@@ -83,6 +87,10 @@ Re_TextureLayout(TextureHandle tex)
 bool
 Re_InitTextureSystem(void)
 {
+	if (!E_RegisterResourceType(RES_TEXTURE, sizeof(struct TextureResource), (ResourceCreateProc)_CreateTextureResource,
+							(ResourceLoadProc)_LoadTextureResource, (ResourceUnloadProc)_UnloadTextureResource))
+		return false;
+
 	struct SamplerDesc desc =
 	{
 		.minFilter = IF_LINEAR,
@@ -90,13 +98,37 @@ Re_InitTextureSystem(void)
 		.mipmapMode = SMM_LINEAR,
 		.enableAnisotropy = E_GetCVarBln(L"Render_AnisotropicFiltering", true)->bln,
 		.maxAnisotropy = E_GetCVarFlt(L"Render_Anisotropy", 16)->flt,
-		.addressModeU = SAM_CLAMP_TO_EDGE,
-		.addressModeV = SAM_CLAMP_TO_EDGE,
-		.addressModeW = SAM_CLAMP_TO_EDGE
+		.addressModeU = SAM_REPEAT,
+		.addressModeV = SAM_REPEAT,
+		.addressModeW = SAM_REPEAT
 	};
 	_sceneSampler = Re_CreateSampler(&desc);
 	if (!_sceneSampler)
 		return false;
+
+	// hot pink so it's ugly and it stands out
+	uint8_t texData[] = { 255, 105, 180, 255 };
+	struct TextureCreateInfo tci =
+	{
+		.desc =
+		{
+			.width = 1,
+			.height = 1,
+			.depth = 1,
+			.type = TT_2D,
+			.usage = TU_SAMPLED | TU_TRANSFER_DST,
+			.format = TF_R8G8B8A8_UNORM,
+			.arrayLayers = 1,
+			.mipLevels = 1,
+			.gpuOptimalTiling = true,
+			.memoryType = MT_GPU_LOCAL
+		},
+		.data = texData,
+		.dataSize = sizeof(texData),
+		.keepData = true
+	};
+	_placeholderTexture = E_CreateResource("__PlaceholderTexture", RES_TEXTURE, &tci);
+	E_ReleaseResource(_placeholderTexture);
 
 	return true;
 }

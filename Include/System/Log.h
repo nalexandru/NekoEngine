@@ -1,5 +1,5 @@
-#ifndef _SYSTEM_LOG_H_
-#define _SYSTEM_LOG_H_
+#ifndef _NE_SYSTEM_LOG_H_
+#define _NE_SYSTEM_LOG_H_
 
 #include <wchar.h>
 #include <stdint.h>

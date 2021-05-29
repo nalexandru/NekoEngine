@@ -68,7 +68,7 @@ _Execute(struct DepthPrePass *pass, void *resources)
 	struct Drawable *d;
 	Rt_ArrayForEach(d, drawables) {
 		constants.material = 0;
-		constants.vertexBuffer = d->vertexBuffer;
+	//	constants.vertexBuffer = d->vertexBuffer;
 		Re_CmdPushConstants(SS_ALL_GRAPHICS, sizeof(constants), &constants);
 
 		if (d->indexBuffer != boundIndexBuffer) {

@@ -498,7 +498,9 @@ Sys_InitPlatform(void)
 void
 Sys_TermPlatform(void)
 {
-	//XCloseDisplay(X11_display);
+#ifndef __linux__	// this crashes on Linux and i'm too lazy to find out why
+	XCloseDisplay(X11_display);
+#endif
 }
 
 void
@@ -577,6 +579,27 @@ _CpuInfo(void)
 		}
 		fclose(fp);
 	}
+#elif defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__MidnightBSD__) ||	\
+		defined(__DragonFly__) || defined(__NetBSD__)
+	char buff[512];
+	
+	FILE *fp = popen("/sbin/sysctl -n hw.model", "r");
+	if (fgets(buff, sizeof(buff), fp)) {
+		buff[strlen(buff) - 1] = 0x0;
+		snprintf(_cpuName, sizeof(_cpuName), "%s", buff);
+	}
+	pclose(fp);
+	
+#	ifdef __OpenBSD__
+		fp = popen("/sbin/sysctl -n hw.cpuspeed", "r");
+#	else
+		fp = popen("/sbin/sysctl -n hw.clockrate", "r");
+#	endif
+	if (fgets(buff, sizeof(buff), fp)) {
+		buff[strlen(buff) - 1] = 0x0;
+		_cpuFreq = atoi(buff);
+	}
+	pclose(fp);
 #else
 #	warning "Cpu info not implemented for this platform (Platform/UNIX/UNIX.c)"
 #endif

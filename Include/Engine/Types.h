@@ -1,5 +1,5 @@
-#ifndef _E_TYPES_H_
-#define _E_TYPES_H_
+#ifndef _NE_ENGINE_TYPES_H_
+#define _NE_ENGINE_TYPES_H_
 
 #include <wchar.h>
 #include <stdint.h>
@@ -46,6 +46,12 @@ struct AudioSource;
 struct AudioSourceProcs;
 struct AudioClip;
 
+struct Bone;
+struct Skeleton;
+struct SkeletonNode;
+struct AnimationClip;
+struct AnimationClipCreateInfo;
+
 struct Version
 {
 	uint8_t major;
@@ -82,4 +88,4 @@ struct mat4;
 #	define Atribute(...)
 #endif*/
 
-#endif /* _E_TYPES_H_ */
+#endif /* _NE_ENGINE_TYPES_H_ */

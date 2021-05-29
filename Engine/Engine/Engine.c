@@ -64,7 +64,7 @@ static struct EngineSubsystem _subsystems[] =
 	{ "Audio System", Au_Init, Au_Term },
 	{ "Resource Purge", NULL, E_PurgeResources },
 	{ "Input", In_InitInput, In_TermInput },
-	{ "Scripting", E_InitScriptSystem, E_TermScriptSystem }
+	{ "Scripting", Sc_InitScriptSystem, Sc_TermScriptSystem }
 };
 static const int32_t _subsystemCount = sizeof(_subsystems) / sizeof(_subsystems[0]);
 
@@ -176,37 +176,11 @@ E_Init(int argc, char *argv[])
 
 	Sys_ResetHeap(MH_Transient);
 
-	lua_State *vm = E_CreateVM(true);
-	E_LoadScriptFile(vm, "/Scripts/test.lua");
-	E_DestroyVM(vm);
+	lua_State *vm = Sc_CreateVM(true);
+	Sc_LoadScriptFile(vm, "/Scripts/test.lua");
+	Sc_DestroyVM(vm);
 
 	return true;
-}
-
-void
-E_Term(void)
-{
-	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Shutting down...");
-
-	Re_WaitIdle();
-
-	App_TermApplication();
-
-	if (Scn_activeScene)
-		Scn_UnloadScene(Scn_activeScene);
-
-	for (int32_t i = _subsystemCount - 1; i >= 0; --i) {
-		if (!_subsystems[i].term)
-			continue;
-		_subsystems[i].term();
-	}
-
-	Sys_LogMemoryStatistics();
-	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Shut down complete.");
-
-	E_TermConfig();
-	Sys_TermMemory();
-	Sys_Term();
 }
 
 int
@@ -275,4 +249,30 @@ E_ScreenResized(uint32_t width, uint32_t height)
 		Re_deviceProcs.ScreenResized(Re_device, Re_swapchain);
 
 	E_Broadcast(EVT_SCREEN_RESIZED, NULL);
+}
+
+void
+E_Term(void)
+{
+	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Shutting down...");
+
+	Re_WaitIdle();
+
+	App_TermApplication();
+
+	if (Scn_activeScene)
+		Scn_UnloadScene(Scn_activeScene);
+
+	for (int32_t i = _subsystemCount - 1; i >= 0; --i) {
+		if (!_subsystems[i].term)
+			continue;
+		_subsystems[i].term();
+	}
+
+	Sys_LogMemoryStatistics();
+	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Shut down complete.");
+
+	E_TermConfig();
+	Sys_TermMemory();
+	Sys_Term();
 }

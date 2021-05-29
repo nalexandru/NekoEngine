@@ -301,6 +301,19 @@ char *__PHYSFS_platformCalcBaseDir(const char *argv0)
         } /* else */
     } /* if */
 
+	if (retval == NULL) {
+		FILE *fp = popen("/bin/pwd", "r");
+		if (fp) {
+			char buff[512];
+			if (fgets(buff, sizeof(buff), fp)) {
+				buff[strlen(buff) - 1] = '/';
+				retval = allocator.Malloc(strlen(buff) + 1);
+				snprintf(retval, strlen(buff) + 1, "%s", buff);
+			}
+			pclose(fp);
+		}
+	}
+	
     /* No /proc/self/exe, etc, but we have an argv[0] we can parse? */
     if ((retval == NULL) && (argv0 != NULL))
     {

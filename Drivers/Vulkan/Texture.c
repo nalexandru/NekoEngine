@@ -56,7 +56,7 @@ Vk_CreateImageView(struct RenderDevice *dev, const struct TextureCreateInfo *tci
 		.components = { 0, 0, 0, 0 },
 		.subresourceRange =
 		{
-			.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+			.aspectMask = NeFormatAspect(tci->desc.format),
 			.baseMipLevel = 0,
 			.levelCount = tci->desc.mipLevels,
 			.baseArrayLayer = 0,

@@ -1,5 +1,5 @@
-#ifndef _E_EVENT_H_
-#define _E_EVENT_H_
+#ifndef _NE_ENGINE_EVENT_H_
+#define _NE_ENGINE_EVENT_H_
 
 #include <Engine/Types.h>
 
@@ -14,4 +14,4 @@ bool E_InitEventSystem(void);
 void E_TermEventSystem(void);
 void E_ProcessEvents(void);
 
-#endif /* _E_EVENT_H */
+#endif /* _NE_ENGINE_EVENT_H_ */

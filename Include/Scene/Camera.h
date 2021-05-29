@@ -1,5 +1,5 @@
-#ifndef _SCN_CAMERA_H_
-#define _SCN_CAMERA_H_
+#ifndef _NE_SCENE_CAMERA_H_
+#define _NE_SCENE_CAMERA_H_
 
 #include <Math/Math.h>
 #include <Engine/Types.h>
@@ -33,4 +33,4 @@ void Scn_ActivateCamera(struct Camera *cam);
 
 void Scn_UpdateCamera(void **comp, void *args);
 
-#endif /* _SCN_CAMERA_H_ */
+#endif /* _NE_SCENE_CAMERA_H_ */

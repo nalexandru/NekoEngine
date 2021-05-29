@@ -7,19 +7,13 @@
 #include <Runtime/Array.h>
 #include <System/System.h>
 #include <System/Memory.h>
+#include <System/Endian.h>
 #include <System/Log.h>
 
 #define CGLTF_IMPLEMENTATION
 #include "cgltf.h"
 
 #include "stb_image.h"
-
-struct Image
-{
-	uint64_t hash;
-	int channels;
-	enum TextureFormat format;
-};
 
 #define ADD_IMAGE(name, channels, fmt) {						\
 	struct Image img = { Rt_HashString(name), channels, fmt };	\
@@ -33,7 +27,7 @@ static void _gltfRelease(const struct cgltf_memory_options* memory_options, cons
 
 #define BUFFER_PTR(acc) ((uint8_t *)acc->buffer_view->buffer->data + acc->buffer_view->offset + acc->offset)
 
-static inline void _LoadMesh(const cgltf_mesh *mesh, struct Array *vertices, struct Array *indices, struct Array *meshes, struct Array *materials, enum IndexType it);
+static inline void _LoadMesh(const char *gltfPath, const cgltf_mesh *mesh, struct Array *vertices, struct Array *indices, struct Array *meshes, enum IndexType it);
 static inline Handle _CreateMaterial(const char *resName, const cgltf_material *mat);
 
 bool
@@ -41,7 +35,7 @@ E_LoadglTFAsset(struct ResourceLoadInfo *li, struct Model *m)
 {
 	cgltf_options opt = { 0 };
 	cgltf_data *gltf = NULL;
-	struct Array vertices = { 0 }, indices = { 0 }, meshes = { 0 }, materials = { 0 }, images = { 0 };
+	struct Array vertices = { 0 }, indices = { 0 }, meshes = { 0 };
 
 	opt.memory.alloc = _gltfAlloc;
 	opt.memory.free = _gltfFree;
@@ -81,8 +75,6 @@ E_LoadglTFAsset(struct ResourceLoadInfo *li, struct Model *m)
 
 	Rt_InitArray(&meshes, meshes.size, sizeof(struct Mesh), MH_Asset);
 	Rt_InitArray(&vertices, vertices.size, sizeof(struct Vertex), MH_Asset);
-	Rt_InitPtrArray(&materials, meshes.size, MH_Asset);
-	Rt_InitArray(&images, 10, sizeof(struct Image), MH_Asset);
 
 	size_t indexTypeSize = 1;
 	switch (it) {
@@ -92,8 +84,22 @@ E_LoadglTFAsset(struct ResourceLoadInfo *li, struct Model *m)
 
 	Rt_InitArray(&indices, indices.size, indexTypeSize, MH_Asset);
 
+	for (uint32_t i = 0; i < gltf->materials_count; ++i) {
+		const cgltf_material *mat = &gltf->materials[i];
+		assert(mat->name);
+
+		char *matResource = Sys_Alloc(4096, 1, MH_Transient);
+		snprintf(matResource, 4096, "%s#%s.mat", li->path, mat->name);
+
+		Handle res = E_LoadResource(matResource, RES_MATERIAL);
+		if (res == E_INVALID_HANDLE)
+			res = _CreateMaterial(matResource, mat);
+
+		E_ReleaseResource(res);
+	}
+
 	for (uint32_t i = 0; i < gltf->meshes_count; ++i)
-		_LoadMesh(&gltf->meshes[i], &vertices, &indices, &meshes, &materials, it);
+		_LoadMesh(li->path, &gltf->meshes[i], &vertices, &indices, &meshes, it);
 
 	m->cpu.vertices = vertices.data;
 	m->cpu.vertexSize = (uint32_t)Rt_ArrayByteSize(&vertices);
@@ -104,32 +110,15 @@ E_LoadglTFAsset(struct ResourceLoadInfo *li, struct Model *m)
 	m->meshes = (struct Mesh *)meshes.data;
 	m->meshCount = (uint32_t)meshes.count;
 
-	for (uint32_t i = 0; i < gltf->materials_count; ++i) {
-		const cgltf_material *mat = &gltf->materials[i];
-		assert(mat->name);
-
-		char *matResource = Sys_Alloc(4096, 1, MH_Transient);
-		snprintf(matResource, 4096, "%s#%s.mat", li->path, mat->name);
-
-		m->meshes->materialResource = E_LoadResource(matResource, RES_MATERIAL);
-		if (m->meshes->materialResource == E_INVALID_HANDLE)
-			m->meshes->materialResource = _CreateMaterial(matResource, mat);
-	}
-
 	for (uint32_t i = 0; i < gltf->images_count; ++i) {
-		size_t j = 0;
-		uint64_t hash = 0;
-		int x = 0, y = 0, comp = 0;
 		const cgltf_image *img = &gltf->images[i];
-		struct Image *imgInfo = NULL, *iiData = (struct Image *)images.data;
-		stbi_uc *imageData = NULL;
 		struct TextureCreateInfo tci =
 		{
 			.desc =
 			{
 				.width = 0, .height = 0, .depth = 1,
 				.type = TT_2D, .format = TF_R8G8B8A8_UNORM,
-				.usage = TU_SAMPLED,
+				.usage = TU_SAMPLED | TU_TRANSFER_DST,
 				.arrayLayers = 1, .mipLevels = 1,
 				.gpuOptimalTiling = true,
 				.memoryType = MT_GPU_LOCAL
@@ -142,32 +131,20 @@ E_LoadglTFAsset(struct ResourceLoadInfo *li, struct Model *m)
 		if (!img->buffer_view->buffer->data)
 			continue;
 
-		hash = Rt_HashString(img->name);
-		for (j = 0; j < images.count; ++j) {
-			if (iiData[j].hash != hash)
-				continue;
-
-			imgInfo = &iiData[j];
-			break;
-		}
-
-		if (!imgInfo)
+		int x = 0, y = 0, c = 0;
+		stbi_uc *imageData = stbi_load_from_memory((uint8_t *)img->buffer_view->buffer->data + img->buffer_view->offset, (int)img->buffer_view->buffer->size, &x, &y, &c, 4);
+		if (!imageData)
 			continue;
-
-		imageData = stbi_load_from_memory((uint8_t *)img->buffer_view->buffer->data + img->buffer_view->offset, (int)img->buffer_view->buffer->size, &x, &y, &comp, imgInfo->channels);
-
-		if (!imageData) {
-			continue;
-		}
 
 		tci.desc.width = x;
 		tci.desc.height = y;
 		tci.data = imageData;
-		tci.dataSize = sizeof(stbi_uc) * x * y * imgInfo->channels;
-		tci.desc.format = imgInfo->format;
+		tci.dataSize = sizeof(stbi_uc) * x * y * 4;
+		tci.desc.format = TF_R8G8B8A8_UNORM;
 
-		E_CreateResource(img->name, RES_TEXTURE, &tci);
-		Sys_Free(tci.data);
+		Handle res = E_CreateResource(img->name, RES_TEXTURE, &tci);
+		if (res != E_INVALID_HANDLE)
+			E_ReleaseResource(res);
 	}
 
 	cgltf_free(gltf);
@@ -232,29 +209,25 @@ _gltfRelease(const struct cgltf_memory_options *memoryOptions, const struct cglt
 }
 
 void
-_LoadMesh(const cgltf_mesh *mesh, struct Array *vertices, struct Array *indices, struct Array *meshes, struct Array *materials, enum IndexType it)
+_LoadMesh(const char *gltfPath, const cgltf_mesh *mesh, struct Array *vertices, struct Array *indices, struct Array *meshes, enum IndexType it)
 {
 	float *positions = NULL, *normals = NULL, *tangents = NULL, *texcoords = NULL;
 
 	for (uint32_t i = 0; i < mesh->primitives_count; ++i) {
 		const cgltf_primitive *prim = &mesh->primitives[i];
 		struct Mesh *dst = Rt_ArrayAllocate(meshes);
-		wchar_t *name = NULL;
 
 		if (prim->type != cgltf_primitive_type_triangles) {
-			//
+			// TODO: support other primitive types ?
 			continue;
 		}
 
-		name = NULL;
-		if (prim->material) {
-			name = Sys_Alloc(strlen(prim->material->name) + 1, sizeof(*name), MH_Asset);
-			mbstowcs(name, prim->material->name, strlen(prim->material->name));
-		} else {
-			name = wcsdup(L"Default");
-		}
-
-		Rt_ArrayAddPtr(materials, name);
+		char *matResource = Sys_Alloc(4096, 1, MH_Transient);
+		if (prim->material)
+			snprintf(matResource, 4096, "%s#%s.mat", gltfPath, prim->material->name);
+		else
+			snprintf(matResource, 4096, "/Materials/Default.mat");
+		dst->materialResource = E_LoadResource(matResource, RES_MATERIAL);
 
 		dst->vertexOffset = (uint32_t)vertices->count;
 		dst->indexOffset = (uint32_t)indices->count;
@@ -392,13 +365,31 @@ _CreateMaterial(const char *resName, const cgltf_material *mat)
 	break;
 	}
 
-#define ADD_ARG(x) assert(args < mrci.args + 20); *args++ = (void *)x
+#define ADD_ARG(x) assert(args < mrci.args + 40); *args++ = (void *)x
+#define ADD_ARG_F(x)														 \
+{																			 \
+	char *arg = Sys_Alloc(sizeof(char), 20, MH_Transient);					 \
+	snprintf(arg, 20, "%.04f", x);											 \
+	ADD_ARG(arg);															 \
+}
+#define ADD_ARG_F3(x)														 \
+{																			 \
+	char *arg = Sys_Alloc(sizeof(char), 60, MH_Transient);					 \
+	snprintf(arg, 60, "%.04f, %.04f, %.04f", x[0], x[1], x[2]);				 \
+	ADD_ARG(arg);															 \
+}
+#define ADD_ARG_F4(x)														 \
+{																			 \
+	char *arg = Sys_Alloc(sizeof(char), 80, MH_Transient);					 \
+	snprintf(arg, 80, "%.04f, %.04f, %.04f, %.04f", x[0], x[1], x[2], x[3]); \
+	ADD_ARG(arg);															 \
+}
 
-	ADD_ARG("AlphaCutoffF");
-	ADD_ARG(&mat->alpha_cutoff);
+	ADD_ARG("AlphaCutoff");
+	ADD_ARG_F(mat->alpha_cutoff);
 
-	ADD_ARG("EmissiveColorF");
-	ADD_ARG(&mat->emissive_factor);
+	ADD_ARG("EmissiveColor");
+	ADD_ARG_F3(mat->emissive_factor);
 
 	if (mat->normal_texture.texture) {
 		ADD_ARG("NormalMap");
@@ -416,14 +407,14 @@ _CreateMaterial(const char *resName, const cgltf_material *mat)
 	}
 
 	if (mat->has_pbr_metallic_roughness) {
-		ADD_ARG("RoughnessF");
-		ADD_ARG(&mat->pbr_metallic_roughness.roughness_factor);
+		ADD_ARG("Roughness");
+		ADD_ARG_F(mat->pbr_metallic_roughness.roughness_factor);
 
-		ADD_ARG("MetallicF");
-		ADD_ARG(&mat->pbr_metallic_roughness.metallic_factor);
+		ADD_ARG("Metallic");
+		ADD_ARG_F(mat->pbr_metallic_roughness.metallic_factor);
 
-		ADD_ARG("DiffuseF");
-		ADD_ARG(&mat->pbr_metallic_roughness.base_color_factor);
+		ADD_ARG("DiffuseColor");
+		ADD_ARG_F4(mat->pbr_metallic_roughness.base_color_factor);
 
 		if (mat->pbr_metallic_roughness.base_color_texture.texture) {
 			ADD_ARG("DiffuseMap");
@@ -453,19 +444,19 @@ _CreateMaterial(const char *resName, const cgltf_material *mat)
 			ADD_ARG(mat->clearcoat.clearcoat_roughness_texture.texture->image->name);
 		}
 
-		ADD_ARG("ClearCoatF");
-		ADD_ARG(&mat->clearcoat.clearcoat_factor);
+		ADD_ARG("ClearCoat");
+		ADD_ARG_F(mat->clearcoat.clearcoat_factor);
 
-		ADD_ARG("ClearCoatRoughnessF");
-		ADD_ARG(&mat->clearcoat.clearcoat_roughness_factor);
+		ADD_ARG("ClearCoatRoughness");
+		ADD_ARG_F(mat->clearcoat.clearcoat_roughness_factor);
 	}
 
 	if (mat->has_transmission) {
 		ADD_ARG("TransmissionMap");
 		ADD_ARG(mat->transmission.transmission_texture.texture->image->name);
 
-		ADD_ARG("TransmissionF");
-		ADD_ARG(&mat->transmission.transmission_factor);
+		ADD_ARG("Transmission");
+		ADD_ARG_F(mat->transmission.transmission_factor);
 	}
 
 	strncpy(mrci.name, mat->name, sizeof(mrci.name));

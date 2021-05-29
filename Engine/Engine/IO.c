@@ -34,11 +34,6 @@ E_OpenFile(const char *path, FileOpenMode mode)
 		break;
 	}
 
-	if (!f)
-		Sys_LogEntry(IO_MODULE, LOG_CRITICAL,
-			L"Failed to open file [%hs], %hs", path,
-			PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
-
 	return (File)f;
 }
 
@@ -326,6 +321,9 @@ E_CreateDirectory(const char *path)
 bool
 E_FileStream(const char *path, FileOpenMode mode, struct Stream *stm)
 {
+	if (!path || !strlen(path))
+		return false;
+
 	memset(stm, 0x0, sizeof(*stm));
 
 	if (Sys_Capabilities() & SC_MMIO) {
@@ -345,7 +343,7 @@ E_FileStream(const char *path, FileOpenMode mode, struct Stream *stm)
 		stm->type = ST_File;
 	}
 
-	return true;
+	return stm->ptr || stm->f;
 }
 
 bool

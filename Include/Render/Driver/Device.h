@@ -1,5 +1,5 @@
-#ifndef _RE_DEVICE_H_
-#define _RE_DEVICE_H_
+#ifndef _NE_RENDER_DRIVER_DEVICE_H_
+#define _NE_RENDER_DRIVER_DEVICE_H_
 
 #include <Render/Types.h>
 
@@ -36,11 +36,11 @@ struct RenderDeviceProcs
 	uint64_t (*BufferAddress)(struct RenderDevice *dev, const struct Buffer *buff, uint64_t offset);
 	void (*ResetContext)(struct RenderDevice *dev, struct RenderContext *ctx);
 
-	struct Texture *(*CreateTransientTexture)(struct RenderDevice *dev, const struct TextureCreateInfo *tci, uint64_t offset);
-	struct Buffer *(*CreateTransientBuffer)(struct RenderDevice *dev, const struct BufferCreateInfo *bci, uint64_t offset);
+	struct Texture *(*CreateTransientTexture)(struct RenderDevice *dev, const struct TextureCreateInfo *tci, uint16_t location, uint64_t offset);
+	struct Buffer *(*CreateTransientBuffer)(struct RenderDevice *dev, const struct BufferCreateInfo *bci, uint16_t location, uint64_t offset);
 
 	struct Pipeline *(*GraphicsPipeline)(struct RenderDevice *dev, const struct GraphicsPipelineDesc *desc);
-	struct Pipeline *(*ComputePipeline)(struct RenderDevice *dev, struct Shader *sh);
+	struct Pipeline *(*ComputePipeline)(struct RenderDevice *dev, const struct ComputePipelineDesc *desc);
 	struct Pipeline *(*RayTracingPipeline)(struct RenderDevice *dev, struct ShaderBindingTable *sbt, uint32_t maxDepth);
 
 	void (*SetAttachment)(struct Framebuffer *fb, uint32_t pos, struct Texture *tex);
@@ -112,4 +112,4 @@ static inline void Re_DestroySurface(struct Surface *surface) { Re_deviceProcs.D
 
 static inline void Re_WaitIdle(void) { Re_deviceProcs.WaitIdle(Re_device); }
 
-#endif /* _RE_DEVICE_H_ */
+#endif /* _NE_RENDER_DRIVER_DEVICE_H_ */

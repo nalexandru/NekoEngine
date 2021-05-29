@@ -26,6 +26,7 @@ extern NSURL *Darwin_appSupportURL;
 	NSURL *dest = [[NSURL alloc] initFileURLWithPath: @"GameData.zip" relativeToURL: Darwin_appSupportURL];
 	
 	if ([[NSFileManager defaultManager] fileExistsAtPath: [dest path]])
+	//	[[NSFileManager defaultManager] removeItemAtPath: [dest path] error: nil];
 		return;
 	
 	NSString *plistFile = [[NSBundle mainBundle] pathForResource: @"Downloader" ofType: @"plist"];

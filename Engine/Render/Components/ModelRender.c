@@ -9,21 +9,25 @@
 bool
 Re_InitModelRender(struct ModelRender *mr, const void **args)
 {
+	Handle model = E_INVALID_HANDLE;
+	mr->model = E_INVALID_HANDLE;
+
 	for (; args && *args; ++args) {
 		const char *arg = *args;
 		size_t len = strlen(arg);
 
 		if (!strncmp(arg, "Model", len)) {
-			mr->model = E_LoadResource(*(++args), RES_MODEL);
+			model = E_LoadResource(*(++args), RES_MODEL);
 		} else if (!strncmp(arg, "__ModelHandle", len)) {
-			mr->model = (Handle)(*(++args));
+			model = (Handle)(*(++args));
 		} else if (!strncmp(arg, "Material", len)) {
 		}
 	}
 
 	// TODO: material override
 
-	Re_SetModel(mr, mr->model);
+	if (model != E_INVALID_HANDLE)
+		Re_SetModel(mr, model);
 
 	return true;
 }

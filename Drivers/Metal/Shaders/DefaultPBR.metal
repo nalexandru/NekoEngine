@@ -22,9 +22,10 @@ struct ShaderArguments
 struct DrawInfo
 {
 	uint vertexBuffer;
-	uint __padding;
+	uint vertexOffset;
 	uint materialBuffer;
 	uint materialOffset;
+	float4x4 mvp;
 };
 
 vertex struct VsOutput
@@ -32,10 +33,10 @@ DefaultPBR_VS(uint vertexId [[vertex_id]],
 			  constant struct ShaderArguments *args [[ buffer(0) ]],
 			  constant struct DrawInfo *drawInfo [[ buffer(1) ]])
 {
-	struct Vertex vtx = ((constant struct Vertex *)args->vertexBuffers[drawInfo->vertexBuffer])[vertexId];
+	struct Vertex vtx = ((constant struct Vertex *)(args->vertexBuffers[drawInfo->vertexBuffer] + drawInfo->vertexOffset))[vertexId];
 	struct VsOutput out;
 	
-	out.position = float4(vtx.x, vtx.y, vtx.z, 1.0);
+	out.position = drawInfo->mvp * float4(vtx.x, vtx.y, vtx.z, 1.0);
 	out.color = float4(vtx.u, vtx.v, 1.0, 1.0);
 	out.uv = float2(vtx.u, vtx.v);
 	
@@ -48,7 +49,6 @@ DefaultPBR_MR_FS(struct VsOutput in [[stage_in]],
 				 constant struct DrawInfo *drawInfo [[ buffer(1) ]])
 {
 	constant struct Material *mat = (constant struct Material *)(args->vertexBuffers[drawInfo->materialBuffer] + drawInfo->materialOffset);
-	
 	return args->textures[mat->diffuseMap].sample(args->samplers[0], in.uv);
 }
 

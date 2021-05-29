@@ -1,5 +1,5 @@
-#ifndef _RE_SYSTEMS_H_
-#define _RE_SYSTEMS_H_
+#ifndef _NE_RENDER_SYSTEMS_H_
+#define _NE_RENDER_SYSTEMS_H_
 
 #include <stdatomic.h>
 
@@ -10,14 +10,14 @@
 
 struct Drawable
 {
-	BufferHandle vertexBuffer, indexBuffer;
+	BufferHandle indexBuffer;
 	uint32_t indexType, firstIndex, indexCount;
 	uint32_t vertexCount;
 	struct mat4 mvp;
 	bool transparent;
 	float distance;
 	const struct Material *material;
-	uint64_t materialAddress;
+	uint64_t vertexAddress, materialAddress;
 };
 
 struct CollectDrawablesArgs
@@ -30,4 +30,4 @@ struct CollectDrawablesArgs
 
 void Re_CollectDrawables(void **comp, struct CollectDrawablesArgs *args);
 
-#endif /* _RE_SYSTEMS_H_ */
+#endif /* _NE_RENDER_SYSTEMS_H_ */

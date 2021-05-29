@@ -1,5 +1,5 @@
-#ifndef _AU_DRIVER_H_
-#define _AU_DRIVER_H_
+#ifndef _NE_AUDIO_DRIVER_H_
+#define _NE_AUDIO_DRIVER_H_
 
 #include <Engine/Types.h>
 
@@ -30,4 +30,4 @@ typedef const struct AudioDriver *(*AuLoadDriverProc)(void);
 
 ENGINE_API extern const struct AudioDriver *Au_driver;
 
-#endif
+#endif /* _NE_AUDIO_DRIVER_H_ */

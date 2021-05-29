@@ -1,5 +1,5 @@
-#ifndef _UI_FONT_H_
-#define _UI_FONT_H_
+#ifndef _NE_UI_FONT_H_
+#define _NE_UI_FONT_H_
 
 #include <Engine/Types.h>
 
@@ -24,4 +24,4 @@ struct Font
 	Handle texture;
 };
 
-#endif /* _UI_FONT_H_ */
+#endif /* _NE_UI_FONT_H_ */

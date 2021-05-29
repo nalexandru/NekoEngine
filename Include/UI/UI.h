@@ -1,5 +1,5 @@
-#ifndef _UI_UI_H_
-#define _UI_UI_H_
+#ifndef _NE_UI_UI_H_
+#define _NE_UI_UI_H_
 
 #include <UI/Text.h>
 #include <Engine/Types.h>
@@ -38,4 +38,4 @@ void UI_TermContext(struct UIContext *ctx);
 
 void UI_ResetContext(void **comp, void *args);
 
-#endif /* _UI_UI_H_ */
+#endif /* _NE_UI_UI_H_ */

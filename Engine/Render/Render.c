@@ -64,26 +64,32 @@ Re_InitRender(void)
 	CHK_FAIL(info, L"Failed to enumerate devices");
 	CHK_FAIL(Re_driver->EnumerateDevices(&devCount, info), L"Failed to enumerate devices");
 
-	uint64_t vramSize = 0;
-	bool haveRt = false;
-	for (uint32_t i = 0; i < devCount; ++i) {
-		if (!info[i].features.canPresent)
-			continue;
-
-		if (info[i].features.rayTracing) {
-			if (!haveRt || (haveRt && vramSize < info[i].localMemorySize))
-				goto updateSelection;
-		} else {
-			if (vramSize < info[i].localMemorySize)
-				goto updateSelection;
-		}
-
-		continue;
-
-	updateSelection:
+	if (E_GetCVarI32(L"Render_Adapter", -1)->i32 != -1) {
+		int32_t i = E_GetCVarI32(L"Render_Adapter", -1)->i32;
+		CHK_FAIL(((uint32_t)i < devCount), L"Invalid adapter specified");
 		selected = &info[i];
-		vramSize = info[i].localMemorySize;
-		haveRt = info[i].features.rayTracing;
+	} else {
+		uint64_t vramSize = 0;
+		bool haveRt = false;
+		for (uint32_t i = 0; i < devCount; ++i) {
+			if (!info[i].features.canPresent)
+				continue;
+	
+			if (info[i].features.rayTracing) {
+				if (!haveRt || (haveRt && vramSize < info[i].localMemorySize))
+					goto updateSelection;
+			} else {
+				if (vramSize < info[i].localMemorySize)
+					goto updateSelection;
+			}
+	
+			continue;
+	
+		updateSelection:
+			selected = &info[i];
+			vramSize = info[i].localMemorySize;
+			haveRt = info[i].features.rayTracing;
+		}
 	}
 
 	CHK_FAIL(selected, L"No suitable device found");
@@ -123,15 +129,9 @@ Re_InitRender(void)
 	CHK_FAIL(Re_InitTextureSystem(), L"Failed to initialize texture system");
 	CHK_FAIL(Re_InitMaterialSystem(), L"Failed to initialize material system");
 
-	CHK_FAIL(E_RegisterResourceType(RES_TEXTURE, sizeof(struct TextureResource), (ResourceCreateProc)Re_CreateTextureResource,
-							(ResourceLoadProc)Re_LoadTextureResource, (ResourceUnloadProc)Re_UnloadTextureResource),
-			L"Failed to register texture resource");
 	CHK_FAIL(E_RegisterResourceType(RES_MODEL, sizeof(struct Model), (ResourceCreateProc)Re_CreateModelResource,
 							(ResourceLoadProc)Re_LoadModelResource, (ResourceUnloadProc)Re_UnloadModelResource),
 			L"Failed to register model resource");
-	CHK_FAIL(E_RegisterResourceType(RES_MATERIAL, sizeof(struct MaterialResource), (ResourceCreateProc)Re_CreateMaterialResource,
-							(ResourceLoadProc)Re_LoadMaterialResource, (ResourceUnloadProc)Re_UnloadMaterialResource),
-			L"Failed to register material resource");
 
 	return true;
 }

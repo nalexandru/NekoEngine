@@ -1,5 +1,5 @@
-#ifndef _SYS_ENDIAN_H_
-#define _SYS_ENDIAN_H_
+#ifndef _NE_SYSTEM_ENDIAN_H_
+#define _NE_SYSTEM_ENDIAN_H_
 
 #include <stdint.h>
 
@@ -63,4 +63,4 @@ Sys_SwapFloat(float val)
 	return val;
 }
 
-#endif /* _SYS_ENDIAN_H_ */
+#endif /* _NE_SYSTEM_ENDIAN_H_ */

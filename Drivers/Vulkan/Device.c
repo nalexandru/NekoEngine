@@ -1,15 +1,15 @@
 #include <stdlib.h>
 
+#include <System/Log.h>
 #include <System/Memory.h>
 
 #include "VulkanDriver.h"
 
 static const char *_devExtensions[10] =
 {
-	VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-	VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME
+	VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
-static uint32_t _devExtensionCount = 2;
+static uint32_t _devExtensionCount = 1;
 
 struct RenderDevice *
 Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProcs, struct RenderContextProcs *ctxProcs)
@@ -24,15 +24,9 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 	vkGetPhysicalDeviceProperties(physDev, &dev->physDevProps);
 	vkGetPhysicalDeviceMemoryProperties(physDev, &dev->physDevMemProps);
 
-	VkPhysicalDeviceExtendedDynamicStateFeaturesEXT *edsFeatures = Sys_Alloc(sizeof(*edsFeatures), 1, MH_Transient);
-	edsFeatures->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_FEATURES_EXT;
-	edsFeatures->pNext = NULL;
-
-	edsFeatures->extendedDynamicState = VK_TRUE;
-
 	VkPhysicalDeviceMeshShaderFeaturesNV *msFeatures = Sys_Alloc(sizeof(*msFeatures), 1, MH_Transient);
 	msFeatures->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_NV;
-	msFeatures->pNext = edsFeatures;
+	msFeatures->pNext = NULL;
 
 	if (info->features.meshShading) {
 		msFeatures->taskShader = VK_TRUE;
@@ -80,7 +74,6 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 	features->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 	features->pNext = vk12Features;
 
-	features->features.shaderInt16 = VK_TRUE;
 	features->features.fullDrawIndexUint32 = VK_TRUE;
 	features->features.samplerAnisotropy = VK_TRUE;
 
@@ -157,8 +150,11 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 		.ppEnabledExtensionNames = _devExtensions
 	};
 
-	if (vkCreateDevice((VkPhysicalDevice)info->private, &devInfo, Vkd_allocCb, &dev->dev) != VK_SUCCESS)
+	VkResult rc = vkCreateDevice((VkPhysicalDevice)info->private, &devInfo, Vkd_allocCb, &dev->dev);
+	if (rc != VK_SUCCESS) {
+		Sys_LogEntry(VKDRV_MOD, LOG_CRITICAL, L"vkCreateDevice = %d", rc);
 		goto error;
+	}
 
 	volkLoadDevice(dev->dev);
 

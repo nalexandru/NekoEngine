@@ -11,6 +11,8 @@
 #define VK_ENABLE_BETA_EXTENSIONS
 #include "volk.h"
 
+#define VKDRV_MOD	L"VulkanDriver"
+
 struct RenderDevice
 {
 	VkDevice dev;
@@ -40,7 +42,6 @@ struct RenderContext
 	struct Array *graphicsCmdBuffers, *secondaryCmdBuffers, *transferCmdBuffers, *computeCmdBuffers;
 	VkFence executeFence;
 	VkDevice dev;
-	//
 	VkDescriptorSet descriptorSet;
 };
 
@@ -88,6 +89,7 @@ struct Framebuffer
 struct RenderPassDesc
 {
 	VkRenderPass rp;
+	uint32_t clearValueCount;
 	VkClearValue *clearValues;
 };
 
@@ -123,7 +125,7 @@ void Vk_DestroyDevice(struct RenderDevice *dev);
 
 // Pipeline
 struct Pipeline *Vk_GraphicsPipeline(struct RenderDevice *dev, const struct GraphicsPipelineDesc *desc);
-struct Pipeline *Vk_ComputePipeline(struct RenderDevice *dev, struct Shader *sh);
+struct Pipeline *Vk_ComputePipeline(struct RenderDevice *dev, const struct ComputePipelineDesc *desc);
 struct Pipeline *Vk_RayTracingPipeline(struct RenderDevice *dev, struct ShaderBindingTable *sbt, uint32_t maxDepth);
 void Vk_LoadPipelineCache(struct RenderDevice *dev);
 void Vk_SavePipelineCache(struct RenderDevice *dev);
@@ -194,14 +196,24 @@ VkSampler Vk_CreateSampler(struct RenderDevice *dev, const struct SamplerDesc *d
 void Vk_DestroySampler(struct RenderDevice *dev, VkSampler s);
 
 // TransientResources
-struct Texture *Vk_CreateTransientTexture(struct RenderDevice *dev, const struct TextureCreateInfo *tci, uint64_t offset);
-struct Buffer *Vk_CreateTransientBuffer(struct RenderDevice *dev, const struct BufferCreateInfo *bci, uint64_t offset);
+struct Texture *Vk_CreateTransientTexture(struct RenderDevice *dev, const struct TextureCreateInfo *tci, uint16_t location, uint64_t offset);
+struct Buffer *Vk_CreateTransientBuffer(struct RenderDevice *dev, const struct BufferCreateInfo *bci, uint16_t location, uint64_t offset);
 bool Vk_InitTransientHeap(struct RenderDevice *dev, uint64_t size);
 bool Vk_ResizeTransientHeap(struct RenderDevice *dev, uint64_t size);
 void Vk_TermTransientHeap(struct RenderDevice *dev);
 
 // Utility functions
 void Vk_InitContextProcs(struct RenderContextProcs *p);
+
+static inline VkImageAspectFlags
+NeFormatAspect(enum TextureFormat fmt)
+{
+	switch (fmt) {
+	case TF_D32_SFLOAT: return VK_IMAGE_ASPECT_DEPTH_BIT;
+	case TF_D24_STENCIL8: return VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+	default: return VK_IMAGE_ASPECT_COLOR_BIT;
+	}
+}
 
 static inline VkFormat
 NeToVkTextureFormat(enum TextureFormat fmt)
@@ -214,6 +226,8 @@ NeToVkTextureFormat(enum TextureFormat fmt)
 	case TF_R16G16B16A16_SFLOAT: return VK_FORMAT_R16G16B16A16_SFLOAT;
 	case TF_R32G32B32A32_SFLOAT: return VK_FORMAT_R32G32B32A32_SFLOAT;
 	case TF_A2R10G10B10_UNORM: return VK_FORMAT_A2B10G10R10_UNORM_PACK32;
+	case TF_D32_SFLOAT: return VK_FORMAT_D32_SFLOAT;
+	case TF_D24_STENCIL8: return VK_FORMAT_D24_UNORM_S8_UINT;
 	case TF_R8G8_UNORM: return VK_FORMAT_R8G8_UNORM;
 	case TF_R8_UNORM: return VK_FORMAT_R8_UNORM;
 	case TF_BC5_UNORM: return VK_FORMAT_BC5_UNORM_BLOCK;
@@ -245,6 +259,8 @@ VkToNeTextureFormat(VkFormat fmt)
 	case VK_FORMAT_R16G16B16A16_SFLOAT: return TF_R16G16B16A16_SFLOAT;
 	case VK_FORMAT_R32G32B32A32_SFLOAT: return TF_R32G32B32A32_SFLOAT;
 	case VK_FORMAT_A2B10G10R10_UNORM_PACK32: return TF_A2R10G10B10_UNORM;
+	case VK_FORMAT_D32_SFLOAT: return TF_D32_SFLOAT;
+	case VK_FORMAT_D24_UNORM_S8_UINT: return TF_D24_STENCIL8;
 	case VK_FORMAT_R8G8_UNORM: return TF_R8G8_UNORM;
 	case VK_FORMAT_R8_UNORM: return TF_R8_UNORM;
 	case VK_FORMAT_BC5_UNORM_BLOCK: return TF_BC5_UNORM;
@@ -441,8 +457,8 @@ NeToVkImageLayout(enum TextureLayout tl)
 		case TL_COLOR_ATTACHMENT: return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 		case TL_DEPTH_STENCIL_ATTACHMENT: return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 		case TL_DEPTH_STENCIL_READ_ONLY_ATTACHMENT: return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-		case TL_DEPTH_ATTACHMENT: return VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
-		case TL_STENCIL_ATTACHMENT: return VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL;
+		case TL_DEPTH_ATTACHMENT: return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		case TL_STENCIL_ATTACHMENT: return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 		case TL_TRANSFER_SRC: return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		case TL_TRANSFER_DST: return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		case TL_SHADER_READ_ONLY: return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;

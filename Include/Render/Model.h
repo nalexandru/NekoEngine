@@ -1,5 +1,5 @@
-#ifndef _RE_MODEL_H_
-#define _RE_MODEL_H_
+#ifndef _NE_RENDER_MODEL_H_
+#define _NE_RENDER_MODEL_H_
 
 #include <Render/Types.h>
 #include <Render/Material.h>
@@ -64,4 +64,4 @@ bool Re_CreateModelResource(const char *name, const struct ModelCreateInfo *ci, 
 bool Re_LoadModelResource(struct ResourceLoadInfo *li, const char *args, struct Model *mdl, Handle h);
 void Re_UnloadModelResource(struct Model *mdl, Handle h);
 
-#endif /* _RE_MODEL_H_ */
+#endif /* _NE_RENDER_MODEL_H_ */

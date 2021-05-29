@@ -30,7 +30,8 @@ Vk_CreateRenderPassDesc(struct RenderDevice *dev, const struct AttachmentDesc *a
 		atRef[i].attachment = i;
 		atRef[i].layout = NeToVkImageLayout(attachments[i].layout);
 
-		memcpy(rp->clearValues[i].color.float32, attachments[i].clearColor, sizeof(rp->clearValues[i].color.float32));
+		if (atDesc[i].loadOp == VK_ATTACHMENT_LOAD_OP_CLEAR)
+			memcpy(rp->clearValues[rp->clearValueCount++].color.float32, attachments[i].clearColor, sizeof(rp->clearValues[i].color.float32));
 	}
 
 	if (depthAttachment) {
@@ -39,8 +40,10 @@ Vk_CreateRenderPassDesc(struct RenderDevice *dev, const struct AttachmentDesc *a
 		atRef[count].attachment = count;
 		atRef[count].layout = NeToVkImageLayout(depthAttachment->layout);
 
-		rp->clearValues[count].depthStencil.depth = depthAttachment->clearDepth;
-		rp->clearValues[count].depthStencil.stencil = depthAttachment->clearStencil;
+		if (atDesc[count].loadOp == VK_ATTACHMENT_LOAD_OP_CLEAR) {
+			rp->clearValues[rp->clearValueCount  ].depthStencil.depth = depthAttachment->clearDepth;
+			rp->clearValues[rp->clearValueCount++].depthStencil.stencil = depthAttachment->clearStencil;
+		}
 	}
 
 	VkSubpassDescription spDesc[] =
@@ -80,7 +83,7 @@ Vk_CreateRenderPassDesc(struct RenderDevice *dev, const struct AttachmentDesc *a
 	VkRenderPassCreateInfo rpInfo =
 	{
 		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-		.attachmentCount = count,
+		.attachmentCount = atCount,
 		.pAttachments = atDesc,
 		.subpassCount = sizeof(spDesc) / sizeof(spDesc[0]),
 		.pSubpasses = spDesc,

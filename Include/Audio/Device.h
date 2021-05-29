@@ -1,5 +1,5 @@
-#ifndef _AU_DEVICE_H_
-#define _AU_DEVICE_H_
+#ifndef _NE_AUDIO_DEVICE_H_
+#define _NE_AUDIO_DEVICE_H_
 
 #include <Engine/Types.h>
 
@@ -37,4 +37,4 @@ extern struct AudioDevice *Au_device;
 extern struct AudioDeviceInfo Au_deviceInfo;
 extern struct AudioDeviceProcs Au_deviceProcs;
 
-#endif /* _RE_DEVICE_H_ */
+#endif /* _NE_AUDIO_DEVICE_H_ */

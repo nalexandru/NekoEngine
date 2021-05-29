@@ -2,6 +2,7 @@
 #include <stdatomic.h>
 
 #include <Engine/Job.h>
+#include <System/Log.h>
 #include <System/System.h>
 #include <System/Memory.h>
 #include <System/Thread.h>
@@ -14,9 +15,9 @@
 struct Job
 {
 	void *args;
-	void (*exec)(int worker, void *args);
+	JobProc exec;
 	uint64_t id;
-	void (*completed)(uint64_t);
+	JobCompletedProc completed;
 };
 
 struct JobQueue
@@ -32,7 +33,9 @@ struct DispatchArgs
 {
 	uint64_t count;
 	void **args;
-	void (*exec)(int worker, void *args);
+	JobProc exec;
+	uint64_t id, endId;
+	JobCompletedProc completedHandler;
 };
 
 static ConditionVariable _wakeCond;
@@ -46,7 +49,8 @@ static THREAD_LOCAL uint32_t _workerId;
 
 static void _ThreadProc(void *args);
 static void _DispatchWrapper(int worker, struct DispatchArgs *args);
-static inline bool _JQ_Push(struct JobQueue *jq, JobProc exec, void *args, void (*completed)(uint64_t), uint64_t *id);
+static inline bool _JQ_Push(struct JobQueue *jq, JobProc exec, void *args, JobCompletedProc completed, uint64_t *id);
+
 
 bool
 E_InitJobSystem(void)
@@ -99,7 +103,7 @@ E_WorkerId(void)
 }
 
 uint64_t
-E_ExecuteJob(JobProc proc, void *args, void (*completed)(uint64_t))
+E_ExecuteJob(JobProc proc, void *args, JobCompletedProc completed)
 {
 	uint64_t id;
 
@@ -111,12 +115,12 @@ E_ExecuteJob(JobProc proc, void *args, void (*completed)(uint64_t))
 }
 
 uint64_t
-E_DispatchJobs(uint64_t count, JobProc proc, void **args, void (*completed)(uint64_t))
+E_DispatchJobs(uint64_t count, JobProc proc, void **args, JobCompletedProc completed)
 {
 	int i;
-	uint64_t dispatches = 0, id = 0;
+	uint64_t dispatches = 0, id = 0, endId = 0;
 	uint64_t jobs = 0, extraJobs = 0, next_start = 0;
-	
+
 	if (count <= _numThreads) {
 		dispatches = count;
 		jobs = 1;
@@ -127,12 +131,23 @@ E_DispatchJobs(uint64_t count, JobProc proc, void **args, void (*completed)(uint
 		extraJobs = count - ((uint64_t)jobs * _numThreads);
 	}
 	
+	Sys_LockFutex(_jobQueue.lock);
+	{
+		id = _submittedJobs;
+		_submittedJobs += dispatches;
+		endId = _submittedJobs - 1;
+	}
+	Sys_UnlockFutex(_jobQueue.lock);
+
 	for (i = 0; i < dispatches; ++i) {
 		struct DispatchArgs *dargs = Sys_Alloc(sizeof(*dargs), 1, MH_Transient);
 
 		dargs->exec = proc;
 		dargs->count = jobs;
 		dargs->args = args ? &(args[next_start]) : NULL;
+		dargs->id = id++;
+		dargs->endId = endId;
+		dargs->completedHandler = completed;
 
 		if (extraJobs) {
 			++dargs->count;
@@ -141,13 +156,13 @@ E_DispatchJobs(uint64_t count, JobProc proc, void **args, void (*completed)(uint
 
 		next_start += dargs->count;
 
-		while(!_JQ_Push(&_jobQueue, (JobProc)_DispatchWrapper, dargs, NULL, &id))
+		while(!_JQ_Push(&_jobQueue, (JobProc)_DispatchWrapper, dargs, NULL, NULL))
 			Sys_Yield();
 	}
 
 	Sys_Broadcast(_wakeCond);
 
-	return id;
+	return endId;
 }
 
 void
@@ -177,7 +192,7 @@ E_TermJobSystem(void)
 static void
 _ThreadProc(void *args)
 {
-	static _Atomic uint32_t workerId = 0;
+	static volatile _Atomic uint32_t workerId = 0;
 	uint32_t id = atomic_fetch_add(&workerId, 1);
 	struct Job job = { 0, 0 };
 
@@ -200,23 +215,31 @@ _ThreadProc(void *args)
 
 		if (job.exec) {
 			job.exec(id, job.args);
-			memset(&job, 0x0, sizeof(job));
-
 			if (job.completed)
 				job.completed(job.id);
+
+			memset(&job, 0x0, sizeof(job));
 		}
 	}
 }
 
 static void
-_DispatchWrapper(int worker, struct DispatchArgs *args)
+_DispatchWrapper(int worker, struct DispatchArgs *argPtr)
 {
-	for (int i = 0; i < args->count; ++i)
-		args->exec(worker, args->args ? args->args[i] : NULL);
+	struct DispatchArgs args;
+	memcpy(&args, argPtr, sizeof(args));
+
+	for (int i = 0; i < args.count; ++i)
+		args.exec(worker, args.args ? args.args[i] : NULL);
+
+	if (!args.completedHandler || args.id != args.endId)
+		return;
+
+	args.completedHandler(args.endId);
 }
 
 static inline bool
-_JQ_Push(struct JobQueue *jq, JobProc exec, void *args, void (*completed)(uint64_t), uint64_t *id)
+_JQ_Push(struct JobQueue *jq, JobProc exec, void *args, JobCompletedProc completed, uint64_t *id)
 {
 	bool ret = false;
 	uint64_t next;
@@ -225,14 +248,17 @@ _JQ_Push(struct JobQueue *jq, JobProc exec, void *args, void (*completed)(uint64
 
 	next = (jq->head + 1) % jq->size;
 	if (next != jq->tail) {
-		jq->jobs[jq->head].id = _submittedJobs;
+		jq->jobs[jq->head].id = _submittedJobs++;
 		jq->jobs[jq->head].args = args;
 		jq->jobs[jq->head].exec = exec;
 		jq->jobs[jq->head].completed = completed;
+
+		if (id)
+			*id = jq->jobs[jq->head].id;
+
 		jq->head = next;
 		
 		ret = true;
-		*id = _submittedJobs++;
 	}
 
 	Sys_UnlockFutex(jq->lock);

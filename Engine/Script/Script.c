@@ -11,15 +11,18 @@
 
 #define SCRIPTMOD	L"Script"
 
+static void *_luaAlloc(void *ud, void *ptr, size_t oSize, size_t nSize);
+
 lua_State *
-E_CreateVM(bool jit)
+Sc_CreateVM(bool jit)
 {
 	lua_State *vm;
 
-	vm = luaL_newstate();
+	vm = luaL_newstate_alloc(_luaAlloc);
 	if (!vm)
 		return NULL;
 
+	lua_setallocf(vm, _luaAlloc, NULL);
 	luaL_openlibs(vm);
 	
 	SIface_OpenSystem(vm);
@@ -30,7 +33,7 @@ E_CreateVM(bool jit)
 }
 
 bool
-E_LoadScript(lua_State *vm, const char *source)
+Sc_LoadScript(lua_State *vm, const char *source)
 {
 	if (luaL_dostring(vm, source) && lua_gettop(vm)) {
 		Sys_LogEntry(SCRIPTMOD, LOG_CRITICAL, L"Failed to load script: %s", lua_tostring(vm, -1));
@@ -42,7 +45,7 @@ E_LoadScript(lua_State *vm, const char *source)
 }
 
 bool
-E_LoadScriptFile(lua_State *vm, const char *path)
+Sc_LoadScriptFile(lua_State *vm, const char *path)
 {
 	int64_t len;
 	char *source;
@@ -67,19 +70,32 @@ E_LoadScriptFile(lua_State *vm, const char *path)
 }
 
 void
-E_DestroyVM(lua_State *vm)
+Sc_DestroyVM(lua_State *vm)
 {
 	lua_close(vm);
 }
 
 bool
-E_InitScriptSystem(void)
+Sc_InitScriptSystem(void)
 {
 	return true;
 }
 
 void
-E_TermScriptSystem(void)
+Sc_TermScriptSystem(void)
 {
 	//
+}
+
+static void *
+_luaAlloc(void *ud, void *ptr, size_t oSize, size_t nSize)
+{
+	void *new = NULL;
+
+	if (nSize == 0)
+		Sys_Free(ptr);
+	else
+		new = Sys_ReAlloc(ptr, nSize, 1, MH_Script);
+
+	return new;
 }

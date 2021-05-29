@@ -1,12 +1,13 @@
-#ifndef _RE_TYPES_H_
-#define _RE_TYPES_H_
+#ifndef _NE_RENDER_TYPES_H_
+#define _NE_RENDER_TYPES_H_
 
 #include <Engine/Types.h>
 
 // Resource definitions
-#define RES_MODEL		"Model"
-#define RES_MATERIAL	"Material"
-#define RES_TEXTURE		"Texture"
+#define RES_MODEL				"Model"
+#define RES_MATERIAL			"Material"
+#define RES_TEXTURE				"Texture"
+#define RES_ANIMATION_CLIP		"AnimationClip"
 
 // Acceleration Structure
 
@@ -175,6 +176,7 @@ enum BlendOperation
 
 struct BlendAttachmentDesc;
 struct GraphicsPipelineDesc;
+struct ComputePipelineDesc;
 
 // Render Pass
 
@@ -381,4 +383,4 @@ typedef uint16_t TextureHandle;
 struct RenderGraph;
 struct RenderGraphPass;
 
-#endif /* _RE_TYPES_H_ */
+#endif /* _NE_RENDER_TYPES_H_ */

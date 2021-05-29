@@ -3,7 +3,9 @@
 
 #define Handle __EngineHandle
 
-#include <Engine/Types.h>
+#include <System/Log.h>
+#include <System/Memory.h>
+#include <Render/Types.h>
 #include <Render/Render.h>
 
 #undef Handle
@@ -24,6 +26,8 @@
 #import <Metal/Metal.h>
 #import <QuartzCore/CAMetalLayer.h>
 
+#define MTLDRV_MOD	L"MetalDriver"
+
 #define PS_RENDER		0
 #define PS_COMPUTE		1
 #define PS_RAY_TRACING	2
@@ -34,8 +38,12 @@ struct Pipeline
 		struct {
 			MTLPrimitiveType primitiveType;
 			id<MTLRenderPipelineState> state;
+			id<MTLDepthStencilState> depthStencil;
 		} render;
-		id<MTLComputePipelineState> computeState;
+		struct {
+			id<MTLComputePipelineState> state;
+			MTLSize threadsPerThreadgroup;
+		} compute;
 	};
 };
 
@@ -72,12 +80,17 @@ struct RenderContext
 		id<MTLComputeCommandEncoder> compute;
 		id<MTLAccelerationStructureCommandEncoder> accelerationStructure;
 	} encoders;
-	struct Pipeline *boundPipeline;
-	struct {
-		MTLIndexType type;
-		struct Buffer *buffer;
-		uint64_t offset;
-	} boundIndexBuffer;
+	union {
+		struct {
+			struct Pipeline *boundPipeline;
+			struct {
+				MTLIndexType type;
+				struct Buffer *buffer;
+				uint64_t offset;
+			} boundIndexBuffer;
+		};
+		MTLSize threadsPerThreadgroup;
+	};
 	id<MTLParallelRenderCommandEncoder> parallelEncoder;
 	id<MTLDevice> dev;
 };
@@ -93,6 +106,7 @@ struct RenderPassDesc
 	MTLRenderPassDescriptor *desc;
 	uint32_t attachmentCount;
 	MTLPixelFormat* attachmentFormats;
+	MTLPixelFormat depthFormat;
 };
 
 struct AccelerationStructure
@@ -111,7 +125,7 @@ void MTL_DestroyDevice(id<MTLDevice> dev);
 
 // Pipeline
 struct Pipeline *MTL_GraphicsPipeline(id<MTLDevice> dev, const struct GraphicsPipelineDesc *gpDesc);
-struct Pipeline *MTL_ComputePipeline(id<MTLDevice> dev, struct Shader *sh);
+struct Pipeline *MTL_ComputePipeline(id<MTLDevice> dev, const struct ComputePipelineDesc *cpDesc);
 struct Pipeline *MTL_RayTracingPipeline(id<MTLDevice> dev, struct ShaderBindingTable *sbt, uint32_t maxDepth);
 void MTL_LoadPipelineCache(id<MTLDevice> dev);
 void MTL_SavePipelineCache(id<MTLDevice> dev);
@@ -137,13 +151,13 @@ void MTL_ResetContext(id<MTLDevice> dev, struct RenderContext *ctx);
 void MTL_DestroyContext(id<MTLDevice> dev, struct RenderContext *ctx);
 
 // Texture
-struct Texture *MTL_CreateTextureInternal(id<MTLDevice> dev, struct Texture *tex, const struct TextureCreateInfo *tci, bool transient, uint16_t location);
+MTLTextureDescriptor *MTL_TextureDescriptor(id<MTLDevice> dev, const struct TextureCreateInfo *tci);
 struct Texture *MTL_CreateTexture(id<MTLDevice> dev, const struct TextureCreateInfo *tci, uint16_t location);
 enum TextureLayout MTL_TextureLayout(const struct Texture *tex);
+void MTL_UploadTexture(id<MTLDevice> dev, id<MTLTexture> tex, const void *data, NSUInteger size, uint32_t width, uint32_t height, uint32_t depth);
 void MTL_DestroyTexture(id<MTLDevice> dev, struct Texture *tex);
 
 // Buffer
-struct Buffer *MTL_CreateBufferInternal(id<MTLDevice> dev, struct Buffer *buff, const struct BufferCreateInfo *bci, bool transient, uint16_t location);
 struct Buffer *MTL_CreateBuffer(id<MTLDevice> dev, const struct BufferCreateInfo *bci, uint16_t location);
 void MTL_UpdateBuffer(id<MTLDevice> dev, struct Buffer *buff, uint64_t offset, uint8_t *data, uint64_t size);
 void *MTL_MapBuffer(id<MTLDevice> dev, struct Buffer *buff);
@@ -188,8 +202,8 @@ id<MTLSamplerState> MTL_CreateSampler(id<MTLDevice> dev, const struct SamplerDes
 void MTL_DestroySampler(id<MTLDevice> dev, id<MTLSamplerState> s);
 
 // Transient Resources
-struct Texture *MTL_CreateTransientTexture(id<MTLDevice> dev, const struct TextureCreateInfo *tci, uint64_t offset);
-struct Buffer *MTL_CreateTransientBuffer(id<MTLDevice> dev, const struct BufferCreateInfo *bci, uint64_t offset);
+struct Texture *MTL_CreateTransientTexture(id<MTLDevice> dev, const struct TextureCreateInfo *tci, uint16_t location, uint64_t offset);
+struct Buffer *MTL_CreateTransientBuffer(id<MTLDevice> dev, const struct BufferCreateInfo *bci, uint16_t location, uint64_t offset);
 bool MTL_InitTransientHeap(id<MTLDevice> dev, uint64_t size);
 bool MTL_ResizeTransientHeap(id<MTLDevice> dev, uint64_t size);
 void MTL_TermTransientHeap(id<MTLDevice> dev);

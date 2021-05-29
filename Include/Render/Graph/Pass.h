@@ -1,5 +1,5 @@
-#ifndef _RE_GRAPH_PASS_H_
-#define _RE_GRAPH_PASS_H_
+#ifndef _NE_RENDER_GRAPH_PASS_H_
+#define _NE_RENDER_GRAPH_PASS_H_
 
 #include <Render/Types.h>
 #include <Render/Driver/RenderPassDesc.h>
@@ -48,4 +48,4 @@ struct FullscreenPassDesc
 	struct RenderPassTarget depthAttachment;
 };*/
 
-#endif /* _RE_GRAPH_PASS_H_ */
+#endif /* _NE_RENDER_GRAPH_PASS_H_ */

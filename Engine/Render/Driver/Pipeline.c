@@ -20,6 +20,11 @@ struct PipelineInfo
 		} graphics;
 		struct {
 			struct Shader *sh;
+			struct {
+				uint32_t x;
+				uint32_t y;
+				uint32_t z;
+			} threadsPerThreadgroup;
 		} compute;
 		struct {
 			struct ShaderBindingTable *sbt;
@@ -87,11 +92,15 @@ Re_GraphicsPipeline(const struct GraphicsPipelineDesc *desc)
 }
 
 struct Pipeline *
-Re_ComputePipeline(struct Shader *sh)
+Re_ComputePipeline(const struct ComputePipelineDesc *desc)
 {
 	struct PipelineInfo *pi;
 	Rt_ArrayForEach(pi, &_pipelines) {
-		if (pi->type != P_GRAPHICS || pi->compute.sh != sh)
+		if (pi->type != P_GRAPHICS ||
+				pi->compute.sh != desc->shader ||
+				pi->compute.threadsPerThreadgroup.x != desc->threadsPerThreadgroup.x ||
+				pi->compute.threadsPerThreadgroup.y != desc->threadsPerThreadgroup.y ||
+				pi->compute.threadsPerThreadgroup.z != desc->threadsPerThreadgroup.z)
 			continue;
 
 		return pi->pipeline;
@@ -100,8 +109,11 @@ Re_ComputePipeline(struct Shader *sh)
 	struct PipelineInfo new =
 	{
 		.type = P_COMPUTE,
-		.compute.sh = sh,
-		.pipeline = Re_deviceProcs.ComputePipeline(Re_device, sh)
+		.compute.sh = desc->shader,
+		.compute.threadsPerThreadgroup.x = desc->threadsPerThreadgroup.x,
+		.compute.threadsPerThreadgroup.y = desc->threadsPerThreadgroup.y,
+		.compute.threadsPerThreadgroup.z = desc->threadsPerThreadgroup.z,
+		.pipeline = Re_deviceProcs.ComputePipeline(Re_device, desc)
 	};
 
 	if (!new.pipeline)

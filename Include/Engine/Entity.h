@@ -1,5 +1,5 @@
-#ifndef _E_ENTITY_H_
-#define _E_ENTITY_H_
+#ifndef _NE_ENGINE_ENTITY_H_
+#define _NE_ENGINE_ENTITY_H_
 
 #include <stdarg.h>
 
@@ -51,4 +51,4 @@ static inline void *E_EntityPtr(EntityHandle ent) { return E_EntityPtrS(Scn_acti
 
 bool E_RegisterEntityType(const wchar_t *name, const CompTypeId *comp_types, uint8_t type_count);
 
-#endif /* _E_ENTITY_H_ */
+#endif /* _NE_ENGINE_ENTITY_H_ */

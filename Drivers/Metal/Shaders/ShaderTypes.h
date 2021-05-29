@@ -31,13 +31,25 @@ struct Material
 	float4 emissionColor;
 	//float metallic;
 
-	float4 roughness;
-	//float _padding[3];
+	float roughness;
+	float alphaCutoff;
+	float clearCoat;
+	float clearCoatRoughness;
 
-	uint diffuseMap;
-	uint normalMap;
-	uint metallicMap;
-	uint roughnessMap;
+	float transmission;
+	uint32_t diffuseMap;
+	uint32_t normalMap;
+	uint32_t metallicRoughnessMap;
+
+	uint32_t occlusionMap;
+	uint32_t transmissionMap;
+	uint32_t emissionMap;
+	uint32_t clearCoatNormalMap;
+
+	uint32_t clearCoatRoughnessMap;
+	uint32_t clearCoatMap;
+	uint32_t alphaMaskMap;
+	//uint32_t __padding;
 };
 
 #define LT_DIRECTIONAL	0

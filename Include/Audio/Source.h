@@ -1,5 +1,5 @@
-#ifndef _AU_SOURCE_H_
-#define _AU_SOURCE_H_
+#ifndef _NE_AUDIO_SOURCE_H_
+#define _NE_AUDIO_SOURCE_H_
 
 #include <Engine/Types.h>
 
@@ -22,4 +22,4 @@ void Au_SetClip(struct AudioSource *src, Handle clip);
 void Au_Play(struct AudioSource *src);
 void Au_Gain(struct AudioSource *src, float gain);
 
-#endif /* _AU_SOURCE_H_ */
+#endif /* _NE_AUDIO_SOURCE_H_ */

@@ -255,7 +255,7 @@ _BeginRenderPass(struct RenderContext *ctx, struct RenderPassDesc *passDesc, str
 		.renderPass = passDesc->rp,
 		.framebuffer = fb->fb,
 		.renderArea = { { 0, 0 }, { fb->width, fb->height } },
-		.clearValueCount = 1,
+		.clearValueCount = passDesc->clearValueCount,
 		.pClearValues = passDesc->clearValues
 	};
 	vkCmdBeginRenderPass(ctx->cmdBuffer, &rpbi, contents);

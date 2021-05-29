@@ -1,5 +1,5 @@
-#ifndef _E_CONFIG_H_
-#define _E_CONFIG_H_
+#ifndef _NE_ENGINE_CONFIG_H_
+#define _NE_ENGINE_CONFIG_H_
 
 #include <Engine/Types.h>
 
@@ -56,4 +56,4 @@ void E_SetCVarU64(const wchar_t *name, uint64_t u64);
 void E_SetCVarFlt(const wchar_t *name, float flt);
 void E_SetCVarBln(const wchar_t *name, bool bln);
 
-#endif /* _E_CONFIG_H_ */
+#endif /* _NE_ENGINE_CONFIG_H_ */

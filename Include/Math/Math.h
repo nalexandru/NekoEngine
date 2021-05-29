@@ -1,5 +1,5 @@
-#ifndef _NE_MATH_H_
-#define _NE_MATH_H_
+#ifndef _NE_MATH_MATH_H_
+#define _NE_MATH_MATH_H_
 
 #include <Math/defs.h>
 
@@ -24,4 +24,4 @@
 
 #include <Math/debug.h>
 
-#endif /* _NE_MATH_H_ */
+#endif /* _NE_MATH_MATH_H_ */

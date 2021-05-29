@@ -1,5 +1,5 @@
-#ifndef _RE_RENDER_H_
-#define _RE_RENDER_H_
+#ifndef _NE_RENDER_RENDER_H_
+#define _NE_RENDER_RENDER_H_
 
 #include <Render/Types.h>
 #include <Render/Driver/Core.h>
@@ -21,4 +21,4 @@ bool Re_InitRender(void);
 void Re_RenderFrame(void);
 void Re_TermRender(void);
 
-#endif /* _RE_RENDER_H_ */
+#endif /* _NE_RENDER_RENDER_H_ */

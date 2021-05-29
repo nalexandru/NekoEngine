@@ -1,5 +1,5 @@
-#ifndef _RT_RTDEFS_H_
-#define _RT_RTDEFS_H_
+#ifndef _NE_RUNTIME_RTDEFS_H_
+#define _NE_RUNTIME_RTDEFS_H_
 
 #include <limits.h>
 #include <stdint.h>
@@ -71,4 +71,4 @@ Rt_HashStringW(const wchar_t *str)
 	return hash;
 }
 
-#endif /* _RT_RTDEFS_H_ */
+#endif /* _NE_RUNTIME_RTDEFS_H_ */

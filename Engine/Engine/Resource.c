@@ -114,7 +114,17 @@ E_RetainResource(Handle res)
 {
 	struct ResType *rt;
 	struct Resource *rptr = _DecodeHandle(res, &rt);
-	++rptr->info.references;
+	if (rptr)
+		++rptr->info.references;
+}
+
+void
+E_ReleaseResource(Handle res)
+{
+	struct ResType *rt;
+	struct Resource *rptr = _DecodeHandle(res, &rt);
+	if (rptr)
+		--rptr->info.references;
 }
 
 Handle
@@ -247,7 +257,7 @@ _NewResource(const char *path, const char *type, const void *ci, bool create)
 			li.path = path;
 
 			if (!E_FileStream(path, IO_READ, &li.stm)) {
-				Sys_LogEntry(RES_MOD, LOG_CRITICAL, L"Failed to open file [%s] for resource of type [%s]", path, type);
+				Sys_LogEntry(RES_MOD, LOG_DEBUG, L"Failed to open file [%hs] for resource of type [%hs]", path, type);
 				rc = false;
 				goto exit;
 			}
@@ -290,6 +300,8 @@ _RealUnload(struct ResType *rt, struct Resource *res)
 	if (rt->unload)
 		rt->unload(&res->dataStart, res->info.id);
 
+	Sys_ZeroMemory(res, sizeof(*res));
+
 	Sys_AtomicUnlockWrite(&rt->list.lock);
 }
 
@@ -309,15 +321,18 @@ _UnloadAll(struct ResType *rt)
 	for (i = 0; i < rt->list.res.count; ++i) {
 		struct Resource *rptr = Rt_ArrayGet(&rt->list.res, i);
 
-		if (!rptr->info.references)
+		if (!rptr->info.pathHash)
 			continue;
 
-		Sys_LogEntry(RES_MOD, LOG_WARNING,
-			L"Resource [%hs] has %d reference%hs at shutdown time",
-			rptr->info.path, rptr->info.references,
-			rptr->info.references > 1 ? "s" : "");
+		if (rptr->info.references) {
+			Sys_LogEntry(RES_MOD, LOG_WARNING,
+				L"Resource [%hs] has %d reference%hs at shutdown time",
+				rptr->info.path, rptr->info.references,
+				rptr->info.references > 1 ? "s" : "");
 
-		rptr->info.references = 0;
+			rptr->info.references = 0;
+		}
+
 		_RealUnload(rt, rptr);
 	}
 }

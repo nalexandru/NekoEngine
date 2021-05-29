@@ -1,14 +1,16 @@
 #include "MTLDriver.h"
 
 struct Buffer *
-MTL_CreateBufferInternal(id<MTLDevice> dev, struct Buffer *buff, const struct BufferCreateInfo *bci, bool transient, uint16_t location)
+MTL_CreateBuffer(id<MTLDevice> dev, const struct BufferCreateInfo *bci, uint16_t location)
 {
+	struct Buffer *buff = Sys_Alloc(sizeof(*buff), 1, MH_RenderDriver);
+	if (!buff)
+		return NULL;
+	
 	MTLResourceOptions options = MTL_GPUMemoryTypetoResourceOptions([dev hasUnifiedMemory], bci->desc.memoryType);
 	
-	if (transient)
-		options |= MTLResourceStorageModeMemoryless;
-	
 	buff->buff = [dev newBufferWithLength: bci->desc.size options: options];
+	buff->location = location;
 	
 	if (!buff->buff) {
 		Sys_Free(buff);
@@ -22,15 +24,6 @@ MTL_CreateBufferInternal(id<MTLDevice> dev, struct Buffer *buff, const struct Bu
 		MTL_UpdateBuffer(dev, buff, 0, bci->data, bci->dataSize);
 	
 	return buff;
-}
-
-struct Buffer *
-MTL_CreateBuffer(id<MTLDevice> dev, const struct BufferCreateInfo *bci, uint16_t location)
-{
-	struct Buffer *buff = Sys_Alloc(sizeof(*buff), 1, MH_RenderDriver);
-	if (!buff)
-		return NULL;
-	return MTL_CreateBufferInternal(dev, buff, bci, false, location);
 }
 
 void
@@ -81,8 +74,10 @@ MTL_MapBuffer(id<MTLDevice> dev, struct Buffer *buff)
 void
 MTL_UnmapBuffer(id<MTLDevice> dev, struct Buffer *buff)
 {
+#if TARGET_OS_OSX
 	if (![dev hasUnifiedMemory] && !(buff->buff.resourceOptions & MTLResourceStorageModeShared))
 		[buff->buff didModifyRange: NSMakeRange(0, 0)];
+#endif
 	
 	(void)dev; (void)buff;
 }

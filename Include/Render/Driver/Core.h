@@ -1,5 +1,5 @@
-#ifndef _RE_CORE_H_
-#define _RE_CORE_H_
+#ifndef _NE_RENDER_DRIVER_CORE_H_
+#define _NE_RENDER_DRIVER_CORE_H_
 
 #include <Engine/Types.h>
 #include <Render/Driver/Device.h>
@@ -30,6 +30,9 @@ uint64_t Re_BufferAddress(BufferHandle handle, uint64_t offset);
 const struct BufferDesc *Re_BufferDesc(BufferHandle handle);
 void Re_DestroyBuffer(BufferHandle handle);
 
+bool Re_ReserveBufferId(BufferHandle *handle);
+void Re_ReleaseBufferId(BufferHandle handle);
+
 bool Re_InitBufferSystem(void);
 void Re_TermBufferSystem(void);
 
@@ -59,10 +62,6 @@ struct TextureResource
 	struct Texture *texture;
 	struct TextureDesc desc;
 };
-
-bool Re_CreateTextureResource(const char *name, const struct TextureCreateInfo *ci, struct TextureResource *tex, Handle h);
-bool Re_LoadTextureResource(struct ResourceLoadInfo *li, const char *args, struct TextureResource *tex, Handle h);
-void Re_UnloadTextureResource(struct TextureResource *tex, Handle h);
 
 const struct TextureDesc *Re_TextureDesc(TextureHandle tex);
 enum TextureLayout Re_TextureLayout(TextureHandle tex);
@@ -224,13 +223,24 @@ struct GraphicsPipelineDesc
 	uint32_t pushConstantSize;
 	uint32_t attachmentCount;
 	const struct BlendAttachmentDesc *attachments;
+	enum TextureFormat depthFormat;
+};
+
+struct ComputePipelineDesc
+{
+	struct Shader *shader;
+	struct {
+		uint32_t x;
+		uint32_t y;
+		uint32_t z;
+	} threadsPerThreadgroup;
 };
 
 struct Pipeline *Re_GraphicsPipeline(const struct GraphicsPipelineDesc *desc);
-struct Pipeline *Re_ComputePipeline(struct Shader *sh);
+struct Pipeline *Re_ComputePipeline(const struct ComputePipelineDesc *desc);
 struct Pipeline *Re_RayTracingPipeline(struct ShaderBindingTable *sbt, uint32_t maxDepth);
 
 bool Re_InitPipelines(void);
 void Re_TermPipelines(void);
 
-#endif /* _RE_CORE_H_ */
+#endif /* _NE_RENDER_DRIVER_CORE_H_ */

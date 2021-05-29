@@ -1,3 +1,5 @@
+#include <assert.h>
+
 #define Handle __EngineHandle
 
 #include <Engine/IO.h>
@@ -18,6 +20,11 @@ MTL_GraphicsPipeline(id<MTLDevice> dev, const struct GraphicsPipelineDesc *gpDes
 {
 	MTLRenderPipelineDescriptor *desc = [[MTLRenderPipelineDescriptor alloc] init];
 	desc.binaryArchives = @[ _cache ];
+	
+	struct Pipeline *p = Sys_Alloc(sizeof(*p), 1, MH_RenderDriver);
+	assert(p);
+	
+	p->type = PS_RENDER;
 	
 	for (uint32_t i = 0; i < gpDesc->shader->stageCount; ++i) {
 		switch (gpDesc->shader->stages[i].stage) {
@@ -44,6 +51,18 @@ MTL_GraphicsPipeline(id<MTLDevice> dev, const struct GraphicsPipelineDesc *gpDes
 		desc.colorAttachments[i].destinationAlphaBlendFactor = NeToMTLBlendFactor(gpDesc->attachments[i].dstAlpha);
 	}
 	
+	if (gpDesc->flags & RE_DEPTH_TEST) {
+		desc.depthAttachmentPixelFormat = NeToMTLTextureFormat(gpDesc->depthFormat);
+	
+		MTLDepthStencilDescriptor *dssDesc = [[MTLDepthStencilDescriptor alloc] init];
+		
+		dssDesc.depthCompareFunction = MTLCompareFunctionLessEqual;
+		dssDesc.depthWriteEnabled = true;
+		
+		p->render.depthStencil = [dev newDepthStencilStateWithDescriptor: dssDesc];
+		[dssDesc release];
+	}
+	
 	NSError *err;
 	id<MTLRenderPipelineState> pso = [dev newRenderPipelineStateWithDescriptor: desc error: &err];
 	
@@ -57,9 +76,6 @@ MTL_GraphicsPipeline(id<MTLDevice> dev, const struct GraphicsPipelineDesc *gpDes
 		return NULL;
 	}
 		
-	struct Pipeline *p = Sys_Alloc(sizeof(*p), 1, MH_RenderDriver);
-	p->type = PS_RENDER;
-		
 	switch (gpDesc->flags & RE_TOPOLOGY_BITS) {
 	case RE_TOPOLOGY_TRIANGLES: p->render.primitiveType = MTLPrimitiveTypeTriangle; break;
 	case RE_TOPOLOGY_LINES: p->render.primitiveType = MTLPrimitiveTypeLine; break;
@@ -72,14 +88,14 @@ MTL_GraphicsPipeline(id<MTLDevice> dev, const struct GraphicsPipelineDesc *gpDes
 }
 
 struct Pipeline *
-MTL_ComputePipeline(id<MTLDevice> dev, struct Shader *sh)
+MTL_ComputePipeline(id<MTLDevice> dev, const struct ComputePipelineDesc *cpDesc)
 {
 	struct ShaderStageDesc *stageDesc = NULL;
-	for (uint32_t i = 0; i < sh->stageCount; ++i) {
-		if (sh->stages[i].stage != SS_COMPUTE)
+	for (uint32_t i = 0; i < cpDesc->shader->stageCount; ++i) {
+		if (cpDesc->shader->stages[i].stage != SS_COMPUTE)
 			continue;
 		
-		stageDesc = &sh->stages[i];
+		stageDesc = &cpDesc->shader->stages[i];
 		break;
 	}
 	
@@ -103,8 +119,10 @@ MTL_ComputePipeline(id<MTLDevice> dev, struct Shader *sh)
 	if (pso) {
 		struct Pipeline *p = Sys_Alloc(sizeof(*p), 1, MH_RenderDriver);
 		p->type = PS_COMPUTE;
-		p->computeState = pso;
-		
+		p->compute.state = pso;
+		p->compute.threadsPerThreadgroup = MTLSizeMake(cpDesc->threadsPerThreadgroup.x,
+														cpDesc->threadsPerThreadgroup.y,
+														cpDesc->threadsPerThreadgroup.z);
 		return p;
 	}
 	
@@ -179,8 +197,12 @@ MTL_DestroyPipeline(id<MTLDevice> dev, struct Pipeline *p)
 {
 	switch (p->type) {
 	case PS_RENDER:
+		[p->render.state release];
+		if (p->render.depthStencil)
+			[p->render.depthStencil release];
+	break;
 	case PS_RAY_TRACING: [p->render.state release]; break;
-	case PS_COMPUTE: [p->computeState release]; break;
+	case PS_COMPUTE: [p->compute.state release]; break;
 	}
 	Sys_Free(p);
 }

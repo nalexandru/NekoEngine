@@ -33,17 +33,17 @@ Scn_InitScriptHost(struct ScriptHost *s, const void **args)
 	if (!file && !src)
 		return false;
 
-	s->vm = E_CreateVM(rc);
+	s->vm = Sc_CreateVM(rc);
 	if (!s->vm)
 		return false;
 
 	if (file)
-		rc = E_LoadScriptFile(s->vm, file);
+		rc = Sc_LoadScriptFile(s->vm, file);
 	else
-		rc = E_LoadScript(s->vm, src);
+		rc = Sc_LoadScript(s->vm, src);
 
 	if (!rc)
-		E_DestroyVM(s->vm);
+		Sc_DestroyVM(s->vm);
 
 	return rc;
 }
@@ -51,7 +51,7 @@ Scn_InitScriptHost(struct ScriptHost *s, const void **args)
 void
 Scn_TermScriptHost(struct ScriptHost *s)
 {
-	E_DestroyVM(s->vm);
+	Sc_DestroyVM(s->vm);
 }
 
 void

@@ -1,5 +1,5 @@
-#ifndef _E_ECSYSTEM_H_
-#define _E_ECSYSTEM_H_
+#ifndef _NE_ENGINE_ECSYSTEM_H_
+#define _NE_ENGINE_ECSYSTEM_H_
 
 #include <Engine/Types.h>
 
@@ -28,4 +28,4 @@ static inline void E_ExecuteSystem(const wchar_t *name, void *args) { E_ExecuteS
 void E_ExecuteSystemGroupS(struct Scene *s, const wchar_t *name);
 static inline void E_ExecuteSystemGroup(const wchar_t *name) { E_ExecuteSystemGroupS(Scn_activeScene, name); }
 
-#endif /* _E_ECSYSTEM_H_ */
+#endif /* _NE_ENGINE_ECSYSTEM_H_ */

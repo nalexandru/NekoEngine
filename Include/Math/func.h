@@ -78,4 +78,10 @@ lerp(float x, float y, float t)
 	return x + t * (y - x);
 }
 
+static inline double
+mod(double x, double y)
+{
+	return x = y * floor(x / y);
+}
+
 #endif /* _NE_MATH_FUNC_H_ */

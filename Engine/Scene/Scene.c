@@ -6,6 +6,7 @@
 #include <Engine/Config.h>
 #include <System/Log.h>
 #include <Engine/Events.h>
+#include <Engine/ECSystem.h>
 #include <Scene/Scene.h>
 #include <Scene/Camera.h>
 #include <System/System.h>
@@ -13,6 +14,7 @@
 #include <Runtime/Runtime.h>
 #include <Engine/Resource.h>
 #include <Render/Render.h>
+#include <Animation/Animation.h>
 
 #include "../Engine/ECS.h"
 
@@ -186,6 +188,8 @@ _LoadJob(int wid, struct Scene *s)
 	}
 
 	E_CloseStream(&stm);
+
+	E_ExecuteSystemS(s, ANIM_BUILD_SKELETON, NULL);
 
 	s->loaded = true;
 	E_Broadcast(EVT_SCENE_LOADED, s);

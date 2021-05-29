@@ -1,5 +1,5 @@
-#ifndef _SCN_TRANSFORM_H_
-#define _SCN_TRANSFORM_H_
+#ifndef _NE_SCENE_TRANSFORM_H_
+#define _NE_SCENE_TRANSFORM_H_
 
 #include <Math/Math.h>
 
@@ -186,4 +186,4 @@ xform_move_down(struct Transform *t, float distance)
 	xform_move_up(t, -distance);
 }
 
-#endif /* _SCN_TRANSOFRM_H_ */
+#endif /* _NE_SCENE_TRANSFORM_H_ */

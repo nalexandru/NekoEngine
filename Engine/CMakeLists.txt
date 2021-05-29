@@ -1,4 +1,5 @@
 file(GLOB src
+	Animation/*.c
 	Asset/*.c
 	Audio/*.c
 	Engine/*.c
@@ -25,7 +26,7 @@ target_compile_definitions(Engine PRIVATE _ENGINE_INTERNAL_)
 target_link_libraries(Engine Platform Lua PhysFS)
 
 if (NOT WIN32)
-	target_link_libraries(Engine m dl)
+	target_link_libraries(Engine m)
 else ()
 	target_link_libraries(Engine ntdll xinput9_1_0)
 endif ()

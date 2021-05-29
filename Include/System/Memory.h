@@ -1,5 +1,5 @@
-#ifndef _SYS_MEMORY_H_
-#define _SYS_MEMORY_H_
+#ifndef _NE_SYSTEM_MEMORY_H_
+#define _NE_SYSTEM_MEMORY_H_
 
 #include <stddef.h>
 #include <stdbool.h>
@@ -40,5 +40,5 @@ void Sys_ResetHeap(enum MemoryHeap heap);
 void Sys_LogMemoryStatistics(void);
 void Sys_TermMemory(void);
 
-#endif /* _SYS_MEMORY_H_ */
+#endif /* _NE_SYSTEM_MEMORY_H_ */
 

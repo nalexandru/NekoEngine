@@ -36,7 +36,9 @@ Scn_InitCamera(struct Camera *cam, const void **args)
 		}
 	}
 
-	m4_infinite_perspective_rz(&cam->projMatrix, cam->fov, (float)*E_screenWidth / (float)*E_screenHeight, cam->zNear);
+//	m4_infinite_perspective_rz(&cam->projMatrix, cam->fov, (float)*E_screenWidth / (float)*E_screenHeight, cam->zNear);
+
+	m4_perspective(&cam->projMatrix, cam->fov, (float)*E_screenWidth / (float)*E_screenHeight, cam->zNear, cam->zFar);
 
 	cam->evt = E_RegisterHandler(EVT_SCREEN_RESIZED, (EventHandlerProc)_RebuildProjection, cam);
 
@@ -69,7 +71,7 @@ Scn_UpdateCamera(void **comp, void *args)
 	m4_rot_quat(&m_rot, &rot);
 
 	xform_position(xform, &pos);
-	m4_translate(&m_pos, pos.x, pos.y, pos.z);
+	m4_translate(&m_pos, pos.x, -pos.y, pos.z);
 
 	m4_mul(&cam->viewMatrix, &m_rot, &m_pos);
 }
@@ -78,4 +80,5 @@ static void
 _RebuildProjection(struct Camera *cam, void *args)
 {
 	m4_infinite_perspective_rz(&cam->projMatrix, cam->fov, (float)*E_screenWidth / (float)*E_screenHeight, cam->zNear);
+	m4_perspective(&cam->projMatrix, cam->fov, (float)*E_screenWidth / (float)*E_screenHeight, cam->zNear, cam->zFar);
 }

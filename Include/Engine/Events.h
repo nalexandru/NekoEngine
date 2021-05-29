@@ -1,5 +1,5 @@
-#ifndef _ENGINE_EVENTS_H_
-#define _ENGINE_EVENTS_H_
+#ifndef _NE_ENGINE_EVENTS_H_
+#define _NE_ENGINE_EVENTS_H_
 
 #include <Engine/Event.h>
 
@@ -8,4 +8,4 @@
 #define EVT_SCREEN_RESIZED			L"ScreenResized"
 #define EVT_COMPONENT_REGISTERED	L"ComponentRegistered"
 
-#endif /* _ENGINE_EVENTS_H_ */
+#endif /* _NE_ENGINE_EVENTS_H_ */

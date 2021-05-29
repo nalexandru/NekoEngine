@@ -1,5 +1,5 @@
-#ifndef _ECS_H_
-#define _ECS_H_
+#ifndef _NE_ENGINE_ECS_H_
+#define _NE_ENGINE_ECS_H_
 
 #include <Runtime/Array.h>
 
@@ -74,4 +74,4 @@ void E_TermSceneEntities(struct Scene *s);
 bool E_InitECSystems(void);
 void E_TermECSystems(void);
 
-#endif /* _ECS_H_ */
+#endif /* _NE_ENGINE_ECS_H_ */

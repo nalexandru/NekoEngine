@@ -8,6 +8,8 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
+#include <System/PlatformDetect.h>
+
 extern Display *X11_display;
 extern XVisualInfo X11_visualInfo;
 const char *PlatformSurfaceExtensionName = VK_KHR_XLIB_SURFACE_EXTENSION_NAME;
@@ -15,7 +17,11 @@ const char *PlatformSurfaceExtensionName = VK_KHR_XLIB_SURFACE_EXTENSION_NAME;
 bool
 Vk_CheckPresentSupport(VkPhysicalDevice dev, uint32_t family)
 {
+#ifndef SYS_PLATFORM_OPENBSD
 	return vkGetPhysicalDeviceXlibPresentationSupportKHR(dev, family, X11_display, X11_visualInfo.visualid);
+#else
+	return true;
+#endif
 }
 
 VkSurfaceKHR

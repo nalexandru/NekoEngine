@@ -5,6 +5,8 @@ endif ()
 project(NekoEngine C)
 cmake_minimum_required(VERSION 3.12)
 
+option(USE_AVX2 "Enable AVX2 support" ON)
+
 if (NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE, Debug)
 endif (NOT CMAKE_BUILD_TYPE)
@@ -13,11 +15,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
 
 if (NOT MSVC)
-	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g2 -D_DEBUG -fno-exceptions -fno-rtti -Wall -Wno-switch -Wno-int-in-bool-context -O0 -DRE_BUILTIN")
-	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -g0 -Ofast -fomit-frame-pointer -fno-exceptions -fno-rtti -march=native -mtune=native -Werror -DRE_BUILTIN")
-	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -g2 -Ofast -march=native -mtune=native -fno-exceptions -fno-rtti -Wall -O0 -DRE_BUILTIN")
-
-	set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g2 -D_DEBUG -Wall -Wno-switch -Wno-int-in-bool-context -O0 -DRE_BUILTIN")
+	set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g2 -march=native -mtune=native -D_DEBUG -Wall -Wno-switch -Wno-int-in-bool-context -O0 -DRE_BUILTIN")
 	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -g0 -Ofast -fomit-frame-pointer -march=native -mtune=native -Werror -DRE_BUILTIN")
 	set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} -g2 -Ofast -march=native -mtune=native -Wall -O0 -DRE_BUILTIN")
 
@@ -25,13 +23,22 @@ if (NOT MSVC)
 		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -g2")
 	endif ()
 
-	add_compile_options(-mavx)
+	if (USE_AVX)
+		add_compile_options(-mavx)
+	endif ()
+	
+	if (CMAKE_C_COMPILER_ID STREQUAL "Clang")
+		add_compile_options(-Wno-enum-conversion)
+	endif ()
 else ()
 	set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /nologo /D_DEBUG /GS /Zi")
 	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_DEBUG} /nologo /DNDEBUG /GS /GL /Gm /O2 /Od /Ox")
 	set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_DEBUG} /nologo /D_DEBUG /GS /Z7 /GL /Gm /O2 /Ox")
 
-	add_compile_options(/arch:AVX2)
+	if (USE_AVX)
+		add_compile_options(/arch:AVX2)
+	endif ()
+	
 	add_compile_options(/wd4996)
 	add_compile_definitions(_UNICODE)
 	add_compile_definitions(UNICODE)
@@ -50,7 +57,13 @@ include_directories($ENV{VULKAN_SDK}/include)
 
 if (WIN32)
 	include_directories(Platform/Win32/Compat)
-    set(CMAKE_WIN32_EXECUTABLE ON)
+	set(CMAKE_WIN32_EXECUTABLE ON)
+else ()
+	include_directories(/usr/local/include)
+	include_directories(/usr/X11R6/include)
+	
+	link_directories(/usr/local/lib)
+	link_directories(/usr/X11R6/lib)
 endif ()
 
 add_subdirectory(Deps/PhysFS)

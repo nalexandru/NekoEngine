@@ -1,5 +1,5 @@
-#ifndef _SYS_THREAD_H_
-#define _SYS_THREAD_H_
+#ifndef _NE_SYSTEM_THREAD_H_
+#define _NE_SYSTEM_THREAD_H_
 
 #include <Engine/Types.h>
 
@@ -38,4 +38,4 @@ bool Sys_WaitMutex(ConditionVariable cv, Mutex mtx);
 bool Sys_WaitFutex(ConditionVariable cv, Futex ftx);
 void Sys_TermConditionVariable(ConditionVariable cv);
 
-#endif /* _SYS_THREAD_H_ */
+#endif /* _NE_SYSTEM_THREAD_H_ */

@@ -12,13 +12,17 @@ static VkPipelineCache _cache;
 static inline VkCompareOp
 _NeToVkCompareOp(uint64_t flags)
 {
+	switch (flags & RE_DEPTH_OP_BITS) {
+	case RE_DEPTH_OP_LESS: return VK_COMPARE_OP_LESS;
+	case RE_DEPTH_OP_EQUAL: return VK_COMPARE_OP_EQUAL;
+	case RE_DEPTH_OP_LESS_EQUAL: return VK_COMPARE_OP_LESS_OR_EQUAL;
+	case RE_DEPTH_OP_GREATER: return VK_COMPARE_OP_GREATER;
+	case RE_DEPTH_OP_NOT_EQUAL: return VK_COMPARE_OP_NOT_EQUAL;
+	case RE_DEPTH_OP_GREATER_EQUAL: return VK_COMPARE_OP_GREATER_OR_EQUAL;
+	case RE_DEPTH_OP_ALWAYS: return VK_COMPARE_OP_ALWAYS;
+	}
+	
 	return VK_COMPARE_OP_LESS;
-}
-
-static inline VkBlendOp
-_NeToVkBlendOp(uint64_t flags)
-{
-	return VK_BLEND_OP_ADD;
 }
 
 static inline VkPipelineLayout _CreateLayout(struct RenderDevice *dev, uint32_t size);
@@ -104,10 +108,10 @@ Vk_GraphicsPipeline(struct RenderDevice *dev, const struct GraphicsPipelineDesc 
 	VkPipelineDepthStencilStateCreateInfo ds =
 	{
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-		.depthTestEnable = flags & RE_DEPTH_TEST,
-		.depthWriteEnable = flags & RE_DEPTH_WRITE,
+		.depthTestEnable = (flags & RE_DEPTH_TEST) == RE_DEPTH_TEST,
+		.depthWriteEnable = (flags & RE_DEPTH_WRITE) == RE_DEPTH_WRITE,
 		.depthCompareOp = _NeToVkCompareOp(flags & RE_DEPTH_OP_BITS),
-		.depthBoundsTestEnable = flags & RE_DEPTH_BOUNDS,
+		.depthBoundsTestEnable = (flags & RE_DEPTH_BOUNDS) == RE_DEPTH_BOUNDS,
 		.stencilTestEnable = VK_FALSE, // stencil not supported in v1 of the render API
 		.minDepthBounds = 0.f,
 		.maxDepthBounds = 1.f
@@ -146,13 +150,7 @@ Vk_GraphicsPipeline(struct RenderDevice *dev, const struct GraphicsPipelineDesc 
 		VK_DYNAMIC_STATE_LINE_WIDTH,
 		VK_DYNAMIC_STATE_DEPTH_BIAS,
 		VK_DYNAMIC_STATE_BLEND_CONSTANTS,
-		VK_DYNAMIC_STATE_DEPTH_BOUNDS,
-		VK_DYNAMIC_STATE_CULL_MODE_EXT,
-		VK_DYNAMIC_STATE_FRONT_FACE_EXT,
-		VK_DYNAMIC_STATE_DEPTH_TEST_ENABLE_EXT,
-		VK_DYNAMIC_STATE_DEPTH_WRITE_ENABLE_EXT,
-		VK_DYNAMIC_STATE_DEPTH_COMPARE_OP_EXT,
-		VK_DYNAMIC_STATE_DEPTH_BOUNDS_TEST_ENABLE_EXT
+		VK_DYNAMIC_STATE_DEPTH_BOUNDS
 	};
 	VkPipelineDynamicStateCreateInfo dyn =
 	{
@@ -196,7 +194,7 @@ Vk_GraphicsPipeline(struct RenderDevice *dev, const struct GraphicsPipelineDesc 
 	for (uint32_t i = 0; i < info.stageCount; ++i) {
 		stages[i].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		stages[i].stage = desc->shader->stages[i].stage;
-		stages[i].module = (VkShaderModule)desc->shader->stages[i].module;
+		stages[i].module = desc->shader->stages[i].module;
 		stages[i].pName = "main";
 		stages[i].pSpecializationInfo = NULL;
 	}
@@ -213,20 +211,47 @@ Vk_GraphicsPipeline(struct RenderDevice *dev, const struct GraphicsPipelineDesc 
 }
 
 struct Pipeline *
-Vk_ComputePipeline(struct RenderDevice *dev, struct Shader *sh)
+Vk_ComputePipeline(struct RenderDevice *dev, const struct ComputePipelineDesc *desc)
 {
-	struct Pipeline *p = Sys_Alloc(1, sizeof(*p), MH_RenderDriver);
+	struct Pipeline *p = Sys_Alloc(sizeof(*p), 1, MH_RenderDriver);
 	if (!p)
 		return NULL;
 
+	VkSpecializationMapEntry specMap[] =
+	{
+		{ 0, 0, sizeof(uint32_t) },
+		{ 1, sizeof(uint32_t), sizeof(uint32_t) },
+		{ 2, sizeof(uint32_t) * 2, sizeof(uint32_t) }
+	};
+	uint32_t specData[] = { desc->threadsPerThreadgroup.x, desc->threadsPerThreadgroup.y, desc->threadsPerThreadgroup.z };
+	VkSpecializationInfo si =
+	{
+		.mapEntryCount = sizeof(specMap) / sizeof(specMap[0]),
+		.pMapEntries = specMap,
+		.dataSize = sizeof(specData),
+		.pData = specData
+	};
 	VkComputePipelineCreateInfo info =
 	{
 		.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-		.stage = { 0 },
+		.stage = {
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+			.stage = VK_SHADER_STAGE_COMPUTE_BIT,
+			.pName = "main",
+			.pSpecializationInfo = &si
+		},
 		.layout = VK_NULL_HANDLE
 	};
 
-	if (vkCreateComputePipelines(dev->dev, _cache, 1, &info, Vkd_allocCb, &p->pipeline) != VK_SUCCESS) {
+	for (uint32_t i = 0; i < desc->shader->stageCount; ++i) {
+		if (desc->shader->stages[i].stage != SS_COMPUTE)
+			continue;
+
+		info.stage.module = desc->shader->stages[i].module;
+		break;
+	}
+
+	if (!info.stage.module || (vkCreateComputePipelines(dev->dev, _cache, 1, &info, Vkd_allocCb, &p->pipeline) != VK_SUCCESS)) {
 		Sys_Free(p);
 		return NULL;
 	}

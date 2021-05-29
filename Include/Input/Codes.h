@@ -1,5 +1,5 @@
-#ifndef _IN_CODES_H_
-#define _IN_CODES_H_
+#ifndef _NE_INPUT_CODES_H_
+#define _NE_INPUT_CODES_H_
 
 enum Button 
 {
@@ -183,4 +183,4 @@ enum Axis
 	AXIS_UNRECOGNIZED = 0xFF
 };
 
-#endif /* _IN_CODES_H_ */
+#endif /* _NE_INPUT_CODES_H_ */

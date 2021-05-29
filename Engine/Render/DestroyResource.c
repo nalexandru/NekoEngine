@@ -57,6 +57,7 @@ Re_TermResourceDestructor(void)
 	}
 }
 
+static void _DestroyBuffer(struct Buffer *buff) { Re_deviceProcs.DestroyBuffer(Re_device, buff); }
 static void _DestroyTexture(struct Texture *tex) { Re_deviceProcs.DestroyTexture(Re_device, tex); }
 
 #define TDESTROY(x, func)								\
@@ -71,7 +72,7 @@ void Re_TDestroy ## x(struct x *obj) {					\
 }
 
 #define TDESTROYH(x, func)								\
-void Re_TDestroy ## x(x ## Handle h) {					\
+void Re_TDestroyH ## x(x ## Handle h) {					\
 	struct TDestroy d =									\
 	{													\
 		.type = DT_HANDLE,								\
@@ -81,8 +82,10 @@ void Re_TDestroy ## x(x ## Handle h) {					\
 	Rt_ArrayAdd(&_destroyedResources[Re_frameId], &d);	\
 }
 
-TDESTROYH(Buffer, Re_DestroyBuffer)
+TDESTROY(Buffer, _DestroyBuffer)
 TDESTROY(Texture, _DestroyTexture)
 TDESTROY(Framebuffer, Re_DestroyFramebuffer)
 TDESTROY(AccelerationStructure, Re_DestroyAccelerationStructure)
 TDESTROY(Sampler, Re_DestroySampler)
+
+TDESTROYH(Buffer, Re_DestroyBuffer)

@@ -153,39 +153,35 @@ _EnumerateDevices(uint32_t *count, struct RenderDeviceInfo *info)
 	if (vkEnumeratePhysicalDevices(Vkd_inst, count, dev) != VK_SUCCESS)
 		return false;
 
-	VkPhysicalDeviceProperties *props = Sys_Alloc(sizeof(*props), 1, MH_Transient);
-	VkPhysicalDeviceMemoryProperties *memProps = Sys_Alloc(sizeof(*memProps), 1, MH_Transient);
-	VkPhysicalDeviceFeatures2 *features = Sys_Alloc(sizeof(*features), 1, MH_Transient);
-	VkPhysicalDeviceVulkan11Features *vk11Features = Sys_Alloc(sizeof(*vk11Features), 1, MH_Transient);
-	VkPhysicalDeviceVulkan12Features *vk12Features = Sys_Alloc(sizeof(*vk12Features), 1, MH_Transient);
-	VkPhysicalDeviceMeshShaderFeaturesNV *msFeatures = Sys_Alloc(sizeof(*msFeatures), 1, MH_Transient);
-	VkPhysicalDeviceRayTracingPipelineFeaturesKHR *rtFeatures = Sys_Alloc(sizeof(*rtFeatures), 1, MH_Transient);
-	VkPhysicalDeviceExtendedDynamicStateFeaturesEXT *edsFeatures = Sys_Alloc(sizeof(*edsFeatures), 1, MH_Transient);
-
-	features->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-	features->pNext = vk11Features;
-
-	vk11Features->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
-	vk11Features->pNext = vk12Features;
-
-	vk12Features->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
-	vk12Features->pNext = msFeatures;
-
-	msFeatures->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_NV;
-	msFeatures->pNext = rtFeatures;
-
-	rtFeatures->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
-	rtFeatures->pNext = edsFeatures;
-
-	edsFeatures->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_FEATURES_EXT;
-	edsFeatures->pNext = NULL;
-
 	for (uint32_t i = 0; i < *count; ++i) {
+		VkPhysicalDeviceProperties *props = Sys_Alloc(sizeof(*props), 1, MH_Transient);
+		VkPhysicalDeviceFeatures2 *features = Sys_Alloc(sizeof(*features), 1, MH_Transient);
+		VkPhysicalDeviceMemoryProperties *memProps = Sys_Alloc(sizeof(*memProps), 1, MH_Transient);
+		VkPhysicalDeviceVulkan11Features *vk11Features = Sys_Alloc(sizeof(*vk11Features), 1, MH_Transient);
+		VkPhysicalDeviceVulkan12Features *vk12Features = Sys_Alloc(sizeof(*vk12Features), 1, MH_Transient);
+		VkPhysicalDeviceMeshShaderFeaturesNV *msFeatures = Sys_Alloc(sizeof(*msFeatures), 1, MH_Transient);
+		VkPhysicalDeviceRayTracingPipelineFeaturesKHR *rtFeatures = Sys_Alloc(sizeof(*rtFeatures), 1, MH_Transient);
+		
+		features->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		features->pNext = vk11Features;
+
+		vk11Features->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
+		vk11Features->pNext = vk12Features;
+
+		vk12Features->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+		vk12Features->pNext = msFeatures;
+
+		msFeatures->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_NV;
+		msFeatures->pNext = rtFeatures;
+
+		rtFeatures->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
+		rtFeatures->pNext = NULL;
+
 		vkGetPhysicalDeviceProperties(dev[i], props);
 		vkGetPhysicalDeviceFeatures2(dev[i], features);
 
 		// check requirements
-		if (!features->features.fullDrawIndexUint32 || !features->features.samplerAnisotropy || !features->features.shaderInt16)
+		if (!features->features.fullDrawIndexUint32 || !features->features.samplerAnisotropy)
 			continue;
 
 		if (!vk12Features->imagelessFramebuffer || !vk12Features->descriptorIndexing ||
@@ -193,9 +189,6 @@ _EnumerateDevices(uint32_t *count, struct RenderDeviceInfo *info)
 				!vk12Features->shaderSampledImageArrayNonUniformIndexing || !vk12Features->runtimeDescriptorArray ||
 				!vk12Features->descriptorBindingSampledImageUpdateAfterBind || !vk12Features->descriptorBindingStorageBufferUpdateAfterBind ||
 				!vk12Features->shaderStorageBufferArrayNonUniformIndexing || !vk12Features->bufferDeviceAddress)
-			continue;
-
-		if (!edsFeatures->extendedDynamicState)
 			continue;
 
 		snprintf(info[i].deviceName, sizeof(info[i].deviceName), "%s", props->deviceName);

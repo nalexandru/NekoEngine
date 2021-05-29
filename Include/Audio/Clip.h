@@ -1,5 +1,5 @@
-#ifndef _AU_CLIP_H_
-#define _AU_CLIP_H_
+#ifndef _NE_AUDIO_CLIP_H_
+#define _NE_AUDIO_CLIP_H_
 
 #include <Engine/Types.h>
 
@@ -39,4 +39,4 @@ void Au_UnloadClip(struct AudioClip *model, Handle h);
 bool Au_InitClip(struct AudioClip *clip);
 void Au_TermClip(struct AudioClip *clip);
 
-#endif /* _AU_CLIP_H_ */
+#endif /* _NE_AUDIO_CLIP_H_ */

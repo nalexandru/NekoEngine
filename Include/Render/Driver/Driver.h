@@ -1,10 +1,10 @@
-#ifndef _RE_DRIVER_H_
-#define _RE_DRIVER_H_
+#ifndef _NE_RENDER_DRIVER_DRIVER_H_
+#define _NE_RENDER_DRIVER_DRIVER_H_
 
 #include <Render/Types.h>
 
 #define NE_RENDER_DRIVER_ID		0xB16B00B5
-#define NE_RENDER_DRIVER_API	11
+#define NE_RENDER_DRIVER_API	13
 
 struct RenderDriver
 {
@@ -25,8 +25,9 @@ struct RenderDriver
 #ifdef RENDER_DRIVER_BUILTIN
 const struct RenderDriver *Re_LoadBuiltinDriver(void);
 #endif
+
 typedef const struct RenderDriver *(*ReLoadDriverProc)(void);
 
 ENGINE_API extern const struct RenderDriver *Re_driver;
 
-#endif
+#endif /* _NE_RENDER_DRIVER_DRIVER_H_ */

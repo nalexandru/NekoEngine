@@ -1,5 +1,5 @@
-#ifndef _RE_CONTEXT_H_
-#define _RE_CONTEXT_H_
+#ifndef _NE_RENDER_DRIVER_CONTEXT_H_
+#define _NE_RENDER_DRIVER_CONTEXT_H_
 
 #include <Engine/Job.h>
 #include <Render/Types.h>
@@ -147,4 +147,4 @@ static inline void Re_CmdDispatchIndirect(struct Buffer *buff, uint64_t offset)
 static inline void Re_CmdTraceRays(uint32_t width, uint32_t height, uint32_t depth) { Re_contextProcs.TraceRays(Re_CurrentContext(), width, height, depth); }
 static inline void Re_CmdTraceRaysIndirect(struct Buffer *buff, uint64_t offset) { Re_contextProcs.TraceRaysIndirect(Re_CurrentContext(), buff, offset); }
 
-#endif /* _RE_CONTEXT_H_ */
+#endif /* _NE_RENDER_DRIVER_CONTEXT_H_ */

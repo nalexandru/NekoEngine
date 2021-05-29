@@ -1,5 +1,5 @@
-#ifndef _MATH_SANITY_H_
-#define _MATH_SANITY_H_
+#ifndef _NE_MATH_SANITY_H_
+#define _NE_MATH_SANITY_H_
 
 #include <Math/Math.h>
 
@@ -118,4 +118,4 @@ __MathDbg_SanityTest(void)
 	}
 }
 
-#endif /* _MATH_SANITY_H_ */
+#endif /* _NE_MATH_SANITY_H_ */

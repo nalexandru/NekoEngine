@@ -1,5 +1,5 @@
-#ifndef _RT_RUNTIME_H_
-#define _RT_RUNTIME_H_
+#ifndef _NE_RUNTIME_RUNTIME_H_
+#define _NE_RUNTIME_RUNTIME_H_
 
 #include <ctype.h>
 #include <stdio.h>
@@ -24,6 +24,17 @@ Rt_MbsToWcs(const char *str)
 }
 
 static inline char *
+Rt_WcsToMbs(const wchar_t *str)
+{
+	size_t len = wcslen(str);
+
+	char *ret = Sys_Alloc(sizeof(*ret), len + 1, MH_Transient);
+	(void)wcstombs(ret, str, len);
+
+	return ret;
+}
+
+static inline char *
 Rt_SkipWhitespace(char *str)
 {
 	while (*str) {
@@ -35,4 +46,4 @@ Rt_SkipWhitespace(char *str)
 	return str;
 }
 
-#endif /* _RT_RUNTIME_H_ */
+#endif /* _NE_RUNTIME_RUNTIME_H_ */

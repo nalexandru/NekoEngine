@@ -118,6 +118,12 @@
     <Filter Include="Source Files\Render\Components">
       <UniqueIdentifier>{a051034a-1b2f-401c-ae89-e38bf8808dd3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Animation">
+      <UniqueIdentifier>{67a7d7f7-0c2f-483f-b410-6dc784ded28f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Animation">
+      <UniqueIdentifier>{d5139749-6a79-483a-8104-81e3f0f9d926}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Include\System\System.h">
@@ -459,6 +465,18 @@
     <ClInclude Include="..\Include\Render\Systems.h">
       <Filter>Header Files\Render</Filter>
     </ClInclude>
+    <ClInclude Include="..\Include\Animation\Animation.h">
+      <Filter>Header Files\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Animation\Clip.h">
+      <Filter>Header Files\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Animation\Skeleton.h">
+      <Filter>Header Files\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Animation\Animator.h">
+      <Filter>Header Files\Animation</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="System\System.c">
@@ -563,7 +581,7 @@
     <ClCompile Include="Asset\Wave.c">
       <Filter>Source Files\Asset</Filter>
     </ClCompile>
-    <ClCompile Include="Audio\Clip.c">
+    <ClCompile Include="Audio\AudioClip.c">
       <Filter>Source Files\Audio</Filter>
     </ClCompile>
     <ClCompile Include="Audio\Source.c">
@@ -781,6 +799,21 @@
     </ClCompile>
     <ClCompile Include="Render\Components\ModelRender.c">
       <Filter>Source Files\Render\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="Animation\Animation.c">
+      <Filter>Source Files\Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="Animation\AnimationClip.c">
+      <Filter>Source Files\Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="Animation\Skeleton.c">
+      <Filter>Source Files\Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="Animation\NAnim.c">
+      <Filter>Source Files\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Animation\Animator.c">
+      <Filter>Source Files\Animation</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

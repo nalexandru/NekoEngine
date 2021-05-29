@@ -1,5 +1,5 @@
-#ifndef _E_SCRIPT_H_
-#define _E_SCRIPT_H_
+#ifndef _NE_SCRIPT_SCRIPT_H_
+#define _NE_SCRIPT_SCRIPT_H_
 
 #include <stdbool.h>
 
@@ -7,14 +7,14 @@
 #include <lualib.h>
 #include <lauxlib.h>
 
-lua_State *E_CreateVM(bool jit);
+lua_State *Sc_CreateVM(bool jit);
 
-bool E_LoadScript(lua_State *vm, const char *source);
-bool E_LoadScriptFile(lua_State *vm, const char *path);
+bool Sc_LoadScript(lua_State *vm, const char *source);
+bool Sc_LoadScriptFile(lua_State *vm, const char *path);
 
-void E_DestroyVM(lua_State *vm);
+void Sc_DestroyVM(lua_State *vm);
 
-bool E_InitScriptSystem(void);
-void E_TermScriptSystem(void);
+bool Sc_InitScriptSystem(void);
+void Sc_TermScriptSystem(void);
 
-#endif /* _E_SCRIPT_H_ */
+#endif /* _NE_SCRIPT_SCRIPT_H_ */

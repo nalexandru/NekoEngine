@@ -1,6 +1,6 @@
 /* NekoEngine
  *
- * mat4.h
+ * mat4_altivec.h
  * Author: Alexandru Naiman
  *
  * 4x4 matrix functions

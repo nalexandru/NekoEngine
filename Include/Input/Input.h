@@ -1,5 +1,5 @@
-#ifndef _IN_INPUT_H_
-#define _IN_INPUT_H_
+#ifndef _NE_INPUT_INPUT_H_
+#define _NE_INPUT_INPUT_H_
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -61,4 +61,4 @@ void In_SetPointerPosition(uint16_t x, uint16_t y);
 void In_CapturePointer(bool capture);
 void In_ShowPointer(bool show);
 
-#endif /* _IN_INPUT_H_ */
+#endif /* _NE_INPUT_INPUT_H_ */

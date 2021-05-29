@@ -1,5 +1,5 @@
-#ifndef _RUNTIME_ARRAY_H_
-#define _RUNTIME_ARRAY_H_
+#ifndef _NE_RUNTIME_ARRAY_H_
+#define _NE_RUNTIME_ARRAY_H_
 
 #include <string.h>
 #include <stdint.h>
@@ -225,6 +225,30 @@ static inline bool
 Rt_ArrayAddPtr(struct Array *a, const void *data)
 {
 	return Rt_ArrayAdd(a, &data);
+}
+
+/**
+ * Rt_ArrayAddArray - add the contents of an array to the array
+ * @a: the array
+ * @item: the array to add
+ *
+ * &rt_array.elemSize number of bytes will be copied from item to the next
+ * location in the array. If &rt_array.count is equal to &rt_array.size the
+ * array will grow.
+ *
+ * Returns: OK on success
+ */
+static inline bool
+Rt_ArrayAddArray(struct Array *a, const struct Array *src)
+{
+	if (a->count + src->count >= a->size)
+		if (!Rt_ResizeArray(a, _Rt_CalcGrowSize(a->size, a->elemSize, (a->size + src->count) + RT_DEF_INC)))
+			return false;
+
+	memcpy(a->data + a->elemSize * a->count, src->data, a->elemSize * src->count);
+	a->count += src->count;
+
+	return true;
 }
 
 /**
@@ -572,4 +596,4 @@ __miwa_array_insert(struct Array *a, const void *data, size_t pos, bool ordered)
 	return true;
 }
 
-#endif /* _RUNTIME_ARRAY_H_ */
+#endif /* _NE_RUNTIME_ARRAY_H_ */

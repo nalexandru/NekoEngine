@@ -1,5 +1,5 @@
-#ifndef _RE_RAY_TRACING_H_
-#define _RE_RAY_TRACING_H_
+#ifndef _NE_RENDER_DRIVER_RAY_TRACING_H_
+#define _NE_RENDER_DRIVER_RAY_TRACING_H_
 
 #include <Render/Types.h>
 #include <Render/Driver/Device.h>
@@ -87,4 +87,4 @@ void Re_SBTAddShader(struct ShaderBindingTable *sbt, enum ShaderEntryType type, 
 void Re_BuildShaderBindingTable(struct ShaderBindingTable *sbt);
 void Re_DestroyShaderBindingTable(struct ShaderBindingTable *sbt);
 
-#endif /* _RE_RAY_TRACING_H_ */
+#endif /* _NE_RENDER_DRIVER_RAY_TRACING_H_ */

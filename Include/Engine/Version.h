@@ -1,5 +1,5 @@
-#ifndef _E_VERSION_H_
-#define _E_VERSION_H_
+#ifndef _NE_ENGINE_VERSION_H_
+#define _NE_ENGINE_VERSION_H_
 
 #ifndef _NESTR
 #define _NESTR_INTERNAL(x) #x
@@ -8,7 +8,7 @@
 
 #define E_VER_MAJOR		0
 #define E_VER_MINOR		8
-#define E_VER_BUILD		101
+#define E_VER_BUILD		117
 #define E_VER_REVISION	0
 
 #define E_PGM_NAME		L"NekoEngine"
@@ -23,4 +23,4 @@
 
 #define E_VER_STR		L""E_VER_STR_A
 
-#endif /* _E_VERSION_H_ */
+#endif /* _NE_ENGINE_VERSION_H_ */

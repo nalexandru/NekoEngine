@@ -1,5 +1,5 @@
-#ifndef _RUNTIME_QUEUE_H_
-#define _RUNTIME_QUEUE_H_
+#ifndef _NE_RUNTIME_QUEUE_H_
+#define _NE_RUNTIME_QUEUE_H_
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -173,4 +173,4 @@ Rt_TermQueue(struct Queue *q)
 	Rt_ClearQueue(q, true);
 }
 
-#endif /* _RUNTIME_QUEUE_H_ */
+#endif /* _NE_RUNTIME_QUEUE_H_ */

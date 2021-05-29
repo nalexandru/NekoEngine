@@ -39,6 +39,10 @@
     <ClInclude Include="..\Deps\Lua\lundump.h" />
     <ClInclude Include="..\Deps\Lua\lvm.h" />
     <ClInclude Include="..\Deps\Lua\lzio.h" />
+    <ClInclude Include="..\Include\Animation\Animation.h" />
+    <ClInclude Include="..\Include\Animation\Animator.h" />
+    <ClInclude Include="..\Include\Animation\Clip.h" />
+    <ClInclude Include="..\Include\Animation\Skeleton.h" />
     <ClInclude Include="..\Include\Audio\Audio.h" />
     <ClInclude Include="..\Include\Audio\Clip.h" />
     <ClInclude Include="..\Include\Audio\Device.h" />
@@ -180,6 +184,11 @@
     <ClCompile Include="..\Platform\Win32\Win32.c" />
     <ClCompile Include="..\Platform\Win32\Win32Input.c" />
     <ClCompile Include="..\Platform\Win32\Window.c" />
+    <ClCompile Include="Animation\Animation.c" />
+    <ClCompile Include="Animation\AnimationClip.c" />
+    <ClCompile Include="Animation\Animator.c" />
+    <ClCompile Include="Animation\NAnim.c" />
+    <ClCompile Include="Animation\Skeleton.c" />
     <ClCompile Include="Asset\Font.c" />
     <ClCompile Include="Asset\glTF.c" />
     <ClCompile Include="Asset\Image.c" />
@@ -189,7 +198,7 @@
     <ClCompile Include="Asset\TGA.c" />
     <ClCompile Include="Asset\Wave.c" />
     <ClCompile Include="Audio\Audio.c" />
-    <ClCompile Include="Audio\Clip.c" />
+    <ClCompile Include="Audio\AudioClip.c" />
     <ClCompile Include="Audio\Source.c" />
     <ClCompile Include="Engine\Component.c" />
     <ClCompile Include="Engine\Config.c" />

@@ -38,7 +38,7 @@ MTL_CreateDevice(struct RenderDeviceInfo *info,
 	devProcs->ScreenResized = (void(*)(struct RenderDevice *, struct Swapchain *))MTL_ScreenResized;
 	
 	devProcs->GraphicsPipeline = (struct Pipeline *(*)(struct RenderDevice *, const struct GraphicsPipelineDesc *desc))MTL_GraphicsPipeline;
-	devProcs->ComputePipeline = (struct Pipeline *(*)(struct RenderDevice *, struct Shader *))MTL_ComputePipeline;
+	devProcs->ComputePipeline = (struct Pipeline *(*)(struct RenderDevice *, const struct ComputePipelineDesc *))MTL_ComputePipeline;
 	devProcs->RayTracingPipeline = (struct Pipeline *(*)(struct RenderDevice *, struct ShaderBindingTable *, uint32_t))MTL_RayTracingPipeline;
 	devProcs->LoadPipelineCache = (void(*)(struct RenderDevice *))MTL_LoadPipelineCache;
 	devProcs->SavePipelineCache = (void(*)(struct RenderDevice *))MTL_LoadPipelineCache;
@@ -56,8 +56,8 @@ MTL_CreateDevice(struct RenderDeviceInfo *info,
 	
 	devProcs->ShaderModule = (void *(*)(struct RenderDevice *, const char *))MTL_ShaderModule;
 	
-	devProcs->CreateTransientBuffer = (struct Buffer *(*)(struct RenderDevice *, const struct BufferCreateInfo *, uint64_t))MTL_CreateTransientBuffer;
-	devProcs->CreateTransientTexture = (struct Texture *(*)(struct RenderDevice *, const struct TextureCreateInfo *, uint64_t))MTL_CreateTransientTexture;
+	devProcs->CreateTransientBuffer = (struct Buffer *(*)(struct RenderDevice *, const struct BufferCreateInfo *, uint16_t, uint64_t))MTL_CreateTransientBuffer;
+	devProcs->CreateTransientTexture = (struct Texture *(*)(struct RenderDevice *, const struct TextureCreateInfo *, uint16_t, uint64_t))MTL_CreateTransientTexture;
 	
 	devProcs->InitTransientHeap = (bool(*)(struct RenderDevice *, uint64_t))MTL_InitTransientHeap;
 	devProcs->ResizeTransientHeap = (bool(*)(struct RenderDevice *, uint64_t))MTL_ResizeTransientHeap;

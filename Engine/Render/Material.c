@@ -13,9 +13,15 @@
 #define MAT_MOD				L"Material"
 #define MAT_BUFFER_SIZE		2 * 1024 * 1024
 
+struct Block
+{
+	uint64_t offset;
+	uint32_t size;
+};
+
 struct RenderPassDesc *Re_MaterialRenderPassDesc;
 
-static struct Array _types;
+static struct Array _types, _freeList;
 static BufferHandle _materialBuffer;
 static uint8_t *_materialData, *_materialPtr, *_gpuBufferPtr;
 static uint64_t _bufferSize;
@@ -34,6 +40,11 @@ static inline void _freeMaterial(uint64_t offset, uint32_t size);
 
 static int32_t _cmpFunc(const struct MaterialType *type, uint64_t *hash);
 static int32_t _sortFunc(const struct MaterialType *a, const struct MaterialType *b);
+static int32_t _blockCmpFunc(const struct Block *b, const uint32_t *size);
+
+static bool _CreateMaterialResource(const char *name, const struct MaterialResourceCreateInfo *ci, struct MaterialResource *tex, Handle h);
+static bool _LoadMaterialResource(struct ResourceLoadInfo *li, const char *args, struct MaterialResource *tex, Handle h);
+static void _UnloadMaterialResource(struct MaterialResource *tex, Handle h);
 
 bool
 Re_InitMaterial(Handle res, struct Material *mat)
@@ -59,6 +70,7 @@ Re_InitMaterial(Handle res, struct Material *mat)
 		goto error;
 
 	memcpy(mat->name, mr->name, sizeof(mat->name));
+	mat->alphaBlend = mr->alphaBlend;
 
 	return true;
 
@@ -88,8 +100,8 @@ Re_MaterialAddress(struct Material *mat)
 	return Re_BufferAddress(_materialBuffer, Re_frameId * _bufferSize + mat->offset);
 }
 
-bool
-Re_CreateMaterialResource(const char *name, const struct MaterialResourceCreateInfo *ci, struct MaterialResource *mr, Handle h)
+static bool
+_CreateMaterialResource(const char *name, const struct MaterialResourceCreateInfo *ci, struct MaterialResource *mr, Handle h)
 {
 	mr->alphaBlend = ci->alphaBlend;
 	strncpy(mr->name, ci->name, sizeof(mr->name));
@@ -115,10 +127,10 @@ Re_CreateMaterialResource(const char *name, const struct MaterialResourceCreateI
 	if (!argc)
 		return true;
 
-	if (!Rt_InitPtrArray(&mr->args, argc, MH_Asset))
+	if (!Rt_InitPtrArray(&mr->args, argc + 1, MH_Asset))
 		return false;
 
-	uint8_t *data = Sys_Alloc(1, dataSize, MH_Render);
+	uint8_t *data = Sys_Alloc(1, dataSize, MH_Asset);
 	if (!data)
 		return false;
 
@@ -140,11 +152,11 @@ Re_CreateMaterialResource(const char *name, const struct MaterialResourceCreateI
 		data += len + 1;
 	}
 
-	return false;
+	return true;
 }
 
-bool
-Re_LoadMaterialResource(struct ResourceLoadInfo *li, const char *args, struct MaterialResource *mr, Handle h)
+static bool
+_LoadMaterialResource(struct ResourceLoadInfo *li, const char *args, struct MaterialResource *mr, Handle h)
 {
 	struct Metadata meta =
 	{
@@ -155,7 +167,7 @@ Re_LoadMaterialResource(struct ResourceLoadInfo *li, const char *args, struct Ma
 	if (!E_LoadMetadataFromStream(&meta, &li->stm))
 		return false;
 
-	uint8_t *data = Sys_Alloc(1, meta.jsonSize, MH_Render);
+	uint8_t *data = Sys_Alloc(1, meta.jsonSize, MH_Asset);
 	if (!data)
 		return false;
 	mr->data = data;
@@ -186,12 +198,12 @@ Re_LoadMaterialResource(struct ResourceLoadInfo *li, const char *args, struct Ma
 			mr->alphaBlend = strstr(alphaBlend, "true") != NULL;
 		} else {
 			Rt_ArrayAddPtr(&mr->args, data);
-			size_t len = key.end - key.start;
+			size_t len = (size_t)key.end - key.start;
 			memcpy(data, meta.json + key.start, len);
 			data += len + 1;
 
 			Rt_ArrayAddPtr(&mr->args, data);
-			len = val.end - val.start;
+			len = (size_t)val.end - val.start;
 			memcpy(data, meta.json + val.start, len);
 			data += len + 1;
 		}
@@ -200,8 +212,8 @@ Re_LoadMaterialResource(struct ResourceLoadInfo *li, const char *args, struct Ma
 	return true;
 }
 
-void
-Re_UnloadMaterialResource(struct MaterialResource *mr, Handle h)
+static void
+_UnloadMaterialResource(struct MaterialResource *mr, Handle h)
 {
 	Sys_Free(mr->data);
 	Rt_TermArray(&mr->args);
@@ -237,6 +249,10 @@ Re_RegisterMaterialType(const char *name, const char *shader, uint32_t dataSize,
 bool
 Re_InitMaterialSystem(void)
 {
+	if (!E_RegisterResourceType(RES_MATERIAL, sizeof(struct MaterialResource), (ResourceCreateProc)_CreateMaterialResource,
+						(ResourceLoadProc)_LoadMaterialResource, (ResourceUnloadProc)_UnloadMaterialResource))
+		return false;
+
 	_bufferSize = E_GetCVarU64(L"Render_MaterialBufferSize", MAT_BUFFER_SIZE)->u64;
 	struct BufferCreateInfo bci =
 	{
@@ -276,7 +292,21 @@ Re_InitMaterialSystem(void)
 		.finalLayout = TL_PRESENT_SRC,
 		.clearColor = { .3f, .0f, .4f, 1.f }
 	};
-	Re_MaterialRenderPassDesc = Re_CreateRenderPassDesc(&atDesc, 1, NULL);
+	struct AttachmentDesc depthDesc =
+	{
+		.mayAlias = true,
+		.format = TF_D32_SFLOAT,
+		.loadOp = ATL_CLEAR,
+		.storeOp = ATS_STORE,
+		.samples = ASC_1_SAMPLE,
+		.initialLayout = TL_UNKNOWN,
+		.layout = TL_DEPTH_ATTACHMENT,
+		.finalLayout = TL_DEPTH_ATTACHMENT,
+		.clearDepth = 1.f
+	};
+	Re_MaterialRenderPassDesc = Re_CreateRenderPassDesc(&atDesc, 1, &depthDesc);
+	
+	Rt_InitArray(&_freeList, 10, sizeof(struct Block), MH_Render);
 
 	return true;
 }
@@ -296,6 +326,7 @@ Re_TermMaterialSystem(void)
 
 	Sys_Free(_materialData);
 	Rt_TermArray(&_types);
+	Rt_TermArray(&_freeList);
 	Re_Destroy(_materialBuffer);
 }
 
@@ -303,42 +334,72 @@ static bool
 _initDefaultMaterial(const char **args, struct DefaultMaterial *data)
 {
 	Handle diffuseMap = E_INVALID_HANDLE, normalMap = E_INVALID_HANDLE,
-			metallicMap = E_INVALID_HANDLE, roughnessMap = E_INVALID_HANDLE;
+			metallicRoughnessMap = E_INVALID_HANDLE, occlusionMap = E_INVALID_HANDLE,
+			clearCoatMap = E_INVALID_HANDLE, clearCoatRoughnessMap = E_INVALID_HANDLE,
+			clearCoatNormalMap = E_INVALID_HANDLE, emissiveMap = E_INVALID_HANDLE,
+			transmissionMap = E_INVALID_HANDLE;
 
 	for (; args && *args; ++args) {
 		const char *arg = *args;
 		size_t len = strlen(arg);
 
-		if (!strncmp(arg, "DiffuseMap", len)) {
+		if (!len)
+			continue;
+
+		if (!strncmp(arg, "Metallic", len)) {
+			data->metallic = strtof((char *)*(++args), NULL);
+		} else if (!strncmp(arg, "Roughness", len)) {
+			data->roughness = strtof((char *)*(++args), NULL);
+		} else if (!strncmp(arg, "AlphaCutoff", len)) {
+			data->alphaCutoff = strtof((char *)*(++args), NULL);
+		} else if (!strncmp(arg, "ClearCoat", len)) {
+			data->clearCoat = strtof((char *)*(++args), NULL);
+		} else if (!strncmp(arg, "ClearCoatRoughness", len)) {
+			data->clearCoatRoughness = strtof((char *)*(++args), NULL);
+		} else if (!strncmp(arg, "DiffuseMap", len)) {
 			diffuseMap = E_LoadResource(*(++args), RES_TEXTURE);
 		} else if (!strncmp(arg, "NormalMap", len)) {
 			normalMap = E_LoadResource(*(++args), RES_TEXTURE);
-		} else if (!strncmp(arg, "MetallicMap", len)) {
-			metallicMap = E_LoadResource(*(++args), RES_TEXTURE);
-		} else if (!strncmp(arg, "RoughnessMap", len)) {
-			roughnessMap = E_LoadResource(*(++args), RES_TEXTURE);
+		} else if (!strncmp(arg, "MetallicRoughnessMap", len)) {
+			metallicRoughnessMap = E_LoadResource(*(++args), RES_TEXTURE);
+		} else if (!strncmp(arg, "OcclusionMap", len)) {
+			occlusionMap = E_LoadResource(*(++args), RES_TEXTURE);
+		} else if (!strncmp(arg, "ClearCoatMap", len)) {
+			clearCoatMap = E_LoadResource(*(++args), RES_TEXTURE);
+		} else if (!strncmp(arg, "ClearCoatNormalMap", len)) {
+			clearCoatNormalMap = E_LoadResource(*(++args), RES_TEXTURE);
+		} else if (!strncmp(arg, "ClearCoatRoughnessMap", len)) {
+			clearCoatRoughnessMap = E_LoadResource(*(++args), RES_TEXTURE);
+		} else if (!strncmp(arg, "EmissiveMap", len)) {
+			emissiveMap = E_LoadResource(*(++args), RES_TEXTURE);
+		} else if (!strncmp(arg, "TransmissionMap", len)) {
+			transmissionMap = E_LoadResource(*(++args), RES_TEXTURE);
 		} else if (!strncmp(arg, "DiffuseColor", len)) {
 			char *ptr = (char *)*(++args);
 			data->diffuseColor[0] = strtof(ptr, &ptr);
 			data->diffuseColor[1] = strtof(ptr + 2, &ptr);
 			data->diffuseColor[2] = strtof(ptr + 2, &ptr);
 			data->diffuseColor[3] = strtof(ptr + 2, &ptr);
-		} else if (!strncmp(arg, "EmissionColor", len)) {
+		} else if (!strncmp(arg, "EmissiveColor", len)) {
 			char *ptr = (char *)*(++args);
 			data->emissionColor[0] = strtof(ptr, &ptr);
 			data->emissionColor[1] = strtof(ptr + 2, &ptr);
 			data->emissionColor[2] = strtof(ptr + 2, &ptr);
-		} else if (!strncmp(arg, "Metallic", len)) {
-			data->metallic = strtof((char *)*(++args), NULL);
-		} else if (!strncmp(arg, "Roughness", len)) {
-			data->roughness = strtof((char *)*(++args), NULL);
+		} else {
+			Sys_LogEntry(L"DefaultMaterial", LOG_WARNING, L"Unknown property %hs", arg);
+			++args;
 		}
 	}
 
-	data->diffuseMap = E_ResHandleToGPU(diffuseMap);
-	data->normalMap = E_ResHandleToGPU(normalMap);
-	data->metallicMap = E_ResHandleToGPU(metallicMap);
-	data->roughnessMap = E_ResHandleToGPU(roughnessMap);
+	data->diffuseMap = diffuseMap != E_INVALID_HANDLE ? E_ResHandleToGPU(diffuseMap) : 0;
+	data->normalMap = normalMap != E_INVALID_HANDLE ? E_ResHandleToGPU(normalMap) : 0;
+	data->metallicRoughnessMap = metallicRoughnessMap != E_INVALID_HANDLE ? E_ResHandleToGPU(metallicRoughnessMap) : 0;
+	data->occlusionMap = occlusionMap != E_INVALID_HANDLE ? E_ResHandleToGPU(occlusionMap) : 0;
+	data->transmissionMap = transmissionMap != E_INVALID_HANDLE ? E_ResHandleToGPU(transmissionMap) : 0;
+	data->emissionMap = emissiveMap != E_INVALID_HANDLE ? E_ResHandleToGPU(emissiveMap) : 0;
+	data->clearCoatRoughnessMap = clearCoatRoughnessMap != E_INVALID_HANDLE ? E_ResHandleToGPU(clearCoatRoughnessMap) : 0;
+	data->clearCoatNormalMap = clearCoatNormalMap != E_INVALID_HANDLE ? E_ResHandleToGPU(clearCoatNormalMap) : 0;
+	data->clearCoatMap = clearCoatMap != E_INVALID_HANDLE ? E_ResHandleToGPU(clearCoatMap) : 0;
 
 	return true;
 }
@@ -346,39 +407,46 @@ _initDefaultMaterial(const char **args, struct DefaultMaterial *data)
 static void
 _termDefaultMaterial(struct DefaultMaterial *data)
 {
-	E_UnloadResource(E_GPUHandleToRes(data->diffuseMap, RES_TEXTURE));
-	E_UnloadResource(E_GPUHandleToRes(data->normalMap, RES_TEXTURE));
-	E_UnloadResource(E_GPUHandleToRes(data->metallicMap, RES_TEXTURE));
-	E_UnloadResource(E_GPUHandleToRes(data->roughnessMap, RES_TEXTURE));
+#define UNLOAD_TEX(x) if (x) E_UnloadResource(E_GPUHandleToRes(x, RES_TEXTURE))
+	
+	UNLOAD_TEX(data->diffuseMap);
+	UNLOAD_TEX(data->normalMap);
+	UNLOAD_TEX(data->metallicRoughnessMap);
+	UNLOAD_TEX(data->occlusionMap);
+	UNLOAD_TEX(data->transmissionMap);
+	UNLOAD_TEX(data->emissionMap);
+	UNLOAD_TEX(data->clearCoatRoughnessMap);
+	UNLOAD_TEX(data->clearCoatNormalMap);
+	UNLOAD_TEX(data->clearCoatMap);
 }
 
 static inline struct Pipeline *
 _createPipeline(const struct MaterialResource *mr, struct Shader *shader)
 {
-	/*enum BlendFactor srcColor;
-	enum BlendFactor dstColor;
-	enum BlendOperation colorOp;
-	enum BlendFactor srcAlpha;
-	enum BlendFactor dstAlpha;
-	enum BlendOperation alphaOp;*/
-	assert(!mr->alphaBlend);
-
 	struct BlendAttachmentDesc blendAttachments[] =
 	{
 		{
 			.enableBlend = mr->alphaBlend,
-			.writeMask = RE_WRITE_MASK_RGB
+			.writeMask = RE_WRITE_MASK_RGBA,
+			.srcColor = RE_BF_SRC_ALPHA,
+			.dstColor = RE_BF_ONE_MINUS_SRC_ALPHA,
+			.colorOp = RE_BOP_ADD,
+			.srcAlpha = RE_BF_ONE,
+			.dstAlpha = RE_BF_ZERO,
+			.alphaOp = RE_BOP_ADD
 		}
 	};
 	struct GraphicsPipelineDesc desc =
 	{
-		.flags = RE_TOPOLOGY_TRIANGLES | RE_POLYGON_FILL | RE_CULL_NONE | RE_FRONT_FACE_CW,
+		.flags = RE_TOPOLOGY_TRIANGLES | RE_POLYGON_FILL |
+					RE_CULL_NONE | RE_FRONT_FACE_CW |
+					RE_DEPTH_TEST | RE_DEPTH_WRITE | RE_DEPTH_OP_LESS_EQUAL,
 		.shader = shader,
 		.renderPassDesc = Re_MaterialRenderPassDesc,
-		.pushConstantSize = 16,
+		.pushConstantSize = 16 + 64,
 		.attachmentCount = sizeof(blendAttachments) / sizeof(blendAttachments[0]),
-		.attachments = blendAttachments
-
+		.attachments = blendAttachments,
+		.depthFormat = TF_D32_SFLOAT
 	};
 	return Re_GraphicsPipeline(&desc);
 }
@@ -402,7 +470,22 @@ static inline bool
 _allocMaterial(uint32_t size, uint64_t *offset, void **data)
 {
 	Sys_AtomicLockWrite(&_lock);
-
+	
+	/*
+	 * This will search only for a free block with the same size; this
+	 * is usually true.
+	 */
+	if (_freeList.count) {
+		size_t id = Rt_ArrayFindId(&_freeList, &size, (RtCmpFunc)_blockCmpFunc);
+		if (id != RT_NOT_FOUND) {
+			struct Block *b = Rt_ArrayGet(&_freeList, id);
+			*offset = b->offset;
+			*data = _materialData + *offset;
+			Rt_ArrayRemove(&_freeList, id);
+			return true;
+		}
+	}
+	
 	*offset = _materialPtr - _materialData;
 
 	if (*offset + size >= _bufferSize) {
@@ -422,7 +505,10 @@ static inline void
 _freeMaterial(uint64_t offset, uint32_t size)
 {
 	Sys_AtomicLockWrite(&_lock);
-	Sys_LogEntry(MAT_MOD, LOG_DEBUG, L"Free Material Not Implemented");
+	
+	struct Block b = { .offset = offset, .size = size };
+	Rt_ArrayAdd(&_freeList, &b);
+
 	Sys_AtomicUnlockWrite(&_lock);
 }
 
@@ -446,4 +532,10 @@ _sortFunc(const struct MaterialType *a, const struct MaterialType *b)
 		return -1;
 	else
 		return 0;
+}
+
+static int32_t
+_blockCmpFunc(const struct Block *b, const uint32_t *size)
+{
+	return (b->size == *size) ? 0 : -1;
 }
