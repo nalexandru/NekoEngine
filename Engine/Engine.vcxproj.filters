@@ -809,11 +809,11 @@
     <ClCompile Include="Animation\Skeleton.c">
       <Filter>Source Files\Animation</Filter>
     </ClCompile>
-    <ClCompile Include="Animation\NAnim.c">
-      <Filter>Source Files\Asset</Filter>
-    </ClCompile>
     <ClCompile Include="Animation\Animator.c">
       <Filter>Source Files\Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\NAnim.c">
+      <Filter>Source Files\Asset</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

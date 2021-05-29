@@ -58,7 +58,6 @@
 		FA4CFEE125D774D800B37A5B /* Wave.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B5B2521F2D600F7C24B /* Wave.c */; };
 		FA4CFEE425D774DD00B37A5B /* Source.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B7F2521F3C500F7C24B /* Source.c */; };
 		FA4CFEE525D774DD00B37A5B /* Audio.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B7D2521F3C500F7C24B /* Audio.c */; };
-		FA4CFEE625D774DD00B37A5B /* Clip.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B7E2521F3C500F7C24B /* Clip.c */; };
 		FA4CFEE925D774E600B37A5B /* Job.c in Sources */ = {isa = PBXBuildFile; fileRef = FAC4B4AF253BE2E30074EE3C /* Job.c */; };
 		FA4CFEEA25D774E600B37A5B /* Entity.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B892521F3D700F7C24B /* Entity.c */; };
 		FA4CFEEB25D774E600B37A5B /* ECSInit.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B862521F3D700F7C24B /* ECSInit.c */; };
@@ -214,7 +213,6 @@
 		FAAF9B612521F2D600F7C24B /* TGA.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B5A2521F2D600F7C24B /* TGA.c */; };
 		FAAF9B622521F2D600F7C24B /* Wave.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B5B2521F2D600F7C24B /* Wave.c */; };
 		FAAF9B802521F3C500F7C24B /* Audio.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B7D2521F3C500F7C24B /* Audio.c */; };
-		FAAF9B812521F3C500F7C24B /* Clip.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B7E2521F3C500F7C24B /* Clip.c */; };
 		FAAF9B822521F3C500F7C24B /* Source.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B7F2521F3C500F7C24B /* Source.c */; };
 		FAAF9B8D2521F3D700F7C24B /* Component.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B832521F3D700F7C24B /* Component.c */; };
 		FAAF9B8E2521F3D700F7C24B /* Config.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B842521F3D700F7C24B /* Config.c */; };
@@ -266,6 +264,15 @@
 		FADD5C0D253D297900606B2A /* Memory.c in Sources */ = {isa = PBXBuildFile; fileRef = FADD5C0C253D297900606B2A /* Memory.c */; };
 		FAE5E11F2569BFD60091893B /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FAE5E11E2569BFD60091893B /* Metal.framework */; };
 		FAE5E1212569BFDC0091893B /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FAE5E1202569BFDC0091893B /* QuartzCore.framework */; };
+		FAEFB7542662AE6E00BFCF25 /* AnimationClip.c in Sources */ = {isa = PBXBuildFile; fileRef = FAEFB74F2662AE6E00BFCF25 /* AnimationClip.c */; };
+		FAEFB7552662AE6E00BFCF25 /* Animation.c in Sources */ = {isa = PBXBuildFile; fileRef = FAEFB7502662AE6E00BFCF25 /* Animation.c */; };
+		FAEFB7562662AE6E00BFCF25 /* Animator.c in Sources */ = {isa = PBXBuildFile; fileRef = FAEFB7512662AE6E00BFCF25 /* Animator.c */; };
+		FAEFB7582662AE6E00BFCF25 /* Skeleton.c in Sources */ = {isa = PBXBuildFile; fileRef = FAEFB7532662AE6E00BFCF25 /* Skeleton.c */; };
+		FAEFB75A2662AE9800BFCF25 /* NAnim.c in Sources */ = {isa = PBXBuildFile; fileRef = FAEFB7592662AE9800BFCF25 /* NAnim.c */; };
+		FAEFB75C2662AEA000BFCF25 /* AudioClip.c in Sources */ = {isa = PBXBuildFile; fileRef = FAEFB75B2662AEA000BFCF25 /* AudioClip.c */; };
+		FAEFB7612662AECE00BFCF25 /* Depth.c in Sources */ = {isa = PBXBuildFile; fileRef = FAEFB75E2662AECE00BFCF25 /* Depth.c */; };
+		FAEFB7622662AECE00BFCF25 /* LightCulling.c in Sources */ = {isa = PBXBuildFile; fileRef = FAEFB75F2662AECE00BFCF25 /* LightCulling.c */; };
+		FAEFB7632662AECE00BFCF25 /* Lighting.c in Sources */ = {isa = PBXBuildFile; fileRef = FAEFB7602662AECE00BFCF25 /* Lighting.c */; };
 		FAFEF82C25D59F9500D8D1FB /* MTLSwapchain.m in Sources */ = {isa = PBXBuildFile; fileRef = FAFEF82B25D59F9500D8D1FB /* MTLSwapchain.m */; };
 		FAFEF82F25D5A01B00D8D1FB /* MTLAccelerationStructure.m in Sources */ = {isa = PBXBuildFile; fileRef = FAFEF82E25D5A01B00D8D1FB /* MTLAccelerationStructure.m */; };
 		FAFEF83225D5A08500D8D1FB /* MTLTexture.m in Sources */ = {isa = PBXBuildFile; fileRef = FAFEF83125D5A08500D8D1FB /* MTLTexture.m */; };
@@ -470,7 +477,6 @@
 		FAAF9B5A2521F2D600F7C24B /* TGA.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = TGA.c; path = Engine/Asset/TGA.c; sourceTree = "<group>"; };
 		FAAF9B5B2521F2D600F7C24B /* Wave.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = Wave.c; path = Engine/Asset/Wave.c; sourceTree = "<group>"; };
 		FAAF9B7D2521F3C500F7C24B /* Audio.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = Audio.c; path = Engine/Audio/Audio.c; sourceTree = "<group>"; };
-		FAAF9B7E2521F3C500F7C24B /* Clip.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = Clip.c; path = Engine/Audio/Clip.c; sourceTree = "<group>"; };
 		FAAF9B7F2521F3C500F7C24B /* Source.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = Source.c; path = Engine/Audio/Source.c; sourceTree = "<group>"; };
 		FAAF9B832521F3D700F7C24B /* Component.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = Component.c; path = Engine/Engine/Component.c; sourceTree = "<group>"; };
 		FAAF9B842521F3D700F7C24B /* Config.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = Config.c; path = Engine/Engine/Config.c; sourceTree = "<group>"; };
@@ -544,6 +550,22 @@
 		FAE5E1262569C3400091893B /* mat4_neon.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mat4_neon.h; path = Include/Math/neon/mat4_neon.h; sourceTree = "<group>"; };
 		FAE5E1272569C3550091893B /* debug.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = debug.h; path = Include/Math/debug.h; sourceTree = "<group>"; };
 		FAE5E1282569C3550091893B /* Math.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Math.h; path = Include/Math/Math.h; sourceTree = "<group>"; };
+		FAEFB7462662AE1700BFCF25 /* Clip.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Clip.h; path = Include/Animation/Clip.h; sourceTree = "<group>"; };
+		FAEFB7472662AE1700BFCF25 /* Animator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Animator.h; path = Include/Animation/Animator.h; sourceTree = "<group>"; };
+		FAEFB7482662AE1700BFCF25 /* Skeleton.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Skeleton.h; path = Include/Animation/Skeleton.h; sourceTree = "<group>"; };
+		FAEFB7492662AE1700BFCF25 /* Animation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Animation.h; path = Include/Animation/Animation.h; sourceTree = "<group>"; };
+		FAEFB74B2662AE2C00BFCF25 /* ModelRender.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ModelRender.h; path = Include/Render/Components/ModelRender.h; sourceTree = "<group>"; };
+		FAEFB74C2662AE3900BFCF25 /* Systems.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Systems.h; path = Include/Render/Systems.h; sourceTree = "<group>"; };
+		FAEFB74D2662AE4B00BFCF25 /* PlatformDetect.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PlatformDetect.h; path = Include/System/PlatformDetect.h; sourceTree = "<group>"; };
+		FAEFB74F2662AE6E00BFCF25 /* AnimationClip.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = AnimationClip.c; path = Engine/Animation/AnimationClip.c; sourceTree = "<group>"; };
+		FAEFB7502662AE6E00BFCF25 /* Animation.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = Animation.c; path = Engine/Animation/Animation.c; sourceTree = "<group>"; };
+		FAEFB7512662AE6E00BFCF25 /* Animator.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = Animator.c; path = Engine/Animation/Animator.c; sourceTree = "<group>"; };
+		FAEFB7532662AE6E00BFCF25 /* Skeleton.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = Skeleton.c; path = Engine/Animation/Skeleton.c; sourceTree = "<group>"; };
+		FAEFB7592662AE9800BFCF25 /* NAnim.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = NAnim.c; path = Engine/Asset/NAnim.c; sourceTree = "<group>"; };
+		FAEFB75B2662AEA000BFCF25 /* AudioClip.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = AudioClip.c; path = Engine/Audio/AudioClip.c; sourceTree = "<group>"; };
+		FAEFB75E2662AECE00BFCF25 /* Depth.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = Depth.c; path = Engine/Render/Pass/Depth.c; sourceTree = "<group>"; };
+		FAEFB75F2662AECE00BFCF25 /* LightCulling.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = LightCulling.c; path = Engine/Render/Pass/LightCulling.c; sourceTree = "<group>"; };
+		FAEFB7602662AECE00BFCF25 /* Lighting.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = Lighting.c; path = Engine/Render/Pass/Lighting.c; sourceTree = "<group>"; };
 		FAFCD95325EE4767006CA7FF /* ShaderTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = ShaderTypes.h; path = Drivers/Metal/Shaders/ShaderTypes.h; sourceTree = "<group>"; };
 		FAFEF82B25D59F9500D8D1FB /* MTLSwapchain.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = MTLSwapchain.m; path = Drivers/Metal/MTLSwapchain.m; sourceTree = "<group>"; };
 		FAFEF82E25D5A01B00D8D1FB /* MTLAccelerationStructure.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = MTLAccelerationStructure.m; path = Drivers/Metal/MTLAccelerationStructure.m; sourceTree = "<group>"; };
@@ -623,6 +645,7 @@
 		29B97315FDCFA39411CA2CEA /* Engine */ = {
 			isa = PBXGroup;
 			children = (
+				FAEFB74E2662AE5E00BFCF25 /* Animation */,
 				FAAF9B542521F2AF00F7C24B /* Asset */,
 				FAAF9B722521F35F00F7C24B /* Audio */,
 				FAAF9B792521F3A600F7C24B /* Engine */,
@@ -760,6 +783,7 @@
 		FA6BDCF12522B69E00806A2D /* Include */ = {
 			isa = PBXGroup;
 			children = (
+				FAEFB7452662ADFA00BFCF25 /* Animation */,
 				FA6BDCFF2522B71F00806A2D /* Audio */,
 				FA6BDCFE2522B71600806A2D /* Engine */,
 				FA6BDCFD2522B70D00806A2D /* Input */,
@@ -787,6 +811,7 @@
 		FA6BDCF72522B6C800806A2D /* System */ = {
 			isa = PBXGroup;
 			children = (
+				FAEFB74D2662AE4B00BFCF25 /* PlatformDetect.h */,
 				FAC4B4B8253BE4350074EE3C /* Thread.h */,
 				FA6BDD3A2522B82C00806A2D /* AtomicLock.h */,
 				FA6BDD3B2522B82C00806A2D /* Endian.h */,
@@ -835,6 +860,7 @@
 		FA6BDCFB2522B6F700806A2D /* Render */ = {
 			isa = PBXGroup;
 			children = (
+				FAEFB74A2662AE1E00BFCF25 /* Components */,
 				FA7124702636144D00916C6D /* Driver */,
 				FA4A1992261F715C00040940 /* Graph */,
 				FA4A1989261F712700040940 /* DestroyResource.h */,
@@ -842,6 +868,7 @@
 				FA1A7EEB25CF0D28003B4259 /* Render.h */,
 				FA5D333425CFE7FD001EB5E2 /* Material.h */,
 				FA4CFFA025D8D4A600B37A5B /* Model.h */,
+				FAEFB74C2662AE3900BFCF25 /* Systems.h */,
 			);
 			name = Render;
 			sourceTree = "<group>";
@@ -970,6 +997,7 @@
 		FAAF9B542521F2AF00F7C24B /* Asset */ = {
 			isa = PBXGroup;
 			children = (
+				FAEFB7592662AE9800BFCF25 /* NAnim.c */,
 				FAAF9B552521F2D600F7C24B /* Font.c */,
 				FAAF9B562521F2D600F7C24B /* glTF.c */,
 				FAAF9B572521F2D600F7C24B /* Image.c */,
@@ -985,8 +1013,8 @@
 		FAAF9B722521F35F00F7C24B /* Audio */ = {
 			isa = PBXGroup;
 			children = (
+				FAEFB75B2662AEA000BFCF25 /* AudioClip.c */,
 				FAAF9B7D2521F3C500F7C24B /* Audio.c */,
-				FAAF9B7E2521F3C500F7C24B /* Clip.c */,
 				FAAF9B7F2521F3C500F7C24B /* Source.c */,
 			);
 			name = Audio;
@@ -1039,6 +1067,7 @@
 		FAAF9B772521F39700F7C24B /* Render */ = {
 			isa = PBXGroup;
 			children = (
+				FAEFB75D2662AEC200BFCF25 /* Pass */,
 				FA04A9F62653FD4500534686 /* Components */,
 				FA80D6C3264616B10053CE56 /* Driver */,
 				FA80D6C4264616BA0053CE56 /* Graph */,
@@ -1261,6 +1290,46 @@
 			name = neon;
 			sourceTree = "<group>";
 		};
+		FAEFB7452662ADFA00BFCF25 /* Animation */ = {
+			isa = PBXGroup;
+			children = (
+				FAEFB7492662AE1700BFCF25 /* Animation.h */,
+				FAEFB7472662AE1700BFCF25 /* Animator.h */,
+				FAEFB7462662AE1700BFCF25 /* Clip.h */,
+				FAEFB7482662AE1700BFCF25 /* Skeleton.h */,
+			);
+			name = Animation;
+			sourceTree = "<group>";
+		};
+		FAEFB74A2662AE1E00BFCF25 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				FAEFB74B2662AE2C00BFCF25 /* ModelRender.h */,
+			);
+			name = Components;
+			sourceTree = "<group>";
+		};
+		FAEFB74E2662AE5E00BFCF25 /* Animation */ = {
+			isa = PBXGroup;
+			children = (
+				FAEFB7502662AE6E00BFCF25 /* Animation.c */,
+				FAEFB74F2662AE6E00BFCF25 /* AnimationClip.c */,
+				FAEFB7512662AE6E00BFCF25 /* Animator.c */,
+				FAEFB7532662AE6E00BFCF25 /* Skeleton.c */,
+			);
+			name = Animation;
+			sourceTree = "<group>";
+		};
+		FAEFB75D2662AEC200BFCF25 /* Pass */ = {
+			isa = PBXGroup;
+			children = (
+				FAEFB75E2662AECE00BFCF25 /* Depth.c */,
+				FAEFB75F2662AECE00BFCF25 /* LightCulling.c */,
+				FAEFB7602662AECE00BFCF25 /* Lighting.c */,
+			);
+			name = Pass;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -1373,7 +1442,6 @@
 				FAAF9B622521F2D600F7C24B /* Wave.c in Sources */,
 				FAAF9B802521F3C500F7C24B /* Audio.c in Sources */,
 				FA99953E25E2E684002CB0D3 /* MTLShader.m in Sources */,
-				FAAF9B812521F3C500F7C24B /* Clip.c in Sources */,
 				FAAF9B822521F3C500F7C24B /* Source.c in Sources */,
 				FAAF9B8D2521F3D700F7C24B /* Component.c in Sources */,
 				FA04A9FA2653FD5A00534686 /* Systems.c in Sources */,
@@ -1394,10 +1462,12 @@
 				FAAF9BA52521F42000F7C24B /* Camera.c in Sources */,
 				FAAF9BA62521F42000F7C24B /* Scene.c in Sources */,
 				FA71247F263616DA00916C6D /* Material.c in Sources */,
+				FAEFB7582662AE6E00BFCF25 /* Skeleton.c in Sources */,
 				FAAF9BA72521F42000F7C24B /* ScriptHost.c in Sources */,
 				FAAF9BA82521F42000F7C24B /* Transform.c in Sources */,
 				FAAF9BAA2521F46A00F7C24B /* Script.c in Sources */,
 				FAAF9BAD2521F47D00F7C24B /* Text.c in Sources */,
+				FAEFB7552662AE6E00BFCF25 /* Animation.c in Sources */,
 				FAAF9BAE2521F47D00F7C24B /* UI.c in Sources */,
 				FAAF9BB22521F49C00F7C24B /* Log.c in Sources */,
 				FAAF9BB32521F49C00F7C24B /* System.c in Sources */,
@@ -1405,6 +1475,7 @@
 				FA4CFFC925D8DA7900B37A5B /* Darwin.m in Sources */,
 				FAAF9C852522A81F00F7C24B /* physfs_archiver_7z.c in Sources */,
 				FAAF9C862522A81F00F7C24B /* physfs_archiver_dir.c in Sources */,
+				FAEFB7622662AECE00BFCF25 /* LightCulling.c in Sources */,
 				FAAF9C872522A81F00F7C24B /* physfs_archiver_grp.c in Sources */,
 				FAAF9C882522A81F00F7C24B /* physfs_archiver_hog.c in Sources */,
 				FAAF9C892522A81F00F7C24B /* physfs_archiver_iso9660.c in Sources */,
@@ -1429,6 +1500,7 @@
 				FA6BDE7E2523382100806A2D /* lbaselib.c in Sources */,
 				FA6BDE7F2523382100806A2D /* lcode.c in Sources */,
 				FA8A94DB25D41935008B5823 /* MTLPipeline.m in Sources */,
+				FAEFB7632662AECE00BFCF25 /* Lighting.c in Sources */,
 				FADBC13825CF613F00085E38 /* MTLDevice.m in Sources */,
 				FA99954425E2E804002CB0D3 /* DefaultPBR.metal in Sources */,
 				FA6BDE802523382100806A2D /* lcorolib.c in Sources */,
@@ -1440,6 +1512,7 @@
 				FA6BDE852523382100806A2D /* ldump.c in Sources */,
 				FA4CFFB525D8D9C800B37A5B /* Window.m in Sources */,
 				FA6BDE862523382100806A2D /* lfunc.c in Sources */,
+				FAEFB7612662AECE00BFCF25 /* Depth.c in Sources */,
 				FA4CFFCB25D8DA7900B37A5B /* Thread.m in Sources */,
 				FA4A195F25FE43E900040940 /* AVFDriver.m in Sources */,
 				FA6BDE872523382100806A2D /* lgc.c in Sources */,
@@ -1448,6 +1521,7 @@
 				FA6BDE892523382100806A2D /* liolib.c in Sources */,
 				FA6BDE8A2523382100806A2D /* llex.c in Sources */,
 				FA80D6CA264616CD0053CE56 /* Shader.c in Sources */,
+				FAEFB75C2662AEA000BFCF25 /* AudioClip.c in Sources */,
 				FA80D6CB264616CD0053CE56 /* Texture.c in Sources */,
 				FA6BDE8B2523382100806A2D /* lmathlib.c in Sources */,
 				FA6BDE8C2523382100806A2D /* lmem.c in Sources */,
@@ -1455,6 +1529,7 @@
 				FADBC14125CF70CE00085E38 /* MTLContext.m in Sources */,
 				FAFEF84225D5A11300D8D1FB /* MTLBuffer.m in Sources */,
 				FA6BDE8E2523382100806A2D /* lobject.c in Sources */,
+				FAEFB7562662AE6E00BFCF25 /* Animator.c in Sources */,
 				FA6BDE8F2523382100806A2D /* lopcodes.c in Sources */,
 				FAA9108825D3D85D005FCDA2 /* Application.c in Sources */,
 				FA6BDE902523382100806A2D /* loslib.c in Sources */,
@@ -1466,6 +1541,7 @@
 				FA4CFFB025D8D9C800B37A5B /* macOS.m in Sources */,
 				FA6BDE942523382100806A2D /* lstrlib.c in Sources */,
 				FAFEF83C25D5A0D900D8D1FB /* MTLShaderBindingTable.m in Sources */,
+				FAEFB7542662AE6E00BFCF25 /* AnimationClip.c in Sources */,
 				FA80D6C9264616CD0053CE56 /* Buffer.c in Sources */,
 				FA4A198E261F714A00040940 /* DestroyResource.c in Sources */,
 				FA80D6CE264616D90053CE56 /* Graph.c in Sources */,
@@ -1481,6 +1557,7 @@
 				FA6BDE9B2523382100806A2D /* lzio.c in Sources */,
 				FA7745DD2528963200FED53F /* reallocarray.c in Sources */,
 				FA7D9F882528D6D400F51BA0 /* physfs_platform_posix.c in Sources */,
+				FAEFB75A2662AE9800BFCF25 /* NAnim.c in Sources */,
 				FAC4B4B0253BE2E30074EE3C /* Job.c in Sources */,
 				FAC6710925EBE812001BF95A /* Skinning.metal in Sources */,
 				FA4CFFB225D8D9C800B37A5B /* EngineView.m in Sources */,
@@ -1526,7 +1603,6 @@
 				FA4CFF4125D7754700B37A5B /* physfs_archiver_unpacked.c in Sources */,
 				FA99953F25E2E684002CB0D3 /* MTLShader.m in Sources */,
 				FA4CFEF125D774E600B37A5B /* Event.c in Sources */,
-				FA4CFEE625D774DD00B37A5B /* Clip.c in Sources */,
 				FA04A9FC265404E900534686 /* ModelRender.c in Sources */,
 				FA4CFEBA25D7733700B37A5B /* EngineView.m in Sources */,
 				FA4CFF5B25D7758600B37A5B /* MTLDevice.m in Sources */,
@@ -1637,7 +1713,7 @@
 				CODE_SIGN_ENTITLEMENTS = "";
 				CODE_SIGN_IDENTITY = "-";
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 101;
+				CURRENT_PROJECT_VERSION = 117;
 				ENABLE_HARDENED_RUNTIME = NO;
 				GCC_CW_ASM_SYNTAX = NO;
 				GCC_DYNAMIC_NO_PIC = NO;
@@ -1679,7 +1755,7 @@
 				CLANG_ENABLE_OBJC_WEAK = YES;
 				CODE_SIGN_ENTITLEMENTS = "";
 				CODE_SIGN_IDENTITY = "-";
-				CURRENT_PROJECT_VERSION = 101;
+				CURRENT_PROJECT_VERSION = 117;
 				ENABLE_HARDENED_RUNTIME = NO;
 				GCC_CW_ASM_SYNTAX = NO;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
@@ -1845,7 +1921,7 @@
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 101;
+				CURRENT_PROJECT_VERSION = 117;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 9HAM5X8W52;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -1891,7 +1967,7 @@
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 101;
+				CURRENT_PROJECT_VERSION = 117;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 9HAM5X8W52;
 				ENABLE_NS_ASSERTIONS = NO;
