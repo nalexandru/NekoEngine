@@ -21,12 +21,8 @@ Supported platforms:
   \* Windows 7 is supported only on AMD GPUs, for Nvidia Windows 10 is required (there is no heap that is host coherent and device local exposed on Windows 7, 8 or 8.1 by Nvidia drivers).
   
 Supported rendering APIs:
-* Vulkan (in-progress)
-* Metal (in-progress)
-
-Supported audio APIs:
-* OpenAL (in-progress)
-* AVFoundation (in-progress)
+* Vulkan 1.2
+* Metal 3
 
 This repository is a mirror which is not frequently updated.
 
