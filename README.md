@@ -32,7 +32,7 @@ This repository is a mirror which is not frequently updated.
 
 #### Prerequisites
 * Visual Studio 2019
-* Vulkan SDK
+* Vulkan SDK 1.2.170 or later
 * (Optional) FreeType for building the FontGen tool
 
 #### Build
