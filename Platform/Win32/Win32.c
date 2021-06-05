@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <assert.h>
 
 #if defined(_M_AMD64) || defined(_M_IX86) && _MSC_VER >= 1400
 #	include <intrin.h>
@@ -325,7 +324,8 @@ Sys_InitPlatform(void)
 	GetLogicalProcessorInformation(NULL, &len);
 
 	SYSTEM_LOGICAL_PROCESSOR_INFORMATION *info = calloc(len, sizeof(*info));
-	assert(info);
+	if (!info)
+		return false;
 
 	GetLogicalProcessorInformation(info, &len);
 

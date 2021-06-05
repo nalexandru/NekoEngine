@@ -1,14 +1,10 @@
-#include <UI/Text.h>
-#include <UI/Font.h>
 #include <Engine/IO.h>
 #include <Engine/Asset.h>
 #include <Engine/Config.h>
 #include <Engine/Resource.h>
-#include <UI/UI.h>
-//#include <Render/Texture.h>
 #include <Runtime/Runtime.h>
 
-static struct Font _sysFont;
+#include "Internal.h"
 
 static int _compare(const void *key, const void *elem);
 
@@ -16,30 +12,28 @@ void
 UI_DrawText(struct UIContext *ctx, const wchar_t *text, float px, float py, float size, struct Font *font)
 {
 	float sizeFactor;
-	uint16_t vtxOffset;
 	struct UIVertex v;
-	struct UIDrawCall drawCall;
+	struct UIDrawCmd drawCmd;
 
 	if (!text[0])
 		return;
 
 	if (!font)
-		font = &_sysFont;
+		font = &UI_sysFont;
 
-	drawCall.idxCount = drawCall.vtxCount = 0;
-	drawCall.vtxOffset = (uint16_t)ctx->vertices.count;
-	drawCall.idxOffset = (uint16_t)ctx->indices.count;
-	drawCall.texture = font->texture;
+	drawCmd.idxCount = drawCmd.vtxCount = 0;
+	drawCmd.vtxOffset = (uint16_t)ctx->vertices.count;
+	drawCmd.idxOffset = (uint16_t)ctx->indices.count;
+	drawCmd.texture = font->texture;
 
 	v.color[0] = v.color[1] = v.color[2] = v.color[3] = 1.f;
 
 	sizeFactor = size / 10.f;
 	py += size;
 
-	vtxOffset = drawCall.vtxOffset;
+	uint16_t vtxOffset = drawCmd.vtxOffset;
 	for (; *text; ++text) {
-		struct Glyph *g = NULL;
-		float x, y, w, h;
+		const struct Glyph *g = NULL;
 
 		//
 		g = bsearch(text, font->glyphs, font->glyphCount, sizeof(*font->glyphs), _compare);
@@ -53,11 +47,11 @@ UI_DrawText(struct UIContext *ctx, const wchar_t *text, float px, float py, floa
 		else
 			g = &font->glyphs[*text - 0x20];
 
-		x = px + (g->bearing.x * sizeFactor);
-		y = py - (g->bearing.y * sizeFactor);
-		w = (float)g->size.w * sizeFactor;
-		h = (float)g->size.h * sizeFactor;
-		px = x + w;
+		const float x = px + (g->bearing.x * sizeFactor);
+		const float y = py - (g->bearing.y * sizeFactor);
+		const float w = (float)g->size.w * sizeFactor;
+		const float h = (float)g->size.h * sizeFactor;
+		px += g->adv * sizeFactor;
 
 		v.posUv[0] = x;
 		v.posUv[1] = y;
@@ -92,33 +86,11 @@ UI_DrawText(struct UIContext *ctx, const wchar_t *text, float px, float py, floa
 		*(uint16_t *)Rt_ArrayAllocate(&ctx->indices) = vtxOffset + 3;
 
 		vtxOffset += 4;
-		drawCall.vtxCount += 4;
-		drawCall.idxCount += 6;
+		drawCmd.vtxCount += 4;
+		drawCmd.idxCount += 6;
 	}
 
-	Rt_ArrayAdd(&ctx->draws, &drawCall);
-}
-
-bool
-UI_InitText(void)
-{
-	bool rc;
-	struct Stream stm;
-
-	if (!E_FileStream("/System/System.fnt", IO_READ, &stm))
-		return false;
-
-	rc = E_LoadFontAsset(&stm, &_sysFont);
-	E_CloseStream(&stm);
-
-	return rc;
-}
-
-void
-UI_TermText(void)
-{
-	E_UnloadResource(_sysFont.texture);
-	Sys_Free(_sysFont.glyphs);
+	Rt_ArrayAdd(&ctx->draws, &drawCmd);
 }
 
 int

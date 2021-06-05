@@ -638,12 +638,13 @@ m4_perspective_nd(struct mat4 *dst, float fov_y, float aspect, float z_near, flo
 static inline struct mat4 *
 m4_infinite_perspective_rz(struct mat4 *dst, float fov_y, float aspect, float z_near)
 {
-	const float f = 1.f / tanf(deg_to_rad(fov_y) / 2.f);
+	const float rad = 0.5f * deg_to_rad(fov_y / 2.f);
+	const float h = cosf(rad) / sinf(rad);
 	
-	dst->sm[0] = _mm_setr_ps(f / aspect, 0.f, 0.f,  0.f);
-	dst->sm[1] = _mm_setr_ps(0.f,   f, 0.f,  0.f);
-	dst->sm[2] = _mm_setr_ps(0.f, 0.f, 1.f, -1.f);
-	dst->sm[3] = _mm_setr_ps(0.f, 0.f, z_near,  1.f);
+	dst->sm[0] = _mm_setr_ps(h / aspect, 0.f, 0.f,  0.f);
+	dst->sm[1] = _mm_setr_ps(0.f,   h, 0.f,  0.f);
+	dst->sm[2] = _mm_setr_ps(0.f, 0.f, 0.f, -1.f);
+	dst->sm[3] = _mm_setr_ps(0.f, 0.f, z_near,  0.f);
 	
 	return dst;
 }

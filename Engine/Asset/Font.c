@@ -5,8 +5,7 @@
 #include <Engine/Asset.h>
 #include <Engine/Config.h>
 #include <Engine/Resource.h>
-//#include <Render/Render.h>
-//#include <Render/Texture.h>
+#include <Render/Render.h>
 #include <System/Endian.h>
 
 #define FNT_MAGIC	0xB00B5000
@@ -21,10 +20,9 @@ struct FontHeader
 bool
 E_LoadFontAsset(struct Stream *stm, struct Font *fnt)
 {
-/*	void *texData = NULL;
+	void *texData = NULL;
 	uint32_t texDataSize;
 	struct FontHeader hdr;
-	struct TextureCreateInfo tci;
 	uint32_t texSize;
 
 	if (E_ReadStream(stm, &hdr, sizeof(hdr)) != sizeof(hdr))
@@ -60,7 +58,7 @@ E_LoadFontAsset(struct Stream *stm, struct Font *fnt)
 		}
 	}
 	
-	texSize = E_GetCVarU32(L"UI_MaxFontTextureSize", Re.limits.maxTextureSize)->u32;
+	texSize = Re_deviceInfo.limits.maxTextureSize;
 	if (texSize < hdr.texSize) {
 		uint32_t curSize = hdr.texSize;
 
@@ -77,26 +75,34 @@ E_LoadFontAsset(struct Stream *stm, struct Font *fnt)
 	if (E_ReadStream(stm, texData, texDataSize) != texDataSize)
 		goto error;
 
-	tci.width = texSize;
-	tci.height = texSize;
-	tci.depth = 1;
-	tci.type = TT_2D;
-	tci.format = TF_ALPHA;
-	tci.data = texData;
-	tci.dataSize = texDataSize;
-	tci.keepData = false;
+	struct TextureCreateInfo tci =
+	{
+		.desc.width = texSize,
+		.desc.height = texSize,
+		.desc.depth = 1,
+		.desc.type = TT_2D,
+		.desc.usage = TU_SAMPLED | TU_TRANSFER_DST,
+		.desc.format = TF_R8_UNORM,
+		.desc.arrayLayers = 1,
+		.desc.mipLevels = 1,
+		.desc.gpuOptimalTiling = true,
+		.desc.memoryType = MT_GPU_LOCAL,
+		.data = texData,
+		.dataSize = texDataSize,
+		.keepData = false
+	};
 
 	fnt->texture = E_CreateResource("__SysFont_Texture", RES_TEXTURE, &tci);
 	if (fnt->texture == E_INVALID_HANDLE)
-		goto error;*/
+		goto error;
 
 	return true;
 
-/*error:
+error:
 	Sys_Free(texData);
 	Sys_Free(fnt->glyphs);
 
 	memset(fnt, 0x0, sizeof(*fnt));
 
-	return false;*/
+	return false;
 }

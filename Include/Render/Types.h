@@ -383,4 +383,8 @@ typedef uint16_t TextureHandle;
 struct RenderGraph;
 struct RenderGraphPass;
 
+// Synchronization
+struct Fence;
+struct Semaphore;
+
 #endif /* _NE_RENDER_TYPES_H_ */

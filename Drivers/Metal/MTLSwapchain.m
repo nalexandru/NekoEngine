@@ -47,10 +47,11 @@ MTL_DestroySurface(id<MTLDevice> dev, UIView *view)
 #endif
 
 void *
-MTL_CreateSwapchain(id<MTLDevice> dev, VIEWTYPE *view)
+MTL_CreateSwapchain(id<MTLDevice> dev, VIEWTYPE *view, bool verticalSync)
 {
 	CAMetalLayer *layer = (CAMetalLayer *)[view layer];
-	layer.device = dev;
+	[layer setDevice: dev];
+	[layer setDisplaySyncEnabled: verticalSync];
 	return [view layer];
 }
 
@@ -71,6 +72,7 @@ MTL_AcquireNextImage(id<MTLDevice> dev, CAMetalLayer *layer)
 bool
 MTL_Present(id<MTLDevice> dev, struct RenderContext *ctx, VIEWTYPE *v, id<CAMetalDrawable> image)
 {
+	ctx->cmdBuffer = [ctx->queue commandBuffer];
 	[ctx->cmdBuffer presentDrawable: image];
 	[ctx->cmdBuffer commit];
 

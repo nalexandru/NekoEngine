@@ -39,7 +39,7 @@
       useCustomWorkingDirectory = "YES"
       customWorkingDirectory = "$(SRCROOT)/bin"
       ignoresPersistentStateOnLaunch = "NO"
-      debugDocumentVersioning = "YES"
+      debugDocumentVersioning = "NO"
       debugServiceExtension = "internal"
       enableGPUShaderValidationMode = "2"
       allowLocationSimulation = "YES">

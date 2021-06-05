@@ -97,6 +97,7 @@ Sys_SetWindowTitle(const wchar_t *name)
 	char *title = Sys_Alloc(sizeof(char), len + 1, MH_Transient);
 	wcstombs(title, name, len);
 	XStoreName(X11_display, (Window)E_screen, title);
+	XSync(X11_display, False);
 }
 
 void

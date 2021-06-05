@@ -3,9 +3,9 @@
 static id<MTLHeap> _heap;
 
 struct Texture *
-MTL_CreateTransientTexture(id<MTLDevice> dev, const struct TextureCreateInfo *tci, uint16_t location, uint64_t offset)
+MTL_CreateTransientTexture(id<MTLDevice> dev, const struct TextureDesc *tDesc, uint16_t location, uint64_t offset)
 {
-	MTLTextureDescriptor *desc = MTL_TextureDescriptor(dev, tci);
+	MTLTextureDescriptor *desc = MTL_TextureDescriptor(dev, tDesc);
 	if (!desc)
 		return NULL;
 	
@@ -18,25 +18,25 @@ MTL_CreateTransientTexture(id<MTLDevice> dev, const struct TextureCreateInfo *tc
 	desc.storageMode = MTLStorageModePrivate;
 	desc.cpuCacheMode = MTLCPUCacheModeDefaultCache;
 	
-	memcpy(&tex->desc, &tci->desc, sizeof(tex->desc));
 	tex->tex = [_heap newTextureWithDescriptor: desc offset: offset];
 	[desc release];
 	
-	//MTL_SetTexture(location, tex->tex);
+	if (location)
+		MTL_SetTexture(location, tex->tex);
 	
 	return tex;
 }
 
 struct Buffer *
-MTL_CreateTransientBuffer(id<MTLDevice> dev, const struct BufferCreateInfo *bci, uint16_t location, uint64_t offset)
+MTL_CreateTransientBuffer(id<MTLDevice> dev, const struct BufferDesc *desc, uint16_t location, uint64_t offset)
 {
 	struct Buffer *buff = Sys_Alloc(sizeof(*buff), 1, MH_Frame);
 	if (!buff)
 		return NULL;
 	
-	MTLResourceOptions options = MTL_GPUMemoryTypetoResourceOptions([dev hasUnifiedMemory], bci->desc.memoryType);
+	MTLResourceOptions options = MTL_GPUMemoryTypetoResourceOptions([dev hasUnifiedMemory], desc->memoryType);
 	
-	buff->buff = [_heap newBufferWithLength: bci->desc.size options: options offset: offset];
+	buff->buff = [_heap newBufferWithLength: desc->size options: options offset: offset];
 	buff->location = location;
 	
 	if (!buff->buff) {
@@ -45,10 +45,7 @@ MTL_CreateTransientBuffer(id<MTLDevice> dev, const struct BufferCreateInfo *bci,
 	}
 	
 	MTL_SetBuffer(location, buff->buff);
-	buff->memoryType = bci->desc.memoryType;
-	
-	if (bci->data)
-		MTL_UpdateBuffer(dev, buff, 0, bci->data, bci->dataSize);
+	buff->memoryType = desc->memoryType;
 	
 	return buff;
 }

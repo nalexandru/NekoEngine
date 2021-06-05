@@ -1,4 +1,5 @@
 #include <System/System.h>
+#include <System/Memory.h>
 #include <Engine/Engine.h>
 
 #include <pthread.h>
@@ -136,6 +137,7 @@ extern NSURL *Darwin_appSupportURL;
 - (void)drawInMTKView: (MTKView *)view
 {
 	E_Frame();
+	Sys_ResetHeap(MH_Transient);
 }
 
 @end

@@ -64,6 +64,7 @@ static struct EngineSubsystem _subsystems[] =
 	{ "Audio System", Au_Init, Au_Term },
 	{ "Resource Purge", NULL, E_PurgeResources },
 	{ "Input", In_InitInput, In_TermInput },
+	{ "UI", UI_InitUI, UI_TermUI },
 	{ "Scripting", Sc_InitScriptSystem, Sc_TermScriptSystem }
 };
 static const int32_t _subsystemCount = sizeof(_subsystems) / sizeof(_subsystems[0]);
@@ -212,7 +213,6 @@ E_Frame(void)
 
 	if (!Scn_activeScene || !Scn_activeCamera) {
 		E_ProcessEvents();
-		Re_RenderFrame();
 		return;
 	}
 

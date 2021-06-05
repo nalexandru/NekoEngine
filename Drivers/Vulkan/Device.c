@@ -197,7 +197,7 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 	devProcs->CreateSurface = (struct Surface *(*)(struct RenderDevice *, void *))Vk_CreateSurface;
 	devProcs->DestroySurface = (void (*)(struct RenderDevice *, struct Surface *))Vk_DestroySurface;
 
-	devProcs->CreateSwapchain = (struct Swapchain *(*)(struct RenderDevice *dev, struct Surface *))Vk_CreateSwapchain;
+	devProcs->CreateSwapchain = (struct Swapchain *(*)(struct RenderDevice *dev, struct Surface *, bool))Vk_CreateSwapchain;
 	devProcs->DestroySwapchain = (void(*)(struct RenderDevice *dev, struct Swapchain *))Vk_DestroySwapchain;
 
 	devProcs->CreateFramebuffer = Vk_CreateFramebuffer;
@@ -219,8 +219,17 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 	devProcs->TermTransientHeap = Vk_TermTransientHeap;
 
 	devProcs->MapBuffer = Vk_MapBuffer;
+	devProcs->FlushBuffer = Vk_FlushBuffer;
 	devProcs->UnmapBuffer = Vk_UnmapBuffer;
 	devProcs->BufferAddress = Vk_BufferAddress;
+
+	devProcs->CreateSemaphore = (struct Semaphore *(*)(struct RenderDevice *))Vk_CreateSemaphore;
+	devProcs->DestroySemaphore = (void(*)(struct RenderDevice *, struct Semaphore *))Vk_DestroySemaphore;
+
+	devProcs->CreateFence = (struct Fence *(*)(struct RenderDevice *, bool))Vk_CreateFence;
+	devProcs->SignalFence = (void(*)(struct RenderDevice *, struct Fence *))Vk_SignalFence;
+	devProcs->WaitForFence = (bool(*)(struct RenderDevice *, struct Fence *, uint64_t))Vk_WaitForFence;
+	devProcs->DestroyFence = (void(*)(struct RenderDevice *, struct Fence *))Vk_DestroyFence;
 
 	Vk_InitContextProcs(ctxProcs);
 

@@ -3,6 +3,7 @@
 
 #include <Engine/Job.h>
 #include <System/Log.h>
+#include <Engine/Config.h>
 #include <System/System.h>
 #include <System/Memory.h>
 #include <System/Thread.h>
@@ -55,7 +56,8 @@ static inline bool _JQ_Push(struct JobQueue *jq, JobProc exec, void *args, JobCo
 bool
 E_InitJobSystem(void)
 {
-	_numThreads = Sys_CpuCount() - 1;
+	bool useLogicalCores = E_GetCVarBln(L"Engine_UseLogicalCores", false)->bln;
+	_numThreads = (useLogicalCores ? Sys_CpuThreadCount() : Sys_CpuCount()) - 1;
 	_numThreads = _numThreads > 1 ? _numThreads : 1;
 
 	Sys_InitConditionVariable(&_wakeCond);
@@ -75,11 +77,15 @@ E_InitJobSystem(void)
 	if (!_threads)
 		return false;
 
-	int step = Sys_CpuCount() == Sys_CpuThreadCount() ? 1 : 2;
-	int coreId = 2;
+	int step, coreId;
+	if (useLogicalCores)
+		step = coreId = 1;
+	else
+		step = coreId = Sys_CpuCount() == Sys_CpuThreadCount() ? 1 : 2;
+
 	for (uint32_t i = 0; i < _numThreads; ++i) {
 		wchar_t name[10];
-		swprintf(name, 10, L"Worker %d", i);
+		swprintf(name, sizeof(name) / 2, L"Worker %u", i);
 		Sys_InitThread(&_threads[i], name, _ThreadProc, &i);
 		Sys_SetThreadAffinity(_threads[i], coreId);
 		coreId += step;

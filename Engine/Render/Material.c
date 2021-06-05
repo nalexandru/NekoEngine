@@ -1,5 +1,3 @@
-#include <assert.h>
-
 #include <System/Log.h>
 #include <Engine/Asset.h>
 #include <Engine/Config.h>
@@ -209,6 +207,9 @@ _LoadMaterialResource(struct ResourceLoadInfo *li, const char *args, struct Mate
 		}
 	}
 
+	data = NULL;
+	Rt_ArrayAddPtr(&mr->args, data);
+
 	return true;
 }
 
@@ -302,7 +303,7 @@ Re_InitMaterialSystem(void)
 		.initialLayout = TL_UNKNOWN,
 		.layout = TL_DEPTH_ATTACHMENT,
 		.finalLayout = TL_DEPTH_ATTACHMENT,
-		.clearDepth = 1.f
+		.clearDepth = 0.f
 	};
 	Re_MaterialRenderPassDesc = Re_CreateRenderPassDesc(&atDesc, 1, &depthDesc);
 	
@@ -440,7 +441,7 @@ _createPipeline(const struct MaterialResource *mr, struct Shader *shader)
 	{
 		.flags = RE_TOPOLOGY_TRIANGLES | RE_POLYGON_FILL |
 					RE_CULL_NONE | RE_FRONT_FACE_CW |
-					RE_DEPTH_TEST | RE_DEPTH_WRITE | RE_DEPTH_OP_LESS_EQUAL,
+					RE_DEPTH_TEST | RE_DEPTH_WRITE | RE_DEPTH_OP_GREATER_EQUAL,
 		.shader = shader,
 		.renderPassDesc = Re_MaterialRenderPassDesc,
 		.pushConstantSize = 16 + 64,

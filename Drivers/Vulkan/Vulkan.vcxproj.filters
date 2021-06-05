@@ -51,6 +51,12 @@
     <ClInclude Include="Shaders\Vertex.h">
       <Filter>Shaders\Headers</Filter>
     </ClInclude>
+    <ClInclude Include="Shaders\UIDrawInfo.h">
+      <Filter>Shaders\Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Shaders\Types.h">
+      <Filter>Shaders\Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Driver.c">
@@ -104,12 +110,21 @@
     <ClCompile Include="Sampler.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Synchronization.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="Shaders\DefaultPBR_VS.vert">
       <Filter>Shaders\Vertex</Filter>
     </CustomBuild>
     <CustomBuild Include="Shaders\DefaultPBR_MR_FS.frag">
+      <Filter>Shaders\Fragment</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Shaders\UI_VS.vert">
+      <Filter>Shaders\Vertex</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Shaders\UI_FS.frag">
       <Filter>Shaders\Fragment</Filter>
     </CustomBuild>
   </ItemGroup>

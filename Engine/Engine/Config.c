@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <stdlib.h>
-#include <assert.h>
 
 #include <System/Log.h>
 #include <System/Memory.h>
@@ -187,8 +186,6 @@ _newCVar(const wchar_t *name, enum CVarType type)
 			break;
 		}
 	}
-
-	assert(cv);
 
 	cv->type = type;
 	cv->hash = hash;

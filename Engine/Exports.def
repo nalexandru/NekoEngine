@@ -5,6 +5,8 @@ EXPORTS
 	Scn_activeCamera DATA
 	Scn_activeScene DATA
 	Re_frameId DATA
+	Re_context DATA
+	Re_contexts DATA
 
 	reallocarray
 

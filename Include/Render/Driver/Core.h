@@ -25,6 +25,7 @@ bool Re_CreateBuffer(const struct BufferCreateInfo *bci, BufferHandle *handle);
 void Re_UpdateBuffer(BufferHandle handle, uint64_t offset, uint8_t *data, uint64_t size);
 void Re_CmdCopyBuffer(BufferHandle src, uint64_t srcOffset, BufferHandle dst, uint64_t dstOffset, uint64_t size);
 void *Re_MapBuffer(BufferHandle handle);
+void Re_FlushBuffer(BufferHandle handle, uint64_t offset, uint64_t size);
 void Re_UnmapBuffer(BufferHandle handle);
 uint64_t Re_BufferAddress(BufferHandle handle, uint64_t offset);
 const struct BufferDesc *Re_BufferDesc(BufferHandle handle);
@@ -66,7 +67,8 @@ struct TextureResource
 const struct TextureDesc *Re_TextureDesc(TextureHandle tex);
 enum TextureLayout Re_TextureLayout(TextureHandle tex);
 
-//static inline void Re_UpdateTexture(struct Texture *tex, uint64_t offset, uint64_t size, void *data);
+void Re_CmdCopyBufferToTexture(BufferHandle src, struct Texture *dst, const struct BufferImageCopy *bic);
+void Re_CmdCopyTextureToBuffer(struct Texture *src, BufferHandle dst, const struct BufferImageCopy *bic);
 
 bool Re_InitTextureSystem(void);
 void Re_TermTextureSystem(void);
@@ -85,6 +87,8 @@ struct SamplerDesc
 	enum CompareOperation compareOp;
 	uint32_t borderColor;
 };
+
+#define RE_SAMPLER_LOD_CLAMP_NONE	1000.f
 
 static inline struct Sampler *Re_CreateSampler(const struct SamplerDesc *desc) { return Re_deviceProcs.CreateSampler(Re_device, desc); }
 static inline void Re_DestroySampler(struct Sampler *s) { Re_deviceProcs.DestroySampler(Re_device, s); }
@@ -134,7 +138,7 @@ extern struct Swapchain *Re_swapchain;
 
 #define RE_INVALID_IMAGE	(void *)UINT64_MAX
 
-static inline struct Swapchain *Re_CreateSwapchain(struct Surface *surface) { return Re_deviceProcs.CreateSwapchain(Re_device, surface); }
+static inline struct Swapchain *Re_CreateSwapchain(struct Surface *surface, bool vsync) { return Re_deviceProcs.CreateSwapchain(Re_device, surface, vsync); }
 static inline void *Re_AcquireNextImage(struct Swapchain *swapchain) { return Re_deviceProcs.AcquireNextImage(Re_device, swapchain); }
 static inline bool Re_Present(struct Swapchain *swapchain, void *image) { return Re_deviceProcs.Present(Re_device, Re_CurrentContext(), swapchain, image); }
 static inline enum TextureFormat Re_SwapchainFormat(struct Swapchain *swapchain) { return Re_deviceProcs.SwapchainFormat(swapchain); }
@@ -184,16 +188,16 @@ static inline void Re_DestroySwapchain(struct Swapchain *swapchain) { Re_deviceP
 #define RE_DEPTH_OP_BITS			((uint64_t)  7 << 13)
 #define RE_DEPTH_OP_OFFSET			13
 
-#define RE_MULTISAMPLE				((uint64_t)  1 << 15)
-#define RE_SAMPLE_SHADING			((uint64_t)  1 << 16)
-#define RE_ALPHA_TO_COVERAGE		((uint64_t)  1 << 17)
-#define RE_ALPHA_TO_ONE				((uint64_t)  1 << 18)
-#define RE_MS_2_SAMPLES				((uint64_t)  0 << 19)
-#define RE_MS_4_SAMPLES				((uint64_t)  1 << 19)
-#define RE_MS_8_SAMPLES				((uint64_t)  2 << 19)
-#define RE_MS_16_SAMPLES			((uint64_t)  3 << 19)
-#define RE_SAMPLES_BITS				((uint64_t)  3 << 19)
-#define RE_SAMPLES_OFFSET			19
+#define RE_MULTISAMPLE				((uint64_t)  1 << 16)
+#define RE_SAMPLE_SHADING			((uint64_t)  1 << 17)
+#define RE_ALPHA_TO_COVERAGE		((uint64_t)  1 << 18)
+#define RE_ALPHA_TO_ONE				((uint64_t)  1 << 19)
+#define RE_MS_2_SAMPLES				((uint64_t)  0 << 20)
+#define RE_MS_4_SAMPLES				((uint64_t)  1 << 20)
+#define RE_MS_8_SAMPLES				((uint64_t)  2 << 20)
+#define RE_MS_16_SAMPLES			((uint64_t)  3 << 20)
+#define RE_SAMPLES_BITS				((uint64_t)  3 << 20)
+#define RE_SAMPLES_OFFSET			20
 
 #define RE_WRITE_MASK_R				0x00000001
 #define RE_WRITE_MASK_G				0x00000002
@@ -242,5 +246,11 @@ struct Pipeline *Re_RayTracingPipeline(struct ShaderBindingTable *sbt, uint32_t 
 
 bool Re_InitPipelines(void);
 void Re_TermPipelines(void);
+
+// Synchronization
+static inline struct Semaphore *Re_CreateSemaphore(void) { return Re_deviceProcs.CreateSemaphore(Re_device); }
+static inline void Re_DestroySemaphore(struct Semaphore *s) { Re_deviceProcs.DestroySemaphore(Re_device, s); }
+static inline struct Fence *Re_CreateFence(bool createSignaled) { return Re_deviceProcs.CreateFence(Re_device, createSignaled); }
+static inline void Re_DestroyFence(struct Fence *f) { Re_deviceProcs.DestroyFence(Re_device, f); }
 
 #endif /* _NE_RENDER_DRIVER_CORE_H_ */

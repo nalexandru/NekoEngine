@@ -9,6 +9,12 @@ struct Vertex
 	float u, v;
 };
 
+struct UIVertex
+{
+	float x, y, u, v;
+	vec4 color;
+};
+
 /*layout(std430, set = 0, binding = 2) readonly buffer VertexBuffer
 {
 	Vertex data[];
@@ -17,6 +23,11 @@ struct Vertex
 layout(std430, buffer_reference) readonly buffer VertexBuffer
 {
 	Vertex data[];
+};
+
+layout(std430, buffer_reference) readonly buffer UIVertexBuffer
+{
+	UIVertex data[];
 };
 
 #define NE_THREADS_X	0

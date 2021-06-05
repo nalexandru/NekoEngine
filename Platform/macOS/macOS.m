@@ -118,6 +118,9 @@ Sys_InitPlatform(void)
 	snprintf(Darwin_osVersion, sizeof(Darwin_osVersion), "%s (%s)", Darwin_uname.release,
 				[[[NSProcessInfo processInfo] operatingSystemVersionString] UTF8String]);
 
+	if (!Sys_DirectoryExists("Data"))
+		E_SetCVarStr(L"Engine_DataDir", [[[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent: @"Data"] UTF8String]);
+	
 	[pool release];
 	
 	return true;

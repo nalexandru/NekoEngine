@@ -50,14 +50,7 @@ error:
 bool
 Re_LoadModelResource(struct ResourceLoadInfo *li, const char *args, struct Model *mdl, Handle h)
 {
-	bool rc = false;
-
-	if (strstr(li->path, ".glb") || strstr(li->path, ".gltf"))
-		rc = E_LoadglTFAsset(li, mdl);
-	else
-		rc = E_LoadNMeshAsset(&li->stm, mdl);
-
-	if (!rc)
+	if (!E_LoadNMeshAsset(&li->stm, mdl))
 		return false;
 
 	return _InitModel(mdl);
@@ -89,7 +82,8 @@ _InitModel(struct Model *mdl)
 			.memoryType = MT_GPU_LOCAL
 		},
 		.data = mdl->cpu.vertices,
-		.dataSize = mdl->cpu.vertexSize
+		.dataSize = mdl->cpu.vertexSize,
+		.keepData = true
 	};
 	if (!Re_CreateBuffer(&bci, &mdl->gpu.vertexBuffer))
 		return false;

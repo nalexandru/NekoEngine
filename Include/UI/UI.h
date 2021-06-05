@@ -6,20 +6,8 @@
 #include <Engine/Component.h>
 #include <Runtime/Runtime.h>
 
-struct UIVertex
-{
-	float posUv[4];
-	float color[4];
-};
-
-struct UIDrawCall
-{
-	uint16_t vtxOffset;
-	uint16_t vtxCount;
-	uint16_t idxOffset;
-	uint16_t idxCount;
-	Handle texture;
-};
+#define UI_UPDATE_BUFFERS		L"UI_UpdateBuffers"
+#define UI_DRAW_CONTEXT			L"UI_DrawContext"
 
 struct UIContext
 {
@@ -28,14 +16,17 @@ struct UIContext
 	struct Array vertices, indices, draws;
 };
 
-ENGINE_API extern struct mat4 UI_projection;
-
 bool UI_InitUI(void);
 void UI_TermUI(void);
+
+void UI_Update(struct Scene *s);
+void UI_Render(struct Scene *s, void *image);
 
 bool UI_InitContext(struct UIContext *ctx, const void **);
 void UI_TermContext(struct UIContext *ctx);
 
 void UI_ResetContext(void **comp, void *args);
+void UI_UpdateBuffers(void **comp, void *a);
+void UI_DrawContext(void **comp, void *a);
 
 #endif /* _NE_UI_UI_H_ */

@@ -50,7 +50,6 @@ struct Pipeline
 struct Texture
 {
 	id<MTLTexture> tex;
-	struct TextureDesc desc;
 	enum TextureLayout layout;
 };
 
@@ -136,7 +135,7 @@ void *MTL_CreateSurface(id<MTLDevice> dev, WINDOWTYPE *window);
 void MTL_DestroySurface(id<MTLDevice> dev, VIEWTYPE *view);
 
 // Swapchain
-void *MTL_CreateSwapchain(id<MTLDevice> dev, VIEWTYPE *view);
+void *MTL_CreateSwapchain(id<MTLDevice> dev, VIEWTYPE *view, bool verticalSync);
 void MTL_DestroySwapchain(id<MTLDevice> dev, CAMetalLayer *layer);
 void *MTL_AcquireNextImage(id<MTLDevice> dev, CAMetalLayer *layer);
 bool MTL_Present(id<MTLDevice> dev, struct RenderContext *ctx, VIEWTYPE *v, id<CAMetalDrawable> image);
@@ -151,16 +150,16 @@ void MTL_ResetContext(id<MTLDevice> dev, struct RenderContext *ctx);
 void MTL_DestroyContext(id<MTLDevice> dev, struct RenderContext *ctx);
 
 // Texture
-MTLTextureDescriptor *MTL_TextureDescriptor(id<MTLDevice> dev, const struct TextureCreateInfo *tci);
-struct Texture *MTL_CreateTexture(id<MTLDevice> dev, const struct TextureCreateInfo *tci, uint16_t location);
+MTLTextureDescriptor *MTL_TextureDescriptor(id<MTLDevice> dev, const struct TextureDesc *desc);
+struct Texture *MTL_CreateTexture(id<MTLDevice> dev, const struct TextureDesc *desc, uint16_t location);
 enum TextureLayout MTL_TextureLayout(const struct Texture *tex);
-void MTL_UploadTexture(id<MTLDevice> dev, id<MTLTexture> tex, const void *data, NSUInteger size, uint32_t width, uint32_t height, uint32_t depth);
 void MTL_DestroyTexture(id<MTLDevice> dev, struct Texture *tex);
 
 // Buffer
-struct Buffer *MTL_CreateBuffer(id<MTLDevice> dev, const struct BufferCreateInfo *bci, uint16_t location);
+struct Buffer *MTL_CreateBuffer(id<MTLDevice> dev, const struct BufferDesc *desc, uint16_t location);
 void MTL_UpdateBuffer(id<MTLDevice> dev, struct Buffer *buff, uint64_t offset, uint8_t *data, uint64_t size);
 void *MTL_MapBuffer(id<MTLDevice> dev, struct Buffer *buff);
+void MTL_FlushBuffer(id<MTLDevice> dev, struct Buffer *buff, uint64_t offset, uint64_t size);
 void MTL_UnmapBuffer(id<MTLDevice> dev, struct Buffer *buff);
 uint64_t MTL_BufferAddress(id<MTLDevice> dev, const struct Buffer *buff, uint64_t offset);
 void MTL_DestroyBuffer(id<MTLDevice> dev, struct Buffer *buff);
@@ -202,11 +201,22 @@ id<MTLSamplerState> MTL_CreateSampler(id<MTLDevice> dev, const struct SamplerDes
 void MTL_DestroySampler(id<MTLDevice> dev, id<MTLSamplerState> s);
 
 // Transient Resources
-struct Texture *MTL_CreateTransientTexture(id<MTLDevice> dev, const struct TextureCreateInfo *tci, uint16_t location, uint64_t offset);
-struct Buffer *MTL_CreateTransientBuffer(id<MTLDevice> dev, const struct BufferCreateInfo *bci, uint16_t location, uint64_t offset);
+struct Texture *MTL_CreateTransientTexture(id<MTLDevice> dev, const struct TextureDesc *desc, uint16_t location, uint64_t offset);
+struct Buffer *MTL_CreateTransientBuffer(id<MTLDevice> dev, const struct BufferDesc *desc, uint16_t location, uint64_t offset);
 bool MTL_InitTransientHeap(id<MTLDevice> dev, uint64_t size);
 bool MTL_ResizeTransientHeap(id<MTLDevice> dev, uint64_t size);
 void MTL_TermTransientHeap(id<MTLDevice> dev);
+
+// Synchronization
+id<MTLFence> MTL_CreateSemaphore(id<MTLDevice> dev);
+void MTL_SignalSemaphore(id<MTLDevice> dev, id<MTLFence> f);
+bool MTL_WaitSemaphore(id<MTLDevice> dev, id<MTLFence> f);
+void MTL_DestroySemaphore(id<MTLDevice> dev, id<MTLFence> f);
+
+dispatch_semaphore_t MTL_CreateFence(id<MTLDevice> dev, bool createSignaled);
+void MTL_SignalFence(id<MTLDevice> dev, dispatch_semaphore_t ds);
+bool MTL_WaitForFence(id<MTLDevice> dev, dispatch_semaphore_t ds, uint64_t timeout);
+void MTL_DestroyFence(id<MTLDevice> dev, dispatch_semaphore_t ds);
 
 // Utility functions
 static inline MTLResourceOptions
@@ -316,6 +326,41 @@ MTLToNeTextureFormat(MTLPixelFormat fmt)
 #endif
 	default: return TF_INVALID;
 	}
+}
+
+static inline NSUInteger
+MTL_TextureFormatSize(enum TextureFormat fmt)
+{
+	switch (fmt) {
+	case TF_R8G8B8A8_UNORM: return 4;
+	case TF_R8G8B8A8_SRGB: return 4;
+	case TF_B8G8R8A8_UNORM: return 4;
+	case TF_B8G8R8A8_SRGB: return 4;
+	case TF_R16G16B16A16_SFLOAT: return 8;
+	case TF_R32G32B32A32_SFLOAT: return 16;
+	case TF_A2R10G10B10_UNORM: return 4;
+	case TF_R8G8_UNORM: return 2;
+	case TF_R8_UNORM: return 1;
+	/*case TF_ETC2_R8G8B8_UNORM: return MTLPixelFormatETC2_RGB8;
+	case TF_ETC2_R8G8B8_SRGB: return MTLPixelFormatETC2_RGB8_sRGB;
+	case TF_ETC2_R8G8B8A1_UNORM: return MTLPixelFormatETC2_RGB8A1;
+	case TF_ETC2_R8G8B8A1_SRGB: return MTLPixelFormatETC2_RGB8A1_sRGB;
+	case TF_EAC_R11_UNORM: return MTLPixelFormatEAC_R11Unorm;
+	case TF_EAC_R11_SNORM: return MTLPixelFormatEAC_R11Snorm;
+	case TF_EAC_R11G11_UNORM: return MTLPixelFormatEAC_RG11Unorm;
+	case TF_EAC_R11G11_SNORM: return MTLPixelFormatEAC_RG11Snorm;
+	case TF_BC5_UNORM: return MTLPixelFormatBC5_RGUnorm;
+	case TF_BC5_SNORM: return MTLPixelFormatBC5_RGSnorm;
+	case TF_BC6H_UF16: return MTLPixelFormatBC6H_RGBUfloat;
+	case TF_BC6H_SF16: return MTLPixelFormatBC6H_RGBFloat;
+	case TF_BC7_UNORM: return MTLPixelFormatBC7_RGBAUnorm;
+	case TF_BC7_SRGB: return MTLPixelFormatBC7_RGBAUnorm_sRGB;*/
+	case TF_D24_STENCIL8: return 4;
+	case TF_D32_SFLOAT: return 4;
+	default: return UINT32_MAX;
+	}
+	
+	return UINT32_MAX; // this will force a crash
 }
 
 static inline MTLBlendOperation

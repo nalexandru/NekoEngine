@@ -8,6 +8,7 @@ MTL_CreateContext(id<MTLDevice> dev)
 	struct RenderContext *ctx = Sys_Alloc(sizeof(*ctx), 1, MH_RenderDriver);
 	
 	ctx->queue = [dev newCommandQueue];
+	ctx->dev = dev;
 	
 	return ctx;
 }
@@ -131,6 +132,7 @@ static void
 _EndRenderPass(struct RenderContext *ctx)
 {
 	[ctx->encoders.render endEncoding];
+	[ctx->cmdBuffer commit];
 }
 
 static void
@@ -261,11 +263,11 @@ _CopyImage(struct RenderContext *ctx, const struct Texture *src, struct Texture 
 }
 
 static void
-_CopyBufferToImage(struct RenderContext *ctx, const struct Buffer *src, struct Texture *dst, const struct BufferImageCopy *bic)
+_CopyBufferToTexture(struct RenderContext *ctx, const struct Buffer *src, struct Texture *dst, const struct BufferImageCopy *bic)
 {
 	[ctx->encoders.blit copyFromBuffer: src->buff
 						  sourceOffset: bic->bufferOffset
-					 sourceBytesPerRow: bic->rowLength
+					 sourceBytesPerRow: bic->bytesPerRow
 				   sourceBytesPerImage: 0
 							sourceSize: MTLSizeMake(bic->imageSize.width, bic->imageSize.height, bic->imageSize.depth)
 							 toTexture: dst->tex
@@ -275,7 +277,7 @@ _CopyBufferToImage(struct RenderContext *ctx, const struct Buffer *src, struct T
 }
 
 static void
-_CopyImageToBuffer(struct RenderContext *ctx, const struct Texture *src, struct Buffer *dst, const struct BufferImageCopy *bic)
+_CopyTextureToBuffer(struct RenderContext *ctx, const struct Texture *src, struct Buffer *dst, const struct BufferImageCopy *bic)
 {
 	[ctx->encoders.blit copyFromTexture: src->tex
 							sourceSlice: bic->subresource.baseArrayLayer
@@ -284,7 +286,7 @@ _CopyImageToBuffer(struct RenderContext *ctx, const struct Texture *src, struct 
 							 sourceSize: MTLSizeMake(bic->imageSize.width, bic->imageSize.height, bic->imageSize.depth)
 							   toBuffer: dst->buff
 					  destinationOffset: bic->bufferOffset
-				 destinationBytesPerRow: bic->rowLength
+				 destinationBytesPerRow: bic->bytesPerRow
 			   destinationBytesPerImage: 0];
 }
 
@@ -309,6 +311,22 @@ static bool
 _Submit(id<MTLDevice> dev, struct RenderContext *ctx)
 {
 	return false;
+}
+
+static bool
+_SubmitTransfer(struct RenderContext *ctx, dispatch_semaphore_t ds)
+{
+	assert(ctx->type == RC_BLIT);
+	
+	if (ds) {
+		__block dispatch_semaphore_t bds = ds;
+		[ctx->cmdBuffer addCompletedHandler:^(id<MTLCommandBuffer> _Nonnull cmdBuff) {
+			dispatch_semaphore_signal(bds);
+		}];
+	}
+	[ctx->cmdBuffer commit];
+	
+	return true;
 }
 
 void
@@ -340,8 +358,9 @@ MTL_InitContextProcs(struct RenderContextProcs *p)
 	p->Transition = _Transition;
 	p->CopyBuffer = _CopyBuffer;
 	p->CopyImage = _CopyImage;
-	p->CopyBufferToImage = _CopyBufferToImage;
-	p->CopyImageToBuffer = _CopyImageToBuffer;
+	p->CopyBufferToTexture = _CopyBufferToTexture;
+	p->CopyTextureToBuffer = _CopyTextureToBuffer;
 	p->Blit = _Blit;
 	p->Submit = (bool(*)(struct RenderDevice *, struct RenderContext *))_Submit;
+	p->SubmitTransfer = (bool(*)(struct RenderContext *, struct Fence *))_SubmitTransfer;
 }

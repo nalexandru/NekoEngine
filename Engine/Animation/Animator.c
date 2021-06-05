@@ -1,4 +1,5 @@
 #include <Render/Render.h>
+#include <Render/Components/ModelRender.h>
 #include <Engine/Engine.h>
 #include <Engine/Resource.h>
 #include <Animation/Animation.h>
@@ -46,12 +47,14 @@ Anim_BuildSkeleton(void **comp, void *args)
 	struct Animator *a = comp[0];
 	struct ModelRender *mr = comp[1];
 
-	Anim_InitSkeleton(a->skel, NULL, NULL, NULL);
+	const struct Model *m = E_ResourcePtr(mr->model);
+
+	Anim_InitSkeleton(a->skel, m->cpu.bones, NULL, NULL);
 
 	struct BufferCreateInfo bci = 
 	{
 		.desc = {
-			.size = sizeof(struct mat4) * 0,
+			.size = sizeof(struct mat4) * m->cpu.boneSize / sizeof(struct Bone),
 			.usage = BU_TRANSFER_DST | BU_STORAGE_BUFFER,
 			.memoryType = MT_GPU_LOCAL
 		}

@@ -31,7 +31,7 @@ Vk_CreateContext(struct RenderDevice *dev)
 	ctx->graphicsCmdBuffers = arrays;
 	ctx->secondaryCmdBuffers = &arrays[RE_NUM_FRAMES];
 	ctx->computeCmdBuffers = &arrays[RE_NUM_FRAMES * 2];
-	ctx->transferCmdBuffers = &arrays[RE_NUM_FRAMES * 3];
+	ctx->xferCmdBuffers = &arrays[RE_NUM_FRAMES * 3];
 
 	VkCommandPool *pools = Sys_Alloc(RE_NUM_FRAMES * 3, sizeof(*pools), MH_RenderDriver);
 	if (!pools)
@@ -39,7 +39,7 @@ Vk_CreateContext(struct RenderDevice *dev)
 
 	ctx->graphicsPools = pools;
 	ctx->computePools = &pools[RE_NUM_FRAMES];
-	ctx->transferPools = &pools[RE_NUM_FRAMES * 2];
+	ctx->xferPools = &pools[RE_NUM_FRAMES * 2];
 
 	for (uint32_t i = 0; i < RE_NUM_FRAMES; ++i) {
 		poolInfo.queueFamilyIndex = dev->graphicsFamily;
@@ -51,13 +51,13 @@ Vk_CreateContext(struct RenderDevice *dev)
 			goto error;
 
 		poolInfo.queueFamilyIndex = dev->transferFamily;
-		if (vkCreateCommandPool(dev->dev, &poolInfo, Vkd_allocCb, &ctx->transferPools[i]) != VK_SUCCESS)
+		if (vkCreateCommandPool(dev->dev, &poolInfo, Vkd_allocCb, &ctx->xferPools[i]) != VK_SUCCESS)
 			goto error;
 
 		if (!Rt_InitPtrArray(&ctx->graphicsCmdBuffers[i], 10, MH_RenderDriver))
 			goto error;
 
-		if (!Rt_InitPtrArray(&ctx->transferCmdBuffers[i], 10, MH_RenderDriver))
+		if (!Rt_InitPtrArray(&ctx->xferCmdBuffers[i], 10, MH_RenderDriver))
 			goto error;
 
 		if (!Rt_InitPtrArray(&ctx->computeCmdBuffers[i], 10, MH_RenderDriver))
@@ -70,7 +70,8 @@ Vk_CreateContext(struct RenderDevice *dev)
 	VkFenceCreateInfo fci = { .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
 	vkCreateFence(dev->dev, &fci, Vkd_allocCb, &ctx->executeFence);
 
-	ctx->dev = dev->dev;
+	ctx->vkDev = dev->dev;
+	ctx->neDev = dev;
 	ctx->descriptorSet = dev->descriptorSet;
 
 	return ctx;
@@ -105,12 +106,13 @@ Vk_ResetContext(struct RenderDevice *dev, struct RenderContext *ctx)
 		Rt_ClearArray(&ctx->graphicsCmdBuffers[Re_frameId], false);
 	}
 
-	if (ctx->transferCmdBuffers[Re_frameId].count) {
-		vkFreeCommandBuffers(dev->dev, ctx->transferPools[Re_frameId],
-			(uint32_t)ctx->transferCmdBuffers[Re_frameId].count, (const VkCommandBuffer *)ctx->transferCmdBuffers[Re_frameId].data);
-		vkResetCommandPool(dev->dev, ctx->transferPools[Re_frameId], VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
-		Rt_ClearArray(&ctx->transferCmdBuffers[Re_frameId], false);
+	if (ctx->xferCmdBuffers[Re_frameId].count) {
+		vkFreeCommandBuffers(dev->dev, ctx->xferPools[Re_frameId],
+			(uint32_t)ctx->xferCmdBuffers[Re_frameId].count, (const VkCommandBuffer *)ctx->xferCmdBuffers[Re_frameId].data);
+		vkResetCommandPool(dev->dev, ctx->xferPools[Re_frameId], VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
+		Rt_ClearArray(&ctx->xferCmdBuffers[Re_frameId], false);
 	}
+	ctx->lastSubmittedXfer = 0;
 
 	if (ctx->computeCmdBuffers[Re_frameId].count) {
 		vkFreeCommandBuffers(dev->dev, ctx->computePools[Re_frameId],
@@ -118,6 +120,7 @@ Vk_ResetContext(struct RenderDevice *dev, struct RenderContext *ctx)
 		vkResetCommandPool(dev->dev, ctx->computePools[Re_frameId], VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
 		Rt_ClearArray(&ctx->computeCmdBuffers[Re_frameId], false);
 	}
+	ctx->lastSubmittedCompute = 0;
 }
 
 void
@@ -128,10 +131,10 @@ Vk_DestroyContext(struct RenderDevice *dev, struct RenderContext *ctx)
 	for (uint32_t i = 0; i < RE_NUM_FRAMES; ++i) {
 		vkDestroyCommandPool(dev->dev, ctx->graphicsPools[i], Vkd_allocCb);
 		vkDestroyCommandPool(dev->dev, ctx->computePools[i], Vkd_allocCb);
-		vkDestroyCommandPool(dev->dev, ctx->transferPools[i], Vkd_allocCb);
+		vkDestroyCommandPool(dev->dev, ctx->xferPools[i], Vkd_allocCb);
 		Rt_TermArray(&ctx->graphicsCmdBuffers[i]);
 		Rt_TermArray(&ctx->secondaryCmdBuffers[i]);
-		Rt_TermArray(&ctx->transferCmdBuffers[i]);
+		Rt_TermArray(&ctx->xferCmdBuffers[i]);
 		Rt_TermArray(&ctx->computeCmdBuffers[i]);
 	}
 
@@ -143,7 +146,7 @@ Vk_DestroyContext(struct RenderDevice *dev, struct RenderContext *ctx)
 static CommandBufferHandle
 _BeginSecondary(struct RenderContext *ctx, struct RenderPassDesc *passDesc)
 {
-	ctx->cmdBuffer = Vkd_AllocateCmdBuffer(ctx->dev, VK_COMMAND_BUFFER_LEVEL_SECONDARY,
+	ctx->cmdBuffer = Vkd_AllocateCmdBuffer(ctx->vkDev, VK_COMMAND_BUFFER_LEVEL_SECONDARY,
 														ctx->graphicsPools[Re_frameId], &ctx->secondaryCmdBuffers[Re_frameId]);
 	assert(ctx->cmdBuffer);
 
@@ -166,7 +169,7 @@ _BeginSecondary(struct RenderContext *ctx, struct RenderPassDesc *passDesc)
 static void
 _BeginDrawCommandBuffer(struct RenderContext *ctx)
 {
-	ctx->cmdBuffer = Vkd_AllocateCmdBuffer(ctx->dev, VK_COMMAND_BUFFER_LEVEL_PRIMARY, ctx->graphicsPools[Re_frameId], &ctx->graphicsCmdBuffers[Re_frameId]);
+	ctx->cmdBuffer = Vkd_AllocateCmdBuffer(ctx->vkDev, VK_COMMAND_BUFFER_LEVEL_PRIMARY, ctx->graphicsPools[Re_frameId], &ctx->graphicsCmdBuffers[Re_frameId]);
 	assert(ctx->cmdBuffer);
 
 	VkCommandBufferBeginInfo beginInfo =
@@ -180,7 +183,7 @@ _BeginDrawCommandBuffer(struct RenderContext *ctx)
 static void
 _BeginComputeCommandBuffer(struct RenderContext *ctx)
 {
-	ctx->cmdBuffer = Vkd_AllocateCmdBuffer(ctx->dev, VK_COMMAND_BUFFER_LEVEL_PRIMARY, ctx->computePools[Re_frameId], &ctx->computeCmdBuffers[Re_frameId]);
+	ctx->cmdBuffer = Vkd_AllocateCmdBuffer(ctx->vkDev, VK_COMMAND_BUFFER_LEVEL_PRIMARY, ctx->computePools[Re_frameId], &ctx->computeCmdBuffers[Re_frameId]);
 	assert(ctx->cmdBuffer);
 
 	VkCommandBufferBeginInfo beginInfo =
@@ -194,7 +197,7 @@ _BeginComputeCommandBuffer(struct RenderContext *ctx)
 static void
 _BeginTransferCommandBuffer(struct RenderContext *ctx)
 {
-	ctx->cmdBuffer = Vkd_AllocateCmdBuffer(ctx->dev, VK_COMMAND_BUFFER_LEVEL_PRIMARY, ctx->transferPools[Re_frameId], &ctx->transferCmdBuffers[Re_frameId]);
+	ctx->cmdBuffer = Vkd_AllocateCmdBuffer(ctx->vkDev, VK_COMMAND_BUFFER_LEVEL_PRIMARY, ctx->xferPools[Re_frameId], &ctx->xferCmdBuffers[Re_frameId]);
 	assert(ctx->cmdBuffer);
 
 	VkCommandBufferBeginInfo beginInfo =
@@ -413,7 +416,7 @@ _CopyImage(struct RenderContext *ctx, const struct Texture *src, struct Texture 
 }
 
 static void
-_CopyBufferToImage(struct RenderContext *ctx, const struct Buffer *src, struct Texture *dst, const struct BufferImageCopy *bic)
+_CopyBufferToTexture(struct RenderContext *ctx, const struct Buffer *src, struct Texture *dst, const struct BufferImageCopy *bic)
 {
 	VkBufferImageCopy b =
 	{
@@ -430,11 +433,22 @@ _CopyBufferToImage(struct RenderContext *ctx, const struct Buffer *src, struct T
 		.imageOffset = { bic->imageOffset.x, bic->imageOffset.y, bic->imageOffset.z },
 		.imageExtent = { bic->imageSize.width, bic->imageSize.height, bic->imageSize.depth }
 	};
-	vkCmdCopyBufferToImage(ctx->cmdBuffer, src->buff, dst->image, dst->layout, 1, &b);
+	VkImageSubresourceRange range =
+	{
+		.aspectMask = bic->subresource.aspect,
+		.baseMipLevel = bic->subresource.mipLevel,
+		.baseArrayLayer = bic->subresource.baseArrayLayer,
+		.levelCount = 1,
+		.layerCount = 1
+	};
+
+	Vkd_TransitionImageLayoutRange(ctx->cmdBuffer, dst->image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &range);
+	vkCmdCopyBufferToImage(ctx->cmdBuffer, src->buff, dst->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &b);
+	Vkd_TransitionImageLayoutRange(ctx->cmdBuffer, dst->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, dst->layout, &range);
 }
 
 static void
-_CopyImageToBuffer(struct RenderContext *ctx, const struct Texture *src, struct Buffer *dst, const struct BufferImageCopy *bic)
+_CopyTextureToBuffer(struct RenderContext *ctx, const struct Texture *src, struct Buffer *dst, const struct BufferImageCopy *bic)
 {
 	VkBufferImageCopy b =
 	{
@@ -492,6 +506,22 @@ _Submit(struct RenderDevice *dev, struct RenderContext *ctx)
 	return false;
 }
 
+static bool
+_SubmitTransfer(struct RenderContext *ctx, VkFence f)
+{
+	VkSubmitInfo si =
+	{
+		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+		.commandBufferCount = (uint32_t)ctx->xferCmdBuffers[Re_frameId].count - ctx->lastSubmittedXfer,
+		.pCommandBuffers = &((VkCommandBuffer *)ctx->xferCmdBuffers[Re_frameId].data)[ctx->lastSubmittedXfer]
+	};
+	if (vkQueueSubmit(ctx->neDev->transferQueue, 1, &si, f) != VK_SUCCESS)
+		return false;
+
+	ctx->lastSubmittedXfer = (uint32_t)ctx->xferCmdBuffers[Re_frameId].count;
+	return true;
+}
+
 void
 Vk_InitContextProcs(struct RenderContextProcs *p)
 {
@@ -521,8 +551,9 @@ Vk_InitContextProcs(struct RenderContextProcs *p)
 	p->Transition = _Transition;
 	p->CopyBuffer = _CopyBuffer;
 	p->CopyImage = _CopyImage;
-	p->CopyBufferToImage = _CopyBufferToImage;
-	p->CopyImageToBuffer = _CopyImageToBuffer;
+	p->CopyBufferToTexture = _CopyBufferToTexture;
+	p->CopyTextureToBuffer = _CopyTextureToBuffer;
 	p->Blit = _Blit;
 	p->Submit = _Submit;
+	p->SubmitTransfer = (bool(*)(struct RenderContext *, struct Fence *))_SubmitTransfer;
 }

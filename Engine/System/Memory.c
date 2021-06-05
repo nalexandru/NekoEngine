@@ -56,7 +56,8 @@ Sys_Alloc(size_t size, size_t count, enum MemoryHeap heap)
 		totalSize = ROUND_UP(totalSize, 4);
 		ret = _TransientAlloc(&_frameHeap[Re_frameId], totalSize);
 	} else {
-		assert("Out of memory" && (ret = malloc(totalSize)));
+		ret = malloc(totalSize);
+		assert("Out of memory" && ret);
 //		assert("Out of memory" && (ret = Sys_AlignedAlloc(totalSize, 16))); FIXME
 	}
 
@@ -94,7 +95,8 @@ Sys_ReAlloc(void *mem, size_t size, size_t count, enum MemoryHeap heap)
 	if (alloc->heap == MH_Transient || alloc->heap == MH_Frame) {
 		assert(!"Attempt to realloc a transient block");
 	} else {
-		assert("Out of memory" && (new = realloc(alloc, totalSize)));
+		new = realloc(alloc, totalSize);
+		assert("Out of memory" && new);
 	}
 
 	alloc = new;

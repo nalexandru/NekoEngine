@@ -3,7 +3,7 @@
 #include "VulkanDriver.h"
 
 struct Buffer *
-Vk_CreateBuffer(struct RenderDevice *dev, const struct BufferCreateInfo *bci, uint16_t location)
+Vk_CreateBuffer(struct RenderDevice *dev, const struct BufferDesc *desc, uint16_t location)
 {
 	struct Buffer *buff = Sys_Alloc(1, sizeof(*buff), MH_RenderDriver);
 	if (!buff)
@@ -12,8 +12,8 @@ Vk_CreateBuffer(struct RenderDevice *dev, const struct BufferCreateInfo *bci, ui
 	VkBufferCreateInfo buffInfo =
 	{
 		.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-		.size = bci->desc.size,
-		.usage = bci->desc.usage | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+		.size = desc->size,
+		.usage = desc->usage | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
 		.sharingMode = VK_SHARING_MODE_EXCLUSIVE
 	};
 	vkCreateBuffer(dev->dev, &buffInfo, Vkd_allocCb, &buff->buff);
@@ -31,7 +31,7 @@ Vk_CreateBuffer(struct RenderDevice *dev, const struct BufferCreateInfo *bci, ui
 		.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
 		.pNext = &fi,
 		.allocationSize = req.size,
-		.memoryTypeIndex = Vkd_MemoryTypeIndex(dev, req.memoryTypeBits, NeToVkMemoryProperties(bci->desc.memoryType))
+		.memoryTypeIndex = Vkd_MemoryTypeIndex(dev, req.memoryTypeBits, NeToVkMemoryProperties(desc->memoryType))
 	};
 	vkAllocateMemory(dev->dev, &ai, Vkd_allocCb, &buff->memory);
 
@@ -39,18 +39,21 @@ Vk_CreateBuffer(struct RenderDevice *dev, const struct BufferCreateInfo *bci, ui
 
 	Vk_SetBuffer(dev, location, buff->buff);
 
-	if (!bci->data)
-		return buff;
+	return buff;
+}
 
-	if (bci->dataSize < 65535) {
+void
+Vk_UpdateBuffer(struct RenderDevice *dev, struct Buffer *buff, uint64_t offset, void *data, uint64_t size)
+{
+	if (size < 65535) {
 		VkCommandBuffer cb = Vkd_TransferCmdBuffer(dev);
-		vkCmdUpdateBuffer(cb, buff->buff, 0, bci->dataSize, bci->data);
+		vkCmdUpdateBuffer(cb, buff->buff, offset, size, data);
 		Vkd_ExecuteCmdBuffer(dev, cb);
 	} else {
 		VkBufferCreateInfo stagingInfo =
 		{
 			.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-			.size = bci->dataSize,
+			.size = size,
 			.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT
 		};
 
@@ -64,7 +67,7 @@ Vk_CreateBuffer(struct RenderDevice *dev, const struct BufferCreateInfo *bci, ui
 		{
 			.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
 			.allocationSize = bMemReq.size,
-			.memoryTypeIndex = Vkd_MemoryTypeIndex(dev, req.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
+			.memoryTypeIndex = Vkd_MemoryTypeIndex(dev, bMemReq.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
 		};
 
 		VkDeviceMemory stagingMem;
@@ -75,7 +78,7 @@ Vk_CreateBuffer(struct RenderDevice *dev, const struct BufferCreateInfo *bci, ui
 		void *stagingData = NULL;
 		vkMapMemory(dev->dev, stagingMem, 0, VK_WHOLE_SIZE, 0, &stagingData);
 
-		memcpy(stagingData, bci->data, bci->dataSize);
+		memcpy(stagingData, data, size);
 
 		vkUnmapMemory(dev->dev, stagingMem);
 
@@ -84,8 +87,8 @@ Vk_CreateBuffer(struct RenderDevice *dev, const struct BufferCreateInfo *bci, ui
 		VkBufferCopy copy =
 		{
 			.srcOffset = 0,
-			.dstOffset = 0,
-			.size = bci->dataSize
+			.dstOffset = offset,
+			.size = size
 		};
 		vkCmdCopyBuffer(cb, staging, buff->buff, 1, &copy);
 
@@ -94,14 +97,6 @@ Vk_CreateBuffer(struct RenderDevice *dev, const struct BufferCreateInfo *bci, ui
 		vkDestroyBuffer(dev->dev, staging, Vkd_allocCb);
 		vkFreeMemory(dev->dev, stagingMem, Vkd_allocCb);
 	}
-
-	return buff;
-}
-
-void
-Vk_UpdateBuffer(struct RenderDevice *dev, struct Buffer *buff, uint64_t offset, void *data, uint64_t size)
-{
-	//
 }
 
 void *
@@ -112,6 +107,19 @@ Vk_MapBuffer(struct RenderDevice *dev, struct Buffer *buff)
 		return NULL;
 	else
 		return mem;
+}
+
+void
+Vk_FlushBuffer(struct RenderDevice *dev, struct Buffer *buff, uint64_t offset, uint64_t size)
+{
+	VkMappedMemoryRange mr =
+	{
+		.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
+		.memory = buff->memory,
+		.offset = offset,
+		.size = size
+	};
+	vkFlushMappedMemoryRanges(dev->dev, 1, &mr);
 }
 
 void

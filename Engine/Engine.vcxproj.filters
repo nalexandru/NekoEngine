@@ -477,6 +477,9 @@
     <ClInclude Include="..\Include\Animation\Animator.h">
       <Filter>Header Files\Animation</Filter>
     </ClInclude>
+    <ClInclude Include="UI\Internal.h">
+      <Filter>Source Files\UI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="System\System.c">
@@ -592,9 +595,6 @@
     </ClCompile>
     <ClCompile Include="Input\Input.c">
       <Filter>Source Files\Input</Filter>
-    </ClCompile>
-    <ClCompile Include="Asset\glTF.c">
-      <Filter>Source Files\Asset</Filter>
     </ClCompile>
     <ClCompile Include="Asset\Image.c">
       <Filter>Source Files\Asset</Filter>
@@ -813,6 +813,9 @@
       <Filter>Source Files\Animation</Filter>
     </ClCompile>
     <ClCompile Include="Asset\NAnim.c">
+      <Filter>Source Files\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\DDS.c">
       <Filter>Source Files\Asset</Filter>
     </ClCompile>
   </ItemGroup>

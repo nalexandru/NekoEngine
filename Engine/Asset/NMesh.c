@@ -1,64 +1,107 @@
 #include <Engine/IO.h>
 #include <Engine/Asset.h>
-//#include <Render/Model.h>
+#include <Engine/Resource.h>
+#include <Render/Model.h>
 #include <Runtime/Array.h>
+#include <System/Log.h>
 
-#define MESH_3_HEADER	"NMESH3 "
-#define MESH_FOOTER		"ENDMESH"
+#define NMESH_MOD	L"NMesh"
 
-#define CHECK_SIZE(x) if (!(x)) return false
+// all values are little-endian
+#define NMESH_4_HEADER		0x0000344853454D4Ellu	// NMESH4
+#define NMESH_FOOTER		0x004853454D444E45llu	// ENDMESH
+#define NMESH_SEC_FOOTER	0x0054434553444E45llu	// ENDSECT
+#define NMESH_VTX_ID		0x00585456u				// VTX
+#define NMESH_IDX_ID		0x00584449u				// IDX
+#define NMESH_MAT_ID		0x0054414Du				// MAT
+#define NMESH_BONE_ID		0x454E4F42u				// BONE
+#define NMESH_MESH_ID		0x4853454Du				// MESH
+#define NMESH_END_ID		0x4D444E45u				// ENDM
 
-#define READ_UINT32(dst, src, pos, size)		\
-	CHECK_SIZE(pos + sizeof(uint32_t) < size);		\
-	memcpy(&dst, data, sizeof(uint32_t));		\
-	if (sys_is_big_endian())			\
-		dst = rt_swap_uint32(dst);		\
-	data += sizeof(uint32_t);			\
-	pos += sizeof(uint32_t);
+#define READ_ID()															\
+	if (E_ReadStream(stm, &a.guard, sizeof(a.guard)) != sizeof(a.guard))	\
+		goto error 
 
-#define SWAP_VEC2(v)					\
-	v.x = rt_swap_float(v.x);			\
-	v.y = rt_swap_float(v.y)
+#define CHECK_GUARD(val)													\
+	if (E_ReadStream(stm, &a.guard, sizeof(a.guard)) != sizeof(a.guard))	\
+		goto error;															\
+	if (a.guard != val)														\
+		goto error
 
-#define SWAP_VEC3(v)					\
-	v.x = rt_swap_float(v.x);			\
-	v.y = rt_swap_float(v.y);			\
-	v.z = rt_swap_float(v.z)
+struct NMeshInfo
+{
+	uint32_t vertexOffset;
+	uint32_t vertexCount;
+	uint32_t indexOffset;
+	uint32_t indexCount;
+	char material[256];
+};
 
 bool
 E_LoadNMeshAsset(struct Stream *stm, struct Model *m)
 {
-/*	uint64_t pos = 0;
-	char guard[9];
-	
-	if (pos + sizeof(char) * 7 < dataSize)
-		return false;
+	union {
+		uint64_t guard;
+		struct {
+			uint32_t id;
+			uint32_t size;
+		};
+	} a;
 
-	memcpy(guard, data, sizeof(char) * sizeof(guard));
+	CHECK_GUARD(NMESH_4_HEADER);
 
-	if (!strncmp(guard, MESH_3_HEADER, 7)) {
-		pos += sizeof(guard);
-		if (!_load_nmesh_3(data, dataSize, pos, m))
-			return false;
-	}*/
+	while (!E_EndOfStream(stm)) {
+		READ_ID();
+
+		if (a.id == NMESH_VTX_ID) {
+			m->cpu.vertexSize = a.size;
+			m->cpu.vertices = Sys_Alloc(a.size, 1, MH_Asset);
+			E_ReadStream(stm, m->cpu.vertices, a.size);
+		} else if (a.id == NMESH_IDX_ID) {
+			E_ReadStream(stm, &m->indexType, sizeof(m->indexType));
+			m->cpu.indexSize = a.size;
+			m->cpu.indices = Sys_Alloc(a.size, 1, MH_Asset);
+			E_ReadStream(stm, m->cpu.indices, a.size);
+		} else if (a.id == NMESH_BONE_ID) {
+			m->cpu.boneSize = a.size;
+			m->cpu.bones = Sys_Alloc(a.size, 1, MH_Asset);
+			E_ReadStream(stm, m->cpu.bones, a.size);
+		} else if (a.id == NMESH_MESH_ID) {
+			struct NMeshInfo info = { 0 };
+
+			m->meshCount = a.size;
+			m->meshes = Sys_Alloc(sizeof(*m->meshes), m->meshCount, MH_Asset);
+
+			for (uint32_t i = 0; i < a.size; ++i) {
+				if (E_ReadStream(stm, &info, sizeof(info)) != sizeof(info))
+					goto error;
+
+				m->meshes[i].vertexOffset = info.vertexOffset;
+				m->meshes[i].vertexCount = info.vertexCount;
+				m->meshes[i].indexOffset = info.indexOffset;
+				m->meshes[i].indexCount = info.indexCount;
+				m->meshes[i].materialResource = E_LoadResource(info.material, RES_MATERIAL);
+			}
+		} else if (a.id == NMESH_END_ID) {
+			E_StreamSeek(stm, -((int64_t)sizeof(a)), IO_SEEK_CUR);
+			break;
+		} else {
+			Sys_LogEntry(NMESH_MOD, LOG_WARNING, L"Unknown section id = 0x%x, size = %d", a.id, a.size);
+			E_StreamSeek(stm, a.size, IO_SEEK_CUR);
+		}
+
+		CHECK_GUARD(NMESH_SEC_FOOTER);
+	}
+
+	CHECK_GUARD(NMESH_FOOTER);
+
+	return true;
+
+error:
+	Sys_Free(m->cpu.vertices);
+	Sys_Free(m->cpu.indices);
+	Sys_Free(m->cpu.bones);
+	Sys_Free(m->meshes);
 
 	return false;
 }
-
-//static inline bool
-//_load_nmesh_3(const uint8_t *data, uint64_t dataSize, uint64_t *posPtr, struct Model *m)
-//{
-	/*uint64_t pos = *posPtr;
-	uint64_t size = 0;
-	uint64_t count = 0;
-
-	READ_UINT32(count, data, pos, dataSize);
-	m->vertices = Sys_Alloc(count, sizeof(*m->vertices), MH_Asset);
-
-	size = sizeof(struct Vertex) * count;
-	CHECK_SIZE(pos + size < dataSize);
-	memcpy(m->vertices, data, size);
-	data += size; pos += size;*/
-
-//	return false;
-//}

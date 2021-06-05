@@ -34,6 +34,7 @@ struct BlitRegion
 struct BufferImageCopy
 {
 	uint64_t bufferOffset;
+	uint32_t bytesPerRow;
 	uint32_t rowLength;
 	uint32_t imageHeight;
 	struct ImageSubresource subresource;
@@ -86,18 +87,19 @@ struct RenderContextProcs
 
 	void (*CopyBuffer)(struct RenderContext *ctx, const struct Buffer *src, uint64_t srcOffset, struct Buffer *dst, uint64_t dstOffset, uint64_t size);
 	void (*CopyImage)(struct RenderContext *ctx, const struct Texture *src, struct Texture *dst);
-	void (*CopyBufferToImage)(struct RenderContext *ctx, const struct Buffer *src, struct Texture *dst, const struct BufferImageCopy *bic);
-	void (*CopyImageToBuffer)(struct RenderContext *ctx, const struct Texture *src, struct Buffer *dst, const struct BufferImageCopy *bic);
+	void (*CopyBufferToTexture)(struct RenderContext *ctx, const struct Buffer *src, struct Texture *dst, const struct BufferImageCopy *bic);
+	void (*CopyTextureToBuffer)(struct RenderContext *ctx, const struct Texture *src, struct Buffer *dst, const struct BufferImageCopy *bic);
 
 	void (*Blit)(struct RenderContext *ctx, const struct Texture *src, struct Texture *dst, const struct BlitRegion *regions, uint32_t regionCount, enum ImageFilter filter);
 
 	bool (*Submit)(struct RenderDevice *dev, struct RenderContext *ctx);
+	bool (*SubmitTransfer)(struct RenderContext *ctx, struct Fence *f);
 };
 
 extern struct RenderDevice *Re_device;
 extern struct RenderContextProcs Re_contextProcs;
 extern THREAD_LOCAL struct RenderContext *Re_context;
-extern struct RenderContext **Re_contexts;
+ENGINE_API extern struct RenderContext **Re_contexts;
 
 static inline struct RenderContext *
 Re_CurrentContext(void)
@@ -146,5 +148,10 @@ static inline void Re_CmdDispatchIndirect(struct Buffer *buff, uint64_t offset)
 
 static inline void Re_CmdTraceRays(uint32_t width, uint32_t height, uint32_t depth) { Re_contextProcs.TraceRays(Re_CurrentContext(), width, height, depth); }
 static inline void Re_CmdTraceRaysIndirect(struct Buffer *buff, uint64_t offset) { Re_contextProcs.TraceRaysIndirect(Re_CurrentContext(), buff, offset); }
+
+static inline void Re_CmdBlit(const struct Texture *src, struct Texture *dst, const struct BlitRegion *regions, uint32_t regionCount, enum ImageFilter filter)
+{ Re_contextProcs.Blit(Re_CurrentContext(), src, dst, regions, regionCount, filter); }
+
+static inline bool Re_SubmitTransfer(struct Fence *f) { return Re_contextProcs.SubmitTransfer(Re_CurrentContext(), f); }
 
 #endif /* _NE_RENDER_DRIVER_CONTEXT_H_ */

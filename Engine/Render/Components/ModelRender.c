@@ -1,4 +1,3 @@
-#include <assert.h>
 #include <stdlib.h>
 
 #include <System/Memory.h>
@@ -47,10 +46,7 @@ Re_SetModel(struct ModelRender *mr, Handle model)
 	mr->model = model;
 
 	mr->materials = Sys_Alloc(new->meshCount, sizeof(*mr->materials), MH_Render);
-	assert(mr->materials);
-
 	mr->meshBounds = Sys_Alloc(new->meshCount, sizeof(*mr->meshBounds), MH_Render);
-	assert(mr->meshBounds);
 
 	for (uint32_t i = 0; i < new->meshCount; ++i)
 		Re_InitMaterial(new->meshes[i].materialResource, &mr->materials[i]);

@@ -12,15 +12,16 @@ MTL_CreateDevice(struct RenderDeviceInfo *info,
 	devProcs->CreateSurface = (struct Surface *(*)(struct RenderDevice *, void *))MTL_CreateSurface;
 	devProcs->DestroySurface = (void(*)(struct RenderDevice *, struct Surface *))MTL_DestroySurface;
 	
-	devProcs->CreateTexture = (struct Texture *(*)(struct RenderDevice *, const struct TextureCreateInfo *, uint16_t))MTL_CreateTexture;
+	devProcs->CreateTexture = (struct Texture *(*)(struct RenderDevice *, const struct TextureDesc *, uint16_t))MTL_CreateTexture;
 	devProcs->DestroyTexture = (void(*)(struct RenderDevice *, struct Texture *))MTL_DestroyTexture;
 	
 	devProcs->CreateSampler = (struct Sampler *(*)(struct RenderDevice *, const struct SamplerDesc *))MTL_CreateSampler;
 	devProcs->DestroySampler = (void(*)(struct RenderDevice *, struct Sampler *s))MTL_DestroySampler;
 	
-	devProcs->CreateBuffer = (struct Buffer *(*)(struct RenderDevice *, const struct BufferCreateInfo *, uint16_t))MTL_CreateBuffer;
+	devProcs->CreateBuffer = (struct Buffer *(*)(struct RenderDevice *, const struct BufferDesc *, uint16_t))MTL_CreateBuffer;
 	devProcs->UpdateBuffer = (void(*)(struct RenderDevice *, struct Buffer *, uint64_t, void *, uint64_t))MTL_UpdateBuffer;
 	devProcs->MapBuffer = (void *(*)(struct RenderDevice *, struct Buffer *))MTL_MapBuffer;
+	devProcs->FlushBuffer = (void (*)(struct RenderDevice *dev, struct Buffer *, uint64_t, uint64_t))MTL_FlushBuffer;
 	devProcs->UnmapBuffer = (void (*)(struct RenderDevice *, struct Buffer *))MTL_UnmapBuffer;
 	devProcs->BufferAddress = (uint64_t(*)(struct RenderDevice *, const struct Buffer *, uint64_t))MTL_BufferAddress;
 	devProcs->DestroyBuffer = (void(*)(struct RenderDevice *, struct Buffer *))MTL_DestroyBuffer;
@@ -29,7 +30,7 @@ MTL_CreateDevice(struct RenderDeviceInfo *info,
 	devProcs->AccelerationStructureHandle = (uint64_t(*)(struct RenderDevice *, const struct AccelerationStructure *)) MTL_AccelerationStructureHandle;
 	devProcs->DestroyAccelerationStructure = (void(*)(struct RenderDevice *, struct AccelerationStructure *))MTL_DestroyAccelerationStructure;
 	
-	devProcs->CreateSwapchain = (struct Swapchain *(*)(struct RenderDevice *, struct Surface *))MTL_CreateSwapchain;
+	devProcs->CreateSwapchain = (struct Swapchain *(*)(struct RenderDevice *, struct Surface *, bool))MTL_CreateSwapchain;
 	devProcs->DestroySwapchain = (void(*)(struct RenderDevice *, struct Swapchain *))MTL_DestroySwapchain;
 	devProcs->AcquireNextImage = (void *(*)(struct RenderDevice *, struct Swapchain *))MTL_AcquireNextImage;
 	devProcs->Present = (bool(*)(struct RenderDevice *, struct RenderContext *, struct Swapchain *, void *))MTL_Present;
@@ -56,12 +57,20 @@ MTL_CreateDevice(struct RenderDeviceInfo *info,
 	
 	devProcs->ShaderModule = (void *(*)(struct RenderDevice *, const char *))MTL_ShaderModule;
 	
-	devProcs->CreateTransientBuffer = (struct Buffer *(*)(struct RenderDevice *, const struct BufferCreateInfo *, uint16_t, uint64_t))MTL_CreateTransientBuffer;
-	devProcs->CreateTransientTexture = (struct Texture *(*)(struct RenderDevice *, const struct TextureCreateInfo *, uint16_t, uint64_t))MTL_CreateTransientTexture;
+	devProcs->CreateTransientBuffer = (struct Buffer *(*)(struct RenderDevice *, const struct BufferDesc *, uint16_t, uint64_t))MTL_CreateTransientBuffer;
+	devProcs->CreateTransientTexture = (struct Texture *(*)(struct RenderDevice *, const struct TextureDesc *, uint16_t, uint64_t))MTL_CreateTransientTexture;
 	
 	devProcs->InitTransientHeap = (bool(*)(struct RenderDevice *, uint64_t))MTL_InitTransientHeap;
 	devProcs->ResizeTransientHeap = (bool(*)(struct RenderDevice *, uint64_t))MTL_ResizeTransientHeap;
 	devProcs->TermTransientHeap = (void(*)(struct RenderDevice *))MTL_TermTransientHeap;
+	
+	devProcs->CreateSemaphore = (struct Semaphore *(*)(struct RenderDevice *))MTL_CreateSemaphore;
+	devProcs->DestroySemaphore = (void(*)(struct RenderDevice *, struct Semaphore *))MTL_DestroySemaphore;
+	
+	devProcs->CreateFence = (struct Fence *(*)(struct RenderDevice *, bool))MTL_CreateFence;
+	devProcs->SignalFence = (void(*)(struct RenderDevice *dev, struct Fence *))MTL_SignalFence;
+	devProcs->WaitForFence = (bool(*)(struct RenderDevice *dev, struct Fence *, uint64_t))MTL_WaitForFence;
+	devProcs->DestroyFence = (void(*)(struct RenderDevice *, struct Fence *))MTL_DestroyFence;
 	
 	MTL_InitLibrary((id<MTLDevice>)info->private);
 	MTL_InitContextProcs(ctxProcs);

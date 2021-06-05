@@ -22,7 +22,7 @@ _NeToVkCompareOp(uint64_t flags)
 	case RE_DEPTH_OP_ALWAYS: return VK_COMPARE_OP_ALWAYS;
 	}
 	
-	return VK_COMPARE_OP_LESS;
+	return VK_COMPARE_OP_GREATER_OR_EQUAL;
 }
 
 static inline VkPipelineLayout _CreateLayout(struct RenderDevice *dev, uint32_t size);
@@ -94,7 +94,7 @@ Vk_GraphicsPipeline(struct RenderDevice *dev, const struct GraphicsPipelineDesc 
 		.alphaToOneEnable = flags & RE_ALPHA_TO_ONE
 	};
 
-	if (flags & RE_MULTISAMPLE) {
+	if ((flags & RE_MULTISAMPLE) == RE_MULTISAMPLE) {
 		switch (flags & RE_SAMPLES_BITS) {
 		case RE_MS_2_SAMPLES: ms.rasterizationSamples = VK_SAMPLE_COUNT_2_BIT; break;
 		case RE_MS_4_SAMPLES: ms.rasterizationSamples = VK_SAMPLE_COUNT_4_BIT; break;

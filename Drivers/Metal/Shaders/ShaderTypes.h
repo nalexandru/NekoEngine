@@ -9,6 +9,12 @@ struct Vertex
 	float u, v;
 };
 
+struct UIVertex
+{
+	float x, y, u, v;
+	float4 color;
+};
+
 struct VertexBones
 {
 	int4 indices;

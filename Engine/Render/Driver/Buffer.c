@@ -1,5 +1,3 @@
-#include <assert.h>
-
 #include <Render/Render.h>
 #include <Runtime/Runtime.h>
 
@@ -21,12 +19,18 @@ Re_CreateBuffer(const struct BufferCreateInfo *bci, BufferHandle *handle)
 
 	struct BufferInfo *info = &_buffers[*handle];
 
-	info->buff = Re_deviceProcs.CreateBuffer(Re_device, bci, *handle);
+	info->buff = Re_deviceProcs.CreateBuffer(Re_device, &bci->desc, *handle);
 	if (!info->buff)
 		return false;
 
 	memcpy(&info->desc, &bci->desc, sizeof(info->desc));
-
+	
+	if (bci->data) {
+		Re_UpdateBuffer(*handle, 0, bci->data, bci->dataSize);
+		if (!bci->keepData)
+			Sys_Free(bci->data);
+	}
+	
 	return true;
 }
 
@@ -46,6 +50,12 @@ void *
 Re_MapBuffer(BufferHandle handle)
 {
 	return Re_deviceProcs.MapBuffer(Re_device, _buffers[handle].buff);
+}
+
+void
+Re_FlushBuffer(BufferHandle handle, uint64_t offset, uint64_t size)
+{
+	Re_deviceProcs.FlushBuffer(Re_device, _buffers[handle].buff, offset, size);
 }
 
 void
@@ -108,4 +118,16 @@ void
 Re_TermBufferSystem(void)
 {
 	Rt_TermQueue(&_freeList);
+}
+
+void
+Re_CmdCopyBufferToTexture(BufferHandle src, struct Texture *dst, const struct BufferImageCopy *bic)
+{
+	Re_contextProcs.CopyBufferToTexture(Re_CurrentContext(), _buffers[src].buff, dst, bic);
+}
+
+void
+Re_CmdCopyTextureToBuffer(struct Texture *src, BufferHandle dst, const struct BufferImageCopy *bic)
+{
+	Re_contextProcs.CopyTextureToBuffer(Re_CurrentContext(), src, _buffers[dst].buff, bic);
 }

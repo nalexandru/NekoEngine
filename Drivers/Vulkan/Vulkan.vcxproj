@@ -94,10 +94,11 @@
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <FloatingPointModel>Fast</FloatingPointModel>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
-      <Optimization>Full</Optimization>
+      <Optimization>MaxSpeed</Optimization>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
+      <DebugInformationFormat>None</DebugInformationFormat>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -122,6 +123,7 @@
     <ClCompile Include="Shader.c" />
     <ClCompile Include="ShaderBindingTable.c" />
     <ClCompile Include="Swapchain.c" />
+    <ClCompile Include="Synchronization.c" />
     <ClCompile Include="Texture.c" />
     <ClCompile Include="TransientResources.c" />
     <ClCompile Include="volk.c">
@@ -134,6 +136,8 @@
     <ClInclude Include="Shaders\Material.h" />
     <ClInclude Include="Shaders\Object.h" />
     <ClInclude Include="Shaders\Texture.h" />
+    <ClInclude Include="Shaders\Types.h" />
+    <ClInclude Include="Shaders\UIDrawInfo.h" />
     <ClInclude Include="Shaders\Vertex.h" />
     <ClInclude Include="volk.h" />
     <ClInclude Include="VulkanDriver.h" />
@@ -143,6 +147,14 @@
       <FileType>Document</FileType>
     </CustomBuild>
     <CustomBuild Include="Shaders\DefaultPBR_VS.vert">
+      <FileType>Document</FileType>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="Shaders\UI_FS.frag">
+      <FileType>Document</FileType>
+    </CustomBuild>
+    <CustomBuild Include="Shaders\UI_VS.vert">
       <FileType>Document</FileType>
     </CustomBuild>
   </ItemGroup>

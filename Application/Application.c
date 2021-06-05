@@ -3,26 +3,14 @@
 #include <Scene/Scene.h>
 #include <Scene/Transform.h>
 #include <Scene/Components.h>
-
+#include <Engine/Job.h>
 #include <Engine/Engine.h>
 #include <Engine/Events.h>
 #include <Engine/ECSystem.h>
 #include <Engine/Application.h>
-
 #include <Input/Input.h>
-
 #include <System/Log.h>
-
 #include <UI/UI.h>
-
-//
-
-#include <Engine/Entity.h>
-#include <Engine/Component.h>
-#include <Engine/Resource.h>
-
-#include <Render/Render.h>
-#include <Render/Components/ModelRender.h>
 
 #include "TestApplication.h"
 
@@ -66,19 +54,6 @@ static bool App_InitStatistics(struct PlayerMovement *comp, const void **args) {
 static void App_TermStatistics(struct PlayerMovement *comp) { }
 static void App_DrawStatistics(void **comp, void *args);
 
-static struct Vertex _vertices[] =
-{
-	{ -.5f, -.5f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f },
-	{ -.5f,  .5f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 1.f },
-	{  .5f,  .5f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 1.f, 1.f },
-	{  .5f, -.5f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f }
-};
-static uint16_t _indices[] =
-{
-	0, 1, 2, 0, 2, 3
-};
-static struct Mesh _mesh = { 0, 4, 0, 6 };
-
 static volatile uint64_t _jobStart;
 
 static void
@@ -108,67 +83,7 @@ App_InitApplication(int argc, char *argv[])
 
 	_sceneLoadedEvt = E_RegisterHandler(EVT_SCENE_LOADED, App_SceneLoaded, NULL);
 
-	//Scn_StartSceneLoad("/Scenes/Sponza.scn");
-
-	struct Scene *scn = Scn_CreateScene(L"TestScene");
-	assert(scn);
-
-	const void *xfArgs[] =
-	{
-		"Position", "0.0, 0.0, 0.0",
-		"Rotation", "0.0, 0.0, 0.0",
-		"Scale", "1.0, 1.0, 1.0",
-		NULL
-	};
-	EntityHandle ent = E_CreateEntityS(scn, NULL);
-	E_AddNewComponentS(scn, ent, E_ComponentTypeId(TRANSFORM_COMP), xfArgs);
-	E_AddNewComponentS(scn, ent, E_ComponentTypeId(MODEL_RENDER_COMP), NULL);
-
-	const char *mat = "/Materials/Anna.mat";
-	struct ModelRender *mr = E_GetComponentS(scn, ent, E_ComponentTypeId(MODEL_RENDER_COMP));
-	struct ModelCreateInfo mci =
-	{
-		.vertices = _vertices,
-		.vertexSize = sizeof(_vertices),
-		.indices = _indices,
-		.indexSize = sizeof(_indices),
-		.indexType = IT_UINT_16,
-		.meshes = &_mesh,
-		.materials = &mat,
-		.meshCount = 1,
-		.keepData = true,
-		.loadMaterials = true
-	};
-	Re_SetModel(mr, E_CreateResource("Anna", RES_MODEL, &mci));
-
-	ent = E_CreateEntityS(scn, NULL);
-
-	const void *camArgs[] =
-	{
-		"Active", "true",
-		NULL
-	};
-	xfArgs[1] = "0.0, 0.0, -1.0";
-	E_AddNewComponentS(scn, ent, E_ComponentTypeId(L"PlayerMovement"), NULL);
-	E_AddNewComponentS(scn, ent, E_ComponentTypeId(TRANSFORM_COMP), xfArgs);
-	E_AddNewComponentS(scn, ent, E_ComponentTypeId(CAMERA_COMP), camArgs);
-
-	ent = E_CreateEntityS(scn, NULL);
-
-	xfArgs[1] = "0.0, 0.0, -2.0";
-	xfArgs[3] = "90.0, 0.0, 0.0";
-
-	E_AddNewComponentS(scn, ent, E_ComponentTypeId(TRANSFORM_COMP), xfArgs);
-
-	const void *mrArgs[] =
-	{
-		"Model", "/Models/Kat.glb",
-		NULL
-	};
-	E_AddNewComponentS(scn, ent, E_ComponentTypeId(MODEL_RENDER_COMP), mrArgs);
-
-	scn->loaded = true;
-	Scn_ActivateScene(scn);
+	Scn_StartSceneLoad("/Scenes/Main.scn");
 
 	_jobStart = Sys_Time();
 	E_DispatchJobs(E_JobWorkerThreads(), _SleepJob, NULL, _SleepCompleted);

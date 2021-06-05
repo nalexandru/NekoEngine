@@ -43,6 +43,8 @@ bool E_RegisterSystems(void)
 
 	comp[0] = UI_CONTEXT_COMP;
 	E_RegisterSystem(UI_RESET_CONTEXT, ECSYS_GROUP_POST_RENDER, comp, 1, (ECSysExecProc)UI_ResetContext, 0);
+	E_RegisterSystem(UI_UPDATE_BUFFERS, ECSYS_GROUP_MANUAL, comp, 1, (ECSysExecProc)UI_UpdateBuffers, 0);
+	E_RegisterSystem(UI_DRAW_CONTEXT, ECSYS_GROUP_MANUAL, comp, 1, (ECSysExecProc)UI_DrawContext, 0);
 
 	return true;
 }

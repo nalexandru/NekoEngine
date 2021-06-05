@@ -1,5 +1,3 @@
-#include <assert.h>
-
 #define Handle __EngineHandle
 
 #include <Engine/IO.h>
@@ -22,7 +20,10 @@ MTL_GraphicsPipeline(id<MTLDevice> dev, const struct GraphicsPipelineDesc *gpDes
 	desc.binaryArchives = @[ _cache ];
 	
 	struct Pipeline *p = Sys_Alloc(sizeof(*p), 1, MH_RenderDriver);
-	assert(p);
+	if (!p) {
+		[desc release];
+		return NULL;
+	}
 	
 	p->type = PS_RENDER;
 	
@@ -56,8 +57,16 @@ MTL_GraphicsPipeline(id<MTLDevice> dev, const struct GraphicsPipelineDesc *gpDes
 	
 		MTLDepthStencilDescriptor *dssDesc = [[MTLDepthStencilDescriptor alloc] init];
 		
-		dssDesc.depthCompareFunction = MTLCompareFunctionLessEqual;
-		dssDesc.depthWriteEnabled = true;
+		switch (gpDesc->flags & RE_DEPTH_OP_BITS) {
+		case RE_DEPTH_OP_LESS: dssDesc.depthCompareFunction = MTLCompareFunctionLess; break;
+		case RE_DEPTH_OP_EQUAL: dssDesc.depthCompareFunction = MTLCompareFunctionEqual; break;
+		case RE_DEPTH_OP_LESS_EQUAL: dssDesc.depthCompareFunction = MTLCompareFunctionLessEqual; break;
+		case RE_DEPTH_OP_GREATER: dssDesc.depthCompareFunction = MTLCompareFunctionGreater; break;
+		case RE_DEPTH_OP_NOT_EQUAL: dssDesc.depthCompareFunction = MTLCompareFunctionNotEqual; break;
+		case RE_DEPTH_OP_GREATER_EQUAL: dssDesc.depthCompareFunction = MTLCompareFunctionGreaterEqual; break;
+		case RE_DEPTH_OP_ALWAYS: dssDesc.depthCompareFunction = MTLCompareFunctionAlways; break;
+		}
+		dssDesc.depthWriteEnabled = (gpDesc->flags & RE_DEPTH_WRITE) == RE_DEPTH_WRITE;
 		
 		p->render.depthStencil = [dev newDepthStencilStateWithDescriptor: dssDesc];
 		[dssDesc release];

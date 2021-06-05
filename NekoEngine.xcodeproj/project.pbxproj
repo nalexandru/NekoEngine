@@ -16,6 +16,8 @@
 		FA1A7EF425CF13E9003B4259 /* Render.c in Sources */ = {isa = PBXBuildFile; fileRef = FA1A7EF325CF13E9003B4259 /* Render.c */; };
 		FA25968B26261E2200BFF167 /* l_Engine.c in Sources */ = {isa = PBXBuildFile; fileRef = FA25968926261E2200BFF167 /* l_Engine.c */; };
 		FA25968C26261E2200BFF167 /* l_System.c in Sources */ = {isa = PBXBuildFile; fileRef = FA25968A26261E2200BFF167 /* l_System.c */; };
+		FA28E6CB2668F4B2000B591E /* UI.metal in Sources */ = {isa = PBXBuildFile; fileRef = FA28E6CA2668F4B2000B591E /* UI.metal */; };
+		FA28E6CC2668F4B2000B591E /* UI.metal in Sources */ = {isa = PBXBuildFile; fileRef = FA28E6CA2668F4B2000B591E /* UI.metal */; };
 		FA3B39DA2620900100132D50 /* MTLArgumentBuffer.m in Sources */ = {isa = PBXBuildFile; fileRef = FA3B39D92620900100132D50 /* MTLArgumentBuffer.m */; };
 		FA3B39DB2620900100132D50 /* MTLArgumentBuffer.m in Sources */ = {isa = PBXBuildFile; fileRef = FA3B39D92620900100132D50 /* MTLArgumentBuffer.m */; };
 		FA49A582264639B7009EF9B9 /* Material.c in Sources */ = {isa = PBXBuildFile; fileRef = FA71247E263616DA00916C6D /* Material.c */; };
@@ -49,7 +51,6 @@
 		FA4CFED225D774C100B37A5B /* iOS.m in Sources */ = {isa = PBXBuildFile; fileRef = FAB1504425D751F0009C5450 /* iOS.m */; };
 		FA4CFED525D774C400B37A5B /* Input.m in Sources */ = {isa = PBXBuildFile; fileRef = FAB1506025D753B5009C5450 /* Input.m */; };
 		FA4CFED825D774D200B37A5B /* Application.c in Sources */ = {isa = PBXBuildFile; fileRef = FAA9108725D3D85D005FCDA2 /* Application.c */; };
-		FA4CFEDB25D774D800B37A5B /* glTF.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B562521F2D600F7C24B /* glTF.c */; };
 		FA4CFEDC25D774D800B37A5B /* Font.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B552521F2D600F7C24B /* Font.c */; };
 		FA4CFEDD25D774D800B37A5B /* Image.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B572521F2D600F7C24B /* Image.c */; };
 		FA4CFEDE25D774D800B37A5B /* Ogg.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B592521F2D600F7C24B /* Ogg.c */; };
@@ -200,13 +201,20 @@
 		FA80D6CC264616CD0053CE56 /* Pipeline.c in Sources */ = {isa = PBXBuildFile; fileRef = FA80D6C8264616CD0053CE56 /* Pipeline.c */; };
 		FA80D6CE264616D90053CE56 /* Graph.c in Sources */ = {isa = PBXBuildFile; fileRef = FA80D6CD264616D90053CE56 /* Graph.c */; };
 		FA8A94DB25D41935008B5823 /* MTLPipeline.m in Sources */ = {isa = PBXBuildFile; fileRef = FA8A94DA25D41935008B5823 /* MTLPipeline.m */; };
+		FA8F56C826679A4900592E60 /* Animation.c in Sources */ = {isa = PBXBuildFile; fileRef = FAEFB7502662AE6E00BFCF25 /* Animation.c */; };
+		FA8F56C926679A4C00592E60 /* AnimationClip.c in Sources */ = {isa = PBXBuildFile; fileRef = FAEFB74F2662AE6E00BFCF25 /* AnimationClip.c */; };
+		FA8F56CA26679A4F00592E60 /* Skeleton.c in Sources */ = {isa = PBXBuildFile; fileRef = FAEFB7532662AE6E00BFCF25 /* Skeleton.c */; };
+		FA8F56CB26679A5300592E60 /* Animator.c in Sources */ = {isa = PBXBuildFile; fileRef = FAEFB7512662AE6E00BFCF25 /* Animator.c */; };
+		FA8F56CC26679A6100592E60 /* NAnim.c in Sources */ = {isa = PBXBuildFile; fileRef = FAEFB7592662AE9800BFCF25 /* NAnim.c */; };
+		FA8F56CD26679A6F00592E60 /* Depth.c in Sources */ = {isa = PBXBuildFile; fileRef = FAEFB75E2662AECE00BFCF25 /* Depth.c */; };
+		FA8F56CE26679A6F00592E60 /* LightCulling.c in Sources */ = {isa = PBXBuildFile; fileRef = FAEFB75F2662AECE00BFCF25 /* LightCulling.c */; };
+		FA8F56CF26679A6F00592E60 /* Lighting.c in Sources */ = {isa = PBXBuildFile; fileRef = FAEFB7602662AECE00BFCF25 /* Lighting.c */; };
 		FA99953E25E2E684002CB0D3 /* MTLShader.m in Sources */ = {isa = PBXBuildFile; fileRef = FA99953D25E2E684002CB0D3 /* MTLShader.m */; };
 		FA99953F25E2E684002CB0D3 /* MTLShader.m in Sources */ = {isa = PBXBuildFile; fileRef = FA99953D25E2E684002CB0D3 /* MTLShader.m */; };
 		FA99954425E2E804002CB0D3 /* DefaultPBR.metal in Sources */ = {isa = PBXBuildFile; fileRef = FA99954325E2E804002CB0D3 /* DefaultPBR.metal */; };
 		FA99954525E2E804002CB0D3 /* DefaultPBR.metal in Sources */ = {isa = PBXBuildFile; fileRef = FA99954325E2E804002CB0D3 /* DefaultPBR.metal */; };
 		FAA9108825D3D85D005FCDA2 /* Application.c in Sources */ = {isa = PBXBuildFile; fileRef = FAA9108725D3D85D005FCDA2 /* Application.c */; };
 		FAAF9B5C2521F2D600F7C24B /* Font.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B552521F2D600F7C24B /* Font.c */; };
-		FAAF9B5D2521F2D600F7C24B /* glTF.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B562521F2D600F7C24B /* glTF.c */; };
 		FAAF9B5E2521F2D600F7C24B /* Image.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B572521F2D600F7C24B /* Image.c */; };
 		FAAF9B5F2521F2D600F7C24B /* NMesh.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B582521F2D600F7C24B /* NMesh.c */; };
 		FAAF9B602521F2D600F7C24B /* Ogg.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B592521F2D600F7C24B /* Ogg.c */; };
@@ -249,6 +257,10 @@
 		FAAF9C922522A81F00F7C24B /* physfs_unicode.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9C822522A81F00F7C24B /* physfs_unicode.c */; };
 		FAAF9C932522A81F00F7C24B /* physfs.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9C832522A81F00F7C24B /* physfs.c */; };
 		FAAF9C962522A89200F7C24B /* physfs_platform_apple.m in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9C942522A89200F7C24B /* physfs_platform_apple.m */; };
+		FAB68E83266B93A3003F51FD /* DDS.c in Sources */ = {isa = PBXBuildFile; fileRef = FAB68E82266B93A3003F51FD /* DDS.c */; };
+		FAB68E84266B93A3003F51FD /* DDS.c in Sources */ = {isa = PBXBuildFile; fileRef = FAB68E82266B93A3003F51FD /* DDS.c */; };
+		FAB68E86266BA655003F51FD /* MTLSynchronization.m in Sources */ = {isa = PBXBuildFile; fileRef = FAB68E85266BA655003F51FD /* MTLSynchronization.m */; };
+		FAB68E87266BA655003F51FD /* MTLSynchronization.m in Sources */ = {isa = PBXBuildFile; fileRef = FAB68E85266BA655003F51FD /* MTLSynchronization.m */; };
 		FABF18F725BECFD0005C1329 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FABF18F625BECFD0005C1329 /* AVFoundation.framework */; };
 		FAC4B4B0253BE2E30074EE3C /* Job.c in Sources */ = {isa = PBXBuildFile; fileRef = FAC4B4AF253BE2E30074EE3C /* Job.c */; };
 		FAC4B4B2253BE2F60074EE3C /* AtomicLock.c in Sources */ = {isa = PBXBuildFile; fileRef = FAC4B4B1253BE2F60074EE3C /* AtomicLock.c */; };
@@ -297,6 +309,8 @@
 		FA24C19F25D95DDA003D590F /* mat4_altivec.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mat4_altivec.h; path = Include/Math/altivec/mat4_altivec.h; sourceTree = "<group>"; };
 		FA25968926261E2200BFF167 /* l_Engine.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = l_Engine.c; path = Engine/Script/l_Engine.c; sourceTree = "<group>"; };
 		FA25968A26261E2200BFF167 /* l_System.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = l_System.c; path = Engine/Script/l_System.c; sourceTree = "<group>"; };
+		FA28E6C92668F482000B591E /* Internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Internal.h; path = Engine/UI/Internal.h; sourceTree = "<group>"; };
+		FA28E6CA2668F4B2000B591E /* UI.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; name = UI.metal; path = Drivers/Metal/Shaders/UI.metal; sourceTree = "<group>"; };
 		FA3B39D92620900100132D50 /* MTLArgumentBuffer.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = MTLArgumentBuffer.m; path = Drivers/Metal/MTLArgumentBuffer.m; sourceTree = "<group>"; };
 		FA49A58A264646C3009EF9B9 /* Downloader.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Downloader.plist; path = Platform/iOS/Downloader.plist; sourceTree = "<group>"; };
 		FA4A193D25FD321400040940 /* l_Render.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = l_Render.c; path = Engine/Script/l_Render.c; sourceTree = "<group>"; };
@@ -470,7 +484,6 @@
 		FAA9108725D3D85D005FCDA2 /* Application.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = Application.c; path = Application/Application.c; sourceTree = "<group>"; };
 		FAA9108A25D3D886005FCDA2 /* TestApplication.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TestApplication.h; path = Application/TestApplication.h; sourceTree = "<group>"; };
 		FAAF9B552521F2D600F7C24B /* Font.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = Font.c; path = Engine/Asset/Font.c; sourceTree = "<group>"; };
-		FAAF9B562521F2D600F7C24B /* glTF.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = glTF.c; path = Engine/Asset/glTF.c; sourceTree = "<group>"; };
 		FAAF9B572521F2D600F7C24B /* Image.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = Image.c; path = Engine/Asset/Image.c; sourceTree = "<group>"; };
 		FAAF9B582521F2D600F7C24B /* NMesh.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = NMesh.c; path = Engine/Asset/NMesh.c; sourceTree = "<group>"; };
 		FAAF9B592521F2D600F7C24B /* Ogg.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = Ogg.c; path = Engine/Asset/Ogg.c; sourceTree = "<group>"; };
@@ -531,6 +544,8 @@
 		FAB1504025D750D8009C5450 /* Window.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = Window.m; path = Platform/iOS/Window.m; sourceTree = "<group>"; };
 		FAB1504425D751F0009C5450 /* iOS.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = iOS.m; path = Platform/iOS/iOS.m; sourceTree = "<group>"; };
 		FAB1506025D753B5009C5450 /* Input.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = Input.m; path = Platform/iOS/Input.m; sourceTree = "<group>"; };
+		FAB68E82266B93A3003F51FD /* DDS.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = DDS.c; path = Engine/Asset/DDS.c; sourceTree = "<group>"; };
+		FAB68E85266BA655003F51FD /* MTLSynchronization.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = MTLSynchronization.m; path = Drivers/Metal/MTLSynchronization.m; sourceTree = "<group>"; };
 		FABF18F625BECFD0005C1329 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		FAC101A0252FF70000D830E9 /* sanity.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = sanity.h; path = Include/Math/sanity.h; sourceTree = "<group>"; };
 		FAC4B4AF253BE2E30074EE3C /* Job.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = Job.c; path = Engine/Engine/Job.c; sourceTree = "<group>"; };
@@ -719,6 +734,7 @@
 				FA99953D25E2E684002CB0D3 /* MTLShader.m */,
 				FA4A197A25FE947B00040940 /* MTLSampler.m */,
 				FA3B39D92620900100132D50 /* MTLArgumentBuffer.m */,
+				FAB68E85266BA655003F51FD /* MTLSynchronization.m */,
 			);
 			name = Metal;
 			sourceTree = "<group>";
@@ -990,6 +1006,7 @@
 				FAC6710325EBE7B6001BF95A /* LightCulling.metal */,
 				FAC6710825EBE812001BF95A /* Skinning.metal */,
 				FAFCD95325EE4767006CA7FF /* ShaderTypes.h */,
+				FA28E6CA2668F4B2000B591E /* UI.metal */,
 			);
 			name = Shaders;
 			sourceTree = "<group>";
@@ -997,9 +1014,9 @@
 		FAAF9B542521F2AF00F7C24B /* Asset */ = {
 			isa = PBXGroup;
 			children = (
+				FAB68E82266B93A3003F51FD /* DDS.c */,
 				FAEFB7592662AE9800BFCF25 /* NAnim.c */,
 				FAAF9B552521F2D600F7C24B /* Font.c */,
-				FAAF9B562521F2D600F7C24B /* glTF.c */,
 				FAAF9B572521F2D600F7C24B /* Image.c */,
 				FAAF9B582521F2D600F7C24B /* NMesh.c */,
 				FAAF9B592521F2D600F7C24B /* Ogg.c */,
@@ -1023,6 +1040,7 @@
 		FAAF9B732521F37A00F7C24B /* UI */ = {
 			isa = PBXGroup;
 			children = (
+				FA28E6C92668F482000B591E /* Internal.h */,
 				FAAF9BAB2521F47D00F7C24B /* Text.c */,
 				FAAF9BAC2521F47D00F7C24B /* UI.c */,
 			);
@@ -1432,7 +1450,6 @@
 				FAAF9B5C2521F2D600F7C24B /* Font.c in Sources */,
 				FA4CFF7825D8361400B37A5B /* Frame.c in Sources */,
 				FAC670FD25EA7BB3001BF95A /* Metadata.c in Sources */,
-				FAAF9B5D2521F2D600F7C24B /* glTF.c in Sources */,
 				FAAF9B5E2521F2D600F7C24B /* Image.c in Sources */,
 				FAAF9B5F2521F2D600F7C24B /* NMesh.c in Sources */,
 				FAAF9B602521F2D600F7C24B /* Ogg.c in Sources */,
@@ -1443,6 +1460,7 @@
 				FAAF9B802521F3C500F7C24B /* Audio.c in Sources */,
 				FA99953E25E2E684002CB0D3 /* MTLShader.m in Sources */,
 				FAAF9B822521F3C500F7C24B /* Source.c in Sources */,
+				FA28E6CB2668F4B2000B591E /* UI.metal in Sources */,
 				FAAF9B8D2521F3D700F7C24B /* Component.c in Sources */,
 				FA04A9FA2653FD5A00534686 /* Systems.c in Sources */,
 				FAAF9B8E2521F3D700F7C24B /* Config.c in Sources */,
@@ -1477,6 +1495,7 @@
 				FAAF9C862522A81F00F7C24B /* physfs_archiver_dir.c in Sources */,
 				FAEFB7622662AECE00BFCF25 /* LightCulling.c in Sources */,
 				FAAF9C872522A81F00F7C24B /* physfs_archiver_grp.c in Sources */,
+				FAB68E83266B93A3003F51FD /* DDS.c in Sources */,
 				FAAF9C882522A81F00F7C24B /* physfs_archiver_hog.c in Sources */,
 				FAAF9C892522A81F00F7C24B /* physfs_archiver_iso9660.c in Sources */,
 				FAAF9C8A2522A81F00F7C24B /* physfs_archiver_mvl.c in Sources */,
@@ -1540,6 +1559,7 @@
 				FA4CFFB425D8D9C800B37A5B /* Main.m in Sources */,
 				FA4CFFB025D8D9C800B37A5B /* macOS.m in Sources */,
 				FA6BDE942523382100806A2D /* lstrlib.c in Sources */,
+				FAB68E86266BA655003F51FD /* MTLSynchronization.m in Sources */,
 				FAFEF83C25D5A0D900D8D1FB /* MTLShaderBindingTable.m in Sources */,
 				FAEFB7542662AE6E00BFCF25 /* AnimationClip.c in Sources */,
 				FA80D6C9264616CD0053CE56 /* Buffer.c in Sources */,
@@ -1584,8 +1604,8 @@
 				FA4CFF4025D7754700B37A5B /* physfs_archiver_mvl.c in Sources */,
 				FA4CFF0B25D774FF00B37A5B /* System.c in Sources */,
 				FA4CFF8B25D8453200B37A5B /* MTLRenderPass.m in Sources */,
-				FA4CFEDB25D774D800B37A5B /* glTF.c in Sources */,
 				FA4CFF4925D7754700B37A5B /* physfs_archiver_iso9660.c in Sources */,
+				FA28E6CC2668F4B2000B591E /* UI.metal in Sources */,
 				FA4CFF1D25D7753A00B37A5B /* lbaselib.c in Sources */,
 				FA4CFEDE25D774D800B37A5B /* Ogg.c in Sources */,
 				FA04A9FB2653FD6400534686 /* Systems.c in Sources */,
@@ -1594,6 +1614,7 @@
 				FA4CFF4625D7754700B37A5B /* physfs_archiver_7z.c in Sources */,
 				FA4CFEE125D774D800B37A5B /* Wave.c in Sources */,
 				FAC6710525EBE7B6001BF95A /* LightCulling.metal in Sources */,
+				FA8F56CE26679A6F00592E60 /* LightCulling.c in Sources */,
 				FA4A196825FE448F00040940 /* AVFDevice.m in Sources */,
 				FA4CFF5C25D7758600B37A5B /* MTLSwapchain.m in Sources */,
 				FA4CFEE525D774DD00B37A5B /* Audio.c in Sources */,
@@ -1610,6 +1631,7 @@
 				FA4CFED825D774D200B37A5B /* Application.c in Sources */,
 				FAC670FE25EA7BB3001BF95A /* Metadata.c in Sources */,
 				FA4CFF5D25D7758600B37A5B /* MTLTransientResources.m in Sources */,
+				FA8F56CD26679A6F00592E60 /* Depth.c in Sources */,
 				FA4CFF0625D774FB00B37A5B /* Memory.c in Sources */,
 				FA4CFEEA25D774E600B37A5B /* Entity.c in Sources */,
 				FA4CFF1F25D7753A00B37A5B /* lmathlib.c in Sources */,
@@ -1618,6 +1640,7 @@
 				FA4A197C25FE947C00040940 /* MTLSampler.m in Sources */,
 				FA4CFF3725D7753A00B37A5B /* lcorolib.c in Sources */,
 				FA4CFF3325D7753A00B37A5B /* linit.c in Sources */,
+				FAB68E84266B93A3003F51FD /* DDS.c in Sources */,
 				FA4CFF3E25D7754700B37A5B /* physfs_unicode.c in Sources */,
 				FA4CFF4C25D7754700B37A5B /* physfs_platform_apple.m in Sources */,
 				FA49A586264639BF009EF9B9 /* Shader.c in Sources */,
@@ -1631,6 +1654,7 @@
 				FA49A584264639BF009EF9B9 /* Buffer.c in Sources */,
 				FA4CFF2F25D7753A00B37A5B /* lobject.c in Sources */,
 				FA4CFEE925D774E600B37A5B /* Job.c in Sources */,
+				FA8F56C826679A4900592E60 /* Animation.c in Sources */,
 				FA4CFF5A25D7758600B37A5B /* MTLContext.m in Sources */,
 				FA4CFF5825D7758600B37A5B /* MTLBuffer.m in Sources */,
 				FA4CFF3125D7753A00B37A5B /* lgc.c in Sources */,
@@ -1645,11 +1669,13 @@
 				FA4CFEEE25D774E600B37A5B /* Engine.c in Sources */,
 				FA4CFF5925D7758600B37A5B /* MTLDriver.m in Sources */,
 				FA4CFEF025D774E600B37A5B /* Resource.c in Sources */,
+				FA8F56CC26679A6100592E60 /* NAnim.c in Sources */,
 				FA4CFFCC25D8DA7900B37A5B /* Thread.m in Sources */,
 				FA4CFF3025D7753A00B37A5B /* loadlib.c in Sources */,
 				FA4CFF0925D774FF00B37A5B /* reallocarray.c in Sources */,
 				FA4CFF3425D7753A00B37A5B /* ltable.c in Sources */,
 				FA4CFED225D774C100B37A5B /* iOS.m in Sources */,
+				FA8F56CA26679A4F00592E60 /* Skeleton.c in Sources */,
 				FA4CFEE425D774DD00B37A5B /* Source.c in Sources */,
 				FA4CFEDF25D774D800B37A5B /* NMesh.c in Sources */,
 				FA4CFF4225D7754700B37A5B /* physfs_byteorder.c in Sources */,
@@ -1667,6 +1693,7 @@
 				FA4CFF5625D7758600B37A5B /* MTLTexture.m in Sources */,
 				FA4CFF0225D774F700B37A5B /* Script.c in Sources */,
 				FA4CFF0525D774FB00B37A5B /* AtomicLock.c in Sources */,
+				FA8F56CB26679A5300592E60 /* Animator.c in Sources */,
 				FA4CFF3C25D7754700B37A5B /* physfs_platform_posix.c in Sources */,
 				FA4CFEFC25D774F300B37A5B /* Transform.c in Sources */,
 				FA4CFEF525D774EA00B37A5B /* Input.c in Sources */,
@@ -1674,10 +1701,13 @@
 				FA4CFF2E25D7753A00B37A5B /* ldo.c in Sources */,
 				FA4CFEA225D771E100B37A5B /* Main.m in Sources */,
 				FA4CFF4B25D7754700B37A5B /* physfs_archiver_grp.c in Sources */,
+				FA8F56CF26679A6F00592E60 /* Lighting.c in Sources */,
 				FA4A198F261F714A00040940 /* DestroyResource.c in Sources */,
 				FA4CFEDD25D774D800B37A5B /* Image.c in Sources */,
+				FAB68E87266BA655003F51FD /* MTLSynchronization.m in Sources */,
 				FA4CFF2925D7753A00B37A5B /* ldebug.c in Sources */,
 				FA49A589264639D5009EF9B9 /* l_System.c in Sources */,
+				FA8F56C926679A4C00592E60 /* AnimationClip.c in Sources */,
 				FA4CFF3625D7753A00B37A5B /* lundump.c in Sources */,
 				FA4CFED525D774C400B37A5B /* Input.m in Sources */,
 				FA49A587264639C3009EF9B9 /* Graph.c in Sources */,
@@ -1713,7 +1743,7 @@
 				CODE_SIGN_ENTITLEMENTS = "";
 				CODE_SIGN_IDENTITY = "-";
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 117;
+				CURRENT_PROJECT_VERSION = 121;
 				ENABLE_HARDENED_RUNTIME = NO;
 				GCC_CW_ASM_SYNTAX = NO;
 				GCC_DYNAMIC_NO_PIC = NO;
@@ -1755,7 +1785,7 @@
 				CLANG_ENABLE_OBJC_WEAK = YES;
 				CODE_SIGN_ENTITLEMENTS = "";
 				CODE_SIGN_IDENTITY = "-";
-				CURRENT_PROJECT_VERSION = 117;
+				CURRENT_PROJECT_VERSION = 121;
 				ENABLE_HARDENED_RUNTIME = NO;
 				GCC_CW_ASM_SYNTAX = NO;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
@@ -1921,7 +1951,7 @@
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 117;
+				CURRENT_PROJECT_VERSION = 121;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 9HAM5X8W52;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -1967,7 +1997,7 @@
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 117;
+				CURRENT_PROJECT_VERSION = 121;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 9HAM5X8W52;
 				ENABLE_NS_ASSERTIONS = NO;

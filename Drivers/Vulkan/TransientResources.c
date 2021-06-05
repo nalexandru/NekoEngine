@@ -3,18 +3,18 @@
 #include "VulkanDriver.h"
 
 struct Texture *
-Vk_CreateTransientTexture(struct RenderDevice *dev, const struct TextureCreateInfo *tci, uint16_t location, uint64_t offset)
+Vk_CreateTransientTexture(struct RenderDevice *dev, const struct TextureDesc *desc, uint16_t location, uint64_t offset)
 {
 	struct Texture *tex = Sys_Alloc(1, sizeof(*tex), MH_Frame);
 	if (!tex)
 		return NULL;
 
-	if (!Vk_CreateImage(dev, tci, tex, true))
+	if (!Vk_CreateImage(dev, desc, tex, true))
 		goto error;
 
 	vkBindImageMemory(dev->dev, tex->image, dev->transientHeap, offset);
 
-	if (!Vk_CreateImageView(dev, tci, tex))
+	if (!Vk_CreateImageView(dev, desc, tex))
 		goto error;
 
 	if (location)
@@ -30,7 +30,7 @@ error:
 }
 
 struct Buffer *
-Vk_CreateTransientBuffer(struct RenderDevice *dev, const struct BufferCreateInfo *bci, uint16_t location, uint64_t offset)
+Vk_CreateTransientBuffer(struct RenderDevice *dev, const struct BufferDesc *desc, uint16_t location, uint64_t offset)
 {
 	struct Buffer *buff = Sys_Alloc(1, sizeof(*buff), MH_Frame);
 	if (!buff)
@@ -39,8 +39,8 @@ Vk_CreateTransientBuffer(struct RenderDevice *dev, const struct BufferCreateInfo
 	VkBufferCreateInfo buffInfo =
 	{
 		.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-		.size = bci->desc.size,
-		.usage = bci->desc.usage | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+		.size = desc->size,
+		.usage = desc->usage | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
 		.sharingMode = VK_SHARING_MODE_EXCLUSIVE
 	};
 	vkCreateBuffer(dev->dev, &buffInfo, Vkd_allocCb, &buff->buff);

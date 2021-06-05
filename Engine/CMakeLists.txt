@@ -26,7 +26,7 @@ target_compile_definitions(Engine PRIVATE _ENGINE_INTERNAL_)
 target_link_libraries(Engine Platform Lua PhysFS)
 
 if (NOT WIN32)
-	target_link_libraries(Engine m)
+	target_link_libraries(Engine m dl)
 else ()
 	target_link_libraries(Engine ntdll xinput9_1_0)
 endif ()

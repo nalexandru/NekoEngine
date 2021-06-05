@@ -25,7 +25,6 @@ void E_LoadMetadataFloatVector(struct Metadata *meta, struct jsmntok *tok, float
 
 // Models
 bool E_LoadNMeshAsset(struct Stream *stm, struct Model *m);
-bool E_LoadglTFAsset(struct ResourceLoadInfo *li, struct Model *m);
 
 // Animation
 bool E_LoadNAnimAsset(struct Stream *stm, struct AnimationClip *ac);
@@ -33,6 +32,7 @@ bool E_LoadNAnimAsset(struct Stream *stm, struct AnimationClip *ac);
 // Textures
 bool E_LoadImageAsset(struct Stream *stm, struct TextureCreateInfo *tex);
 bool E_LoadTGAAsset(struct Stream *stm, struct TextureCreateInfo *tex);
+bool E_LoadDDSAsset(struct Stream *stm, struct TextureCreateInfo *tex);
 
 bool E_LoadOggAsset(struct Stream *stm, struct AudioClip *clip);
 bool E_LoadWaveAsset(struct Stream *stm, struct AudioClip *clip);

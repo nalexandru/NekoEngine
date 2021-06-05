@@ -109,13 +109,13 @@ Re_InitRender(void)
 	Re_surface = Re_CreateSurface(E_screen);
 	CHK_FAIL(Re_surface, L"Failed to create surface");
 
-	Re_swapchain = Re_CreateSwapchain(Re_surface);
+	Re_swapchain = Re_CreateSwapchain(Re_surface, E_GetCVarBln(L"Render_VerticalSync", false)->bln);
 	CHK_FAIL(Re_swapchain, L"Failed to create swapchain");
 
 	CHK_FAIL(Re_LoadShaders(), L"Failed to load shaders");
 	CHK_FAIL(Re_InitPipelines(), L"Failed to create pipelines");
 
-	Re_contexts = Sys_Alloc(E_JobWorkerThreads() + 1, sizeof(*Re_contexts), MH_Render);
+	Re_contexts = Sys_Alloc((uint64_t)E_JobWorkerThreads() + 1, sizeof(*Re_contexts), MH_Render);
 	CHK_FAIL(Re_contexts, L"Failed to allocate contextx");
 
 	for (uint32_t i = 0; i < E_JobWorkerThreads() + 1; ++i)

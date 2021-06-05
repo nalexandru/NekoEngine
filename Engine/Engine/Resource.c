@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <stdint.h>
-#include <assert.h>
 
 #include <Engine/IO.h>
 #include <System/Log.h>

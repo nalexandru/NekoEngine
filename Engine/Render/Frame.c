@@ -10,6 +10,7 @@
 #include <Engine/Resource.h>
 
 #include <Render/Model.h>
+#include <UI/UI.h>
 
 uint32_t Re_frameId = 0;
 
@@ -19,6 +20,18 @@ static void _Cleanup(void);
 static struct CollectDrawablesArgs _args = { 0 };
 static bool _initialized = false;
 static lua_State *vm = NULL;
+
+static volatile bool _uiUpdated = false;
+
+static void _UIUpdateJob(int i, void *a)
+{
+	UI_Update(Scn_activeScene);
+}
+
+static void _UIUpdateComplete(uint64_t v)
+{
+	_uiUpdated = true;
+}
 
 void
 Re_RenderFrame(void)
@@ -37,6 +50,9 @@ Re_RenderFrame(void)
 		uint64_t materialAddress;
 		struct mat4 mvp;
 	} constants;
+
+	_uiUpdated = false;
+	E_ExecuteJob(_UIUpdateJob, NULL, _UIUpdateComplete);
 
 	Re_TransferMaterials();
 
@@ -86,22 +102,20 @@ Re_RenderFrame(void)
 	struct Framebuffer *fb = Re_CreateFramebuffer(&fbDesc);
 	Re_SetAttachment(fb, 0, Re_SwapchainTexture(Re_swapchain, image));
 	
-	struct TextureCreateInfo depthInfo =
+	struct TextureDesc depthDesc =
 	{
-		.desc = {
-			.width = *E_screenWidth,
-			.height = *E_screenHeight,
-			.depth = 1,
-			.type = TT_2D,
-			.usage = TU_DEPTH_STENCIL_ATTACHMENT,
-			.format = TF_D32_SFLOAT,
-			.arrayLayers = 1,
-			.mipLevels = 1,
-			.gpuOptimalTiling = true,
-			.memoryType = MT_GPU_LOCAL
-		}
+		.width = *E_screenWidth,
+		.height = *E_screenHeight,
+		.depth = 1,
+		.type = TT_2D,
+		.usage = TU_DEPTH_STENCIL_ATTACHMENT,
+		.format = TF_D32_SFLOAT,
+		.arrayLayers = 1,
+		.mipLevels = 1,
+		.gpuOptimalTiling = true,
+		.memoryType = MT_GPU_LOCAL
 	};
-	struct Texture *depthTexture = Re_CreateTransientTexture(&depthInfo, 0);
+	struct Texture *depthTexture = Re_CreateTransientTexture(&depthDesc, 0);
 	Re_SetAttachment(fb, 1, depthTexture);
 
 	Re_Destroy(depthTexture);
@@ -137,6 +151,9 @@ Re_RenderFrame(void)
 
 	Re_CmdEndRenderPass();
 	Re_EndCommandBuffer();
+
+	while (!_uiUpdated) ;
+	UI_Render(Scn_activeScene, image);
 
 	Re_Present(Re_swapchain, image);
 

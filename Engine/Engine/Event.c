@@ -166,7 +166,7 @@ E_ProcessEvents(void)
 			continue;
 
 		for (j = 0; j < info->handlers.count; ++j) {
-			args = Sys_Alloc(sizeof(*args), 1, MH_Transient);
+			args = Sys_Alloc(sizeof(*args), 1, MH_Frame);
 			args->handler = *(struct EventHandler *)Rt_ArrayGet(&info->handlers, j);
 			args->args = evt->args;
 			E_ExecuteJob((JobProc)_ProcessEvent, args, NULL);

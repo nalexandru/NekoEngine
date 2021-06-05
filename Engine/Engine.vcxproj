@@ -128,6 +128,7 @@
     <ClInclude Include="..\Platform\Win32\Win32Platform.h" />
     <ClInclude Include="Engine\ECS.h" />
     <ClInclude Include="Script\Interface.h" />
+    <ClInclude Include="UI\Internal.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Deps\Lua\lapi.c" />
@@ -188,8 +189,8 @@
     <ClCompile Include="Animation\AnimationClip.c" />
     <ClCompile Include="Animation\Animator.c" />
     <ClCompile Include="Animation\Skeleton.c" />
+    <ClCompile Include="Asset\DDS.c" />
     <ClCompile Include="Asset\Font.c" />
-    <ClCompile Include="Asset\glTF.c" />
     <ClCompile Include="Asset\Image.c" />
     <ClCompile Include="Asset\Metadata.c" />
     <ClCompile Include="Asset\NAnim.c" />
@@ -342,6 +343,7 @@
       <OmitFramePointers>true</OmitFramePointers>
       <DebugInformationFormat>None</DebugInformationFormat>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <Optimization>MaxSpeed</Optimization>
     </ClCompile>
     <Link>
       <SubSystem>

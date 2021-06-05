@@ -36,33 +36,42 @@ struct RenderDeviceProcs
 	uint64_t (*BufferAddress)(struct RenderDevice *dev, const struct Buffer *buff, uint64_t offset);
 	void (*ResetContext)(struct RenderDevice *dev, struct RenderContext *ctx);
 
-	struct Texture *(*CreateTransientTexture)(struct RenderDevice *dev, const struct TextureCreateInfo *tci, uint16_t location, uint64_t offset);
-	struct Buffer *(*CreateTransientBuffer)(struct RenderDevice *dev, const struct BufferCreateInfo *bci, uint16_t location, uint64_t offset);
+	struct Texture *(*CreateTransientTexture)(struct RenderDevice *dev, const struct TextureDesc *desc, uint16_t location, uint64_t offset);
+	struct Buffer *(*CreateTransientBuffer)(struct RenderDevice *dev, const struct BufferDesc *desc, uint16_t location, uint64_t offset);
 
 	struct Pipeline *(*GraphicsPipeline)(struct RenderDevice *dev, const struct GraphicsPipelineDesc *desc);
 	struct Pipeline *(*ComputePipeline)(struct RenderDevice *dev, const struct ComputePipelineDesc *desc);
 	struct Pipeline *(*RayTracingPipeline)(struct RenderDevice *dev, struct ShaderBindingTable *sbt, uint32_t maxDepth);
 
 	void (*SetAttachment)(struct Framebuffer *fb, uint32_t pos, struct Texture *tex);
-
+	
 	void *(*AcquireNextImage)(struct RenderDevice *dev, struct Swapchain *swapchain);
 	struct Texture *(*SwapchainTexture)(struct Swapchain *swapchain, void *image);
 	enum TextureFormat (*SwapchainFormat)(struct Swapchain *swapchain);
 	bool (*Present)(struct RenderDevice *dev, struct RenderContext *ctx, struct Swapchain *swapchain, void *image);
 
 	bool (*Execute)(struct RenderDevice *dev, struct RenderContext *ctx, bool wait);
+	
+	struct Semaphore *(*CreateSemaphore)(struct RenderDevice *dev);
+	void (*DestroySemaphore)(struct RenderDevice *dev, struct Semaphore *semaphore);
+	
+	struct Fence *(*CreateFence)(struct RenderDevice *dev, bool createSignaled);
+	void (*SignalFence)(struct RenderDevice *dev, struct Fence *fence);
+	bool (*WaitForFence)(struct RenderDevice *dev, struct Fence *fence, uint64_t timeout);
+	void (*DestroyFence)(struct RenderDevice *dev, struct Fence *fence);
 
 	void *(*MapBuffer)(struct RenderDevice *dev, struct Buffer *buff);
+	void (*FlushBuffer)(struct RenderDevice *dev, struct Buffer *buff, uint64_t offset, uint64_t size);
 	void (*UnmapBuffer)(struct RenderDevice *dev, struct Buffer *buff);
 
-	struct Texture *(*CreateTexture)(struct RenderDevice *dev, const struct TextureCreateInfo *tci, uint16_t location);
+	struct Texture *(*CreateTexture)(struct RenderDevice *dev, const struct TextureDesc *desc, uint16_t location);
 	enum TextureLayout (*TextureLayout)(const struct Texture *tex);
 	void (*DestroyTexture)(struct RenderDevice *dev, struct Texture *tex);
 
 	struct Sampler *(*CreateSampler)(struct RenderDevice *dev, const struct SamplerDesc *desc);
 	void (*DestroySampler)(struct RenderDevice *dev, struct Sampler *s);
 
-	struct Buffer *(*CreateBuffer)(struct RenderDevice *dev, const struct BufferCreateInfo *bci, uint16_t location);
+	struct Buffer *(*CreateBuffer)(struct RenderDevice *dev, const struct BufferDesc *desc, uint16_t location);
 	void (*UpdateBuffer)(struct RenderDevice *dev, struct Buffer *buff, uint64_t offset, void *data, uint64_t size);
 	const struct BufferDesc *(*BufferDesc)(const struct Buffer *buff);
 	void (*DestroyBuffer)(struct RenderDevice *dev, struct Buffer *buff);
@@ -90,7 +99,7 @@ struct RenderDeviceProcs
 	struct Surface *(*CreateSurface)(struct RenderDevice *dev, void *window);
 	void (*DestroySurface)(struct RenderDevice *dev, struct Surface *surface);
 
-	struct Swapchain *(*CreateSwapchain)(struct RenderDevice *dev, struct Surface *surface);
+	struct Swapchain *(*CreateSwapchain)(struct RenderDevice *dev, struct Surface *surface, bool verticalSync);
 	void (*DestroySwapchain)(struct RenderDevice *dev, struct Swapchain *swapchain);
 
 	void *(*ShaderModule)(struct RenderDevice *dev, const char *name);

@@ -1,9 +1,10 @@
 #include <assert.h>
 #include <stdlib.h>
 
+#include <System/Log.h>
+#include <System/Memory.h>
 #include <Engine/Engine.h>
 #include <Engine/Config.h>
-#include <System/Memory.h>
 #include <Runtime/Runtime.h>
 
 #include "VulkanDriver.h"
@@ -11,7 +12,7 @@
 static inline bool _Create(VkDevice dev, VkPhysicalDevice physDev, struct Swapchain *sw);
 
 struct Swapchain *
-Vk_CreateSwapchain(struct RenderDevice *dev, VkSurfaceKHR surface)
+Vk_CreateSwapchain(struct RenderDevice *dev, VkSurfaceKHR surface, bool verticalSync)
 {
 	VkBool32 present;
 	vkGetPhysicalDeviceSurfaceSupportKHR(dev->physDev, dev->graphicsFamily, surface, &present);
@@ -23,7 +24,7 @@ Vk_CreateSwapchain(struct RenderDevice *dev, VkSurfaceKHR surface)
 	sw->surface = surface;
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(dev->physDev, surface, &sw->surfaceCapabilities);
 
-	sw->imageCount = 3;
+	sw->imageCount = RE_NUM_FRAMES;
 	if (sw->imageCount < sw->surfaceCapabilities.minImageCount)
 		sw->imageCount = sw->surfaceCapabilities.minImageCount;
 
@@ -48,7 +49,7 @@ Vk_CreateSwapchain(struct RenderDevice *dev, VkSurfaceKHR surface)
 	}
 
 	sw->presentMode = VK_PRESENT_MODE_FIFO_KHR;
-	if (!E_GetCVarBln(L"Render_VerticalSync", false)->bln) {
+	if (!verticalSync) {
 		vkGetPhysicalDeviceSurfacePresentModesKHR(dev->physDev, surface, &count, NULL);
 
 		VkPresentModeKHR *pm = Sys_Alloc(sizeof(*pm), count, MH_Transient);
@@ -66,11 +67,13 @@ Vk_CreateSwapchain(struct RenderDevice *dev, VkSurfaceKHR surface)
 	}
 
 	VkSemaphoreCreateInfo sci = { .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
-	if (vkCreateSemaphore(dev->dev, &sci, Vkd_allocCb, &sw->frameStart) != VK_SUCCESS)
-		goto error;
+	for (uint32_t i = 0; i < RE_NUM_FRAMES; ++i) {
+		if (vkCreateSemaphore(dev->dev, &sci, Vkd_allocCb, &sw->frameStart[i]) != VK_SUCCESS)
+			goto error;
 
-	if (vkCreateSemaphore(dev->dev, &sci, Vkd_allocCb, &sw->frameEnd) != VK_SUCCESS)
-		goto error;
+		if (vkCreateSemaphore(dev->dev, &sci, Vkd_allocCb, &sw->frameEnd[i]) != VK_SUCCESS)
+			goto error;
+	}
 
 	if (!_Create(dev->dev, dev->physDev, sw))
 		goto error;
@@ -78,24 +81,31 @@ Vk_CreateSwapchain(struct RenderDevice *dev, VkSurfaceKHR surface)
 	return sw;
 
 error:
-	if (sw->frameStart)
-		vkDestroySemaphore(dev->dev, sw->frameStart, Vkd_allocCb);
+	for (uint32_t i = 0; i < RE_NUM_FRAMES; ++i) {
+		if (sw->frameStart[i])
+			vkDestroySemaphore(dev->dev, sw->frameStart[i], Vkd_allocCb);
 
-	if (sw->frameEnd)
-		vkDestroySemaphore(dev->dev, sw->frameEnd, Vkd_allocCb);
+		if (sw->frameEnd[i])
+			vkDestroySemaphore(dev->dev, sw->frameEnd[i], Vkd_allocCb);
+	}
 
 	Sys_Free(sw);
+
 	return NULL;
 }
 
 void
 Vk_DestroySwapchain(struct RenderDevice *dev, struct Swapchain *sw)
 {
-	vkDestroySemaphore(dev->dev, sw->frameEnd, Vkd_allocCb);
-	vkDestroySemaphore(dev->dev, sw->frameStart, Vkd_allocCb);
 	for (uint32_t i = 0; i < sw->imageCount; ++i)
 		vkDestroyImageView(dev->dev, sw->views[i], Vkd_allocCb);
+
 	vkDestroySwapchainKHR(dev->dev, sw->sw, Vkd_allocCb);
+
+	for (uint32_t i = 0; i < RE_NUM_FRAMES; ++i) {
+		vkDestroySemaphore(dev->dev, sw->frameEnd[i], Vkd_allocCb);
+		vkDestroySemaphore(dev->dev, sw->frameStart[i], Vkd_allocCb);
+	}
 
 	Sys_Free(sw->images);
 	Sys_Free(sw->views);
@@ -106,7 +116,7 @@ void *
 Vk_AcquireNextImage(struct RenderDevice *dev, struct Swapchain *sw)
 {
 	uint32_t imageId;
-	VkResult rc = vkAcquireNextImageKHR(dev->dev, sw->sw, UINT64_MAX, sw->frameStart, VK_NULL_HANDLE, &imageId);
+	VkResult rc = vkAcquireNextImageKHR(dev->dev, sw->sw, UINT64_MAX, sw->frameStart[Re_frameId], VK_NULL_HANDLE, &imageId);
 	if (rc != VK_SUCCESS) {
 		switch (rc) {
 		case VK_SUBOPTIMAL_KHR:
@@ -136,8 +146,8 @@ Vk_Present(struct RenderDevice *dev, struct RenderContext *ctx, struct Swapchain
 
 	uint64_t waitValues[] = { 0 };
 	uint64_t signalValues[] = { dev->frameValues[Re_frameId], 0 };
-	VkSemaphore wait[] = { sw->frameStart };
-	VkSemaphore signal[] = { dev->frameSemaphore, sw->frameEnd };
+	VkSemaphore wait[] = { sw->frameStart[Re_frameId] };
+	VkSemaphore signal[] = { dev->frameSemaphore, sw->frameEnd[Re_frameId] };
 	VkPipelineStageFlags waitMasks[] = { VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT };
 
 	VkTimelineSemaphoreSubmitInfo timelineInfo =
@@ -168,7 +178,7 @@ Vk_Present(struct RenderDevice *dev, struct RenderContext *ctx, struct Swapchain
 	{
 		.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
 		.waitSemaphoreCount = 1,
-		.pWaitSemaphores = &sw->frameEnd,
+		.pWaitSemaphores = &sw->frameEnd[Re_frameId],
 		.swapchainCount = 1,
 		.pSwapchains = &sw->sw,
 		.pImageIndices = &imageId
@@ -207,7 +217,10 @@ Vk_SwapchainTexture(struct Swapchain *sw, void *image)
 void
 Vk_ScreenResized(struct RenderDevice *dev, struct Swapchain *sw)
 {
-	assert(_Create(dev->dev, dev->physDev, sw));
+	if (!_Create(dev->dev, dev->physDev, sw)) {
+		Sys_LogEntry(VKDRV_MOD, LOG_CRITICAL, L"Failed to resize swapchain");
+		E_Shutdown();
+	}
 }
 
 static inline bool
@@ -291,7 +304,8 @@ _Create(VkDevice dev, VkPhysicalDevice physDev, struct Swapchain *sw)
 
 	for (uint32_t i = 0; i < sw->imageCount; ++i) {
 		viewInfo.image = sw->images[i];
-		assert(vkCreateImageView(dev, &viewInfo, Vkd_allocCb, &sw->views[i]) == VK_SUCCESS);
+		if (vkCreateImageView(dev, &viewInfo, Vkd_allocCb, &sw->views[i]) != VK_SUCCESS)
+			return false;
 	}
 
 	return true;

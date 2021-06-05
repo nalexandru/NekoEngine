@@ -41,6 +41,9 @@ struct Model
 
 		void *indices;
 		uint32_t indexSize;
+
+		void *bones;
+		uint32_t boneSize;
 	} cpu;
 };
 

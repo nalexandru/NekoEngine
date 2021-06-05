@@ -1,9 +1,7 @@
 #ifndef _VULKAN_DRIVER_H_
 #define _VULKAN_DRIVER_H_
 
-#include <stdbool.h>
-
-#include <Engine/Types.h>
+#include <Render/Types.h>
 #include <Render/Render.h>
 #include <Render/Driver/RayTracing.h>
 #include <Runtime/Array.h>
@@ -38,11 +36,13 @@ struct RenderContext
 {
 	VkCommandBuffer cmdBuffer;
 	struct Pipeline *boundPipeline;
-	VkCommandPool *graphicsPools, *transferPools, *computePools;
-	struct Array *graphicsCmdBuffers, *secondaryCmdBuffers, *transferCmdBuffers, *computeCmdBuffers;
+	VkCommandPool *graphicsPools, *xferPools, *computePools;
+	struct Array *graphicsCmdBuffers, *secondaryCmdBuffers, *xferCmdBuffers, *computeCmdBuffers;
 	VkFence executeFence;
-	VkDevice dev;
+	VkDevice vkDev;
 	VkDescriptorSet descriptorSet;
+	struct RenderDevice *neDev;
+	uint32_t lastSubmittedXfer, lastSubmittedCompute;
 };
 
 struct VulkanDeviceInfo
@@ -54,7 +54,7 @@ struct VulkanDeviceInfo
 struct Swapchain
 {
 	VkSwapchainKHR sw;
-	VkSemaphore frameStart, frameEnd;
+	VkSemaphore frameStart[RE_NUM_FRAMES], frameEnd[RE_NUM_FRAMES];
 	VkImageView *views;
 	VkImage *images;
 	uint32_t imageCount;
@@ -75,7 +75,6 @@ struct Texture
 	VkImageView imageView;
 	VkImage image;
 	VkImageLayout layout;
-	struct TextureDesc desc;
 	VkDeviceMemory memory;
 };
 
@@ -132,7 +131,7 @@ void Vk_SavePipelineCache(struct RenderDevice *dev);
 void Vk_DestroyPipeline(struct RenderDevice *dev, struct Pipeline *pipeline);
 
 // Swapchain
-struct Swapchain *Vk_CreateSwapchain(struct RenderDevice *dev, VkSurfaceKHR surface);
+struct Swapchain *Vk_CreateSwapchain(struct RenderDevice *dev, VkSurfaceKHR surface, bool verticalSync);
 void Vk_DestroySwapchain(struct RenderDevice *dev, struct Swapchain *sw);
 void *Vk_AcquireNextImage(struct RenderDevice *, struct Swapchain *sw);
 bool Vk_Present(struct RenderDevice *dev, struct RenderContext *ctx, struct Swapchain *sw, void *image);
@@ -151,16 +150,17 @@ void Vk_ResetContext(struct RenderDevice *dev, struct RenderContext *ctx);
 void Vk_DestroyContext(struct RenderDevice *dev, struct RenderContext *ctx);
 
 // Texture
-bool Vk_CreateImage(struct RenderDevice *dev, const struct TextureCreateInfo *tci, struct Texture *tex, bool alias);
-bool Vk_CreateImageView(struct RenderDevice *dev, const struct TextureCreateInfo *tci, struct Texture *tex);
-struct Texture *Vk_CreateTexture(struct RenderDevice *dev, const struct TextureCreateInfo *tci, uint16_t location);
+bool Vk_CreateImage(struct RenderDevice *dev, const struct TextureDesc *desc, struct Texture *tex, bool alias);
+bool Vk_CreateImageView(struct RenderDevice *dev, const struct TextureDesc *desc, struct Texture *tex);
+struct Texture *Vk_CreateTexture(struct RenderDevice *dev, const struct TextureDesc *desc, uint16_t location);
 enum TextureLayout Vk_TextureLayout(const struct Texture *tex);
 void Vk_DestroyTexture(struct RenderDevice *dev, struct Texture *tex);
 
 // Buffer
-struct Buffer *Vk_CreateBuffer(struct RenderDevice *dev, const struct BufferCreateInfo *bci, uint16_t location);
+struct Buffer *Vk_CreateBuffer(struct RenderDevice *dev, const struct BufferDesc *desc, uint16_t location);
 void Vk_UpdateBuffer(struct RenderDevice *dev, struct Buffer *buff, uint64_t offset, void *data, uint64_t size);
 void *Vk_MapBuffer(struct RenderDevice *dev, struct Buffer *buff);
+void Vk_FlushBuffer(struct RenderDevice *dev, struct Buffer *buff, uint64_t offset, uint64_t size);
 void Vk_UnmapBuffer(struct RenderDevice *dev, struct Buffer *buff);
 uint64_t Vk_BufferAddress(struct RenderDevice *dev, const struct Buffer *buff, uint64_t offset);
 void Vk_DestroyBuffer(struct RenderDevice *dev, struct Buffer *buff);
@@ -196,11 +196,20 @@ VkSampler Vk_CreateSampler(struct RenderDevice *dev, const struct SamplerDesc *d
 void Vk_DestroySampler(struct RenderDevice *dev, VkSampler s);
 
 // TransientResources
-struct Texture *Vk_CreateTransientTexture(struct RenderDevice *dev, const struct TextureCreateInfo *tci, uint16_t location, uint64_t offset);
-struct Buffer *Vk_CreateTransientBuffer(struct RenderDevice *dev, const struct BufferCreateInfo *bci, uint16_t location, uint64_t offset);
+struct Texture *Vk_CreateTransientTexture(struct RenderDevice *dev, const struct TextureDesc *desc, uint16_t location, uint64_t offset);
+struct Buffer *Vk_CreateTransientBuffer(struct RenderDevice *dev, const struct BufferDesc *desc, uint16_t location, uint64_t offset);
 bool Vk_InitTransientHeap(struct RenderDevice *dev, uint64_t size);
 bool Vk_ResizeTransientHeap(struct RenderDevice *dev, uint64_t size);
 void Vk_TermTransientHeap(struct RenderDevice *dev);
+
+// Synchronization
+VkSemaphore Vk_CreateSemaphore(struct RenderDevice *dev);
+void Vk_DestroySemaphore(struct RenderDevice *dev, VkSemaphore *s);
+
+VkFence Vk_CreateFence(struct RenderDevice *dev, bool createSignaled);
+void Vk_SignalFence(struct RenderDevice *dev, VkFence f);
+bool Vk_WaitForFence(struct RenderDevice *dev, VkFence f, uint64_t timeout);
+void Vk_DestroyFence(struct RenderDevice *dev, VkFence f);
 
 // Utility functions
 void Vk_InitContextProcs(struct RenderContextProcs *p);
@@ -365,7 +374,7 @@ Vkd_ExecuteCmdBuffer(struct RenderDevice *dev, VkCommandBuffer cb)
 }
 
 static inline void
-Vkd_TransitionImageLayout(VkCommandBuffer cmdBuffer, VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout)
+Vkd_TransitionImageLayoutRange(VkCommandBuffer cmdBuffer, VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout, VkImageSubresourceRange *range)
 {
 	VkPipelineStageFlagBits src = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 	VkImageMemoryBarrier barrier =
@@ -376,13 +385,7 @@ Vkd_TransitionImageLayout(VkCommandBuffer cmdBuffer, VkImage image, VkImageLayou
 		.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
 		.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
 		.image = image,
-		.subresourceRange =
-		{
-			.baseMipLevel = 0,
-			.baseArrayLayer = 0,
-			.levelCount = 1,
-			.layerCount = 1
-		}
+		.subresourceRange = *range
 	};
 
 	switch (barrier.oldLayout) {
@@ -448,6 +451,19 @@ Vkd_TransitionImageLayout(VkCommandBuffer cmdBuffer, VkImage image, VkImageLayou
 	}
 
 	vkCmdPipelineBarrier(cmdBuffer, src, dst, 0, 0, NULL, 0, NULL, 1, &barrier);
+}
+
+static inline void
+Vkd_TransitionImageLayout(VkCommandBuffer cmdBuffer, VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout)
+{
+	VkImageSubresourceRange range =
+	{
+		.baseMipLevel = 0,
+		.baseArrayLayer = 0,
+		.levelCount = 1,
+		.layerCount = 1
+	};
+	Vkd_TransitionImageLayoutRange(cmdBuffer, image, oldLayout, newLayout, &range);
 }
 
 static inline VkImageLayout
