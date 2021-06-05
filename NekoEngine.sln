@@ -27,6 +27,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OpenAL", "Drivers\OpenAL\Op
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Direct3D12", "Drivers\Direct3D12\Direct3D12.vcxproj", "{442F6F7A-A38F-4900-B8E4-92BA03953F6D}"
+	ProjectSection(ProjectDependencies) = postProject
+		{073BCE1A-16D7-45DD-AD74-0134E52F2A24} = {073BCE1A-16D7-45DD-AD74-0134E52F2A24}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
