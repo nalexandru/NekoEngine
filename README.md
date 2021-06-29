@@ -20,7 +20,7 @@ Supported platforms:
 
 Supported rendering APIs:
 * Vulkan 1.2
-* Metal 3
+* Metal 2.3
 
 This repository is a mirror which is not frequently updated.
 
