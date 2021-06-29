@@ -102,7 +102,7 @@ static bool
 _CreateMaterialResource(const char *name, const struct MaterialResourceCreateInfo *ci, struct MaterialResource *mr, Handle h)
 {
 	mr->alphaBlend = ci->alphaBlend;
-	strncpy(mr->name, ci->name, sizeof(mr->name));
+	snprintf(mr->name, sizeof(mr->name), "%s", ci->name);
 
 	uint32_t id;
 	if (!_findMaterialType(ci->type, &id)) {
@@ -178,7 +178,7 @@ _LoadMaterialResource(struct ResourceLoadInfo *li, const char *args, struct Mate
 		jsmntok_t val = meta.tokens[++i];
 
 		if (JSON_STRING("name", key, meta.json)) {
-			strncpy(mr->name, meta.json + val.start, sizeof(mr->name));
+			snprintf(mr->name, sizeof(mr->name), "%s", meta.json + val.start);
 		} else if (JSON_STRING("type", key, meta.json)) {
 			char *type = meta.json + val.start;
 			meta.json[val.end] = 0x0;
@@ -237,7 +237,7 @@ Re_RegisterMaterialType(const char *name, const char *shader, uint32_t dataSize,
 		return false;
 	}
 
-	strncpy(mt.name, name, sizeof(mt.name));
+	snprintf(mt.name, sizeof(mt.name), "%s", name);
 
 	if (!Rt_ArrayAdd(&_types, &mt))
 		return false;

@@ -203,7 +203,7 @@ _Create(struct RenderDevice *dev, struct Swapchain *sw)
 	else if (sw->surface->coreWindow)
 		hr = IDXGIFactory2_CreateSwapChainForCoreWindow(_factory, (IUnknown *)dev->graphicsQueue, sw->surface->coreWindow, &sw->desc, NULL, &sw1);
 
-	if (FAILED(hr))
+	if (FAILED(hr) || !sw1)
 		return false;
 
 	if (sw->surface->hWnd)

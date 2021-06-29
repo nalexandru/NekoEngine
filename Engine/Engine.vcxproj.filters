@@ -480,6 +480,27 @@
     <ClInclude Include="UI\Internal.h">
       <Filter>Source Files\UI</Filter>
     </ClInclude>
+    <ClInclude Include="..\Include\System\PlatformDetect.h">
+      <Filter>Header Files\System</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Deps\PhysFS\physfs.h">
+      <Filter>Source Files\Deps\PhysFS</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Deps\PhysFS\physfs_casefolding.h">
+      <Filter>Source Files\Deps\PhysFS</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Deps\PhysFS\physfs_internal.h">
+      <Filter>Source Files\Deps\PhysFS</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Deps\PhysFS\physfs_lzmasdk.h">
+      <Filter>Source Files\Deps\PhysFS</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Deps\PhysFS\physfs_miniz.h">
+      <Filter>Source Files\Deps\PhysFS</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Deps\PhysFS\physfs_platforms.h">
+      <Filter>Source Files\Deps\PhysFS</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="System\System.c">

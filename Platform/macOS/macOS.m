@@ -103,11 +103,39 @@ Sys_InitPlatform(void)
 	[NSApplication sharedApplication];
 	[NSApp finishLaunching];
 	
-	[NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
+	[NSApp setActivationPolicy: NSApplicationActivationPolicyRegular];
 
 	EngineAppDelegate *d = [[EngineAppDelegate alloc] init];
 	[NSApp setDelegate: d];
 	[[NSApplication sharedApplication] setDelegate: d];
+
+	NSMenu *mainMenu = [[[NSMenu alloc] init] autorelease];
+	{
+		NSString *appName = [[NSString alloc] initWithBytes: App_applicationInfo.name
+													 length: wcslen(App_applicationInfo.name) * sizeof(wchar_t)
+												   encoding: NSUTF32LittleEndianStringEncoding];
+
+		NSMenu *appMenu = [[[NSMenu alloc] init] autorelease];
+
+		NSMenuItem *menuItem = [[[NSMenuItem alloc] init] autorelease];
+		[menuItem setTitle: [NSString stringWithFormat: @"About %@", appName]];
+		[menuItem setAction: @selector(about:)];
+		[menuItem setTarget: d];
+		[appMenu addItem: menuItem];
+
+		[appMenu addItem: [NSMenuItem separatorItem]];
+
+		menuItem = [[[NSMenuItem alloc] init] autorelease];
+		[menuItem setTitle: [NSString stringWithFormat: @"Quit %@", appName]];
+		[menuItem setAction: @selector(quit:)];
+		[menuItem setTarget: d];
+		[appMenu addItem: menuItem];
+
+		menuItem = [[NSMenuItem alloc] init];
+		[menuItem setSubmenu: appMenu];
+		[mainMenu addItem: menuItem];
+	}
+	[NSApp setMainMenu: mainMenu];
 
 	if (!Sys_InitDarwinPlatform())
 		return false;
@@ -121,7 +149,7 @@ Sys_InitPlatform(void)
 	if (!Sys_DirectoryExists("Data"))
 		E_SetCVarStr(L"Engine_DataDir", [[[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent: @"Data"] UTF8String]);
 	
-	[pool release];
+	[pool drain];
 	
 	return true;
 }

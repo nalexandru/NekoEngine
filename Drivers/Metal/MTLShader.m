@@ -23,5 +23,5 @@ MTL_ShaderModule(id<MTLDevice> dev, const char *name)
 void
 MTL_TermLibrary(void)
 {
-	[_library autorelease];
+	[_library release];
 }

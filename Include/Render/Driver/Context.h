@@ -96,8 +96,8 @@ struct RenderContextProcs
 	bool (*SubmitTransfer)(struct RenderContext *ctx, struct Fence *f);
 };
 
-extern struct RenderDevice *Re_device;
-extern struct RenderContextProcs Re_contextProcs;
+ENGINE_API extern struct RenderDevice *Re_device;
+ENGINE_API extern struct RenderContextProcs Re_contextProcs;
 extern THREAD_LOCAL struct RenderContext *Re_context;
 ENGINE_API extern struct RenderContext **Re_contexts;
 

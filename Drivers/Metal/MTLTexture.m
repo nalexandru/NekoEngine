@@ -49,8 +49,12 @@ MTL_CreateTexture(id<MTLDevice> dev, const struct TextureDesc *tDesc, uint16_t l
 		return NULL;
 	}
 	
-	tex->tex = [dev newTextureWithDescriptor: desc];
+	tex->tex = MTLDrv_CreateTexture(dev, desc);
 	[desc release];
+	if (!tex->tex) {
+		Sys_Free(tex);
+		return NULL;
+	}
 	
 	MTL_SetTexture(location, tex->tex);
 	
@@ -67,6 +71,6 @@ void
 MTL_DestroyTexture(id<MTLDevice> dev, struct Texture *tex)
 {
 	MTL_RemoveTexture(tex->tex);
-	[tex->tex autorelease];
+	[tex->tex release];
 	Sys_Free(tex);
 }

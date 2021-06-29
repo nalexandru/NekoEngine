@@ -213,6 +213,8 @@ E_Frame(void)
 
 	if (!Scn_activeScene || !Scn_activeCamera) {
 		E_ProcessEvents();
+		App_Frame();
+
 		return;
 	}
 
@@ -225,6 +227,8 @@ E_Frame(void)
 	E_ExecuteSystemGroupS(Scn_activeScene, ECSYS_GROUP_POST_RENDER);
 
 	In_Update();
+
+	App_Frame();
 }
 
 double

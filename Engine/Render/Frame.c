@@ -115,13 +115,17 @@ Re_RenderFrame(void)
 		.gpuOptimalTiling = true,
 		.memoryType = MT_GPU_LOCAL
 	};
-	struct Texture *depthTexture = Re_CreateTransientTexture(&depthDesc, 0);
+	uint64_t depthSize;
+	struct Texture *depthTexture = Re_CreateTransientTexture(&depthDesc, 0, &depthSize);
 	Re_SetAttachment(fb, 1, depthTexture);
 
 	Re_Destroy(depthTexture);
 	Re_Destroy(fb);
 
 	Re_CmdBeginRenderPass(Re_MaterialRenderPassDesc, fb, RENDER_COMMANDS_INLINE);
+
+	Re_CmdSetViewport(0.f, 0.f, (float)*E_screenWidth, (float)*E_screenHeight, 0.f, 1.f);
+	Re_CmdSetScissor(0, 0, *E_screenWidth, *E_screenHeight);
 
 	for (uint32_t i = 0; i < E_JobWorkerThreads(); ++i) {
 		struct Array *drawables = &_args.arrays[i];
@@ -132,10 +136,6 @@ Re_RenderFrame(void)
 
 		Rt_ArrayForEach(d, drawables) {
 			Re_CmdBindPipeline(d->material->pipeline);
-
-			Re_CmdSetViewport(0.f, 0.f, (float)*E_screenWidth, (float)*E_screenHeight, 0.f, 1.f);
-			Re_CmdSetScissor(0, 0, *E_screenWidth, *E_screenHeight);
-
 			Re_CmdBindIndexBuffer(d->indexBuffer, 0, d->indexType);
 
 			constants.vertexAddress = d->vertexAddress;
@@ -185,7 +185,8 @@ _RenderScript(void)
 		_args.arrays = Sys_Alloc(E_JobWorkerThreads(), sizeof(struct Array), MH_Render);
 
 		for (uint32_t i = 0; i < E_JobWorkerThreads(); ++i)
-			Rt_InitArray(&_args.arrays[i], 10, sizeof(struct Drawable), MH_Render);
+			if (!Rt_InitArray(&_args.arrays[i], 10, sizeof(struct Drawable), MH_Render))
+				return;
 	} else {
 		_args.nextArray = 0;
 	}

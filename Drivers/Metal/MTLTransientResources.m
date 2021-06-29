@@ -3,7 +3,7 @@
 static id<MTLHeap> _heap;
 
 struct Texture *
-MTL_CreateTransientTexture(id<MTLDevice> dev, const struct TextureDesc *tDesc, uint16_t location, uint64_t offset)
+MTL_CreateTransientTexture(id<MTLDevice> dev, const struct TextureDesc *tDesc, uint16_t location, uint64_t offset, uint64_t *size)
 {
 	MTLTextureDescriptor *desc = MTL_TextureDescriptor(dev, tDesc);
 	if (!desc)
@@ -20,6 +20,8 @@ MTL_CreateTransientTexture(id<MTLDevice> dev, const struct TextureDesc *tDesc, u
 	
 	tex->tex = [_heap newTextureWithDescriptor: desc offset: offset];
 	[desc release];
+
+	*size = [tex->tex allocatedSize];
 	
 	if (location)
 		MTL_SetTexture(location, tex->tex);
@@ -28,7 +30,7 @@ MTL_CreateTransientTexture(id<MTLDevice> dev, const struct TextureDesc *tDesc, u
 }
 
 struct Buffer *
-MTL_CreateTransientBuffer(id<MTLDevice> dev, const struct BufferDesc *desc, uint16_t location, uint64_t offset)
+MTL_CreateTransientBuffer(id<MTLDevice> dev, const struct BufferDesc *desc, uint16_t location, uint64_t offset, uint64_t *size)
 {
 	struct Buffer *buff = Sys_Alloc(sizeof(*buff), 1, MH_Frame);
 	if (!buff)
@@ -46,6 +48,8 @@ MTL_CreateTransientBuffer(id<MTLDevice> dev, const struct BufferDesc *desc, uint
 	
 	MTL_SetBuffer(location, buff->buff);
 	buff->memoryType = desc->memoryType;
+
+	*size = [buff->buff allocatedSize];
 	
 	return buff;
 }

@@ -31,7 +31,6 @@ static struct RenderDriver _drv =
 };
 
 VkInstance Vkd_inst = VK_NULL_HANDLE;
-VkAllocationCallbacks *Vkd_allocCb = NULL;
 struct Array Vkd_contexts;
 
 static const char *_instLayers[10] = { 0 };
@@ -219,7 +218,7 @@ _EnumerateDevices(uint32_t *count, struct RenderDeviceInfo *info)
 		info[i].features.coherentMemory = false;
 		const VkMemoryPropertyFlags coherentFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 		for (uint32_t j = 0; j < memProps->memoryTypeCount; ++j) {
-			if (memProps->memoryTypes[j].propertyFlags & coherentFlags) {
+			if ((memProps->memoryTypes[j].propertyFlags & coherentFlags) == coherentFlags) {
 				info[i].features.coherentMemory = true;
 				break;
 			}

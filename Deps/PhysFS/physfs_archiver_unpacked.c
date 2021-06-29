@@ -136,7 +136,6 @@ static PHYSFS_Io *UNPK_duplicate(PHYSFS_Io *_io)
 UNPK_duplicate_failed:
     if (finfo != NULL) allocator.Free(finfo);
     if (retval != NULL) allocator.Free(retval);
-    if (io != NULL) io->destroy(io);
     return NULL;
 } /* UNPK_duplicate */
 

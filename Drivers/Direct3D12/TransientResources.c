@@ -3,7 +3,7 @@
 #include "D3D12Driver.h"
 
 struct Texture *
-D3D12_CreateTransientTexture(struct RenderDevice *dev, const struct TextureDesc *desc, uint16_t location, uint64_t offset)
+D3D12_CreateTransientTexture(struct RenderDevice *dev, const struct TextureDesc *desc, uint16_t location, uint64_t offset, uint64_t *size)
 {
 	struct Texture *tex = Sys_Alloc(1, sizeof(*tex), MH_Frame);
 	if (!tex)
@@ -30,7 +30,7 @@ D3D12_CreateTransientTexture(struct RenderDevice *dev, const struct TextureDesc 
 }
 
 struct Buffer *
-D3D12_CreateTransientBuffer(struct RenderDevice *dev, const struct BufferDesc *desc, uint16_t location, uint64_t offset)
+D3D12_CreateTransientBuffer(struct RenderDevice *dev, const struct BufferDesc *desc, uint16_t location, uint64_t offset, uint64_t *size)
 {
 	struct Buffer *buff = Sys_Alloc(1, sizeof(*buff), MH_Frame);
 	if (!buff)

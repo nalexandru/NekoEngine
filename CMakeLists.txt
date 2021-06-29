@@ -6,6 +6,7 @@ project(NekoEngine C)
 cmake_minimum_required(VERSION 3.12)
 
 option(USE_AVX2 "Enable AVX2 support" ON)
+option(ENABLE_EDITOR "Enable building the editor" ON)
 
 if (NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE, Debug)
@@ -81,3 +82,7 @@ add_subdirectory(Drivers/OpenAL)
 add_subdirectory(Drivers/Vulkan)
 
 add_subdirectory(Application)
+
+if (NOT WIN32 AND ENABLE_EDITOR)
+	add_subdirectory(Editor)
+endif ()

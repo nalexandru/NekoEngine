@@ -2231,8 +2231,6 @@ static SRes SzGetNextFolderItem(CSzFolder *f, CSzData *sd)
     numBonds = numCoders - 1;
     if (numInStreams < numBonds)
       return SZ_ERROR_ARCHIVE;
-    if (numBonds > SZ_NUM_BONDS_IN_FOLDER_MAX)
-      return SZ_ERROR_UNSUPPORTED;
     f->NumBonds = numBonds;
     
     numPackStreams = numInStreams - numBonds;

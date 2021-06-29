@@ -271,6 +271,10 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 	if (vkCreateCommandPool(dev->dev, &poolInfo, Vkd_allocCb, &dev->driverTransferPool) != VK_SUCCESS)
 		goto error;
 
+	if (!Re_deviceInfo.features.coherentMemory)
+		if (!Vkd_InitStagingArea(dev))
+			goto error;
+
 	return dev;
 
 error:
@@ -310,6 +314,9 @@ Vk_WaitIdle(struct RenderDevice *dev)
 void
 Vk_DestroyDevice(struct RenderDevice *dev)
 {
+	if (!Re_deviceInfo.features.coherentMemory)
+		Vkd_TermStagingArea(dev);
+
 	Vk_TermDescriptorSet(dev);
 	Vk_UnloadShaders(dev->dev);
 

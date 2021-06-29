@@ -4,7 +4,7 @@
 #include <Render/Types.h>
 
 #define NE_RENDER_DRIVER_ID		0xB16B00B5
-#define NE_RENDER_DRIVER_API	16
+#define NE_RENDER_DRIVER_API	17
 
 struct RenderDriver
 {

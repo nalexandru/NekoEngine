@@ -12,6 +12,7 @@
 
 #define MMOD L"MemoryManager"
 #define MAGIC 0x53544954		// TITS, in little endian format
+#define DEFAULT_ALIGNMENT		16
 
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #define ROUND_UP(v, powerOf2Alignment) (((v) + (powerOf2Alignment)-1) & ~((powerOf2Alignment)-1))
@@ -49,17 +50,17 @@ Sys_Alloc(size_t size, size_t count, enum MemoryHeap heap)
 	if ((count >= MUL_NO_OVERFLOW || size >= MUL_NO_OVERFLOW) && count > 0 && SIZE_MAX / count < size)
 		return NULL;
 
-	if (heap == MH_Transient) {
-		totalSize = ROUND_UP(totalSize, 4);
+	totalSize = ROUND_UP(totalSize, DEFAULT_ALIGNMENT);
+	if (heap == MH_Transient)
 		ret = _TransientAlloc(&_transientHeap, totalSize);
-	} else if (heap == MH_Frame) {
-		totalSize = ROUND_UP(totalSize, 4);
+	else if (heap == MH_Frame)
 		ret = _TransientAlloc(&_frameHeap[Re_frameId], totalSize);
-	} else {
-		ret = malloc(totalSize);
-		assert("Out of memory" && ret);
-//		assert("Out of memory" && (ret = Sys_AlignedAlloc(totalSize, 16))); FIXME
-	}
+	else
+		ret = aligned_alloc(DEFAULT_ALIGNMENT, totalSize);
+
+	assert("Out of memory" && ret);
+	if (!ret)
+		return NULL;
 
 	Sys_ZeroMemory(ret, totalSize);
 
@@ -95,9 +96,16 @@ Sys_ReAlloc(void *mem, size_t size, size_t count, enum MemoryHeap heap)
 	if (alloc->heap == MH_Transient || alloc->heap == MH_Frame) {
 		assert(!"Attempt to realloc a transient block");
 	} else {
+#ifndef SYS_PLATFORM_WINDOWS
 		new = realloc(alloc, totalSize);
+#else
+		new = _aligned_realloc(alloc, totalSize, DEFAULT_ALIGNMENT);
+#endif
 		assert("Out of memory" && new);
 	}
+
+	if (!new)
+		return NULL;
 
 	alloc = new;
 	alloc->size = totalSize - sizeof(*alloc);
@@ -125,7 +133,11 @@ Sys_Free(void *mem)
 	else if (alloc->heap == MH_Secure)
 		Sys_ZeroMemory(alloc, alloc->size);
 
+#ifndef SYS_PLATFORM_WINDOWS
 	free(alloc);
+#else
+	_aligned_free(alloc);
+#endif
 }
 
 bool
@@ -164,17 +176,22 @@ Sys_LogMemoryStatistics(void)
 void
 Sys_TermMemory(void)
 {
+#ifndef SYS_PLATFORM_WINDOWS
 	for (uint32_t i = 0; i < RE_NUM_FRAMES; ++i)
-		Sys_AlignedFree(_frameHeap[i].heap);
-
-	Sys_AlignedFree(_transientHeap.heap);
+		free(_frameHeap[i].heap);
+	free(_transientHeap.heap);
+#else
+	for (uint32_t i = 0; i < RE_NUM_FRAMES; ++i)
+		_aligned_free(_frameHeap[i].heap);
+	_aligned_free(_transientHeap.heap);
+#endif
 }
 
 static inline bool
 _InitTransientHeap(struct TransientHeap *heap, uint64_t *size)
 {
 	heap->size = size;
-	heap->heap = Sys_AlignedAlloc((size_t)*heap->size, 16);
+	heap->heap = aligned_alloc(16, (size_t)*heap->size);
 
 	if (!heap->heap)
 		return false;

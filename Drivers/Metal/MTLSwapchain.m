@@ -6,7 +6,8 @@
 
 #include "MTLDriver.h"
 
-static NSAutoreleasePool *pool;
+static NSAutoreleasePool *_pool;
+static dispatch_semaphore_t _semaphore;
 
 #if TARGET_OS_OSX
 
@@ -49,6 +50,8 @@ MTL_DestroySurface(id<MTLDevice> dev, UIView *view)
 void *
 MTL_CreateSwapchain(id<MTLDevice> dev, VIEWTYPE *view, bool verticalSync)
 {
+	_semaphore = dispatch_semaphore_create(RE_NUM_FRAMES);
+
 	CAMetalLayer *layer = (CAMetalLayer *)[view layer];
 	[layer setDevice: dev];
 	[layer setDisplaySyncEnabled: verticalSync];
@@ -65,7 +68,9 @@ MTL_DestroySwapchain(id<MTLDevice> dev, CAMetalLayer *layer)
 void *
 MTL_AcquireNextImage(id<MTLDevice> dev, CAMetalLayer *layer)
 {
-	pool = [[NSAutoreleasePool alloc] init];
+	dispatch_semaphore_wait(_semaphore, DISPATCH_TIME_FOREVER);
+
+	_pool = [[NSAutoreleasePool alloc] init];
 	return [layer nextDrawable];
 }
 
@@ -73,10 +78,16 @@ bool
 MTL_Present(id<MTLDevice> dev, struct RenderContext *ctx, VIEWTYPE *v, id<CAMetalDrawable> image)
 {
 	ctx->cmdBuffer = [ctx->queue commandBuffer];
+
+	__block dispatch_semaphore_t blockSemaphore = _semaphore;
+	[ctx->cmdBuffer addCompletedHandler:^(id<MTLCommandBuffer> buffer) {
+		dispatch_semaphore_signal(blockSemaphore);
+	}];
+
 	[ctx->cmdBuffer presentDrawable: image];
 	[ctx->cmdBuffer commit];
 
-	[pool release];
+	[_pool drain];
 	
 	return true;
 }

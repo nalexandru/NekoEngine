@@ -39,6 +39,12 @@
     <ClInclude Include="..\Deps\Lua\lundump.h" />
     <ClInclude Include="..\Deps\Lua\lvm.h" />
     <ClInclude Include="..\Deps\Lua\lzio.h" />
+    <ClInclude Include="..\Deps\PhysFS\physfs.h" />
+    <ClInclude Include="..\Deps\PhysFS\physfs_casefolding.h" />
+    <ClInclude Include="..\Deps\PhysFS\physfs_internal.h" />
+    <ClInclude Include="..\Deps\PhysFS\physfs_lzmasdk.h" />
+    <ClInclude Include="..\Deps\PhysFS\physfs_miniz.h" />
+    <ClInclude Include="..\Deps\PhysFS\physfs_platforms.h" />
     <ClInclude Include="..\Include\Animation\Animation.h" />
     <ClInclude Include="..\Include\Animation\Animator.h" />
     <ClInclude Include="..\Include\Animation\Clip.h" />
@@ -118,6 +124,7 @@
     <ClInclude Include="..\Include\System\Endian.h" />
     <ClInclude Include="..\Include\System\Log.h" />
     <ClInclude Include="..\Include\System\Memory.h" />
+    <ClInclude Include="..\Include\System\PlatformDetect.h" />
     <ClInclude Include="..\Include\System\Thread.h" />
     <ClInclude Include="..\Include\System\Window.h" />
     <ClInclude Include="..\Include\System\System.h" />

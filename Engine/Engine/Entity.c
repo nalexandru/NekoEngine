@@ -190,8 +190,7 @@ E_DestroyEntityS(struct Scene *s, EntityHandle handle)
 	dst_id = ent->id;
 	Sys_Free(ent);
 
-	memcpy(Rt_ArrayGet(&s->entities, dst_id), Rt_ArrayLast(&s->entities),
-		sizeof(void *));
+	memcpy(Rt_ArrayGet(&s->entities, dst_id), Rt_ArrayLast(&s->entities), s->entities.elemSize);
 
 	ent = Rt_ArrayGetPtr(&s->entities, dst_id);
 	ent->id = dst_id;
@@ -218,6 +217,12 @@ E_EntityPtrS(struct Scene *s, EntityHandle handle)
 {
 	struct Entity *ent = handle;
 	return Rt_ArrayGetPtr(&s->entities, ent->id);
+}
+
+uint32_t
+E_EntityCountS(struct Scene *s)
+{
+	return (uint32_t)s->entities.count;
 }
 
 bool

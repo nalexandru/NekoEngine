@@ -48,6 +48,8 @@ Anim_BuildSkeleton(void **comp, void *args)
 	struct ModelRender *mr = comp[1];
 
 	const struct Model *m = E_ResourcePtr(mr->model);
+	if (!m)
+		return;
 
 	Anim_InitSkeleton(a->skel, m->cpu.bones, NULL, NULL);
 
@@ -66,7 +68,7 @@ void
 Anim_UpdateAnimator(void **comp, void *args)
 {
 	struct Animator *a = comp[0];
-	struct ModelRender *mr = comp[1];
+	//struct ModelRender *mr = comp[1];
 	const struct AnimationClip *ac = E_ResourcePtr(a->clip);
 
 	if (!a->playing || !ac)
@@ -88,4 +90,6 @@ Anim_UpdateAnimator(void **comp, void *args)
 	}
 
 	Anim_UpdateSkeleton(a->skel, a->time, ac);
+
+	// dispatch compute
 }

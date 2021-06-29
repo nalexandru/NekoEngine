@@ -108,7 +108,7 @@ xform_position(const struct Transform *t, struct vec3 *pos)
 {
 	if (t->parent) {
 		struct vec3 tmp;
-		xform_position(t->parent, pos);
+		xform_position(t->parent, &tmp);
 		v3_add(pos, &tmp, &t->position);
 	} else {
 		memcpy(pos, &t->position, sizeof(*pos));

@@ -36,8 +36,8 @@ struct RenderDeviceProcs
 	uint64_t (*BufferAddress)(struct RenderDevice *dev, const struct Buffer *buff, uint64_t offset);
 	void (*ResetContext)(struct RenderDevice *dev, struct RenderContext *ctx);
 
-	struct Texture *(*CreateTransientTexture)(struct RenderDevice *dev, const struct TextureDesc *desc, uint16_t location, uint64_t offset);
-	struct Buffer *(*CreateTransientBuffer)(struct RenderDevice *dev, const struct BufferDesc *desc, uint16_t location, uint64_t offset);
+	struct Texture *(*CreateTransientTexture)(struct RenderDevice *dev, const struct TextureDesc *desc, uint16_t location, uint64_t offset, uint64_t *size);
+	struct Buffer *(*CreateTransientBuffer)(struct RenderDevice *dev, const struct BufferDesc *desc, uint16_t location, uint64_t offset, uint64_t *size);
 
 	struct Pipeline *(*GraphicsPipeline)(struct RenderDevice *dev, const struct GraphicsPipelineDesc *desc);
 	struct Pipeline *(*ComputePipeline)(struct RenderDevice *dev, const struct ComputePipelineDesc *desc);
@@ -108,9 +108,9 @@ struct RenderDeviceProcs
 	void (*ScreenResized)(struct RenderDevice *dev, struct Swapchain *sw);
 };
 
-extern struct RenderDevice *Re_device;
-extern struct RenderDeviceInfo Re_deviceInfo;
-extern struct RenderDeviceProcs Re_deviceProcs;
+ENGINE_API extern struct RenderDevice *Re_device;
+ENGINE_API extern struct RenderDeviceInfo Re_deviceInfo;
+ENGINE_API extern struct RenderDeviceProcs Re_deviceProcs;
 
 static inline struct RenderContext *Re_CreateContext(void) { return Re_deviceProcs.CreateContext(Re_device); }
 static inline void Re_ResetContext(struct RenderContext *ctx) { Re_deviceProcs.ResetContext(Re_device, ctx); }

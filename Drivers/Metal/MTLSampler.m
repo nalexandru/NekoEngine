@@ -21,7 +21,7 @@ MTL_CreateSampler(id<MTLDevice> dev, const struct SamplerDesc *sDesc)
 	
 	id<MTLSamplerState> s = [dev newSamplerStateWithDescriptor: desc];
 
-	[desc autorelease];
+	[desc release];
 	
 	MTL_SetSampler(0, s);
 	
@@ -31,5 +31,5 @@ MTL_CreateSampler(id<MTLDevice> dev, const struct SamplerDesc *sDesc)
 void
 MTL_DestroySampler(id<MTLDevice> dev, id<MTLSamplerState> s)
 {
-	[s autorelease];
+	[s release];
 }

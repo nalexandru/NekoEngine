@@ -233,7 +233,7 @@ _NewResource(const char *path, const char *type, const void *ci, bool create)
 	if (!res)
 		return E_INVALID_HANDLE;
 
-	memcpy(res->info.path, path, strlen(path));
+	snprintf(res->info.path, sizeof(res->info.path), "%s", path);
 	res->info.pathHash = Rt_HashString(res->info.path);
 	res->info.id = (uint32_t)ret;
 	res->info.references = 1;
@@ -246,7 +246,7 @@ _NewResource(const char *path, const char *type, const void *ci, bool create)
 
 		if (rt->load) {
 			if ((args = strchr(path, ':'))) {
-				memcpy(path_str, path, strlen(path));
+				snprintf(path_str, sizeof(path_str), "%s", path);
 
 				args = path_str + (args - path);
 				path = path_str;

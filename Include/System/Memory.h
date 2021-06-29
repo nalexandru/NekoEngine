@@ -31,8 +31,6 @@ void *Sys_Alloc(size_t size, size_t count, enum MemoryHeap heap);
 void *Sys_ReAlloc(void *mem, size_t size, size_t count, enum MemoryHeap heap);
 void Sys_Free(void *mem);
 
-void *Sys_AlignedAlloc(size_t size, size_t alignment);
-void Sys_AlignedFree(void *mem);
 void Sys_ZeroMemory(void *mem, size_t size);
 
 bool Sys_InitMemory(void);

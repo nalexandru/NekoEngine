@@ -332,7 +332,7 @@ E_FileStream(const char *path, FileOpenMode mode, struct Stream *stm)
 		stm->type = ST_MappedFile;
 		stm->f = NULL;
 	}
-	
+
 	if (!stm->ptr) {
 		stm->f = E_OpenFile(path, mode);
 		if (!stm->f)

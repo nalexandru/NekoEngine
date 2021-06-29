@@ -11,15 +11,13 @@
 Cross-platform game engine.
 
 Supported platforms:
-* Windows 7 64-bit or newer*
+* Windows 7 64-bit or newer
 * Linux x86_64
 * macOS 11.0+ arm64 (x86_64 with a Metal 3 GPU should work too)
 * iOS 14.4+
 * FreeBSD 13.0 amd64
 * OpenBSD 6.9 amd64
 
-  \* Windows 7 is supported only on AMD GPUs, for Nvidia Windows 10 is required (there is no heap that is host coherent and device local exposed on Windows 7, 8 or 8.1 by Nvidia drivers).
-  
 Supported rendering APIs:
 * Vulkan 1.2
 * Metal 3

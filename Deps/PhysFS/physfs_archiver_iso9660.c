@@ -212,10 +212,10 @@ static int iso9660LoadEntries(PHYSFS_Io *io, const int joliet,
         extent += extattrlen;  /* skip extended attribute record. */
 
         /* infinite loop, corrupt file? */
-        BAIL_IF((extent * 2048) == dirstart, PHYSFS_ERR_CORRUPT, 0);
+        BAIL_IF(((PHYSFS_uint64)extent * 2048) == dirstart, PHYSFS_ERR_CORRUPT, 0);
 
         if (!iso9660AddEntry(io, joliet, isdir, base, fname, fnamelen,
-                             timestamp, extent * 2048, datalen, unpkarc))
+                             timestamp, (PHYSFS_uint64)extent * 2048, datalen, unpkarc))
         {
             return 0;
         } /* if */
@@ -302,7 +302,7 @@ static int parseVolumeDescriptor(PHYSFS_Io *io, PHYSFS_uint64 *_rootpos,
             case 2:  /* Supplementary Volume Descriptor */
                 if (found < type)
                 {
-                    *_rootpos = PHYSFS_swapULE32(extent) * 2048;
+                    *_rootpos = (PHYSFS_uint64)PHYSFS_swapULE32(extent) * 2048;
                     *_rootlen = PHYSFS_swapULE32(datalen);
                     found = type;
 

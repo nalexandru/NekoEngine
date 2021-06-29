@@ -113,6 +113,12 @@
     <ClCompile Include="Synchronization.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Staging.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Memory.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="Shaders\DefaultPBR_VS.vert">

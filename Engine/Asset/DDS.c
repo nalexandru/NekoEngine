@@ -119,10 +119,10 @@ static inline void _readCompressedFormat(const struct DDS_HEADER *hdr, const str
 bool
 E_LoadDDSAsset(struct Stream *stm, struct TextureCreateInfo *tci)
 {
-	void *data;
-	uint32_t magic;
-	struct DDS_HEADER hdr;
-	struct DDS_HEADER_DXT10 hdrDXT10;
+	void *data = NULL;
+	uint32_t magic = 0;
+	struct DDS_HEADER hdr = { 0 };
+	struct DDS_HEADER_DXT10 hdrDXT10 = { 0 };
 	
 	E_ReadStream(stm, &magic, sizeof(magic));
 	if (Sys_BigEndian())

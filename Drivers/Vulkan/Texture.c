@@ -42,7 +42,7 @@ Vk_CreateImage(struct RenderDevice *dev, const struct TextureDesc *desc, struct 
 
 	tex->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-	return vkCreateImage(dev->dev, &imageInfo, Vkd_allocCb, &tex->image) == VK_SUCCESS;
+	return vkCreateImage(dev->dev, &imageInfo, tex->transient ? Vkd_transientAllocCb : Vkd_allocCb, &tex->image) == VK_SUCCESS;
 }
 
 bool
@@ -80,7 +80,7 @@ Vk_CreateImageView(struct RenderDevice *dev, const struct TextureDesc *desc, str
 	break;
 	}
 
-	return vkCreateImageView(dev->dev, &viewInfo, Vkd_allocCb, &tex->imageView) == VK_SUCCESS;
+	return vkCreateImageView(dev->dev, &viewInfo, tex->transient ? Vkd_transientAllocCb : Vkd_allocCb, &tex->imageView) == VK_SUCCESS;
 }
 
 struct Texture *
@@ -89,6 +89,8 @@ Vk_CreateTexture(struct RenderDevice *dev, const struct TextureDesc *desc, uint1
 	struct Texture *tex = Sys_Alloc(1, sizeof(*tex), MH_RenderDriver);
 	if (!tex)
 		return NULL;
+
+	tex->transient = false;
 
 	if (!Vk_CreateImage(dev, desc, tex, false))
 		goto error;
@@ -130,9 +132,14 @@ Vk_TextureLayout(const struct Texture *tex)
 void
 Vk_DestroyTexture(struct RenderDevice *dev, struct Texture *tex)
 {
-	vkDestroyImageView(dev->dev, tex->imageView, Vkd_allocCb);
-	vkDestroyImage(dev->dev, tex->image, Vkd_allocCb);
-	vkFreeMemory(dev->dev, tex->memory, Vkd_allocCb);
+	if (!tex->transient) {
+		vkDestroyImageView(dev->dev, tex->imageView, Vkd_allocCb);
+		vkDestroyImage(dev->dev, tex->image, Vkd_allocCb);
+		vkFreeMemory(dev->dev, tex->memory, Vkd_allocCb);
+	} else {
+		vkDestroyImageView(dev->dev, tex->imageView, Vkd_transientAllocCb);
+		vkDestroyImage(dev->dev, tex->image, Vkd_transientAllocCb);
+	}
 
 	Sys_Free(tex);
 }

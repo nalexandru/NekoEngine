@@ -13,7 +13,7 @@ struct ApplicationInfo
 ENGINE_API extern struct ApplicationInfo App_applicationInfo;
 
 bool App_InitApplication(int argc, char *argv[]);
-void App_Render(uint32_t frameId);
+void App_Frame(void);
 void App_TermApplication(void);
 
 #endif /* _NE_ENGINE_APPLICATION_H_ */

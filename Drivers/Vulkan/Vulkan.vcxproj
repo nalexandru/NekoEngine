@@ -107,6 +107,12 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>NekoEngine.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <CustomBuild>
+      <Command>glslc --target-env=vulkan1.2 %(FullPath) -o $(SolutionDir)/bin/Data/Shaders/Vulkan/%(Filename).spv</Command>
+      <Message>glslc %(Filename)</Message>
+      <TreatOutputAsContent>true</TreatOutputAsContent>
+      <Outputs>$(SolutionDir)/bin/Data/Shaders/Vulkan/%(Filename).spv</Outputs>
+    </CustomBuild>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="AccelerationStructure.c" />
@@ -116,12 +122,14 @@
     <ClCompile Include="Device.c" />
     <ClCompile Include="Driver.c" />
     <ClCompile Include="Framebuffer.c" />
+    <ClCompile Include="Memory.c" />
     <ClCompile Include="Pipeline.c" />
     <ClCompile Include="Platform\Win32.c" />
     <ClCompile Include="RenderPass.c" />
     <ClCompile Include="Sampler.c" />
     <ClCompile Include="Shader.c" />
     <ClCompile Include="ShaderBindingTable.c" />
+    <ClCompile Include="Staging.c" />
     <ClCompile Include="Swapchain.c" />
     <ClCompile Include="Synchronization.c" />
     <ClCompile Include="Texture.c" />

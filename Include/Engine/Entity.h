@@ -51,4 +51,7 @@ static inline void *E_EntityPtr(EntityHandle ent) { return E_EntityPtrS(Scn_acti
 
 bool E_RegisterEntityType(const wchar_t *name, const CompTypeId *comp_types, uint8_t type_count);
 
+uint32_t E_EntityCountS(struct Scene *s);
+static inline uint32_t E_EntityCount(void) { return E_EntityCountS(Scn_activeScene); }
+
 #endif /* _NE_ENGINE_ENTITY_H_ */

@@ -35,12 +35,13 @@ const struct RenderDriver *Re_LoadDriver() { return &_drv; }
 static bool
 _Init(void)
 {
-	return true;
+	return MTLDrv_InitMemory();
 }
 
 static void
 _Term(void)
 {
+	MTLDrv_TermMemory();
 }
 
 #if TARGET_OS_OSX
@@ -54,13 +55,18 @@ _EnumerateDevices(uint32_t *count, struct RenderDeviceInfo *info)
 	NSArray<id<MTLDevice>> *devices = MTLCopyAllDevices();
 	
 	if (!*count || !info) {
-		*count = (uint32_t)[devices count];
+		for (NSUInteger i = 0; i < [devices count]; ++i) {
+			if ([devices[0] supportsFamily: MTLGPUFamilyMac2])
+				++*count;
+		}
 		[devices release];
 		return true;
 	}
 	
 	for (uint32_t i = 0; i < *count; ++i) {
 		id<MTLDevice> dev = devices[i];
+		if (![dev supportsFamily: MTLGPUFamilyMac2])
+			continue;
 		
 		snprintf(info[i].deviceName, sizeof(info[i].deviceName), "%s", [[dev name] UTF8String]);
 		info[i].localMemorySize = [dev recommendedMaxWorkingSetSize];

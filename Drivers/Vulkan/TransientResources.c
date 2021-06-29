@@ -2,17 +2,27 @@
 
 #include "VulkanDriver.h"
 
+#define ROUND_UP(v, powerOf2Alignment) (((v) + (powerOf2Alignment)-1) & ~((powerOf2Alignment)-1))
+
 struct Texture *
-Vk_CreateTransientTexture(struct RenderDevice *dev, const struct TextureDesc *desc, uint16_t location, uint64_t offset)
+Vk_CreateTransientTexture(struct RenderDevice *dev, const struct TextureDesc *desc, uint16_t location, uint64_t offset, uint64_t *size)
 {
 	struct Texture *tex = Sys_Alloc(1, sizeof(*tex), MH_Frame);
 	if (!tex)
 		return NULL;
 
+	tex->transient = true;
+
 	if (!Vk_CreateImage(dev, desc, tex, true))
 		goto error;
 
-	vkBindImageMemory(dev->dev, tex->image, dev->transientHeap, offset);
+	VkMemoryRequirements mr;
+	vkGetImageMemoryRequirements(dev->dev, tex->image, &mr);
+
+	uint64_t realOffset = ROUND_UP(offset, mr.alignment);
+	*size = mr.size + realOffset - offset;
+
+	vkBindImageMemory(dev->dev, tex->image, dev->transientHeap, realOffset);
 
 	if (!Vk_CreateImageView(dev, desc, tex))
 		goto error;
@@ -25,16 +35,20 @@ Vk_CreateTransientTexture(struct RenderDevice *dev, const struct TextureDesc *de
 error:
 	if (tex->image)
 		vkDestroyImage(dev->dev, tex->image, Vkd_allocCb);
+	
 	Sys_Free(tex);
+
 	return NULL;
 }
 
 struct Buffer *
-Vk_CreateTransientBuffer(struct RenderDevice *dev, const struct BufferDesc *desc, uint16_t location, uint64_t offset)
+Vk_CreateTransientBuffer(struct RenderDevice *dev, const struct BufferDesc *desc, uint16_t location, uint64_t offset, uint64_t *size)
 {
 	struct Buffer *buff = Sys_Alloc(1, sizeof(*buff), MH_Frame);
 	if (!buff)
 		return NULL;
+
+	buff->transient = true;
 
 	VkBufferCreateInfo buffInfo =
 	{
@@ -43,9 +57,15 @@ Vk_CreateTransientBuffer(struct RenderDevice *dev, const struct BufferDesc *desc
 		.usage = desc->usage | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
 		.sharingMode = VK_SHARING_MODE_EXCLUSIVE
 	};
-	vkCreateBuffer(dev->dev, &buffInfo, Vkd_allocCb, &buff->buff);
+	vkCreateBuffer(dev->dev, &buffInfo, Vkd_transientAllocCb, &buff->buff);
 
-	vkBindBufferMemory(dev->dev, buff->buff, dev->transientHeap, offset);
+	VkMemoryRequirements mr;
+	vkGetBufferMemoryRequirements(dev->dev, buff->buff, &mr);
+
+	uint64_t realOffset = ROUND_UP(offset, mr.alignment);
+	*size = mr.size + realOffset - offset;
+
+	vkBindBufferMemory(dev->dev, buff->buff, dev->transientHeap, realOffset);
 
 	if (location)
 		Vk_SetBuffer(dev, location, buff->buff);

@@ -60,7 +60,7 @@ E_LoadFontAsset(struct Stream *stm, struct Font *fnt)
 	
 	texSize = Re_deviceInfo.limits.maxTextureSize;
 	if (texSize < hdr.texSize) {
-		uint32_t curSize = hdr.texSize;
+		uint64_t curSize = hdr.texSize;
 
 		while (curSize > texSize) {
 			E_StreamSeek(stm, curSize * curSize, IO_SEEK_CUR);

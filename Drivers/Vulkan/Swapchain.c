@@ -136,6 +136,9 @@ Vk_AcquireNextImage(struct RenderDevice *dev, struct Swapchain *sw)
 	};
 	vkWaitSemaphores(dev->dev, &waitInfo, UINT64_MAX);
 
+	if (!Re_deviceInfo.features.coherentMemory)
+		Vkd_CommitStagingArea(dev, sw->frameStart[Re_frameId]);
+
 	return (void *)(uint64_t)imageId;
 }
 
@@ -149,6 +152,9 @@ Vk_Present(struct RenderDevice *dev, struct RenderContext *ctx, struct Swapchain
 	VkSemaphore wait[] = { sw->frameStart[Re_frameId] };
 	VkSemaphore signal[] = { dev->frameSemaphore, sw->frameEnd[Re_frameId] };
 	VkPipelineStageFlags waitMasks[] = { VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT };
+
+	if (!Re_deviceInfo.features.coherentMemory)
+		wait[0] = Vkd_stagingSignal;
 
 	VkTimelineSemaphoreSubmitInfo timelineInfo =
 	{

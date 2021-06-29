@@ -21,21 +21,24 @@ Vk_CreateBuffer(struct RenderDevice *dev, const struct BufferDesc *desc, uint16_
 	VkMemoryRequirements req = { 0 };
 	vkGetBufferMemoryRequirements(dev->dev, buff->buff, &req);
 
-	VkMemoryAllocateFlagsInfo fi =
-	{
-		.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO,
-		.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT
-	};
-	VkMemoryAllocateInfo ai =
-	{
-		.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-		.pNext = &fi,
-		.allocationSize = req.size,
-		.memoryTypeIndex = Vkd_MemoryTypeIndex(dev, req.memoryTypeBits, NeToVkMemoryProperties(desc->memoryType))
-	};
-	vkAllocateMemory(dev->dev, &ai, Vkd_allocCb, &buff->memory);
-
-	vkBindBufferMemory(dev->dev, buff->buff, buff->memory, 0);
+	if (desc->memoryType == MT_CPU_COHERENT && !Re_deviceInfo.features.coherentMemory) {
+		buff->staging = Vkd_AllocateStagingMemory(dev->dev, buff->buff, &req);
+	} else {
+		VkMemoryAllocateFlagsInfo fi =
+		{
+			.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO,
+			.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT
+		};
+		VkMemoryAllocateInfo ai =
+		{
+			.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+			.pNext = &fi,
+			.allocationSize = req.size,
+			.memoryTypeIndex = Vkd_MemoryTypeIndex(dev, req.memoryTypeBits, NeToVkMemoryProperties(desc->memoryType))
+		};
+		vkAllocateMemory(dev->dev, &ai, Vkd_allocCb, &buff->memory);
+		vkBindBufferMemory(dev->dev, buff->buff, buff->memory, 0);
+	}
 
 	Vk_SetBuffer(dev, location, buff->buff);
 
@@ -72,7 +75,6 @@ Vk_UpdateBuffer(struct RenderDevice *dev, struct Buffer *buff, uint64_t offset, 
 
 		VkDeviceMemory stagingMem;
 		vkAllocateMemory(dev->dev, &bMemAI, Vkd_allocCb, &stagingMem);
-
 		vkBindBufferMemory(dev->dev, staging, stagingMem, 0);
 
 		void *stagingData = NULL;
@@ -102,6 +104,9 @@ Vk_UpdateBuffer(struct RenderDevice *dev, struct Buffer *buff, uint64_t offset, 
 void *
 Vk_MapBuffer(struct RenderDevice *dev, struct Buffer *buff)
 {
+	if (buff->staging)
+		return buff->staging;
+
 	void *mem;
 	if (vkMapMemory(dev->dev, buff->memory, 0, VK_WHOLE_SIZE, 0, &mem) != VK_SUCCESS)
 		return NULL;
@@ -112,6 +117,9 @@ Vk_MapBuffer(struct RenderDevice *dev, struct Buffer *buff)
 void
 Vk_FlushBuffer(struct RenderDevice *dev, struct Buffer *buff, uint64_t offset, uint64_t size)
 {
+	if (!buff->memory)
+		return;
+
 	VkMappedMemoryRange mr =
 	{
 		.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
@@ -125,7 +133,8 @@ Vk_FlushBuffer(struct RenderDevice *dev, struct Buffer *buff, uint64_t offset, u
 void
 Vk_UnmapBuffer(struct RenderDevice *dev, struct Buffer *buff)
 {
-	vkUnmapMemory(dev->dev, buff->memory);
+	if (buff->memory)
+		vkUnmapMemory(dev->dev, buff->memory);
 }
 
 uint64_t
@@ -143,8 +152,12 @@ Vk_BufferAddress(struct RenderDevice *dev, const struct Buffer *buff, uint64_t o
 void
 Vk_DestroyBuffer(struct RenderDevice *dev, struct Buffer *buff)
 {
-	vkDestroyBuffer(dev->dev, buff->buff, Vkd_allocCb);
-	vkFreeMemory(dev->dev, buff->memory, Vkd_allocCb);
+	if (!buff->transient) {
+		vkDestroyBuffer(dev->dev, buff->buff, Vkd_allocCb);
+		vkFreeMemory(dev->dev, buff->memory, Vkd_allocCb);
+	} else {
+		vkDestroyBuffer(dev->dev, buff->buff, Vkd_transientAllocCb);
+	}
 
 	Sys_Free(buff);
 }

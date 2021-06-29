@@ -58,5 +58,5 @@ void
 MTL_DestroyFence(id<MTLDevice> dev, dispatch_semaphore_t ds)
 {
 	(void)dev;
-	dispatch_release(ds);
+//	dispatch_release(ds);
 }

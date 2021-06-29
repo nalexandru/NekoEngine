@@ -40,7 +40,7 @@ char *__PHYSFS_platformCalcBaseDir(const char *argv0)
 	[path getCString:retval maxLength:len+1 encoding:NSUTF8StringEncoding];
 	retval[len] = '/';
 	retval[len+1] = '\0';
-	[pool release];
+	[pool drain];
 	return retval;  /* whew. */
 } /* __PHYSFS_platformCalcBaseDir */
 
@@ -58,7 +58,7 @@ char *__PHYSFS_platformCalcPrefDir(const char *org, const char *app)
 	BAIL_IF(!retval, PHYSFS_ERR_OUT_OF_MEMORY, NULL);
 	[path getCString:retval maxLength:len+1 encoding:NSUTF8StringEncoding];
 	snprintf(retval + len, applen + 3, "/%s/", app);
-	[pool release];
+	[pool drain];
 	return retval;  /* whew. */
 } /* __PHYSFS_platformCalcPrefDir */
 

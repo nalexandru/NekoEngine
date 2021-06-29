@@ -36,6 +36,11 @@
 	E_ScreenResized(r.size.width, r.size.height);
 }
 
+- (void)windowWillClose: (NSNotification *)notification
+{
+	E_Shutdown();
+}
+
 @end
 
 bool
@@ -45,15 +50,16 @@ Sys_CreateWindow(void)
 		NSWindowStyleMaskMiniaturizable | NSWindowStyleMaskResizable;
 
 	NSWindow *w = [[NSWindow alloc]
-		initWithContentRect:NSMakeRect(0, 0, *E_screenWidth, *E_screenHeight)
-		styleMask: mask
-		backing: NSBackingStoreBuffered
-		defer: YES];
+		initWithContentRect: NSMakeRect(0, 0, *E_screenWidth, *E_screenHeight)
+				  styleMask: mask
+				    backing: NSBackingStoreBuffered
+					  defer: YES];
 		
 	[w cascadeTopLeftFromPoint: NSMakePoint(20, 20)];
 	[w setTitle: @"NekoEngine"];
 
-	NSView *v = (NSView *)[[EngineView alloc] initWithFrame: [(NSView *)[w contentView] frame]];
+	NSRect frame = [[w contentView] frame];
+	NSView *v = (NSView *)[[EngineView alloc] initWithFrame: frame];
 
 	[w setContentView: v];
 	[w setInitialFirstResponder: v];
@@ -68,7 +74,9 @@ Sys_CreateWindow(void)
 	[NSApp activateIgnoringOtherApps: YES];
 
 	E_screen = (void *)w;
-
+	*E_screenWidth = frame.size.width;
+	*E_screenHeight = frame.size.height;
+	
 	return true;
 }
 

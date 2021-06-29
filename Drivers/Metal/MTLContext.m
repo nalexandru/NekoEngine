@@ -72,19 +72,24 @@ _EndCommandBuffer(struct RenderContext *ctx)
 static void
 _BindPipeline(struct RenderContext *ctx, struct Pipeline *pipeline)
 {
+	if (ctx->boundPipeline == pipeline)
+		return;
+
 	ctx->boundPipeline = pipeline;
 	
 	if (ctx->type == RC_RENDER) {
 		[ctx->encoders.render setRenderPipelineState: pipeline->render.state];
-		MTL_SetRenderArguments(ctx->encoders.render);
-		
 		if (pipeline->render.depthStencil)
 			[ctx->encoders.render setDepthStencilState: pipeline->render.depthStencil];
+
+		MTLDrv_SetRenderHeaps(ctx->encoders.render);
+		MTL_SetRenderArguments(ctx->encoders.render);
 	} else if (ctx->type == RC_COMPUTE) {
 		[ctx->encoders.compute setComputePipelineState: pipeline->compute.state];
-		MTL_SetComputeArguments(ctx->encoders.compute);
-		
 		ctx->threadsPerThreadgroup = pipeline->compute.threadsPerThreadgroup;
+
+		MTLDrv_SetComputeHeaps(ctx->encoders.compute);
+		MTL_SetComputeArguments(ctx->encoders.compute);
 	}
 }
 

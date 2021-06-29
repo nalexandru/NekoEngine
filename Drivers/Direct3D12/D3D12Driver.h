@@ -217,8 +217,8 @@ D3D12_SAMPLER_DESC *D3D12_CreateSampler(struct RenderDevice *dev, const struct S
 void D3D12_DestroySampler(struct RenderDevice *dev, D3D12_SAMPLER_DESC *s);
 
 // TransientResources
-struct Texture *D3D12_CreateTransientTexture(struct RenderDevice *dev, const struct TextureDesc *desc, uint16_t location, uint64_t offset);
-struct Buffer *D3D12_CreateTransientBuffer(struct RenderDevice *dev, const struct BufferDesc *desc, uint16_t location, uint64_t offset);
+struct Texture *D3D12_CreateTransientTexture(struct RenderDevice *dev, const struct TextureDesc *desc, uint16_t location, uint64_t offset, uint64_t *size);
+struct Buffer *D3D12_CreateTransientBuffer(struct RenderDevice *dev, const struct BufferDesc *desc, uint16_t location, uint64_t offset, uint64_t *size);
 bool D3D12_InitTransientHeap(struct RenderDevice *dev, uint64_t size);
 bool D3D12_ResizeTransientHeap(struct RenderDevice *dev, uint64_t size);
 void D3D12_TermTransientHeap(struct RenderDevice *dev);

@@ -369,18 +369,6 @@ Sys_TermPlatform(void)
 	FreeLibrary(_k32);
 }
 
-void *
-Sys_AlignedAlloc(size_t size, size_t alignment)
-{
-	return _aligned_malloc(size, alignment);
-}
-
-void
-Sys_AlignedFree(void *mem)
-{
-	_aligned_free(mem);
-}
-
 void
 Sys_ZeroMemory(void *mem, size_t size)
 {

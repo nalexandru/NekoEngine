@@ -229,7 +229,6 @@ PHYSFS_Io *__PHYSFS_createNativeIo(const char *path, const int mode)
     return io;
 
 createNativeIo_failed:
-    if (handle != NULL) __PHYSFS_platformClose(handle);
     if (pathdup != NULL) allocator.Free(pathdup);
     if (info != NULL) allocator.Free(info);
     if (io != NULL) allocator.Free(io);
@@ -404,7 +403,6 @@ PHYSFS_Io *__PHYSFS_createMemoryIo(const void *buf, PHYSFS_uint64 len,
     return io;
 
 createMemoryIo_failed:
-    if (info != NULL) allocator.Free(info);
     if (io != NULL) allocator.Free(io);
     return NULL;
 } /* __PHYSFS_createMemoryIo */

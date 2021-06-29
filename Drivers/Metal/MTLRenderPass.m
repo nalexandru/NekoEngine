@@ -58,7 +58,7 @@ MTL_CreateRenderPassDesc(id<MTLDevice> dev, const struct AttachmentDesc *attachm
 void
 MTL_DestroyRenderPassDesc(id<MTLDevice> dev, struct RenderPassDesc *rp)
 {
-	[rp->desc autorelease];
+	[rp->desc release];
 	Sys_Free(rp->attachmentFormats);
 	Sys_Free(rp);
 }

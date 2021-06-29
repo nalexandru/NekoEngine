@@ -1,6 +1,7 @@
 #define Handle __EngineHandle
 
 #include <Engine/IO.h>
+#include <Engine/Config.h>
 #include <System/Log.h>
 
 #undef Handle
@@ -17,7 +18,8 @@ struct Pipeline *
 MTL_GraphicsPipeline(id<MTLDevice> dev, const struct GraphicsPipelineDesc *gpDesc)
 {
 	MTLRenderPipelineDescriptor *desc = [[MTLRenderPipelineDescriptor alloc] init];
-	desc.binaryArchives = @[ _cache ];
+	if (_cache)
+		desc.binaryArchives = @[ _cache ];
 	
 	struct Pipeline *p = Sys_Alloc(sizeof(*p), 1, MH_RenderDriver);
 	if (!p) {
@@ -74,9 +76,10 @@ MTL_GraphicsPipeline(id<MTLDevice> dev, const struct GraphicsPipelineDesc *gpDes
 	
 	NSError *err;
 	id<MTLRenderPipelineState> pso = [dev newRenderPipelineStateWithDescriptor: desc error: &err];
-	
-	//[_cache addRenderPipelineFunctionsWithDescriptor: desc error: nil];
-	[desc autorelease];
+
+	if (_cache)
+		[_cache addRenderPipelineFunctionsWithDescriptor: desc error: nil];
+	[desc release];
 	
 	if (!pso) {
 		Sys_LogEntry(MPMOD, LOG_CRITICAL, L"Failed to create graphics pipeline: %hs",
@@ -112,7 +115,9 @@ MTL_ComputePipeline(id<MTLDevice> dev, const struct ComputePipelineDesc *cpDesc)
 		return NULL;
 	
 	MTLComputePipelineDescriptor *desc = [[MTLComputePipelineDescriptor alloc] init];
-	desc.binaryArchives = @[ _cache ];
+
+	if (_cache)
+		desc.binaryArchives = @[ _cache ];
 	
 	desc.computeFunction = (id<MTLFunction>)stageDesc->module;
 	
@@ -122,8 +127,10 @@ MTL_ComputePipeline(id<MTLDevice> dev, const struct ComputePipelineDesc *cpDesc)
 										   options: MTLPipelineOptionNone
 										reflection: nil
 											 error: &err];
-	
-	[_cache addComputePipelineFunctionsWithDescriptor: desc error: nil];
+
+	if (_cache)
+		[_cache addComputePipelineFunctionsWithDescriptor: desc error: nil];
+	[desc release];
 	
 	if (pso) {
 		struct Pipeline *p = Sys_Alloc(sizeof(*p), 1, MH_RenderDriver);
@@ -137,8 +144,6 @@ MTL_ComputePipeline(id<MTLDevice> dev, const struct ComputePipelineDesc *cpDesc)
 	
 	Sys_LogEntry(MPMOD, LOG_CRITICAL, L"Failed to create compute pipeline: %hs",
 				 [[err localizedDescription] UTF8String]);
-
-	[desc autorelease];
 	
 	return NULL;
 }
@@ -147,14 +152,16 @@ struct Pipeline *
 MTL_RayTracingPipeline(id<MTLDevice> dev, struct ShaderBindingTable *sbt, uint32_t maxDepth)
 {
 	MTLRenderPipelineDescriptor *desc = [[MTLRenderPipelineDescriptor alloc] init];
-	
-	desc.binaryArchives = @[ _cache ];
+
+	if (_cache)
+		desc.binaryArchives = @[ _cache ];
 	
 	NSError *err;
 	id<MTLRenderPipelineState> pso = [dev newRenderPipelineStateWithDescriptor: desc error: &err];
-	
-	[_cache addRenderPipelineFunctionsWithDescriptor: desc error: nil];
-	[desc autorelease];
+
+	if (_cache)
+		[_cache addRenderPipelineFunctionsWithDescriptor: desc error: nil];
+	[desc release];
 	
 	if (pso) {
 		struct Pipeline *p = Sys_Alloc(sizeof(*p), 1, MH_RenderDriver);
@@ -173,6 +180,9 @@ MTL_RayTracingPipeline(id<MTLDevice> dev, struct ShaderBindingTable *sbt, uint32
 void
 MTL_LoadPipelineCache(id<MTLDevice> dev)
 {
+	if (!E_GetCVarBln(L"MetalDrv_EnableBinaryArchive", false)->bln)
+		return;
+
 	MTLBinaryArchiveDescriptor *desc = [[MTLBinaryArchiveDescriptor alloc] init];
 	
 	desc.url = [Darwin_appSupportURL URLByAppendingPathComponent: @"pipeline.cache"];
@@ -183,12 +193,15 @@ MTL_LoadPipelineCache(id<MTLDevice> dev)
 	NSError *err;
 	_cache = [dev newBinaryArchiveWithDescriptor: desc error: &err];
 	
-	[desc autorelease];
+	[desc release];
 }
 
 void
 MTL_SavePipelineCache(id<MTLDevice> dev)
 {
+	if (!E_GetCVarBln(L"MetalDrv_EnableBinaryArchive", false)->bln)
+		return;
+
 	MTLBinaryArchiveDescriptor *desc = [[MTLBinaryArchiveDescriptor alloc] init];
 	
 	NSURL *cacheUrl = [Darwin_appSupportURL URLByAppendingPathComponent: @"pipeline.cache"];

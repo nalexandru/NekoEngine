@@ -381,7 +381,7 @@ typedef uint16_t TextureHandle;
 
 // Graph
 struct RenderGraph;
-struct RenderGraphPass;
+struct RenderPass;
 
 // Synchronization
 struct Fence;

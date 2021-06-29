@@ -68,6 +68,8 @@ struct Buffer
 {
 	VkBuffer buff;
 	VkDeviceMemory memory;
+	void *staging;
+	bool transient;
 };
 
 struct Texture
@@ -76,6 +78,7 @@ struct Texture
 	VkImage image;
 	VkImageLayout layout;
 	VkDeviceMemory memory;
+	bool transient;
 };
 
 struct Framebuffer
@@ -113,8 +116,9 @@ struct AccelerationStructure
 };
 
 extern VkInstance Vkd_inst;
-extern VkAllocationCallbacks *Vkd_allocCb;
+extern VkAllocationCallbacks *Vkd_allocCb, *Vkd_transientAllocCb;
 extern VkCommandPool Vkd_transferPool;
+extern VkSemaphore Vkd_stagingSignal;
 
 // Device
 struct RenderDevice *Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProcs, struct RenderContextProcs *ctxProcs);
@@ -196,8 +200,8 @@ VkSampler Vk_CreateSampler(struct RenderDevice *dev, const struct SamplerDesc *d
 void Vk_DestroySampler(struct RenderDevice *dev, VkSampler s);
 
 // TransientResources
-struct Texture *Vk_CreateTransientTexture(struct RenderDevice *dev, const struct TextureDesc *desc, uint16_t location, uint64_t offset);
-struct Buffer *Vk_CreateTransientBuffer(struct RenderDevice *dev, const struct BufferDesc *desc, uint16_t location, uint64_t offset);
+struct Texture *Vk_CreateTransientTexture(struct RenderDevice *dev, const struct TextureDesc *desc, uint16_t location, uint64_t offset, uint64_t *size);
+struct Buffer *Vk_CreateTransientBuffer(struct RenderDevice *dev, const struct BufferDesc *desc, uint16_t location, uint64_t offset, uint64_t *size);
 bool Vk_InitTransientHeap(struct RenderDevice *dev, uint64_t size);
 bool Vk_ResizeTransientHeap(struct RenderDevice *dev, uint64_t size);
 void Vk_TermTransientHeap(struct RenderDevice *dev);
@@ -210,6 +214,12 @@ VkFence Vk_CreateFence(struct RenderDevice *dev, bool createSignaled);
 void Vk_SignalFence(struct RenderDevice *dev, VkFence f);
 bool Vk_WaitForFence(struct RenderDevice *dev, VkFence f, uint64_t timeout);
 void Vk_DestroyFence(struct RenderDevice *dev, VkFence f);
+
+// Staging; support for systems without CPU visible device local memory (eg. Windows 7)
+bool Vkd_InitStagingArea(struct RenderDevice *dev);
+void *Vkd_AllocateStagingMemory(VkDevice dev, VkBuffer buff, VkMemoryRequirements *mr);
+void Vkd_CommitStagingArea(struct RenderDevice *dev, VkSemaphore wait);
+void Vkd_TermStagingArea(struct RenderDevice *dev);
 
 // Utility functions
 void Vk_InitContextProcs(struct RenderContextProcs *p);

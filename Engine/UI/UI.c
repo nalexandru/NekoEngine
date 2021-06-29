@@ -106,7 +106,9 @@ UI_InitUI(void)
 	m4_ortho(&_projection, 0.f, (float)*E_screenWidth, (float)*E_screenHeight, 0.f, 0.f, 1.f);
 
 	struct Stream stm;
-	E_FileStream("/System/System.fnt", IO_READ, &stm);
+	if (!E_FileStream("/System/System.fnt", IO_READ, &stm))
+		return false;
+
 	E_LoadFontAsset(&stm, &UI_sysFont);
 	E_CloseStream(&stm);
 

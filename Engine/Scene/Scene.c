@@ -248,6 +248,11 @@ _ReadEntity(struct Scene *s, struct Stream *stm, char *data, wchar_t *wbuff, str
 
 			Rt_ZeroArray(args);
 		} else if (!strncmp(line, "EndComponent", len)) {
+			if (!entity) {
+				Sys_LogEntry(SCNMOD, LOG_WARNING, L"Component declared outside entity");
+				continue;
+			}
+
 			E_AddNewComponentS(s, entity, E_ComponentTypeId(compType), (const void **)args->data);
 			memset(compType, 0x0, sizeof(wchar_t) * BUFF_SZ);
 		} else if (!strncmp(line, "EndEntity", len)) {

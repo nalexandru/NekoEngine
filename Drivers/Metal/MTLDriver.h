@@ -7,6 +7,7 @@
 #include <System/Memory.h>
 #include <Render/Types.h>
 #include <Render/Render.h>
+#include <Engine/Config.h>
 
 #undef Handle
 
@@ -201,8 +202,8 @@ id<MTLSamplerState> MTL_CreateSampler(id<MTLDevice> dev, const struct SamplerDes
 void MTL_DestroySampler(id<MTLDevice> dev, id<MTLSamplerState> s);
 
 // Transient Resources
-struct Texture *MTL_CreateTransientTexture(id<MTLDevice> dev, const struct TextureDesc *desc, uint16_t location, uint64_t offset);
-struct Buffer *MTL_CreateTransientBuffer(id<MTLDevice> dev, const struct BufferDesc *desc, uint16_t location, uint64_t offset);
+struct Texture *MTL_CreateTransientTexture(id<MTLDevice> dev, const struct TextureDesc *desc, uint16_t location, uint64_t offset, uint64_t *size);
+struct Buffer *MTL_CreateTransientBuffer(id<MTLDevice> dev, const struct BufferDesc *desc, uint16_t location, uint64_t offset, uint64_t *size);
 bool MTL_InitTransientHeap(id<MTLDevice> dev, uint64_t size);
 bool MTL_ResizeTransientHeap(id<MTLDevice> dev, uint64_t size);
 void MTL_TermTransientHeap(id<MTLDevice> dev);
@@ -217,6 +218,14 @@ dispatch_semaphore_t MTL_CreateFence(id<MTLDevice> dev, bool createSignaled);
 void MTL_SignalFence(id<MTLDevice> dev, dispatch_semaphore_t ds);
 bool MTL_WaitForFence(id<MTLDevice> dev, dispatch_semaphore_t ds, uint64_t timeout);
 void MTL_DestroyFence(id<MTLDevice> dev, dispatch_semaphore_t ds);
+
+// Memory
+bool MTLDrv_InitMemory(void);
+id<MTLBuffer> MTLDrv_CreateBuffer(id<MTLDevice> dev, uint64_t size, MTLResourceOptions options);
+id<MTLTexture> MTLDrv_CreateTexture(id<MTLDevice> dev, MTLTextureDescriptor *desc);
+void MTLDrv_SetRenderHeaps(id<MTLRenderCommandEncoder> encoder);
+void MTLDrv_SetComputeHeaps(id<MTLComputeCommandEncoder> encoder);
+void MTLDrv_TermMemory(void);
 
 // Utility functions
 static inline MTLResourceOptions

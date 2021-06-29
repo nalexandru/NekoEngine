@@ -110,28 +110,19 @@ MTL_SetRenderArguments(id<MTLRenderCommandEncoder> encoder)
 {
 	[encoder setVertexBuffer: _argumentBuffer offset: 0 atIndex: 0];
 	[encoder setFragmentBuffer: _argumentBuffer offset: 0 atIndex: 0];
-	
-	for (uint16_t i = 0; i < _usedTextures; ++i)
-		if (_textures[i])
-			[encoder useResource: _textures[i] usage: MTLResourceUsageSample];
-	
-	for (uint16_t i = 0; i < _usedBuffers; ++i)
-		if (_buffers[i])
-			[encoder useResource: _buffers[i] usage: MTLResourceUsageRead];
 }
 
 void MTL_SetComputeArguments(id<MTLComputeCommandEncoder> encoder)
 {
 	[encoder setBuffer: _argumentBuffer offset: 0 atIndex: 0];
-	
-	// the usage should be smarter
-	for (uint16_t i = 0; i < _usedTextures; ++i)
+
+	/*for (uint16_t i = 0; i < _usedTextures; ++i)
 		if (_textures[i])
 			[encoder useResource: _textures[i] usage: MTLResourceUsageWrite];
 	
 	for (uint16_t i = 0; i < _usedBuffers; ++i)
 		if (_buffers[i])
-			[encoder useResource: _buffers[i] usage: MTLResourceUsageWrite];
+			[encoder useResource: _buffers[i] usage: MTLResourceUsageWrite]; -- is this needed ? */
 }
 
 void

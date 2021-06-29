@@ -2,19 +2,25 @@
 #define _NE_RENDER_GRAPH_PASS_H_
 
 #include <Render/Types.h>
+#include <Render/Driver/Core.h>
 #include <Render/Driver/RenderPassDesc.h>
 #include <Runtime/Runtime.h>
 
-struct PassResource
+typedef bool (*PassInitProc)(void **);
+typedef void (*PassTermProc)(void *);
+typedef bool (*PassSetupProc)(void *, struct Array *);
+typedef void (*PassExecuteProc)(void *, const struct Array *);
+
+struct RenderPass
 {
-	uint64_t hash;
-	union {
-		TextureHandle texHandle;
-		BufferHandle buffer;
-	};
+	PassInitProc Init;
+	PassTermProc Term;
+
+	PassSetupProc Setup;
+	PassExecuteProc Execute;
 };
 
-enum PassAttachmentUsage
+/*enum PassAttachmentUsage
 {
 	ATU_INPUT,
 	ATU_COLOR,
@@ -27,13 +33,7 @@ struct PassAttachment
 	uint64_t hash;
 	enum PassAttachmentUsage usage;
 
-};
-
-struct RenderGraphPass
-{
-	void (*Setup)(struct Array *resources);
-	void (*Execute)(const struct Array *resources);
-};
+};*/
 
 /*struct MaterialPassDesc
 {

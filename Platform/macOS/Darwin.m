@@ -238,29 +238,27 @@ Sys_USleep(uint32_t usec)
 void
 Sys_DirectoryPath(enum SystemDirectory sd, char *out, size_t len)
 {
-	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-	
-	switch (sd) {
-	case SD_SAVE_GAME: {
-		NSArray<NSURL *> *urls = [[NSFileManager defaultManager] URLsForDirectory: NSDocumentDirectory
-																		inDomains: NSUserDomainMask];
-		
-		NSURL *path = [[urls firstObject] URLByAppendingPathComponent: [[NSString alloc] initWithBytes: App_applicationInfo.name
-																								length: wcslen(App_applicationInfo.name) * sizeof(wchar_t)
-																							  encoding: NSUTF32LittleEndianStringEncoding]];
-		
-		snprintf(out, len, "%s", [[path path] UTF8String]);
-	} break;
-	case SD_APP_DATA: {
-		const char *path = [[Darwin_appSupportURL path] UTF8String];
-		snprintf(out, len, "%s", path);
-	} break;
-	case SD_TEMP: {
-		snprintf(out, len, "%s", [[[[NSFileManager defaultManager] temporaryDirectory] path] UTF8String]);
-	} break;
+	@autoreleasepool {
+		switch (sd) {
+		case SD_SAVE_GAME: {
+			NSArray<NSURL *> *urls = [[NSFileManager defaultManager] URLsForDirectory: NSDocumentDirectory
+																			inDomains: NSUserDomainMask];
+
+			NSURL *path = [[urls firstObject] URLByAppendingPathComponent: [[NSString alloc] initWithBytes: App_applicationInfo.name
+																									length: wcslen(App_applicationInfo.name) * sizeof(wchar_t)
+																								  encoding: NSUTF32LittleEndianStringEncoding]];
+
+			snprintf(out, len, "%s", [[path path] UTF8String]);
+		} break;
+		case SD_APP_DATA: {
+			const char *path = [[Darwin_appSupportURL path] UTF8String];
+			snprintf(out, len, "%s", path);
+		} break;
+		case SD_TEMP: {
+			snprintf(out, len, "%s", [[[[NSFileManager defaultManager] temporaryDirectory] path] UTF8String]);
+		} break;
+		}
 	}
-	
-	[pool release];
 }
 
 bool
@@ -292,19 +290,6 @@ Sys_CreateDirectory(const char *path)
 														  attributes: nil
 															   error: nil];
 	}
-}
-
-void *
-Sys_AlignedAlloc(size_t size, size_t alignment)
-{
-	(void)alignment;
-	return malloc(size); // malloc is aligned to 16 bytes
-}
-
-void
-Sys_AlignedFree(void *mem)
-{
-	free(mem);
 }
 
 void

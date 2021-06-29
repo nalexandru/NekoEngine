@@ -4,6 +4,21 @@
 #include <Render/Render.h>
 #include <Render/Systems.h>
 #include <Render/Graph/Pass.h>
+#include <Render/Graph/Graph.h>
+
+struct DepthPrePass;
+static bool _Init(struct DepthPrePass **pass);
+static void _Term(struct DepthPrePass *pass);
+static bool _Setup(struct DepthPrePass *pass, struct Array *resources);
+static void _Execute(struct DepthPrePass *pass, const struct Array *resources);
+
+static struct RenderPass _depthPrePass =
+{
+	.Init = (PassInitProc)_Init,
+	.Term = (PassTermProc)_Term,
+	.Setup = (PassSetupProc)_Setup,
+	.Execute = (PassExecuteProc)_Execute
+};
 
 //DECL_PASS(DepthPrePass, )
 
@@ -12,6 +27,7 @@ struct DepthPrePass
 	struct Framebuffer *fb;
 	struct Pipeline *pipeline;
 	struct RenderPassDesc *rpd;
+	uint64_t normalHash, depthHash;
 };
 
 struct DepthConstants
@@ -20,14 +36,14 @@ struct DepthConstants
 	uint32_t material;
 };
 
-static void
-_Setup(struct DepthPrePass *pass)
+static bool 
+_Setup(struct DepthPrePass *pass, struct Array *resources)
 {
 	struct FramebufferAttachmentDesc fbAtDesc[2] =
 	{
 		{
 			.usage = TU_COLOR_ATTACHMENT | TU_TRANSFER_DST,
-			.format = Re_SwapchainFormat(Re_swapchain)
+			.format = TF_R16G16B16A16_SFLOAT
 		},
 		{
 			.usage = TU_DEPTH_STENCIL_ATTACHMENT,
@@ -45,13 +61,45 @@ _Setup(struct DepthPrePass *pass)
 	};
 	pass->fb = Re_CreateFramebuffer(&fbDesc);
 	Re_Destroy(pass->fb);
+
+	struct TextureDesc normalDesc =
+	{
+		.width = *E_screenWidth,
+		.height = *E_screenHeight,
+		.depth = 1,
+		.type = TT_2D,
+		.usage = TU_COLOR_ATTACHMENT,
+		.format = TF_R16G16B16A16_SFLOAT,
+		.arrayLayers = 1,
+		.mipLevels = 1,
+		.gpuOptimalTiling = true,
+		.memoryType = MT_GPU_LOCAL
+	};
+	Re_AddGraphTexture("NormalBuffer", &normalDesc, resources);
+
+	struct TextureDesc depthDesc =
+	{
+		.width = *E_screenWidth,
+		.height = *E_screenHeight,
+		.depth = 1,
+		.type = TT_2D,
+		.usage = TU_DEPTH_STENCIL_ATTACHMENT,
+		.format = TF_D32_SFLOAT,
+		.arrayLayers = 1,
+		.mipLevels = 1,
+		.gpuOptimalTiling = true,
+		.memoryType = MT_GPU_LOCAL
+	};
+	Re_AddGraphTexture("DepthBuffer", &depthDesc, resources);
+
+	return true;
 }
 
 static void
-_Execute(struct DepthPrePass *pass, void *resources)
+_Execute(struct DepthPrePass *pass, const struct Array *resources)
 {
-	Re_SetAttachment(pass->fb, 0, NULL);
-	Re_SetAttachment(pass->fb, 1, NULL);
+	Re_SetAttachment(pass->fb, 0, Re_GraphTexture(pass->normalHash, resources));
+	Re_SetAttachment(pass->fb, 1, Re_GraphTexture(pass->depthHash, resources));
 
 	Re_BeginDrawCommandBuffer();
 	Re_CmdBeginRenderPass(pass->rpd, pass->fb, RENDER_COMMANDS_INLINE);
@@ -83,8 +131,12 @@ _Execute(struct DepthPrePass *pass, void *resources)
 }
 
 static bool
-_Init(struct DepthPrePass *pass)
+_Init(struct DepthPrePass **pass)
 {
+	*pass = Sys_Alloc(sizeof(struct DepthPrePass), 1, MH_Render);
+	if (!*pass)
+		return false;
+
 	struct Shader *shader = Re_GetShader("Depth");
 
 	struct AttachmentDesc atDesc =
@@ -111,7 +163,9 @@ _Init(struct DepthPrePass *pass)
 		.finalLayout = TL_DEPTH_READ_ONLY_ATTACHMENT,
 		.clearDepth = 0.f
 	};
-	pass->rpd = Re_CreateRenderPassDesc(&atDesc, 1, &depthDesc);
+	(*pass)->rpd = Re_CreateRenderPassDesc(&atDesc, 1, &depthDesc);
+	if ((*pass)->rpd)
+		goto error;
 
 	struct BlendAttachmentDesc blendAttachments[] =
 	{
@@ -121,18 +175,32 @@ _Init(struct DepthPrePass *pass)
 	{
 		.flags = RE_TOPOLOGY_TRIANGLES | RE_POLYGON_FILL | RE_CULL_NONE | RE_FRONT_FACE_CW | RE_DEPTH_WRITE | RE_DEPTH_TEST,
 		.shader = shader,
-		.renderPassDesc = pass->rpd,
+		.renderPassDesc = (*pass)->rpd,
 		.pushConstantSize = sizeof(struct DepthConstants),
 		.attachmentCount = sizeof(blendAttachments) / sizeof(blendAttachments[0]),
 		.attachments = blendAttachments
 	};
-	pass->pipeline = Re_GraphicsPipeline(&pipeDesc);
+	(*pass)->pipeline = Re_GraphicsPipeline(&pipeDesc);
+	if ((*pass)->pipeline)
+		goto error;
 
-	return pass->rpd && pass->pipeline;
+	(*pass)->normalHash = Rt_HashString("NormalBuffer");
+	(*pass)->depthHash = Rt_HashString("DepthBuffer");
+
+	return true;
+
+error:
+	if ((*pass)->rpd)
+		Re_DestroyRenderPassDesc((*pass)->rpd);
+
+	Sys_Free(*pass);
+
+	return false;
 }
 
 static void
 _Term(struct DepthPrePass *pass)
 {
 	Re_DestroyRenderPassDesc(pass->rpd);
+	Sys_Free(pass);
 }

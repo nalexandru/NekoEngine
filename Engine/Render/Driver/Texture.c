@@ -64,8 +64,8 @@ _LoadTextureResource(struct ResourceLoadInfo *li, const char *args, struct Textu
 
 	if (rc)
 		tex->texture = _CreateTexture(&ci.desc, E_ResHandleToGPU(h));
-	
-	if (!tex->texture || !_InitTexture(tex->texture, &ci))
+
+	if (!tex->texture || (ci.data && !_InitTexture(tex->texture, &ci)))
 		goto error;
 	
 	Sys_Free(ci.data);
@@ -205,11 +205,12 @@ _InitTexture(struct Texture *tex, const struct TextureCreateInfo *tci)
 	
 	Re_EndCommandBuffer();
 	
-	struct Fence *f = Re_deviceProcs.CreateFence(Re_device, false);
+	struct Fence *f = Re_CreateFence(false);
 	Re_SubmitTransfer(f);
 	Re_deviceProcs.WaitForFence(Re_device, f, UINT64_MAX);
 	
 	Re_DestroyBuffer(staging);
+	Re_DestroyFence(f);
 	
 	return true;
 }

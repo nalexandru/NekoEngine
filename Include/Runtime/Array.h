@@ -40,7 +40,7 @@ Rt_InitArray(struct Array *a, size_t size, size_t elemSize, enum MemoryHeap heap
 	if (!a || !size || !elemSize)
 		return false;
 
-	memset(a, 0x0, sizeof(*a));
+	Sys_ZeroMemory(a, sizeof(*a));
 
 	a->data = Sys_Alloc(size, elemSize, heap);
 	if (!a->data)
@@ -74,7 +74,7 @@ Rt_InitAlignedArray(struct Array *a, size_t size, size_t elemSize, size_t alignm
 
 	memset(a, 0x0, sizeof(*a));
 
-	a->data = Sys_AlignedAlloc(size * elemSize, alignment);
+	a->data = aligned_alloc(alignment, size * elemSize);
 	if (!a->data)
 		return false;
 
@@ -543,7 +543,11 @@ Rt_ClearArray(struct Array *a, bool free_memory)
 	a->size = 0;
 
 	if (a->align > 1)
-		Sys_AlignedFree(a->data);
+#ifndef SYS_PLATFORM_WINDOWS
+		free(a->data);
+#else
+		_aligned_free(a->data);
+#endif
 	else
 		Sys_Free(a->data);
 

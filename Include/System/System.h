@@ -8,6 +8,7 @@
 #include <stdbool.h>
 
 #include <Engine/Types.h>
+#include <System/PlatformDetect.h>
 
 enum MsgBoxIcon
 {
@@ -92,9 +93,19 @@ bool Sys_CreateDirectory(const char *path);
 // Compatibility shivs
 void *reallocarray(void *ptr, size_t nmemb, size_t size);
 
+#if defined(SYS_PLATFORM_WINDOWS)
+
+#define aligned_alloc(alignment, size) _aligned_malloc(size, alignment)
+
 int getopt(int nargc, char *const nargv[], const char *ostr);
 
 extern int opterr, optind, optopt, optreset;
 extern char *optarg;
+
+#elif defined(SYS_PLATFORM_UNIX)
+
+#include <unistd.h>
+
+#endif
 
 #endif /* _NE_SYSTEM_SYSTEM_H_ */

@@ -1,5 +1,3 @@
-#include <assert.h>
-
 #include <Scene/Scene.h>
 #include <Scene/Transform.h>
 #include <Scene/Components.h>
@@ -91,6 +89,11 @@ App_InitApplication(int argc, char *argv[])
 	Sys_LogEntry(L"JOB", LOG_DEBUG, L"Dispatched %d workers", E_JobWorkerThreads());
 
 	return true;
+}
+
+void
+App_Frame(void)
+{
 }
 
 void

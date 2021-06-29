@@ -8,10 +8,12 @@ MTL_CreateBuffer(id<MTLDevice> dev, const struct BufferDesc *desc, uint16_t loca
 		return NULL;
 	
 	MTLResourceOptions options = MTL_GPUMemoryTypetoResourceOptions([dev hasUnifiedMemory], desc->memoryType);
-	
-	buff->buff = [dev newBufferWithLength: desc->size options: options];
-	buff->location = location;
-	
+
+	if (desc->usage > (BU_TRANSFER_SRC | BU_TRANSFER_DST))
+		buff->buff = MTLDrv_CreateBuffer(dev, desc->size, options);
+	else
+		buff->buff = [dev newBufferWithLength: desc->size options: options];
+
 	if (!buff->buff) {
 		Sys_Free(buff);
 		return NULL;
@@ -19,7 +21,8 @@ MTL_CreateBuffer(id<MTLDevice> dev, const struct BufferDesc *desc, uint16_t loca
 	
 	MTL_SetBuffer(location, buff->buff);
 	buff->memoryType = desc->memoryType;
-	
+	buff->location = location;
+
 	return buff;
 }
 
@@ -42,13 +45,8 @@ MTL_UpdateBuffer(id<MTLDevice> dev, struct Buffer *buff, uint64_t offset, uint8_
 		
 		[cmdBuffer commit];
 		[cmdBuffer waitUntilCompleted];
-		
-	#if TARGET_OS_OSX
-		[encoder autorelease];
-		[cmdBuffer autorelease];
-		[queue autorelease];
-		[staging autorelease];
-	#endif
+
+		[staging release];
 	} else {
 		uint8_t *dst = [buff->buff contents];
 		dst += offset;
@@ -74,6 +72,8 @@ MTL_FlushBuffer(id<MTLDevice> dev, struct Buffer *buff, uint64_t offset, uint64_
 #if TARGET_OS_OSX
 	if (![dev hasUnifiedMemory] && !(buff->buff.resourceOptions & MTLResourceStorageModeShared))
 		[buff->buff didModifyRange: NSMakeRange(offset, size)];
+#else
+	(void)dev; (void)buff; (void)offset; (void)size;
 #endif
 }
 
@@ -83,9 +83,9 @@ MTL_UnmapBuffer(id<MTLDevice> dev, struct Buffer *buff)
 #if TARGET_OS_OSX
 	if (![dev hasUnifiedMemory] && !(buff->buff.resourceOptions & MTLResourceStorageModeShared))
 		[buff->buff didModifyRange: NSMakeRange(0, 0)];
-#endif
-	
+#else
 	(void)dev; (void)buff;
+#endif
 }
 
 uint64_t
@@ -102,6 +102,6 @@ void
 MTL_DestroyBuffer(id<MTLDevice> dev, struct Buffer *buff)
 {
 	MTL_RemoveBuffer(buff->buff);
-	[buff->buff autorelease];
+	[buff->buff release];
 	Sys_Free(buff);
 }
