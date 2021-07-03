@@ -49,6 +49,10 @@ This repository is a mirror which is not frequently updated.
 ```
 pacman -S gcc libx11 vulkan-devel openal cmake shaderc
 ```
+* For FreeBSD:
+```
+pkg install vulkan-headers vulkan-loader vulkan-tools vulkan-validation-layers cmake shaderc openal
+```
 
 #### Build
 1. Clone the repository
