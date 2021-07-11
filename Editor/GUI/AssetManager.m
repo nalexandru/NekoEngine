@@ -49,6 +49,7 @@
 	NSScrollView *scrollView = [[[NSScrollView alloc] initWithFrame: NSMakeRect(5, 5, contentRect.size.width - 10, contentRect.size.height - 40)] autorelease];
 	[scrollView setHasHorizontalScroller: YES];
 	[scrollView setHasVerticalScroller: YES];
+	[scrollView setBorderType: NSBezelBorder];
 
 	_assetView = [[NSGridView alloc] initWithFrame: NSMakeRect(5, 5, contentRect.size.width - 10, contentRect.size.height - 40)];
 	[scrollView setDocumentView: _assetView];

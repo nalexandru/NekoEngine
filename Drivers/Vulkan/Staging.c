@@ -1,4 +1,4 @@
-#include <Engine\Config.h>
+#include <Engine/Config.h>
 #include <System/AtomicLock.h>
 
 #include "VulkanDriver.h"
@@ -42,7 +42,7 @@ Vkd_InitStagingArea(struct RenderDevice *dev)
 	};
 	vkAllocateMemory(dev->dev, &ai, Vkd_allocCb, &_cpuMem);
 	vkBindBufferMemory(dev->dev, _cpu, _cpuMem, 0);
-	vkMapMemory(dev->dev, _cpuMem, 0, VK_WHOLE_SIZE, 0, &_memPtr);
+	vkMapMemory(dev->dev, _cpuMem, 0, VK_WHOLE_SIZE, 0, (void **)&_memPtr);
 
 	vkGetBufferMemoryRequirements(dev->dev, _gpu, &mr);
 	

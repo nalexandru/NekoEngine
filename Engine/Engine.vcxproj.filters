@@ -812,9 +812,6 @@
     <ClCompile Include="Render\Systems.c">
       <Filter>Source Files\Render</Filter>
     </ClCompile>
-    <ClCompile Include="Render\Pass\Lighting.c">
-      <Filter>Source Files\Render\Pass</Filter>
-    </ClCompile>
     <ClCompile Include="Render\Pass\LightCulling.c">
       <Filter>Source Files\Render\Pass</Filter>
     </ClCompile>
@@ -838,6 +835,12 @@
     </ClCompile>
     <ClCompile Include="Asset\DDS.c">
       <Filter>Source Files\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Pass\Forward.c">
+      <Filter>Source Files\Render\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="UI\UIPass.c">
+      <Filter>Source Files\UI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

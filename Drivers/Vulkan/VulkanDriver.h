@@ -62,6 +62,7 @@ struct Swapchain
 	VkSurfaceFormatKHR surfaceFormat;
 	VkSurfaceCapabilitiesKHR surfaceCapabilities;
 	VkPresentModeKHR presentMode;
+	VkImageUsageFlags imageUsage;
 };
 
 struct Buffer
@@ -141,6 +142,7 @@ void *Vk_AcquireNextImage(struct RenderDevice *, struct Swapchain *sw);
 bool Vk_Present(struct RenderDevice *dev, struct RenderContext *ctx, struct Swapchain *sw, void *image);
 enum TextureFormat Vk_SwapchainFormat(struct Swapchain *sw);
 struct Texture *Vk_SwapchainTexture(struct Swapchain *sw, void *image);
+void Vk_SwapchainDesc(struct Swapchain *sw, struct FramebufferAttachmentDesc *desc);
 void Vk_ScreenResized(struct RenderDevice *dev, struct Swapchain *sw);
 
 // Surface (Platform.c, Driver.c)

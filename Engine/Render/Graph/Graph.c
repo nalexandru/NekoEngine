@@ -2,30 +2,48 @@
 #include <Runtime/Runtime.h>
 #include <Render/Graph/Graph.h>
 #include <Render/Graph/Pass.h>
+#include <Render/DestroyResource.h>
+#include <Render/Driver/TransientResources.h>
+
+enum GraphResourceType
+{
+	PRT_TEXTURE,
+	PRT_BUFFER
+};
+
+struct GraphResource
+{
+	uint64_t hash;
+	struct {
+		enum GraphResourceType type;
+		struct TextureDesc texture;
+		struct BufferDesc buffer;
+	} info;
+	union {
+		struct Texture *texture;
+		BufferHandle buffer;
+	} handle;
+};
+
+struct PassData
+{
+	void *data;
+	struct RenderPass procs;
+};
 
 struct RenderGraph
 {
-	uint32_t passCount;
-	struct RenderPass *passes;
+	struct Array execPasses;
+	struct Array resources;
+	struct Array allPasses;
 };
 
-struct BuildJobArgs
-{
-	uint32_t count;
-	struct RenderPass *passes;
-//	struct Array passes;
-};
-
-typedef void (*JobProc)(int, void *);
-static void _BuildPassJob(int worker, struct BuildJobArgs *args);
 static struct GraphResource *_GetResource(uint64_t hash, const struct Array *resources);
-
-static struct RenderPass *_renderPasses;
 
 bool
 Re_AddGraphTexture(const char *name, const struct TextureDesc *desc, struct Array *resources)
 {
-	struct GraphResource res = { .hash = Rt_HashString(name) };
+	struct GraphResource res = { .hash = Rt_HashString(name), .info.type = PRT_TEXTURE, .info.texture = *desc };
 	if (_GetResource(res.hash, resources))
 		return false;
 
@@ -35,7 +53,7 @@ Re_AddGraphTexture(const char *name, const struct TextureDesc *desc, struct Arra
 bool
 Re_AddGraphBuffer(const char *name, const struct BufferDesc *desc, struct Array *resources)
 {
-	struct GraphResource res = { .hash = Rt_HashString(name) };
+	struct GraphResource res = { .hash = Rt_HashString(name), .info.type = PRT_BUFFER, .info.buffer = *desc };
 	if (_GetResource(res.hash, resources))
 		return false;
 
@@ -48,7 +66,7 @@ Re_GraphTexture(uint64_t hash, const struct Array *resources)
 	struct GraphResource *res = _GetResource(hash, resources);
 	if (!res)
 		return 0;
-	return res->handle.texture;
+	return res->info.type == PRT_TEXTURE ? res->handle.texture : NULL;
 }
 
 BufferHandle
@@ -57,32 +75,89 @@ Re_GraphBuffer(uint64_t hash, const struct Array *resources)
 	struct GraphResource *res = _GetResource(hash, resources);
 	if (!res)
 		return 0;
-	return res->handle.buffer;
+	return res->info.type == PRT_BUFFER ? res->handle.buffer : 0;
+}
+
+struct RenderGraph *
+Re_CreateGraph(void)
+{
+	struct RenderGraph *g = Sys_Alloc(sizeof(*g), 1, MH_Render);
+	if (!g)
+		return 0;
+
+	Rt_InitArray(&g->allPasses, 10, sizeof(struct PassData), MH_Render);
+	Rt_InitArray(&g->resources, 10, sizeof(struct GraphResource), MH_Render);
+
+	return g;
+}
+
+bool
+Re_AddPass(struct RenderGraph *g, struct RenderPass *pass)
+{
+	struct PassData pd = { .procs = *pass };
+
+	if (!pass->Init(&pd.data))
+		return false;
+
+	Rt_ArrayAdd(&g->allPasses, &pd);
+
+	return true;
 }
 
 void
-Re_BuildGraph(struct RenderGraph *graph)
+Re_BuildGraph(struct RenderGraph *g, struct Texture *output)
 {
-	for (uint32_t i = 0; i < graph->passCount; ++i) {
-		// run setup
+	Rt_InitArray(&g->execPasses, g->allPasses.count, g->allPasses.elemSize, MH_Transient);
+	Rt_ClearArray(&g->resources, false);
+
+	struct PassData *pd; 
+	Rt_ArrayForEach(pd, &g->allPasses)
+		if (pd->procs.Setup(pd->data, &g->resources))
+			Rt_ArrayAdd(&g->execPasses, pd);
+
+	uint64_t offset = 0, size = 0;
+	struct GraphResource *gr;
+	Rt_ArrayForEach(gr, &g->resources) {
+		if (gr->info.type == PRT_TEXTURE) {
+			gr->handle.texture = Re_CreateTransientTexture(&gr->info.texture, offset, &size);
+			Re_Destroy(gr->handle.texture);
+		} else if (gr->info.type == PRT_BUFFER) {
+			if (!gr->handle.buffer)
+				Re_ReserveBufferId(&gr->handle.buffer);
+
+			Re_CreateTransientBuffer(&gr->info.buffer, gr->handle.buffer, offset, &size);
+			Re_Destroy(gr->handle.buffer);
+		} else {
+			size = 0;
+		}
+
+		offset += size;
 	}
 
-	// create transient resources
+	struct GraphResource res =
+	{
+		.hash = Rt_HashString("Re_output"),
+		.info.type = PRT_TEXTURE,
+		.handle.texture = output
+	};
+	Rt_ArrayAdd(&g->resources, &res);
 }
 
 void
-Re_ExecuteGraph(struct RenderGraph *graph)
+Re_ExecuteGraph(struct RenderGraph *g)
 {
-	for (uint32_t i = 0; i < graph->passCount; ++i) {
-//		graph->passes[i].Execute(graph, NULL);
-	}
+	struct PassData *pd; 
+	Rt_ArrayForEach(pd, &g->allPasses)
+		pd->procs.Execute(pd->data, &g->resources);
 }
 
-static void
-_BuildPassJob(int worker, struct BuildJobArgs *args)
+void
+Re_DestroyGraph(struct RenderGraph *g)
 {
-	for (uint32_t i = 0; i < args->count; ++i)
-		args->passes[i].Setup(NULL, NULL);
+	Rt_TermArray(&g->resources);
+	Rt_TermArray(&g->allPasses);
+
+	Sys_Free(g);
 }
 
 static struct GraphResource *

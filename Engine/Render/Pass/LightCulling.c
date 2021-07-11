@@ -5,23 +5,37 @@
 #include <Render/Systems.h>
 #include <Render/Graph/Pass.h>
 
-struct LightCulling 
+struct LightCulling
 {
 	struct Pipeline *pipeline;
 	BufferHandle visibleIndices;
 };
 
-static void
-_Setup(struct LightCulling *pass)
+static bool _Init(struct LightCulling **pass);
+static void _Term(struct LightCulling *pass);
+static bool _Setup(struct LightCulling *pass, struct Array *resources);
+static void _Execute(struct LightCulling *pass, const struct Array *resources);
+
+struct RenderPass RP_lightCulling =
+{
+	.Init = (PassInitProc)_Init,
+	.Term = (PassTermProc)_Term,
+	.Setup = (PassSetupProc)_Setup,
+	.Execute = (PassExecuteProc)_Execute
+};
+
+static bool
+_Setup(struct LightCulling *pass, struct Array *resources)
 {
 //	Re_CreatePassBuffer(res, "", &bci)
+	return false;
 }
 
 static void
-_Execute(struct LightCulling *pass, void *resources)
+_Execute(struct LightCulling *pass, const struct Array *resources)
 {
 	//Re_CreateTransientBuffer(&bci, 0, 0);
-	struct {
+	/*struct {
 		uint64_t address;
 	} constants;
 
@@ -34,13 +48,13 @@ _Execute(struct LightCulling *pass, void *resources)
 
 	Re_CmdDispatch(0, 0, 0);
 
-	Re_EndCommandBuffer();
+	Re_EndCommandBuffer();*/
 }
 
 static bool
-_Init(struct LightCulling *pass)
+_Init(struct LightCulling **pass)
 {
-	if (!Re_ReserveBufferId(&pass->visibleIndices))
+	/*if (!Re_ReserveBufferId(&pass->visibleIndices))
 		return false;
 
 	struct ComputePipelineDesc desc = {
@@ -49,11 +63,12 @@ _Init(struct LightCulling *pass)
 	};
 	
 	pass->pipeline = Re_ComputePipeline(&desc);
-	return pass->pipeline != NULL;
+	return pass->pipeline != NULL;*/
+	return false;
 }
 
 static void
 _Term(struct LightCulling *pass)
 {
-	Re_ReleaseBufferId(pass->visibleIndices);
+	//Re_ReleaseBufferId(pass->visibleIndices);
 }

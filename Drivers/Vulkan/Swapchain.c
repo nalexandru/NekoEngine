@@ -75,6 +75,8 @@ Vk_CreateSwapchain(struct RenderDevice *dev, VkSurfaceKHR surface, bool vertical
 			goto error;
 	}
 
+	sw->imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT  | VK_IMAGE_USAGE_TRANSFER_DST_BIT /*FIXME: suppress VUID-VkRenderPassBeginInfo-framebuffer-04627 | VK_IMAGE_USAGE_TRANSFER_SRC_BIT*/;
+
 	if (!_Create(dev->dev, dev->physDev, sw))
 		goto error;
 
@@ -208,6 +210,13 @@ Vk_SwapchainFormat(struct Swapchain *sw)
 	return VkToNeTextureFormat(sw->surfaceFormat.format);
 }
 
+void
+Vk_SwapchainDesc(struct Swapchain *sw, struct FramebufferAttachmentDesc *desc)
+{
+	desc->format = VkToNeTextureFormat(sw->surfaceFormat.format);
+	desc->usage = sw->imageUsage;
+}
+
 struct Texture *
 Vk_SwapchainTexture(struct Swapchain *sw, void *image)
 {
@@ -243,7 +252,7 @@ _Create(VkDevice dev, VkPhysicalDevice physDev, struct Swapchain *sw)
 		.imageColorSpace = sw->surfaceFormat.colorSpace,
 		.imageExtent = { *E_screenWidth, *E_screenHeight },
 		.imageArrayLayers = 1,
-		.imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+		.imageUsage = sw->imageUsage,
 		.preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,
 		.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
 		.clipped = false,

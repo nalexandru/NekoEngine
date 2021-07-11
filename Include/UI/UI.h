@@ -20,7 +20,8 @@ bool UI_InitUI(void);
 void UI_TermUI(void);
 
 void UI_Update(struct Scene *s);
-void UI_Render(struct Scene *s, void *image);
+void UI_Draw(struct Scene *s, struct Framebuffer *fb);
+void UI_Render(struct Scene *s, void *image); // deprecated
 
 bool UI_InitContext(struct UIContext *ctx, const void **);
 void UI_TermContext(struct UIContext *ctx);

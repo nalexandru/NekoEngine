@@ -13,14 +13,14 @@ Cross-platform game engine.
 Supported platforms:
 * Windows 7 64-bit or newer
 * Linux x86_64
-* macOS 11.0+ arm64 (x86_64 with a Metal 3 GPU should work too)
+* macOS 11.0+ arm64 (x86_64 with a Metal 2 (MSL 2.3) GPU should work too)
 * iOS 14.4+
 * FreeBSD 13.0 amd64
 * OpenBSD 6.9 amd64
 
 Supported rendering APIs:
 * Vulkan 1.2
-* Metal 2.3
+* Metal 2
 
 This repository is a mirror which is not frequently updated.
 

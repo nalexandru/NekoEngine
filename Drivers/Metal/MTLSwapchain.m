@@ -107,6 +107,13 @@ MTL_SwapchainFormat(CAMetalLayer *layer)
 }
 
 void
+MTL_SwapchainDesc(CAMetalLayer *layer, struct FramebufferAttachmentDesc *desc)
+{
+	desc->format = MTLToNeTextureFormat([layer pixelFormat]);
+	desc->usage = TU_COLOR_ATTACHMENT | TU_TRANSFER_DST;
+}
+
+void
 MTL_ScreenResized(id<MTLDevice> dev, CAMetalLayer *layer)
 {
 	(void)dev;

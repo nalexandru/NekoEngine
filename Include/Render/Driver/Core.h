@@ -143,6 +143,7 @@ static inline void *Re_AcquireNextImage(struct Swapchain *swapchain) { return Re
 static inline bool Re_Present(struct Swapchain *swapchain, void *image) { return Re_deviceProcs.Present(Re_device, Re_CurrentContext(), swapchain, image); }
 static inline enum TextureFormat Re_SwapchainFormat(struct Swapchain *swapchain) { return Re_deviceProcs.SwapchainFormat(swapchain); }
 static inline struct Texture *Re_SwapchainTexture(struct Swapchain *swapchain, void *image) { return Re_deviceProcs.SwapchainTexture(swapchain, image); }
+static inline void Re_SwapchainDesc(struct Swapchain *swapchain, struct FramebufferAttachmentDesc *desc) { Re_deviceProcs.SwapchainDesc(swapchain, desc); }
 static inline void Re_DestroySwapchain(struct Swapchain *swapchain) { Re_deviceProcs.DestroySwapchain(Re_device, swapchain); }
 
 // Pipeline

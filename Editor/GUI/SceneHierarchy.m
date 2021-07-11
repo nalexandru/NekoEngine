@@ -22,8 +22,16 @@
 									  defer: YES]))
 		return nil;
 
-	_sceneView = [[NSOutlineView alloc] initWithFrame: NSMakeRect(10, 10, contentRect.size.width - 20, contentRect.size.height - 20)];
+	NSScrollView *scrollView = [[[NSScrollView alloc] initWithFrame: NSMakeRect(5, 5, contentRect.size.width - 10, contentRect.size.height - 10)] autorelease];
+	[scrollView setHasHorizontalScroller: YES];
+	[scrollView setHasVerticalScroller: YES];
+	[scrollView setBorderType: NSBezelBorder];
+
+	_sceneView = [[NSOutlineView alloc] initWithFrame: NSMakeRect(0, 0, contentRect.size.width - 10, contentRect.size.height)];
 	[_sceneView setDataSource: [[SceneHierarchyDataSource alloc] init]];
+	[scrollView setDocumentView: _sceneView];
+
+	[[self contentView] addSubview: scrollView];
 
 	return self;
 }

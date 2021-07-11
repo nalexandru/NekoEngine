@@ -230,8 +230,8 @@
     <ClCompile Include="Render\Material.c" />
     <ClCompile Include="Render\Model.c" />
     <ClCompile Include="Render\Pass\Depth.c" />
+    <ClCompile Include="Render\Pass\Forward.c" />
     <ClCompile Include="Render\Pass\LightCulling.c" />
-    <ClCompile Include="Render\Pass\Lighting.c" />
     <ClCompile Include="Render\Render.c" />
     <ClCompile Include="Render\Systems.c" />
     <ClCompile Include="Scene\Camera.c" />
@@ -250,6 +250,7 @@
     <ClCompile Include="System\System.c" />
     <ClCompile Include="UI\Text.c" />
     <ClCompile Include="UI\UI.c" />
+    <ClCompile Include="UI\UIPass.c" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Exports.def" />

@@ -14,12 +14,13 @@
 
 struct UpdateBufferArgs
 {
-    struct UIVertex *vertices;
-    uint16_t *indices;
-    uint32_t vertexCount, indexCount;
+	struct UIVertex *vertices;
+	uint16_t *indices;
+	uint32_t vertexCount, indexCount;
 };
 
-struct UIConstants {
+struct UIConstants
+{
 	uint64_t vertexAddress;
 	uint32_t texture;
 	uint32_t __padding;
@@ -27,18 +28,42 @@ struct UIConstants {
 };
 
 struct Font UI_sysFont;
+BufferHandle UI_vertexBuffer, UI_indexBuffer;
+uint64_t UI_vertexBufferSize = 4000 * sizeof(struct UIVertex);
+uint64_t UI_indexBufferSize = 6000 * sizeof(uint16_t);
 
 static struct mat4 _projection;
-static BufferHandle _vertexBuffer, _indexBuffer;
 static struct RenderPassDesc *_renderPass;
 static struct Pipeline *_pipeline;
-static uint64_t _vertexBufferSize = 4000 * sizeof(struct UIVertex);
-static uint64_t _indexBufferSize = 6000 * sizeof(uint16_t);
 static uint8_t *_vertexPtr, *_indexPtr;
 
 bool
 UI_InitUI(void)
 {
+	struct BufferCreateInfo vtxInfo =
+	{
+		.desc =
+		{
+			.size = UI_vertexBufferSize * RE_NUM_FRAMES,
+			.usage = BU_STORAGE_BUFFER | BU_TRANSFER_DST,
+			.memoryType = MT_CPU_COHERENT
+		},
+	};
+	Re_CreateBuffer(&vtxInfo, &UI_vertexBuffer);
+	_vertexPtr = Re_MapBuffer(UI_vertexBuffer);
+
+	struct BufferCreateInfo idxInfo =
+	{
+		.desc =
+		{
+			.size = UI_indexBufferSize * RE_NUM_FRAMES,
+			.usage = BU_INDEX_BUFFER | BU_TRANSFER_DST,
+			.memoryType = MT_CPU_COHERENT
+		},
+	};
+	Re_CreateBuffer(&idxInfo, &UI_indexBuffer);
+	_indexPtr = Re_MapBuffer(UI_indexBuffer);
+
 	struct AttachmentDesc atDesc =
 	{
 		.mayAlias = false,
@@ -52,30 +77,6 @@ UI_InitUI(void)
 		.clearColor = { .3f, .0f, .4f, 1.f }
 	};
 	_renderPass = Re_CreateRenderPassDesc(&atDesc, 1, NULL);
-
-	struct BufferCreateInfo vtxInfo =
-	{
-		.desc =
-		{
-			.size = _vertexBufferSize * RE_NUM_FRAMES,
-			.usage = BU_STORAGE_BUFFER | BU_TRANSFER_DST,
-			.memoryType = MT_CPU_COHERENT
-		},
-	};
-	Re_CreateBuffer(&vtxInfo, &_vertexBuffer);
-	_vertexPtr = Re_MapBuffer(_vertexBuffer);
-
-	struct BufferCreateInfo idxInfo =
-	{
-		.desc =
-		{
-			.size = _indexBufferSize * RE_NUM_FRAMES,
-			.usage = BU_INDEX_BUFFER | BU_TRANSFER_DST,
-			.memoryType = MT_CPU_COHERENT
-		},
-	};
-	Re_CreateBuffer(&idxInfo, &_indexBuffer);
-	_indexPtr = Re_MapBuffer(_indexBuffer);
 
 	struct Shader *shader = Re_GetShader("UI");
 
@@ -118,15 +119,15 @@ UI_InitUI(void)
 void
 UI_TermUI(void)
 {
-	Re_UnmapBuffer(_vertexBuffer);
-	Re_UnmapBuffer(_indexBuffer);
+	Re_UnmapBuffer(UI_vertexBuffer);
+	Re_UnmapBuffer(UI_indexBuffer);
 
 	E_UnloadResource(UI_sysFont.texture);
 	Sys_Free(UI_sysFont.glyphs);
 
 	Re_DestroyRenderPassDesc(_renderPass);
-	Re_Destroy(_vertexBuffer);
-	Re_Destroy(_indexBuffer);
+	Re_Destroy(UI_vertexBuffer);
+	Re_Destroy(UI_indexBuffer);
 }
 
 void
@@ -134,8 +135,8 @@ UI_Update(struct Scene *s)
 {
 	struct UpdateBufferArgs updateArgs =
 	{
-		.vertices = (struct UIVertex *)(_vertexPtr + (_vertexBufferSize * Re_frameId)),
-		.indices = (uint16_t *)(_indexPtr + (_indexBufferSize * Re_frameId)),
+		.vertices = (struct UIVertex *)(_vertexPtr + (UI_vertexBufferSize * Re_frameId)),
+		.indices = (uint16_t *)(_indexPtr + (UI_indexBufferSize * Re_frameId)),
 		.vertexCount = 0,
 		.indexCount = 0
 	};
@@ -143,10 +144,32 @@ UI_Update(struct Scene *s)
 }
 
 void
-UI_Render(struct Scene *s, void *image)
+UI_Draw(struct Scene *s, struct Framebuffer *fb)
 {
 	Re_BeginDrawCommandBuffer();
+	Re_CmdBeginRenderPass(_renderPass, fb, RENDER_COMMANDS_INLINE);
 
+	Re_CmdBindPipeline(_pipeline);
+	Re_CmdSetViewport(0.f, 0.f, (float)*E_screenWidth, (float)*E_screenHeight, 0.f, 1.f);
+	Re_CmdSetScissor(0, 0, *E_screenWidth, *E_screenHeight);
+	Re_CmdBindIndexBuffer(UI_indexBuffer, UI_indexBufferSize * Re_frameId, IT_UINT_16);
+
+	struct UIConstants c =
+	{
+		.vertexAddress = Re_BufferAddress(UI_vertexBuffer, UI_vertexBufferSize * Re_frameId),
+		.texture = 0
+	};
+	m4_copy(&c.mvp, &_projection);
+
+	E_ExecuteSystemS(s, UI_DRAW_CONTEXT, &c);
+
+	Re_CmdEndRenderPass();
+	Re_EndCommandBuffer();
+}
+
+void
+UI_Render(struct Scene *s, void *image)
+{
 	struct FramebufferAttachmentDesc atDesc =
 	{
 		.usage = TU_COLOR_ATTACHMENT | TU_TRANSFER_DST,
@@ -165,24 +188,7 @@ UI_Render(struct Scene *s, void *image)
 	Re_SetAttachment(fb, 0, Re_SwapchainTexture(Re_swapchain, image));
 	Re_Destroy(fb);
 
-	Re_CmdBeginRenderPass(_renderPass, fb, RENDER_COMMANDS_INLINE);
-
-	Re_CmdBindPipeline(_pipeline);
-	Re_CmdSetViewport(0.f, 0.f, (float)*E_screenWidth, (float)*E_screenHeight, 0.f, 1.f);
-	Re_CmdSetScissor(0, 0, *E_screenWidth, *E_screenHeight);
-	Re_CmdBindIndexBuffer(_indexBuffer, _indexBufferSize * Re_frameId, IT_UINT_16);
-
-	struct UIConstants c =
-	{
-		.vertexAddress = Re_BufferAddress(_vertexBuffer, _vertexBufferSize * Re_frameId),
-		.texture = 0
-	};
-	m4_copy(&c.mvp, &_projection);
-
-	E_ExecuteSystemS(s, UI_DRAW_CONTEXT, &c);
-
-	Re_CmdEndRenderPass();
-	Re_EndCommandBuffer();
+	UI_Draw(s, fb);
 }
 
 bool

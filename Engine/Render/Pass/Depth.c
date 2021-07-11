@@ -12,15 +12,13 @@ static void _Term(struct DepthPrePass *pass);
 static bool _Setup(struct DepthPrePass *pass, struct Array *resources);
 static void _Execute(struct DepthPrePass *pass, const struct Array *resources);
 
-static struct RenderPass _depthPrePass =
+struct RenderPass RP_depthPrePass =
 {
 	.Init = (PassInitProc)_Init,
 	.Term = (PassTermProc)_Term,
 	.Setup = (PassSetupProc)_Setup,
 	.Execute = (PassExecuteProc)_Execute
 };
-
-//DECL_PASS(DepthPrePass, )
 
 struct DepthPrePass
 {

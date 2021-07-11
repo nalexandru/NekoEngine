@@ -142,6 +142,7 @@ void *MTL_AcquireNextImage(id<MTLDevice> dev, CAMetalLayer *layer);
 bool MTL_Present(id<MTLDevice> dev, struct RenderContext *ctx, VIEWTYPE *v, id<CAMetalDrawable> image);
 struct Texture *MTL_SwapchainTexture(CAMetalLayer *layer, id<CAMetalDrawable> image);
 enum TextureFormat MTL_SwapchainFormat(CAMetalLayer *layer);
+void MTL_SwapchainDesc(CAMetalLayer *layer, struct FramebufferAttachmentDesc *desc);
 void MTL_ScreenResized(id<MTLDevice> dev, CAMetalLayer *layer);
 
 // Context

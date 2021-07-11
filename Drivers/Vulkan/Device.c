@@ -171,6 +171,7 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 	devProcs->Present = Vk_Present;
 	devProcs->SwapchainFormat = Vk_SwapchainFormat;
 	devProcs->SwapchainTexture = Vk_SwapchainTexture;
+	devProcs->SwapchainDesc = Vk_SwapchainDesc;
 	devProcs->ScreenResized = Vk_ScreenResized;
 
 	devProcs->CreateTexture = Vk_CreateTexture;

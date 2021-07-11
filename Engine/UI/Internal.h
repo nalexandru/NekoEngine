@@ -23,5 +23,7 @@ struct UIDrawCmd
 };
 
 extern struct Font UI_sysFont;
+extern BufferHandle UI_vertexBuffer, UI_indexBuffer;
+extern uint64_t UI_vertexBufferSize, UI_indexBufferSize;
 
 #endif /* _NE_UI_INTERNAL_H_ */

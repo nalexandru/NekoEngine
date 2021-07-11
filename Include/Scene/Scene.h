@@ -5,13 +5,14 @@
 #include <Scene/Scene.h>
 #include <Runtime/Array.h>
 #include <Render/Types.h>
+#include <Render/Systems.h>
 
 #define RES_SCENE	"Scene"
 
 struct Scene
 {
 	struct Array entities, compData, compHandle;
-	struct DescriptorSet *descriptorSet;
+	struct CollectDrawablesArgs collect;
 	BufferHandle sceneData;
 
 	Handle environmentMap;
@@ -28,5 +29,7 @@ struct Scene *Scn_StartSceneLoad(const char *path);
 void Scn_UnloadScene(struct Scene *scn);
 
 bool Scn_ActivateScene(struct Scene *scn);
+
+void Scn_StartDrawableCollection(struct Scene *s, const struct Camera *c);
 
 #endif /* _NE_SCENE_SCENE_H_ */

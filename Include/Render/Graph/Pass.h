@@ -20,32 +20,9 @@ struct RenderPass
 	PassExecuteProc Execute;
 };
 
-/*enum PassAttachmentUsage
-{
-	ATU_INPUT,
-	ATU_COLOR,
-	ATU_DEPTH,
-	ATU_STENCIL
-};
-
-struct PassAttachment
-{
-	uint64_t hash;
-	enum PassAttachmentUsage usage;
-
-};*/
-
-/*struct MaterialPassDesc
-{
-	//struct RenderPassTarget colorAttachments[8];
-//	struct RenderPassTarget depthAttachment;
-};
-
-struct FullscreenPassDesc
-{
-//	struct RenderPassInput inputAttachments[8];
-	struct RenderPassTarget colorAttachments[8];
-	struct RenderPassTarget depthAttachment;
-};*/
+extern struct RenderPass RP_depthPrePass;
+extern struct RenderPass RP_lightCulling;
+extern struct RenderPass RP_ui;
+extern struct RenderPass RP_forward;
 
 #endif /* _NE_RENDER_GRAPH_PASS_H_ */

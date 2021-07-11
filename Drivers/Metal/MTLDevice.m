@@ -36,6 +36,7 @@ MTL_CreateDevice(struct RenderDeviceInfo *info,
 	devProcs->Present = (bool(*)(struct RenderDevice *, struct RenderContext *, struct Swapchain *, void *))MTL_Present;
 	devProcs->SwapchainTexture = (struct Texture *(*)(struct Swapchain *, void *))MTL_SwapchainTexture;
 	devProcs->SwapchainFormat = (enum TextureFormat(*)(struct Swapchain *))MTL_SwapchainFormat;
+	devProcs->SwapchainDesc = (void(*)(struct Swapchain *, struct FramebufferAttachmentDesc *))MTL_SwapchainDesc;
 	devProcs->ScreenResized = (void(*)(struct RenderDevice *, struct Swapchain *))MTL_ScreenResized;
 	
 	devProcs->GraphicsPipeline = (struct Pipeline *(*)(struct RenderDevice *, const struct GraphicsPipelineDesc *desc))MTL_GraphicsPipeline;

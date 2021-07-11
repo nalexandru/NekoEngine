@@ -96,13 +96,13 @@ E_Init(int argc, char *argv[])
 	Sys_Init();
 	Sys_InitMemory();
 
-	//__MathDbg_SanityTest();
-
 	if (logFile)
 		E_SetCVarStr(L"Engine_LogFile", logFile);
 
 	if (dataDir)
 		E_SetCVarStr(L"Engine_DataDir", dataDir);
+
+	//__MathDbg_SanityTest();
 
 	E_screenWidth = &E_GetCVarU32(L"Engine_ScreenWidth", 1280)->u32;
 	E_screenHeight = &E_GetCVarU32(L"Engine_ScreenHeight", 853)->u32;

@@ -48,6 +48,7 @@ struct RenderDeviceProcs
 	void *(*AcquireNextImage)(struct RenderDevice *dev, struct Swapchain *swapchain);
 	struct Texture *(*SwapchainTexture)(struct Swapchain *swapchain, void *image);
 	enum TextureFormat (*SwapchainFormat)(struct Swapchain *swapchain);
+	void (*SwapchainDesc)(struct Swapchain *swapchain, struct FramebufferAttachmentDesc *desc);
 	bool (*Present)(struct RenderDevice *dev, struct RenderContext *ctx, struct Swapchain *swapchain, void *image);
 
 	bool (*Execute)(struct RenderDevice *dev, struct RenderContext *ctx, bool wait);

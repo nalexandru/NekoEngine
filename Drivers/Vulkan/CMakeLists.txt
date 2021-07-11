@@ -65,3 +65,8 @@ foreach(Shader ${ShaderSrc})
 	get_filename_component(ShaderFile ${Shader} NAME)
 	add_vulkan_shader(${ShaderFile})
 endforeach(Shader)
+
+add_custom_target(create_shader_dir ALL COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Data/Shaders/Vulkan)
+add_dependencies(VulkanDriver create_shader_dir)
+
+

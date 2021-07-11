@@ -97,6 +97,10 @@ Scn_StartSceneLoad(const char *path)
 void
 Scn_UnloadScene(struct Scene *s)
 {
+	for (uint32_t i = 0; i < E_JobWorkerThreads(); ++i)
+		Rt_TermArray(&s->collect.arrays[i]);
+	Sys_Free(s->collect.arrays);
+
 	Re_Destroy(s->sceneData);
 
 	E_TermSceneEntities(s);
@@ -114,6 +118,15 @@ Scn_ActivateScene(struct Scene *s)
 	Scn_activeScene = s;
 
 	return true;
+}
+
+void
+Scn_StartDrawableCollection(struct Scene *s, const struct Camera *c)
+{
+	s->collect.nextArray = 0;
+	m4_mul(&s->collect.vp, &c->projMatrix, &c->viewMatrix);
+
+	E_ExecuteSystemS(s, RE_COLLECT_DRAWABLES, &s->collect);
 }
 
 bool
@@ -134,6 +147,14 @@ _InitScene(struct Scene *s)
 
 	if (!Re_CreateBuffer(&bci, &s->sceneData))
 		goto error;
+
+	s->collect.arrays = Sys_Alloc(E_JobWorkerThreads(), sizeof(struct Array), MH_Scene);
+	if (!s->collect.arrays)
+		goto error;
+
+	for (uint32_t i = 0; i < E_JobWorkerThreads(); ++i)
+		if (!Rt_InitArray(&s->collect.arrays[i], 10, sizeof(struct Drawable), MH_Scene))
+			goto error;
 
 	return true;
 

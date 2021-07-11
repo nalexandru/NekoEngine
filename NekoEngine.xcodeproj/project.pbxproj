@@ -72,7 +72,6 @@
 		FA396F9F266F7B830069B484 /* Render.c in Sources */ = {isa = PBXBuildFile; fileRef = FA1A7EF325CF13E9003B4259 /* Render.c */; };
 		FA396FA0266F7B830069B484 /* Model.c in Sources */ = {isa = PBXBuildFile; fileRef = FA4A197025FE452C00040940 /* Model.c */; };
 		FA396FA1266F7B830069B484 /* DestroyResource.c in Sources */ = {isa = PBXBuildFile; fileRef = FA4A198B261F714A00040940 /* DestroyResource.c */; };
-		FA396FA2266F7B830069B484 /* Frame.c in Sources */ = {isa = PBXBuildFile; fileRef = FA4CFF7725D8361400B37A5B /* Frame.c */; };
 		FA396FA3266F7B830069B484 /* Systems.c in Sources */ = {isa = PBXBuildFile; fileRef = FA04A9F92653FD5A00534686 /* Systems.c */; };
 		FA396FA4266F7B830069B484 /* Material.c in Sources */ = {isa = PBXBuildFile; fileRef = FA71247E263616DA00916C6D /* Material.c */; };
 		FA396FA5266F7B880069B484 /* Graph.c in Sources */ = {isa = PBXBuildFile; fileRef = FA80D6CD264616D90053CE56 /* Graph.c */; };
@@ -83,7 +82,6 @@
 		FA396FAA266F7B920069B484 /* ModelRender.c in Sources */ = {isa = PBXBuildFile; fileRef = FA04A9F72653FD5100534686 /* ModelRender.c */; };
 		FA396FAB266F7B960069B484 /* Depth.c in Sources */ = {isa = PBXBuildFile; fileRef = FAEFB75E2662AECE00BFCF25 /* Depth.c */; };
 		FA396FAC266F7B960069B484 /* LightCulling.c in Sources */ = {isa = PBXBuildFile; fileRef = FAEFB75F2662AECE00BFCF25 /* LightCulling.c */; };
-		FA396FAD266F7B960069B484 /* Lighting.c in Sources */ = {isa = PBXBuildFile; fileRef = FAEFB7602662AECE00BFCF25 /* Lighting.c */; };
 		FA396FAE266F7B9C0069B484 /* Camera.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9BA12521F42000F7C24B /* Camera.c */; };
 		FA396FAF266F7B9C0069B484 /* Transform.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9BA42521F42000F7C24B /* Transform.c */; };
 		FA396FB0266F7B9C0069B484 /* Scene.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9BA22521F42000F7C24B /* Scene.c */; };
@@ -168,6 +166,15 @@
 		FA397009266F7CD70069B484 /* EditorInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = FA397008266F7CD70069B484 /* EditorInfo.plist */; };
 		FA3B39DA2620900100132D50 /* MTLArgumentBuffer.m in Sources */ = {isa = PBXBuildFile; fileRef = FA3B39D92620900100132D50 /* MTLArgumentBuffer.m */; };
 		FA3B39DB2620900100132D50 /* MTLArgumentBuffer.m in Sources */ = {isa = PBXBuildFile; fileRef = FA3B39D92620900100132D50 /* MTLArgumentBuffer.m */; };
+		FA44DB48269B3FF100F9BEFA /* Forward.c in Sources */ = {isa = PBXBuildFile; fileRef = FA44DB47269B3FF100F9BEFA /* Forward.c */; };
+		FA44DB49269B3FF100F9BEFA /* Forward.c in Sources */ = {isa = PBXBuildFile; fileRef = FA44DB47269B3FF100F9BEFA /* Forward.c */; };
+		FA44DB4A269B3FF100F9BEFA /* Forward.c in Sources */ = {isa = PBXBuildFile; fileRef = FA44DB47269B3FF100F9BEFA /* Forward.c */; };
+		FA44DB4C269B3FFB00F9BEFA /* UIPass.c in Sources */ = {isa = PBXBuildFile; fileRef = FA44DB4B269B3FFB00F9BEFA /* UIPass.c */; };
+		FA44DB4D269B3FFB00F9BEFA /* UIPass.c in Sources */ = {isa = PBXBuildFile; fileRef = FA44DB4B269B3FFB00F9BEFA /* UIPass.c */; };
+		FA44DB4E269B3FFB00F9BEFA /* UIPass.c in Sources */ = {isa = PBXBuildFile; fileRef = FA44DB4B269B3FFB00F9BEFA /* UIPass.c */; };
+		FA44DB50269B404500F9BEFA /* Frame.c in Sources */ = {isa = PBXBuildFile; fileRef = FA44DB4F269B404500F9BEFA /* Frame.c */; };
+		FA44DB51269B404500F9BEFA /* Frame.c in Sources */ = {isa = PBXBuildFile; fileRef = FA44DB4F269B404500F9BEFA /* Frame.c */; };
+		FA44DB52269B404500F9BEFA /* Frame.c in Sources */ = {isa = PBXBuildFile; fileRef = FA44DB4F269B404500F9BEFA /* Frame.c */; };
 		FA49A582264639B7009EF9B9 /* Material.c in Sources */ = {isa = PBXBuildFile; fileRef = FA71247E263616DA00916C6D /* Material.c */; };
 		FA49A583264639BF009EF9B9 /* Pipeline.c in Sources */ = {isa = PBXBuildFile; fileRef = FA80D6C8264616CD0053CE56 /* Pipeline.c */; };
 		FA49A584264639BF009EF9B9 /* Buffer.c in Sources */ = {isa = PBXBuildFile; fileRef = FA80D6C5264616CD0053CE56 /* Buffer.c */; };
@@ -291,8 +298,6 @@
 		FA4CFF5D25D7758600B37A5B /* MTLTransientResources.m in Sources */ = {isa = PBXBuildFile; fileRef = FAFEF83E25D5A0ED00D8D1FB /* MTLTransientResources.m */; };
 		FA4CFF5E25D7758600B37A5B /* MTLPipeline.m in Sources */ = {isa = PBXBuildFile; fileRef = FA8A94DA25D41935008B5823 /* MTLPipeline.m */; };
 		FA4CFF5F25D7758600B37A5B /* MTLFramebuffer.m in Sources */ = {isa = PBXBuildFile; fileRef = FAFEF84925D5CA4800D8D1FB /* MTLFramebuffer.m */; };
-		FA4CFF7825D8361400B37A5B /* Frame.c in Sources */ = {isa = PBXBuildFile; fileRef = FA4CFF7725D8361400B37A5B /* Frame.c */; };
-		FA4CFF7925D8361400B37A5B /* Frame.c in Sources */ = {isa = PBXBuildFile; fileRef = FA4CFF7725D8361400B37A5B /* Frame.c */; };
 		FA4CFF8A25D8453200B37A5B /* MTLRenderPass.m in Sources */ = {isa = PBXBuildFile; fileRef = FA4CFF8925D8453200B37A5B /* MTLRenderPass.m */; };
 		FA4CFF8B25D8453200B37A5B /* MTLRenderPass.m in Sources */ = {isa = PBXBuildFile; fileRef = FA4CFF8925D8453200B37A5B /* MTLRenderPass.m */; };
 		FA4CFFB025D8D9C800B37A5B /* macOS.m in Sources */ = {isa = PBXBuildFile; fileRef = FA4CFFA725D8D9C800B37A5B /* macOS.m */; };
@@ -361,7 +366,6 @@
 		FA8F56CC26679A6100592E60 /* NAnim.c in Sources */ = {isa = PBXBuildFile; fileRef = FAEFB7592662AE9800BFCF25 /* NAnim.c */; };
 		FA8F56CD26679A6F00592E60 /* Depth.c in Sources */ = {isa = PBXBuildFile; fileRef = FAEFB75E2662AECE00BFCF25 /* Depth.c */; };
 		FA8F56CE26679A6F00592E60 /* LightCulling.c in Sources */ = {isa = PBXBuildFile; fileRef = FAEFB75F2662AECE00BFCF25 /* LightCulling.c */; };
-		FA8F56CF26679A6F00592E60 /* Lighting.c in Sources */ = {isa = PBXBuildFile; fileRef = FAEFB7602662AECE00BFCF25 /* Lighting.c */; };
 		FA99953E25E2E684002CB0D3 /* MTLShader.m in Sources */ = {isa = PBXBuildFile; fileRef = FA99953D25E2E684002CB0D3 /* MTLShader.m */; };
 		FA99953F25E2E684002CB0D3 /* MTLShader.m in Sources */ = {isa = PBXBuildFile; fileRef = FA99953D25E2E684002CB0D3 /* MTLShader.m */; };
 		FA99954425E2E804002CB0D3 /* DefaultPBR.metal in Sources */ = {isa = PBXBuildFile; fileRef = FA99954325E2E804002CB0D3 /* DefaultPBR.metal */; };
@@ -437,7 +441,6 @@
 		FAEFB75C2662AEA000BFCF25 /* AudioClip.c in Sources */ = {isa = PBXBuildFile; fileRef = FAEFB75B2662AEA000BFCF25 /* AudioClip.c */; };
 		FAEFB7612662AECE00BFCF25 /* Depth.c in Sources */ = {isa = PBXBuildFile; fileRef = FAEFB75E2662AECE00BFCF25 /* Depth.c */; };
 		FAEFB7622662AECE00BFCF25 /* LightCulling.c in Sources */ = {isa = PBXBuildFile; fileRef = FAEFB75F2662AECE00BFCF25 /* LightCulling.c */; };
-		FAEFB7632662AECE00BFCF25 /* Lighting.c in Sources */ = {isa = PBXBuildFile; fileRef = FAEFB7602662AECE00BFCF25 /* Lighting.c */; };
 		FAFEF82C25D59F9500D8D1FB /* MTLSwapchain.m in Sources */ = {isa = PBXBuildFile; fileRef = FAFEF82B25D59F9500D8D1FB /* MTLSwapchain.m */; };
 		FAFEF82F25D5A01B00D8D1FB /* MTLAccelerationStructure.m in Sources */ = {isa = PBXBuildFile; fileRef = FAFEF82E25D5A01B00D8D1FB /* MTLAccelerationStructure.m */; };
 		FAFEF83225D5A08500D8D1FB /* MTLTexture.m in Sources */ = {isa = PBXBuildFile; fileRef = FAFEF83125D5A08500D8D1FB /* MTLTexture.m */; };
@@ -472,6 +475,9 @@
 		FA397003266F7C4E0069B484 /* GUI.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = GUI.m; path = Editor/GUI/GUI.m; sourceTree = "<group>"; };
 		FA397008266F7CD70069B484 /* EditorInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = EditorInfo.plist; path = Platform/macOS/EditorInfo.plist; sourceTree = "<group>"; };
 		FA3B39D92620900100132D50 /* MTLArgumentBuffer.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = MTLArgumentBuffer.m; path = Drivers/Metal/MTLArgumentBuffer.m; sourceTree = "<group>"; };
+		FA44DB47269B3FF100F9BEFA /* Forward.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = Forward.c; path = Engine/Render/Pass/Forward.c; sourceTree = "<group>"; };
+		FA44DB4B269B3FFB00F9BEFA /* UIPass.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = UIPass.c; path = Engine/UI/UIPass.c; sourceTree = "<group>"; };
+		FA44DB4F269B404500F9BEFA /* Frame.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = Frame.c; path = Engine/Render/Frame.c; sourceTree = "<group>"; };
 		FA49A58A264646C3009EF9B9 /* Downloader.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Downloader.plist; path = Platform/iOS/Downloader.plist; sourceTree = "<group>"; };
 		FA4A193D25FD321400040940 /* l_Render.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = l_Render.c; path = Engine/Script/l_Render.c; sourceTree = "<group>"; };
 		FA4A194225FD40FA00040940 /* Interface.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Interface.h; path = Engine/Script/Interface.h; sourceTree = "<group>"; };
@@ -490,7 +496,6 @@
 		FA4A1993261F716700040940 /* Graph.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Graph.h; path = Include/Render/Graph/Graph.h; sourceTree = "<group>"; };
 		FA4A1994261F716700040940 /* Pass.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Pass.h; path = Include/Render/Graph/Pass.h; sourceTree = "<group>"; };
 		FA4CFE8525D771AF00B37A5B /* NekoEngine iOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "NekoEngine iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		FA4CFF7725D8361400B37A5B /* Frame.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = Frame.c; path = Engine/Render/Frame.c; sourceTree = "<group>"; };
 		FA4CFF8925D8453200B37A5B /* MTLRenderPass.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = MTLRenderPass.m; path = Drivers/Metal/MTLRenderPass.m; sourceTree = "<group>"; };
 		FA4CFFA025D8D4A600B37A5B /* Model.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Model.h; path = Include/Render/Model.h; sourceTree = "<group>"; };
 		FA4CFFA725D8D9C800B37A5B /* macOS.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = macOS.m; path = Platform/macOS/macOS.m; sourceTree = "<group>"; };
@@ -747,7 +752,6 @@
 		FAEFB75B2662AEA000BFCF25 /* AudioClip.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = AudioClip.c; path = Engine/Audio/AudioClip.c; sourceTree = "<group>"; };
 		FAEFB75E2662AECE00BFCF25 /* Depth.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = Depth.c; path = Engine/Render/Pass/Depth.c; sourceTree = "<group>"; };
 		FAEFB75F2662AECE00BFCF25 /* LightCulling.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = LightCulling.c; path = Engine/Render/Pass/LightCulling.c; sourceTree = "<group>"; };
-		FAEFB7602662AECE00BFCF25 /* Lighting.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = Lighting.c; path = Engine/Render/Pass/Lighting.c; sourceTree = "<group>"; };
 		FAFCD95325EE4767006CA7FF /* ShaderTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = ShaderTypes.h; path = Drivers/Metal/Shaders/ShaderTypes.h; sourceTree = "<group>"; };
 		FAFEF82B25D59F9500D8D1FB /* MTLSwapchain.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = MTLSwapchain.m; path = Drivers/Metal/MTLSwapchain.m; sourceTree = "<group>"; };
 		FAFEF82E25D5A01B00D8D1FB /* MTLAccelerationStructure.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = MTLAccelerationStructure.m; path = Drivers/Metal/MTLAccelerationStructure.m; sourceTree = "<group>"; };
@@ -1256,6 +1260,7 @@
 		FAAF9B732521F37A00F7C24B /* UI */ = {
 			isa = PBXGroup;
 			children = (
+				FA44DB4B269B3FFB00F9BEFA /* UIPass.c */,
 				FA28E6C92668F482000B591E /* Internal.h */,
 				FAAF9BAB2521F47D00F7C24B /* Text.c */,
 				FAAF9BAC2521F47D00F7C24B /* UI.c */,
@@ -1309,7 +1314,7 @@
 				FA4A198B261F714A00040940 /* DestroyResource.c */,
 				FA4A197025FE452C00040940 /* Model.c */,
 				FA1A7EF325CF13E9003B4259 /* Render.c */,
-				FA4CFF7725D8361400B37A5B /* Frame.c */,
+				FA44DB4F269B404500F9BEFA /* Frame.c */,
 				FA04A9F92653FD5A00534686 /* Systems.c */,
 			);
 			name = Render;
@@ -1559,9 +1564,9 @@
 		FAEFB75D2662AEC200BFCF25 /* Pass */ = {
 			isa = PBXGroup;
 			children = (
+				FA44DB47269B3FF100F9BEFA /* Forward.c */,
 				FAEFB75E2662AECE00BFCF25 /* Depth.c */,
 				FAEFB75F2662AECE00BFCF25 /* LightCulling.c */,
-				FAEFB7602662AECE00BFCF25 /* Lighting.c */,
 			);
 			name = Pass;
 			sourceTree = "<group>";
@@ -1695,7 +1700,6 @@
 				FA1A7EF425CF13E9003B4259 /* Render.c in Sources */,
 				FAFEF84A25D5CA4800D8D1FB /* MTLFramebuffer.m in Sources */,
 				FAAF9B5C2521F2D600F7C24B /* Font.c in Sources */,
-				FA4CFF7825D8361400B37A5B /* Frame.c in Sources */,
 				FAC670FD25EA7BB3001BF95A /* Metadata.c in Sources */,
 				FAAF9B5E2521F2D600F7C24B /* Image.c in Sources */,
 				FAAF9B5F2521F2D600F7C24B /* NMesh.c in Sources */,
@@ -1763,12 +1767,13 @@
 				FAAF9C962522A89200F7C24B /* physfs_platform_apple.m in Sources */,
 				FA6BDE7C2523382100806A2D /* lapi.c in Sources */,
 				FA6BDE7D2523382100806A2D /* lauxlib.c in Sources */,
+				FA44DB48269B3FF100F9BEFA /* Forward.c in Sources */,
 				FA4A196C25FE44B700040940 /* AVFSource.m in Sources */,
 				FA6BDE7E2523382100806A2D /* lbaselib.c in Sources */,
 				FA6BDE7F2523382100806A2D /* lcode.c in Sources */,
 				FA8A94DB25D41935008B5823 /* MTLPipeline.m in Sources */,
-				FAEFB7632662AECE00BFCF25 /* Lighting.c in Sources */,
 				FADBC13825CF613F00085E38 /* MTLDevice.m in Sources */,
+				FA44DB4C269B3FFB00F9BEFA /* UIPass.c in Sources */,
 				FA99954425E2E804002CB0D3 /* DefaultPBR.metal in Sources */,
 				FA6BDE802523382100806A2D /* lcorolib.c in Sources */,
 				FA6BDE812523382100806A2D /* lctype.c in Sources */,
@@ -1790,6 +1795,7 @@
 				FA80D6CA264616CD0053CE56 /* Shader.c in Sources */,
 				FAEFB75C2662AEA000BFCF25 /* AudioClip.c in Sources */,
 				FA80D6CB264616CD0053CE56 /* Texture.c in Sources */,
+				FA44DB50269B404500F9BEFA /* Frame.c in Sources */,
 				FA6BDE8B2523382100806A2D /* lmathlib.c in Sources */,
 				FA6BDE8C2523382100806A2D /* lmem.c in Sources */,
 				FA6BDE8D2523382100806A2D /* loadlib.c in Sources */,
@@ -1873,7 +1879,6 @@
 				FA396F9D266F7B760069B484 /* Config.c in Sources */,
 				FA396FB4266F7BA30069B484 /* l_System.c in Sources */,
 				FA396FE5266F7BFA0069B484 /* physfs_archiver_7z.c in Sources */,
-				FA396FA2266F7B830069B484 /* Frame.c in Sources */,
 				FA396FC1266F7BCC0069B484 /* EngineAppDelegate.m in Sources */,
 				FA396FAB266F7B960069B484 /* Depth.c in Sources */,
 				FA396FCE266F7BEC0069B484 /* liolib.c in Sources */,
@@ -1909,7 +1914,6 @@
 				FA396FB2266F7BA30069B484 /* l_Engine.c in Sources */,
 				FA396F9B266F7B760069B484 /* Engine.c in Sources */,
 				FA396FE8266F7BFA0069B484 /* physfs_archiver_wad.c in Sources */,
-				FA396FAD266F7B960069B484 /* Lighting.c in Sources */,
 				FA396FCF266F7BEC0069B484 /* lparser.c in Sources */,
 				FA396FAF266F7B9C0069B484 /* Transform.c in Sources */,
 				FA396FB7266F7BA90069B484 /* AtomicLock.c in Sources */,
@@ -1944,6 +1948,7 @@
 				FA396FC5266F7BEC0069B484 /* lauxlib.c in Sources */,
 				FA396F8A266F7B680069B484 /* Image.c in Sources */,
 				FA396FE6266F7BFA0069B484 /* physfs_archiver_zip.c in Sources */,
+				FA44DB4E269B3FFB00F9BEFA /* UIPass.c in Sources */,
 				FA396F95266F7B760069B484 /* Component.c in Sources */,
 				FA396FBA266F7BB40069B484 /* reallocarray.c in Sources */,
 				FA396FC6266F7BEC0069B484 /* ltm.c in Sources */,
@@ -1965,6 +1970,7 @@
 				FA396F80266F7B540069B484 /* DefaultPBR.metal in Sources */,
 				FA396FBF266F7BCC0069B484 /* EngineView.m in Sources */,
 				FA396FCA266F7BEC0069B484 /* lcorolib.c in Sources */,
+				FA44DB4A269B3FF100F9BEFA /* Forward.c in Sources */,
 				FA396F89266F7B680069B484 /* TGA.c in Sources */,
 				FA396F83266F7B5F0069B484 /* Animation.c in Sources */,
 				FA396FDF266F7BEC0069B484 /* linit.c in Sources */,
@@ -1972,6 +1978,7 @@
 				FA396FEF266F7BFA0069B484 /* physfs_archiver_qpak.c in Sources */,
 				FA396FE0266F7BEC0069B484 /* lzio.c in Sources */,
 				FA396F7B266F7B4E0069B484 /* MTLRenderPass.m in Sources */,
+				FA44DB52269B404500F9BEFA /* Frame.c in Sources */,
 				FA396F86266F7B5F0069B484 /* Animator.c in Sources */,
 				FA396FC9266F7BEC0069B484 /* lbaselib.c in Sources */,
 				FA396FDA266F7BEC0069B484 /* lundump.c in Sources */,
@@ -2032,18 +2039,19 @@
 				FA8F56CD26679A6F00592E60 /* Depth.c in Sources */,
 				FA4CFF0625D774FB00B37A5B /* Memory.c in Sources */,
 				FA4CFEEA25D774E600B37A5B /* Entity.c in Sources */,
+				FA44DB51269B404500F9BEFA /* Frame.c in Sources */,
 				FA4CFF1F25D7753A00B37A5B /* lmathlib.c in Sources */,
 				FA4CFF1A25D7753A00B37A5B /* ldblib.c in Sources */,
 				FA4CFF2325D7753A00B37A5B /* lauxlib.c in Sources */,
 				FA4A197C25FE947C00040940 /* MTLSampler.m in Sources */,
 				FA4CFF3725D7753A00B37A5B /* lcorolib.c in Sources */,
+				FA44DB49269B3FF100F9BEFA /* Forward.c in Sources */,
 				FA4CFF3325D7753A00B37A5B /* linit.c in Sources */,
 				FAB68E84266B93A3003F51FD /* DDS.c in Sources */,
 				FA4CFF3E25D7754700B37A5B /* physfs_unicode.c in Sources */,
 				FA4CFF4C25D7754700B37A5B /* physfs_platform_apple.m in Sources */,
 				FA49A586264639BF009EF9B9 /* Shader.c in Sources */,
 				FA4CFF4425D7754700B37A5B /* physfs_archiver_wad.c in Sources */,
-				FA4CFF7925D8361400B37A5B /* Frame.c in Sources */,
 				FA99954525E2E804002CB0D3 /* DefaultPBR.metal in Sources */,
 				FA4CFF2625D7753A00B37A5B /* lapi.c in Sources */,
 				FA4CFF0A25D774FF00B37A5B /* Log.c in Sources */,
@@ -2071,6 +2079,7 @@
 				FA4CFFCC25D8DA7900B37A5B /* Thread.m in Sources */,
 				FA4CFF3025D7753A00B37A5B /* loadlib.c in Sources */,
 				FA4CFF0925D774FF00B37A5B /* reallocarray.c in Sources */,
+				FA44DB4D269B3FFB00F9BEFA /* UIPass.c in Sources */,
 				FA4CFF3425D7753A00B37A5B /* ltable.c in Sources */,
 				FA4CFED225D774C100B37A5B /* iOS.m in Sources */,
 				FA8F56CA26679A4F00592E60 /* Skeleton.c in Sources */,
@@ -2100,7 +2109,6 @@
 				FA4CFF2E25D7753A00B37A5B /* ldo.c in Sources */,
 				FA4CFEA225D771E100B37A5B /* Main.m in Sources */,
 				FA4CFF4B25D7754700B37A5B /* physfs_archiver_grp.c in Sources */,
-				FA8F56CF26679A6F00592E60 /* Lighting.c in Sources */,
 				FA4A198F261F714A00040940 /* DestroyResource.c in Sources */,
 				FA4CFEDD25D774D800B37A5B /* Image.c in Sources */,
 				FAB68E87266BA655003F51FD /* MTLSynchronization.m in Sources */,

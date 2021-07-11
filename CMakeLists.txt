@@ -6,7 +6,7 @@ project(NekoEngine C)
 cmake_minimum_required(VERSION 3.12)
 
 option(USE_AVX2 "Enable AVX2 support" ON)
-option(ENABLE_EDITOR "Enable building the editor" ON)
+option(ENABLE_EDITOR "Enable building the editor" OFF)
 
 if (NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE, Debug)
