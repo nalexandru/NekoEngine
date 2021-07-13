@@ -51,7 +51,7 @@ pacman -S gcc libx11 vulkan-devel openal cmake shaderc
 ```
 * For FreeBSD:
 ```
-pkg install vulkan-headers vulkan-loader vulkan-tools vulkan-validation-layers cmake shaderc openal
+pkg install vulkan-headers vulkan-loader vulkan-tools vulkan-validation-layers cmake shaderc openal-soft
 ```
 
 #### Build
