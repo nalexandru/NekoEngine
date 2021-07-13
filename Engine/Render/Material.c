@@ -297,12 +297,12 @@ Re_InitMaterialSystem(void)
 	{
 		.mayAlias = true,
 		.format = TF_D32_SFLOAT,
-		.loadOp = ATL_CLEAR,
+		.loadOp = ATL_LOAD,
 		.storeOp = ATS_STORE,
 		.samples = ASC_1_SAMPLE,
 		.initialLayout = TL_UNKNOWN,
-		.layout = TL_DEPTH_ATTACHMENT,
-		.finalLayout = TL_DEPTH_ATTACHMENT,
+		.layout = TL_DEPTH_READ_ONLY_ATTACHMENT,
+		.finalLayout = TL_DEPTH_READ_ONLY_ATTACHMENT,
 		.clearDepth = 0.f
 	};
 	Re_MaterialRenderPassDesc = Re_CreateRenderPassDesc(&atDesc, 1, &depthDesc);
@@ -441,7 +441,7 @@ _createPipeline(const struct MaterialResource *mr, struct Shader *shader)
 	{
 		.flags = RE_TOPOLOGY_TRIANGLES | RE_POLYGON_FILL |
 					RE_CULL_NONE | RE_FRONT_FACE_CW |
-					RE_DEPTH_TEST | RE_DEPTH_WRITE | RE_DEPTH_OP_GREATER_EQUAL,
+					RE_DEPTH_TEST | RE_DEPTH_OP_EQUAL,
 		.shader = shader,
 		.renderPassDesc = Re_MaterialRenderPassDesc,
 		.pushConstantSize = 16 + 64,

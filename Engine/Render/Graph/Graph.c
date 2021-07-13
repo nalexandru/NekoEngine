@@ -147,7 +147,7 @@ void
 Re_ExecuteGraph(struct RenderGraph *g)
 {
 	struct PassData *pd; 
-	Rt_ArrayForEach(pd, &g->allPasses)
+	Rt_ArrayForEach(pd, &g->execPasses)
 		pd->procs.Execute(pd->data, &g->resources);
 }
 
@@ -155,6 +155,10 @@ void
 Re_DestroyGraph(struct RenderGraph *g)
 {
 	Rt_TermArray(&g->resources);
+
+	struct PassData *pd; 
+	Rt_ArrayForEach(pd, &g->allPasses)
+		pd->procs.Term(pd->data);
 	Rt_TermArray(&g->allPasses);
 
 	Sys_Free(g);

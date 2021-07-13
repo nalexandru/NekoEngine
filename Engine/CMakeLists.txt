@@ -8,6 +8,7 @@ file(GLOB src
 	Render/Driver/*.c
 	Render/Graph/*.c
 	Render/Components/*.c
+	Render/Pass/*.c
 	Scene/*.c
 	Script/*.c
 	System/*.c

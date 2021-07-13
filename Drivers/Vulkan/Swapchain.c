@@ -75,6 +75,7 @@ Vk_CreateSwapchain(struct RenderDevice *dev, VkSurfaceKHR surface, bool vertical
 			goto error;
 	}
 
+	//sw->imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT  | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 	sw->imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT  | VK_IMAGE_USAGE_TRANSFER_DST_BIT /*FIXME: suppress VUID-VkRenderPassBeginInfo-framebuffer-04627 | VK_IMAGE_USAGE_TRANSFER_SRC_BIT*/;
 
 	if (!_Create(dev->dev, dev->physDev, sw))

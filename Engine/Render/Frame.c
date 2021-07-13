@@ -19,6 +19,7 @@ Re_RenderFrame(void)
 	if (!Re_activeGraph) {
 		Re_activeGraph = Re_CreateGraph();
 
+		Re_AddPass(Re_activeGraph, &RP_depthPrePass);
 		Re_AddPass(Re_activeGraph, &RP_forward);
 		Re_AddPass(Re_activeGraph, &RP_ui);
 	}

@@ -66,6 +66,7 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 	vk12Features->shaderStorageBufferArrayNonUniformIndexing = VK_TRUE;
 	vk12Features->descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
 	vk12Features->descriptorBindingStorageBufferUpdateAfterBind = VK_TRUE;
+	vk12Features->separateDepthStencilLayouts = VK_TRUE;
 
 	if (info->features.drawIndirectCount)
 		vk12Features->drawIndirectCount = true;

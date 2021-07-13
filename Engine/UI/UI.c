@@ -32,9 +32,6 @@ BufferHandle UI_vertexBuffer, UI_indexBuffer;
 uint64_t UI_vertexBufferSize = 4000 * sizeof(struct UIVertex);
 uint64_t UI_indexBufferSize = 6000 * sizeof(uint16_t);
 
-static struct mat4 _projection;
-static struct RenderPassDesc *_renderPass;
-static struct Pipeline *_pipeline;
 static uint8_t *_vertexPtr, *_indexPtr;
 
 bool
@@ -64,48 +61,6 @@ UI_InitUI(void)
 	Re_CreateBuffer(&idxInfo, &UI_indexBuffer);
 	_indexPtr = Re_MapBuffer(UI_indexBuffer);
 
-	struct AttachmentDesc atDesc =
-	{
-		.mayAlias = false,
-		.format = Re_SwapchainFormat(Re_swapchain),
-		.loadOp = ATL_LOAD,
-		.storeOp = ATS_STORE,
-		.samples = ASC_1_SAMPLE,
-		.initialLayout = TL_PRESENT_SRC,
-		.layout = TL_COLOR_ATTACHMENT,
-		.finalLayout = TL_PRESENT_SRC,
-		.clearColor = { .3f, .0f, .4f, 1.f }
-	};
-	_renderPass = Re_CreateRenderPassDesc(&atDesc, 1, NULL);
-
-	struct Shader *shader = Re_GetShader("UI");
-
-	struct BlendAttachmentDesc blendAttachments[] =
-	{
-		{
-			.enableBlend = true,
-			.writeMask = RE_WRITE_MASK_RGBA,
-			.srcColor = RE_BF_SRC_ALPHA,
-			.dstColor = RE_BF_ONE_MINUS_SRC_ALPHA,
-			.colorOp = RE_BOP_ADD,
-			.srcAlpha = RE_BF_ONE,
-			.dstAlpha = RE_BF_ZERO,
-			.alphaOp = RE_BOP_ADD
-		}
-	};
-	struct GraphicsPipelineDesc pipeDesc =
-	{
-		.flags = RE_TOPOLOGY_TRIANGLES | RE_POLYGON_FILL | RE_CULL_NONE | RE_FRONT_FACE_CW,
-		.shader = shader,
-		.renderPassDesc = _renderPass,
-		.pushConstantSize = sizeof(struct UIConstants),
-		.attachmentCount = sizeof(blendAttachments) / sizeof(blendAttachments[0]),
-		.attachments = blendAttachments
-	};
-	_pipeline = Re_GraphicsPipeline(&pipeDesc);
-
-	m4_ortho(&_projection, 0.f, (float)*E_screenWidth, (float)*E_screenHeight, 0.f, 0.f, 1.f);
-
 	struct Stream stm;
 	if (!E_FileStream("/System/System.fnt", IO_READ, &stm))
 		return false;
@@ -125,7 +80,6 @@ UI_TermUI(void)
 	E_UnloadResource(UI_sysFont.texture);
 	Sys_Free(UI_sysFont.glyphs);
 
-	Re_DestroyRenderPassDesc(_renderPass);
 	Re_Destroy(UI_vertexBuffer);
 	Re_Destroy(UI_indexBuffer);
 }
@@ -141,54 +95,6 @@ UI_Update(struct Scene *s)
 		.indexCount = 0
 	};
 	E_ExecuteSystemS(s, UI_UPDATE_BUFFERS, &updateArgs);
-}
-
-void
-UI_Draw(struct Scene *s, struct Framebuffer *fb)
-{
-	Re_BeginDrawCommandBuffer();
-	Re_CmdBeginRenderPass(_renderPass, fb, RENDER_COMMANDS_INLINE);
-
-	Re_CmdBindPipeline(_pipeline);
-	Re_CmdSetViewport(0.f, 0.f, (float)*E_screenWidth, (float)*E_screenHeight, 0.f, 1.f);
-	Re_CmdSetScissor(0, 0, *E_screenWidth, *E_screenHeight);
-	Re_CmdBindIndexBuffer(UI_indexBuffer, UI_indexBufferSize * Re_frameId, IT_UINT_16);
-
-	struct UIConstants c =
-	{
-		.vertexAddress = Re_BufferAddress(UI_vertexBuffer, UI_vertexBufferSize * Re_frameId),
-		.texture = 0
-	};
-	m4_copy(&c.mvp, &_projection);
-
-	E_ExecuteSystemS(s, UI_DRAW_CONTEXT, &c);
-
-	Re_CmdEndRenderPass();
-	Re_EndCommandBuffer();
-}
-
-void
-UI_Render(struct Scene *s, void *image)
-{
-	struct FramebufferAttachmentDesc atDesc =
-	{
-		.usage = TU_COLOR_ATTACHMENT | TU_TRANSFER_DST,
-		.format = Re_SwapchainFormat(Re_swapchain)
-	};
-	struct FramebufferDesc fbDesc =
-	{
-		.attachmentCount = 1,
-		.attachments = &atDesc,
-		.width = *E_screenWidth,
-		.height = *E_screenHeight,
-		.layers = 1,
-		.renderPassDesc = _renderPass
-	};
-	struct Framebuffer *fb = Re_CreateFramebuffer(&fbDesc);
-	Re_SetAttachment(fb, 0, Re_SwapchainTexture(Re_swapchain, image));
-	Re_Destroy(fb);
-
-	UI_Draw(s, fb);
 }
 
 bool

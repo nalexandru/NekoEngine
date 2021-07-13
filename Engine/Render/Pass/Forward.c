@@ -29,16 +29,13 @@ struct ForwardPass
 static bool
 _Setup(struct ForwardPass *pass, struct Array *resources)
 {
+//	if (!Re_GraphTexture(pass->depthHash, resources))
+//		return false;
+
 	struct FramebufferAttachmentDesc fbAtDesc[2] =
 	{
-		{
-			.usage = 0,
-			.format = 0
-		},
-		{
-			.usage = TU_DEPTH_STENCIL_ATTACHMENT,
-			.format = TF_D32_SFLOAT
-		}
+		{ .usage = 0, .format = 0 },
+		{ .usage = TU_DEPTH_STENCIL_ATTACHMENT, .format = TF_D32_SFLOAT }
 	};
 	Re_SwapchainDesc(Re_swapchain, &fbAtDesc[0]);
 	
@@ -54,28 +51,13 @@ _Setup(struct ForwardPass *pass, struct Array *resources)
 	pass->fb = Re_CreateFramebuffer(&fbDesc);
 	Re_Destroy(pass->fb);
 
-	struct TextureDesc depthDesc =
-	{
-		.width = *E_screenWidth,
-		.height = *E_screenHeight,
-		.depth = 1,
-		.type = TT_2D,
-		.usage = TU_DEPTH_STENCIL_ATTACHMENT,
-		.format = TF_D32_SFLOAT,
-		.arrayLayers = 1,
-		.mipLevels = 1,
-		.gpuOptimalTiling = true,
-		.memoryType = MT_GPU_LOCAL
-	};
-	Re_AddGraphTexture("DepthBuffer", &depthDesc, resources);
-
 	return true;
 }
 
 static void
 _Execute(struct ForwardPass *pass, const struct Array *resources)
 {
-	static struct
+	struct
 	{
 		uint64_t vertexAddress;
 		uint64_t materialAddress;
@@ -125,7 +107,7 @@ _Init(struct ForwardPass **pass)
 		return false;
 
 	(*pass)->outputHash = Rt_HashString("Re_output");
-	(*pass)->depthHash = Rt_HashString("DepthBuffer");
+	(*pass)->depthHash = Rt_HashString("Re_depthBuffer");
 
 	return true;
 }

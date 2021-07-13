@@ -187,7 +187,7 @@ _EnumerateDevices(uint32_t *count, struct RenderDeviceInfo *info)
 				!vk12Features->descriptorBindingPartiallyBound || !vk12Features->timelineSemaphore ||
 				!vk12Features->shaderSampledImageArrayNonUniformIndexing || !vk12Features->runtimeDescriptorArray ||
 				!vk12Features->descriptorBindingSampledImageUpdateAfterBind || !vk12Features->descriptorBindingStorageBufferUpdateAfterBind ||
-				!vk12Features->shaderStorageBufferArrayNonUniformIndexing || !vk12Features->bufferDeviceAddress)
+				!vk12Features->shaderStorageBufferArrayNonUniformIndexing || !vk12Features->bufferDeviceAddress || !vk12Features->separateDepthStencilLayouts)
 			continue;
 
 		snprintf(info[i].deviceName, sizeof(info[i].deviceName), "%s", props->deviceName);

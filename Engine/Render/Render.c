@@ -11,6 +11,7 @@
 #include <Engine/Resource.h>
 #include <Render/Model.h>
 #include <Render/Render.h>
+#include <Render/Graph/Graph.h>
 #include <Render/Driver/Driver.h>
 
 #define RE_MOD L"Render"
@@ -140,6 +141,8 @@ void
 Re_TermRender(void)
 {
 	Re_WaitIdle();
+
+	Re_DestroyGraph(Re_activeGraph);
 
 	Re_TermMaterialSystem();
 

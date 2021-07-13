@@ -133,5 +133,11 @@
     <CustomBuild Include="Shaders\UI_FS.frag">
       <Filter>Shaders\Fragment</Filter>
     </CustomBuild>
+    <CustomBuild Include="Shaders\Depth_VS.vert">
+      <Filter>Shaders\Vertex</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Shaders\Depth_FS.frag">
+      <Filter>Shaders\Fragment</Filter>
+    </CustomBuild>
   </ItemGroup>
 </Project>

@@ -166,6 +166,14 @@
       <FileType>Document</FileType>
     </CustomBuild>
   </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="Shaders\Depth_FS.frag">
+      <FileType>Document</FileType>
+    </CustomBuild>
+    <CustomBuild Include="Shaders\Depth_VS.vert">
+      <FileType>Document</FileType>
+    </CustomBuild>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

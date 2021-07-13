@@ -175,6 +175,9 @@
 		FA44DB50269B404500F9BEFA /* Frame.c in Sources */ = {isa = PBXBuildFile; fileRef = FA44DB4F269B404500F9BEFA /* Frame.c */; };
 		FA44DB51269B404500F9BEFA /* Frame.c in Sources */ = {isa = PBXBuildFile; fileRef = FA44DB4F269B404500F9BEFA /* Frame.c */; };
 		FA44DB52269B404500F9BEFA /* Frame.c in Sources */ = {isa = PBXBuildFile; fileRef = FA44DB4F269B404500F9BEFA /* Frame.c */; };
+		FA44DB55269B5DA500F9BEFA /* Depth.metal in Sources */ = {isa = PBXBuildFile; fileRef = FA44DB54269B5DA500F9BEFA /* Depth.metal */; };
+		FA44DB56269B5DA500F9BEFA /* Depth.metal in Sources */ = {isa = PBXBuildFile; fileRef = FA44DB54269B5DA500F9BEFA /* Depth.metal */; };
+		FA44DB57269B5DA500F9BEFA /* Depth.metal in Sources */ = {isa = PBXBuildFile; fileRef = FA44DB54269B5DA500F9BEFA /* Depth.metal */; };
 		FA49A582264639B7009EF9B9 /* Material.c in Sources */ = {isa = PBXBuildFile; fileRef = FA71247E263616DA00916C6D /* Material.c */; };
 		FA49A583264639BF009EF9B9 /* Pipeline.c in Sources */ = {isa = PBXBuildFile; fileRef = FA80D6C8264616CD0053CE56 /* Pipeline.c */; };
 		FA49A584264639BF009EF9B9 /* Buffer.c in Sources */ = {isa = PBXBuildFile; fileRef = FA80D6C5264616CD0053CE56 /* Buffer.c */; };
@@ -478,6 +481,7 @@
 		FA44DB47269B3FF100F9BEFA /* Forward.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = Forward.c; path = Engine/Render/Pass/Forward.c; sourceTree = "<group>"; };
 		FA44DB4B269B3FFB00F9BEFA /* UIPass.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = UIPass.c; path = Engine/UI/UIPass.c; sourceTree = "<group>"; };
 		FA44DB4F269B404500F9BEFA /* Frame.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = Frame.c; path = Engine/Render/Frame.c; sourceTree = "<group>"; };
+		FA44DB54269B5DA500F9BEFA /* Depth.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; name = Depth.metal; path = Drivers/Metal/Shaders/Depth.metal; sourceTree = "<group>"; };
 		FA49A58A264646C3009EF9B9 /* Downloader.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Downloader.plist; path = Platform/iOS/Downloader.plist; sourceTree = "<group>"; };
 		FA4A193D25FD321400040940 /* l_Render.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = l_Render.c; path = Engine/Script/l_Render.c; sourceTree = "<group>"; };
 		FA4A194225FD40FA00040940 /* Interface.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Interface.h; path = Engine/Script/Interface.h; sourceTree = "<group>"; };
@@ -1227,6 +1231,7 @@
 				FAC6710825EBE812001BF95A /* Skinning.metal */,
 				FAFCD95325EE4767006CA7FF /* ShaderTypes.h */,
 				FA28E6CA2668F4B2000B591E /* UI.metal */,
+				FA44DB54269B5DA500F9BEFA /* Depth.metal */,
 			);
 			name = Shaders;
 			sourceTree = "<group>";
@@ -1753,6 +1758,7 @@
 				FAAF9C8A2522A81F00F7C24B /* physfs_archiver_mvl.c in Sources */,
 				FAAF9C8B2522A81F00F7C24B /* physfs_archiver_qpak.c in Sources */,
 				FAAF9C8C2522A81F00F7C24B /* physfs_archiver_slb.c in Sources */,
+				FA44DB55269B5DA500F9BEFA /* Depth.metal in Sources */,
 				FA80D6CC264616CD0053CE56 /* Pipeline.c in Sources */,
 				FAAF9C8D2522A81F00F7C24B /* physfs_archiver_unpacked.c in Sources */,
 				FAAF9C8E2522A81F00F7C24B /* physfs_archiver_vdf.c in Sources */,
@@ -1907,6 +1913,7 @@
 				FA396F6D266F7B430069B484 /* AVFDevice.m in Sources */,
 				FA396FAE266F7B9C0069B484 /* Camera.c in Sources */,
 				FA61FDE4266FDBCD008E35B1 /* AssetManager.m in Sources */,
+				FA44DB57269B5DA500F9BEFA /* Depth.metal in Sources */,
 				FA397006266F7C510069B484 /* GUI.m in Sources */,
 				FA396F75266F7B4E0069B484 /* MTLSwapchain.m in Sources */,
 				FA396FD7266F7BEC0069B484 /* lutf8lib.c in Sources */,
@@ -2092,6 +2099,7 @@
 				FA4CFEFF25D774F300B37A5B /* Scene.c in Sources */,
 				FA4CFF4525D7754700B37A5B /* physfs_archiver_qpak.c in Sources */,
 				FA49A583264639BF009EF9B9 /* Pipeline.c in Sources */,
+				FA44DB56269B5DA500F9BEFA /* Depth.metal in Sources */,
 				FA49A585264639BF009EF9B9 /* Texture.c in Sources */,
 				FA4CFEFE25D774F300B37A5B /* ScriptHost.c in Sources */,
 				FA4CFF3825D7753A00B37A5B /* liolib.c in Sources */,

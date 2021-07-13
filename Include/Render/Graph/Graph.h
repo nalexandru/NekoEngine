@@ -4,6 +4,8 @@
 #include <Render/Types.h>
 #include <Render/Driver/Core.h>
 
+extern struct RenderGraph *Re_activeGraph;
+
 bool Re_AddGraphTexture(const char *name, const struct TextureDesc *desc, struct Array *resources);
 bool Re_AddGraphBuffer(const char *name, const struct BufferDesc *desc, struct Array *resources);
 

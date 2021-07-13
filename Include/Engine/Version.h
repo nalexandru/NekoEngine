@@ -8,8 +8,8 @@
 
 #define E_VER_MAJOR		0
 #define E_VER_MINOR		8
-#define E_VER_BUILD		139
-#define E_VER_REVISION	0
+#define E_VER_BUILD		140
+#define E_VER_REVISION		0
 
 #define E_PGM_NAME		L"NekoEngine"
 #define E_CODENAME		L"Olivia"

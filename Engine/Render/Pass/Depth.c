@@ -28,10 +28,11 @@ struct DepthPrePass
 	uint64_t normalHash, depthHash;
 };
 
-struct DepthConstants
+struct Constants
 {
-	uint32_t vertexBuffer;
-	uint32_t material;
+	uint64_t vertexAddress;
+	uint64_t materialAddress;
+	struct mat4 mvp;
 };
 
 static bool 
@@ -39,14 +40,8 @@ _Setup(struct DepthPrePass *pass, struct Array *resources)
 {
 	struct FramebufferAttachmentDesc fbAtDesc[2] =
 	{
-		{
-			.usage = TU_COLOR_ATTACHMENT | TU_TRANSFER_DST,
-			.format = TF_R16G16B16A16_SFLOAT
-		},
-		{
-			.usage = TU_DEPTH_STENCIL_ATTACHMENT,
-			.format = TF_D32_SFLOAT
-		}
+		{ .usage = TU_COLOR_ATTACHMENT, .format = TF_R16G16B16A16_SFLOAT },
+		{ .usage = TU_DEPTH_STENCIL_ATTACHMENT, .format = TF_D32_SFLOAT }
 	};
 	struct FramebufferDesc fbDesc =
 	{
@@ -73,7 +68,7 @@ _Setup(struct DepthPrePass *pass, struct Array *resources)
 		.gpuOptimalTiling = true,
 		.memoryType = MT_GPU_LOCAL
 	};
-	Re_AddGraphTexture("NormalBuffer", &normalDesc, resources);
+	Re_AddGraphTexture("Re_normalBuffer", &normalDesc, resources);
 
 	struct TextureDesc depthDesc =
 	{
@@ -88,7 +83,7 @@ _Setup(struct DepthPrePass *pass, struct Array *resources)
 		.gpuOptimalTiling = true,
 		.memoryType = MT_GPU_LOCAL
 	};
-	Re_AddGraphTexture("DepthBuffer", &depthDesc, resources);
+	Re_AddGraphTexture("Re_depthBuffer", &depthDesc, resources);
 
 	return true;
 }
@@ -96,32 +91,36 @@ _Setup(struct DepthPrePass *pass, struct Array *resources)
 static void
 _Execute(struct DepthPrePass *pass, const struct Array *resources)
 {
+	struct Constants constants;
+
 	Re_SetAttachment(pass->fb, 0, Re_GraphTexture(pass->normalHash, resources));
 	Re_SetAttachment(pass->fb, 1, Re_GraphTexture(pass->depthHash, resources));
 
 	Re_BeginDrawCommandBuffer();
 	Re_CmdBeginRenderPass(pass->rpd, pass->fb, RENDER_COMMANDS_INLINE);
 
-	Re_CmdBindPipeline(pass->pipeline);
-
 	Re_CmdSetViewport(0.f, 0.f, (float)*E_screenWidth, (float)*E_screenHeight, 0.f, 1.f);
 	Re_CmdSetScissor(0, 0, *E_screenWidth, *E_screenHeight);
-	
-	struct Array *drawables = Sys_TlsGet(0);
-	struct DepthConstants constants;
 
-	BufferHandle boundIndexBuffer = 0;
-	struct Drawable *d;
-	Rt_ArrayForEach(d, drawables) {
-		constants.material = 0;
-	//	constants.vertexBuffer = d->vertexBuffer;
-		Re_CmdPushConstants(SS_ALL_GRAPHICS, sizeof(constants), &constants);
+	Re_CmdBindPipeline(pass->pipeline);
 
-		if (d->indexBuffer != boundIndexBuffer) {
+	for (uint32_t i = 0; i < E_JobWorkerThreads(); ++i) {
+		struct Array *drawables = &Scn_activeScene->collect.arrays[i];
+		struct Drawable *d = NULL;
+
+		if (!drawables->count)
+			continue;
+
+		Rt_ArrayForEach(d, drawables) {
 			Re_CmdBindIndexBuffer(d->indexBuffer, 0, d->indexType);
-			boundIndexBuffer = d->indexBuffer;
+
+			constants.vertexAddress = d->vertexAddress;
+			constants.materialAddress = d->materialAddress;
+			m4_copy(&constants.mvp, &d->mvp);
+
+			Re_CmdPushConstants(SS_ALL, sizeof(constants), &constants);
+			Re_CmdDrawIndexed(d->indexCount, 1, d->firstIndex, 0, 0);
 		}
-		Re_CmdDrawIndexed(d->indexCount, 1, d->firstIndex, 0, 0);
 	}
 
 	Re_CmdEndRenderPass();
@@ -146,7 +145,7 @@ _Init(struct DepthPrePass **pass)
 		.samples = ASC_1_SAMPLE,
 		.initialLayout = TL_UNKNOWN,
 		.layout = TL_COLOR_ATTACHMENT,
-		.finalLayout = TL_SHADER_READ_ONLY,
+		.finalLayout = TL_COLOR_ATTACHMENT,
 		.clearColor = { 0.f, 0.f, 0.f, 0.f }
 	};
 	struct AttachmentDesc depthDesc =
@@ -162,7 +161,7 @@ _Init(struct DepthPrePass **pass)
 		.clearDepth = 0.f
 	};
 	(*pass)->rpd = Re_CreateRenderPassDesc(&atDesc, 1, &depthDesc);
-	if ((*pass)->rpd)
+	if (!(*pass)->rpd)
 		goto error;
 
 	struct BlendAttachmentDesc blendAttachments[] =
@@ -171,19 +170,22 @@ _Init(struct DepthPrePass **pass)
 	};
 	struct GraphicsPipelineDesc pipeDesc =
 	{
-		.flags = RE_TOPOLOGY_TRIANGLES | RE_POLYGON_FILL | RE_CULL_NONE | RE_FRONT_FACE_CW | RE_DEPTH_WRITE | RE_DEPTH_TEST,
+		.flags = RE_TOPOLOGY_TRIANGLES | RE_POLYGON_FILL |
+					RE_CULL_NONE | RE_FRONT_FACE_CW |
+					RE_DEPTH_TEST | RE_DEPTH_WRITE | RE_DEPTH_OP_GREATER_EQUAL,
 		.shader = shader,
 		.renderPassDesc = (*pass)->rpd,
-		.pushConstantSize = sizeof(struct DepthConstants),
+		.pushConstantSize = sizeof(struct Constants),
 		.attachmentCount = sizeof(blendAttachments) / sizeof(blendAttachments[0]),
-		.attachments = blendAttachments
+		.attachments = blendAttachments,
+		.depthFormat = TF_D32_SFLOAT
 	};
 	(*pass)->pipeline = Re_GraphicsPipeline(&pipeDesc);
-	if ((*pass)->pipeline)
+	if (!(*pass)->pipeline)
 		goto error;
 
-	(*pass)->normalHash = Rt_HashString("NormalBuffer");
-	(*pass)->depthHash = Rt_HashString("DepthBuffer");
+	(*pass)->normalHash = Rt_HashString("Re_normalBuffer");
+	(*pass)->depthHash = Rt_HashString("Re_depthBuffer");
 
 	return true;
 
