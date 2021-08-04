@@ -8,7 +8,8 @@
 static inline void _SetAttachment(VkAttachmentDescription *dst, const struct AttachmentDesc *src);
 
 struct RenderPassDesc *
-Vk_CreateRenderPassDesc(struct RenderDevice *dev, const struct AttachmentDesc *attachments, uint32_t count, const struct AttachmentDesc *depthAttachment)
+Vk_CreateRenderPassDesc(struct RenderDevice *dev, const struct AttachmentDesc *attachments, uint32_t count, const struct AttachmentDesc *depthAttachment,
+	const struct AttachmentDesc *inputAttachments, uint32_t inputCount)
 {
 	struct RenderPassDesc *rp = Sys_Alloc(sizeof(*rp), 1, MH_RenderDriver);
 	if (!rp)
@@ -18,11 +19,17 @@ Vk_CreateRenderPassDesc(struct RenderDevice *dev, const struct AttachmentDesc *a
 	if (depthAttachment)
 		++atCount;
 
+	if (inputCount)
+		atCount += inputCount;
+
 	VkAttachmentDescription *atDesc = Sys_Alloc(sizeof(*atDesc), atCount, MH_Transient);
 	VkAttachmentReference *atRef = Sys_Alloc(sizeof(*atRef), atCount, MH_Transient);
+	VkAttachmentReference *iaRef = NULL;
 
 	rp->clearValues = Sys_Alloc(sizeof(*rp->clearValues), atCount, MH_RenderDriver);
 	assert(rp->clearValues);
+
+	rp->inputAttachments = inputCount;
 
 	for (uint32_t i = 0; i < count; ++i) {
 		_SetAttachment(&atDesc[i], &attachments[i]);
@@ -46,6 +53,19 @@ Vk_CreateRenderPassDesc(struct RenderDevice *dev, const struct AttachmentDesc *a
 		}
 	}
 
+	if (inputCount) {
+		iaRef = Sys_Alloc(sizeof(*iaRef), inputCount, MH_Transient);
+
+		int offset = depthAttachment ? count + 1 : count;
+		for (uint32_t i = 0; i < inputCount; ++i) {
+			int id = offset + i;
+			_SetAttachment(&atDesc[id], &inputAttachments[i]);
+
+			iaRef[i].attachment = id;
+			iaRef[i].layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		}
+	}
+
 	VkSubpassDescription spDesc[] =
 	{
 		{
@@ -54,7 +74,10 @@ Vk_CreateRenderPassDesc(struct RenderDevice *dev, const struct AttachmentDesc *a
 			.colorAttachmentCount = count,
 			.pColorAttachments = atRef,
 
-			.pDepthStencilAttachment = depthAttachment ? &atRef[count] : NULL
+			.pDepthStencilAttachment = depthAttachment ? &atRef[count] : NULL,
+
+			.pInputAttachments = iaRef,
+			.inputAttachmentCount = inputCount
 		}
 	};
 

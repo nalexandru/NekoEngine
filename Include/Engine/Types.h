@@ -32,6 +32,7 @@ struct Queue;
 
 struct Font;
 struct Scene;
+struct Light;
 struct Stream;
 struct Camera;
 struct UIContext;

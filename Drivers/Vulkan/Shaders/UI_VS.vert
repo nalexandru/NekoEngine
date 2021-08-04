@@ -7,7 +7,7 @@
 #extension GL_ARB_shader_draw_parameters : require
 #extension GL_EXT_shader_explicit_arithmetic_types_int16 : require
 
-#include "UIDrawInfo.h"
+#include "UIDrawInfo.glsl"
 
 layout(location = 0) out vec4 v_color;
 layout(location = 1) out vec2 v_uv;

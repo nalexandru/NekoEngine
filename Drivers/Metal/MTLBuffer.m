@@ -98,6 +98,14 @@ MTL_BufferAddress(id<MTLDevice> dev, const struct Buffer *buff, uint64_t offset)
 	return r;
 }
 
+uint64_t
+MTL_OffsetAddress(uint64_t address, uint64_t offset)
+{
+	uint32_t *v = (uint32_t *)&address;
+	v[1] += (uint32_t)offset;
+	return address;
+}
+
 void
 MTL_DestroyBuffer(id<MTLDevice> dev, struct Buffer *buff)
 {

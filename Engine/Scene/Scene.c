@@ -6,21 +6,30 @@
 #include <Engine/Config.h>
 #include <System/Log.h>
 #include <Engine/Events.h>
+#include <Engine/Engine.h>
 #include <Engine/ECSystem.h>
 #include <Scene/Scene.h>
+#include <Scene/Light.h>
 #include <Scene/Camera.h>
+#include <Scene/Transform.h>
+#include <Scene/Components.h>
 #include <System/System.h>
 #include <System/Memory.h>
 #include <Runtime/Runtime.h>
 #include <Engine/Resource.h>
 #include <Render/Render.h>
+#include <Render/Model.h>
 #include <Animation/Animation.h>
 
 #include "../Engine/ECS.h"
 
-#define SCNMOD	L"Scene"
-#define BUFF_SZ	512
+#define DEF_MAX_LIGHTS		4096
+#define DEF_MAX_INSTANCES	8192
+#define SCNMOD			L"Scene"
+#define BUFF_SZ			512
+#define ROUND_UP(v, powerOf2Alignment) (((v) + (powerOf2Alignment)-1) & ~((powerOf2Alignment)-1))
 
+#pragma pack(push, 1)
 struct SceneData
 {
 	struct {
@@ -33,20 +42,22 @@ struct SceneData
 		uint32_t enviornmentMap;
 		uint32_t __padding[3];
 	} enviornment;
-
+	
 	struct {
 		uint32_t lightCount;
 		uint32_t xTileCount;
-		uint32_t __padding[2];
 	} lighting;
+
+	uint64_t instanceBufferAddress;
 
 	struct {
 		float exposure;
 		float gamma;
+		float invGamma;
 		uint32_t sampleCount;
-		uint32_t __padding[1];
 	} settings;
 };
+#pragma pack(pop)
 
 struct Scene *Scn_activeScene = NULL;
 
@@ -54,6 +65,7 @@ static inline bool _InitScene(struct Scene *s);
 static void _LoadJob(int worker, struct Scene *scn);
 static inline void _ReadSceneInfo(struct Scene *s, struct Stream *stm, char *data, wchar_t *buff);
 static inline void _ReadEntity(struct Scene *s, struct Stream *stm, char *data, wchar_t *wbuff, struct Array *args);
+static inline uint64_t _DataOffset(const struct Scene *s);
 
 struct Scene *
 Scn_CreateScene(const wchar_t *name)
@@ -61,6 +73,9 @@ Scn_CreateScene(const wchar_t *name)
 	struct Scene *s = Sys_Alloc(sizeof(struct Scene), 1, MH_Scene);
 	if (!s)
 		return NULL;
+
+	s->maxLights = DEF_MAX_LIGHTS;
+	s->maxInstances = DEF_MAX_INSTANCES;
 
 	swprintf(s->name, sizeof(s->name) / sizeof(wchar_t), L"%ls", name);
 
@@ -81,11 +96,6 @@ Scn_StartSceneLoad(const char *path)
 
 	snprintf(s->path, sizeof(s->path), "%s", path);
 
-	if (!_InitScene(s)) {
-		Sys_Free(s);
-		return NULL;
-	}
-
 	if (E_GetCVarBln(L"Engine_SingleThreadSceneLoad", false))
 		_LoadJob(0, s);
 	else
@@ -97,8 +107,11 @@ Scn_StartSceneLoad(const char *path)
 void
 Scn_UnloadScene(struct Scene *s)
 {
-	for (uint32_t i = 0; i < E_JobWorkerThreads(); ++i)
+	for (uint32_t i = 0; i < E_JobWorkerThreads(); ++i) {
+		Rt_TermArray(&s->collect.instanceArrays[i]);
 		Rt_TermArray(&s->collect.arrays[i]);
+	}
+	Sys_Free(s->collect.instanceArrays);
 	Sys_Free(s->collect.arrays);
 
 	Re_Destroy(s->sceneData);
@@ -121,12 +134,83 @@ Scn_ActivateScene(struct Scene *s)
 }
 
 void
+Scn_DataAddress(const struct Scene *s, uint64_t *sceneAddress, uint64_t *instanceAddress)
+{
+	const uint64_t offset = _DataOffset(s);
+	*sceneAddress = Re_BufferAddress(s->sceneData, offset);
+	*instanceAddress = Re_BufferAddress(s->sceneData, offset + sizeof(struct SceneData) + s->lightDataSize);
+}
+
+void
 Scn_StartDrawableCollection(struct Scene *s, const struct Camera *c)
 {
 	s->collect.nextArray = 0;
 	m4_mul(&s->collect.vp, &c->projMatrix, &c->viewMatrix);
 
+	for (uint32_t i = 0; i < E_JobWorkerThreads(); ++i) {
+		Rt_ClearArray(&s->collect.arrays[i], false);
+		Rt_ClearArray(&s->collect.instanceArrays[i], false);
+	}
+
 	E_ExecuteSystemS(s, RE_COLLECT_DRAWABLES, &s->collect);
+
+	uint8_t *dst = s->dataPtr + _DataOffset(s) + sizeof(struct SceneData) + s->lightDataSize;
+	for (uint32_t i = 0; i < E_JobWorkerThreads(); ++i) {
+		const size_t sz = Rt_ArrayUsedByteSize(&s->collect.instanceArrays[i]);
+		if (!sz)
+			continue;
+
+		memcpy(dst, s->collect.instanceArrays[i].data, sz);
+		dst += sz;
+	}
+}
+
+void
+Scn_StartDataUpdate(struct Scene *s, const struct Camera *c)
+{
+	s->dataTransfered = false;
+
+	struct CollectLights collect;
+	Rt_InitArray(&collect.lightData, s->maxLights, sizeof(struct LightData), MH_Transient);
+
+	E_ExecuteSystemS(s, SCN_COLLECT_LIGHTS, &collect);
+
+	uint8_t *dst = s->dataPtr + _DataOffset(s);
+
+	const EntityHandle camEnt = c->_owner;
+	const struct Transform *camXform = E_GetComponentS(s, camEnt, E_ComponentTypeId(TRANSFORM_COMP));
+
+	struct SceneData data =
+	{
+		.camera =
+		{
+			.cameraPosition = { -camXform->position.x, camXform->position.y, -camXform->position.z, 0.f }
+		},
+		.enviornment =
+		{
+			.sunPosition = { 0.f, 1.f, 1.f, 1.f },
+			.enviornmentMap = E_ResHandleToGPU(s->environmentMap)
+		},
+		.lighting =
+		{
+			.lightCount = (uint32_t)collect.lightData.count,
+			.xTileCount = *E_screenWidth + (*E_screenWidth % 16) / 16
+		},
+		.settings =
+		{
+			.exposure = 1.f,
+			.gamma = 2.2f,
+			.sampleCount = 1
+		}
+	};
+	m4_mul(&data.camera.viewProjection, &c->projMatrix, &c->viewMatrix);
+
+	data.settings.invGamma = 1.f / data.settings.gamma;
+
+	memcpy(dst, &data, sizeof(data));
+	memcpy(dst + sizeof(data), collect.lightData.data, Rt_ArrayUsedByteSize(&collect.lightData));
+
+	s->dataTransfered = true;
 }
 
 bool
@@ -135,26 +219,44 @@ _InitScene(struct Scene *s)
 	if (!E_InitSceneComponents(s) || !E_InitSceneEntities(s))
 		goto error;
 
+	s->lightDataSize = ROUND_UP(sizeof(struct LightData) * s->maxLights, 16);
+	s->instanceDataSize = ROUND_UP(sizeof(struct ModelInstance) * s->maxInstances, 16);
+	s->sceneDataSize = sizeof(struct SceneData) + s->lightDataSize + s->instanceDataSize;
+
 	struct BufferCreateInfo bci =
 	{
 		.desc =
 		{
-			.size = sizeof(struct SceneData) * RE_NUM_FRAMES,
-			.usage = BU_TRANSFER_DST | BU_UNIFORM_BUFFER,
-			.memoryType = MT_GPU_LOCAL
+			.size = s->sceneDataSize * RE_NUM_FRAMES,
+			.usage = BU_TRANSFER_DST | BU_STORAGE_BUFFER,
+			.memoryType = MT_CPU_COHERENT
 		}
 	};
 
 	if (!Re_CreateBuffer(&bci, &s->sceneData))
 		goto error;
 
+	s->dataPtr = Re_MapBuffer(s->sceneData);
+	if (!s->dataPtr)
+		goto error;
+
 	s->collect.arrays = Sys_Alloc(E_JobWorkerThreads(), sizeof(struct Array), MH_Scene);
 	if (!s->collect.arrays)
 		goto error;
 
-	for (uint32_t i = 0; i < E_JobWorkerThreads(); ++i)
+	s->collect.instanceArrays = Sys_Alloc(E_JobWorkerThreads(), sizeof(struct Array), MH_Scene);
+	if (!s->collect.instanceArrays)
+		goto error;
+
+	for (uint32_t i = 0; i < E_JobWorkerThreads(); ++i) {
 		if (!Rt_InitArray(&s->collect.arrays[i], 10, sizeof(struct Drawable), MH_Scene))
 			goto error;
+
+		if (!Rt_InitArray(&s->collect.instanceArrays[i], 10, sizeof(struct ModelInstance), MH_Scene))
+			goto error;
+	}
+
+	s->collect.s = s;
 
 	return true;
 
@@ -221,6 +323,9 @@ _LoadJob(int wid, struct Scene *s)
 void
 _ReadSceneInfo(struct Scene *s, struct Stream *stm, char *data, wchar_t *buff)
 {
+	s->maxLights = DEF_MAX_LIGHTS;
+	s->maxInstances = DEF_MAX_INSTANCES;
+	
 	while (!E_EndOfStream(stm)) {
 		char *line = E_ReadStreamLine(stm, data, BUFF_SZ);
 		size_t len;
@@ -237,10 +342,14 @@ _ReadSceneInfo(struct Scene *s, struct Stream *stm, char *data, wchar_t *buff)
 		} else if (!strncmp(line, "EnvironmentMap", 14)) {
 //			char *file = strchr(line, '=') + 1;
 //			s->environmentMap = E_LoadResource(file, RES_TEXTURE);
+		} else if (!strncmp(line, "MaxLights", 9)) {
+			s->maxLights = atoi(strchr(line, '=') + 1);
 		} else if (!strncmp(line, "EndSceneInfo", len)) {
 			break;
 		}
 	}
+
+	_InitScene(s);
 }
 
 void
@@ -303,3 +412,10 @@ _ReadEntity(struct Scene *s, struct Stream *stm, char *data, wchar_t *wbuff, str
 		}
 	}
 }
+
+static inline uint64_t
+_DataOffset(const struct Scene *s)
+{
+	return s->sceneDataSize * Re_frameId;
+}
+

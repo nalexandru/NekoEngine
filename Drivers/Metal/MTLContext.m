@@ -124,11 +124,14 @@ _ExecuteSecondary(struct RenderContext *ctx, CommandBufferHandle *cmdBuffers, ui
 static void
 _BeginRenderPass(struct RenderContext *ctx, struct RenderPassDesc *passDesc, struct Framebuffer *fb, enum RenderCommandContents contents)
 {
-	for (uint32_t i = 0; i < passDesc->attachmentCount; ++i)
+	for (uint32_t i = 0; i < passDesc->colorAttachments; ++i)
 		passDesc->desc.colorAttachments[i].texture = fb->attachments[i];
 	
-	if (passDesc->depthFormat != MTLPixelFormatInvalid && passDesc->attachmentCount < fb->attachmentCount)
-		passDesc->desc.depthAttachment.texture = fb->attachments[passDesc->attachmentCount];
+	if (passDesc->depthFormat != MTLPixelFormatInvalid && passDesc->colorAttachments < fb->attachmentCount)
+		passDesc->desc.depthAttachment.texture = fb->attachments[passDesc->colorAttachments];
+
+	for (uint32_t i = 0; i < passDesc->inputAttachments; ++i)
+		passDesc->desc.colorAttachments[passDesc->colorAttachments + i].texture = fb->attachments[passDesc->colorAttachments + i + 1];
 
 	ctx->encoders.render = [ctx->cmdBuffer renderCommandEncoderWithDescriptor: passDesc->desc];
 }

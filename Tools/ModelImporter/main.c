@@ -112,6 +112,14 @@ main(int argc, char *argv[])
 
 	printf("done.\nConverting materials..."); fflush(stdout);
 
+	for (uint32_t i = 0; i < gltf->images_count; ++i) {
+		if (gltf->images[i].name)
+			continue;
+
+		gltf->images[i].name = calloc(256, sizeof(char));
+		snprintf(gltf->images[i].name, 256, "%s_%d", baseDir, i);
+	}
+
 	for (uint32_t i = 0; i < gltf->materials_count; ++i) {
 		snprintf(pathBuff, sizeof(pathBuff), "Data/Materials/%s/%s.mat", baseDir, gltf->materials[i].name);
 		_saveMaterial(&gltf->materials[i], baseDir, pathBuff);
@@ -249,7 +257,7 @@ _saveMesh(const char *path)
 	fwrite(_vertices, sizeof(*_vertices), _vertexCount, fp);
 	WRITE_GUARD(NMESH_SEC_FOOTER);
 
-	WRITE_SEC(NMESH_IDX_ID, _itSize * _indexCount);
+	WRITE_SEC(NMESH_IDX_ID, (uint32_t)_itSize * _indexCount);
 	uint32_t type = (uint32_t)_it;
 	fwrite(&type, sizeof(type), 1, fp);
 	fwrite(_indices, _itSize, _indexCount, fp);
@@ -324,6 +332,8 @@ _saveMaterial(const cgltf_material *mat, const char *dir, const char *path)
 		if (mat->transmission.transmission_texture.texture)
 			ARG_IMG("TransmissionMap", mat->transmission.transmission_texture.texture->image->name);
 	}
+
+	ARG_F("SpecularWeight", mat->specular.specular_factor);
 
 	fprintf(fp, "\n}\n");
 	fclose(fp);

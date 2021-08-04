@@ -159,6 +159,14 @@ Rt_CloneArray(struct Array *dst, const struct Array *src, enum MemoryHeap heap)
 #define Rt_ArrayByteSize(a) ((a)->size * (a)->elemSize)
 
 /**
+ * Rt_ArrayUsedByteSize - get the used size in bytes of an array
+ * @a: the array
+ *
+ * Returns: used size in bytes of the array
+ */
+#define Rt_ArrayUsedByteSize(a) ((a)->count * (a)->elemSize)
+
+/**
  * Rt_ArrayDataPtr - get the data pointer of an array
  * @a: the array
  *

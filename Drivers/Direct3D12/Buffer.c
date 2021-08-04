@@ -139,6 +139,12 @@ D3D12_BufferAddress(struct RenderDevice *dev, const struct Buffer *buff, uint64_
 	return 0;
 }
 
+uint64_t
+D3D12_OffsetAddress(uint64_t addr, uint64_t offset)
+{
+	return addr + offset;
+}
+
 void
 D3D12_DestroyBuffer(struct RenderDevice *dev, struct Buffer *buff)
 {

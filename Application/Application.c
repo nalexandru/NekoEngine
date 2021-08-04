@@ -81,6 +81,9 @@ App_InitApplication(int argc, char *argv[])
 
 	_sceneLoadedEvt = E_RegisterHandler(EVT_SCENE_LOADED, App_SceneLoaded, NULL);
 
+//	Scn_StartSceneLoad("/Scenes/Kat.scn");
+//	Scn_StartSceneLoad("/Scenes/Helmet.scn");
+//	Scn_StartSceneLoad("/Scenes/Sphere.scn");
 	Scn_StartSceneLoad("/Scenes/Main.scn");
 
 	_jobStart = Sys_Time();

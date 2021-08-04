@@ -17,15 +17,18 @@ struct Drawable
 	bool transparent;
 	float distance;
 	const struct Material *material;
+	uint32_t instanceId;
+	const struct ModelInstance *mi;
 	uint64_t vertexAddress, materialAddress;
 };
 
 struct CollectDrawablesArgs
 {
 	struct mat4 vp;
-	struct Array *arrays;
+	struct Array *arrays, *instanceArrays;
 	uint32_t maxDrawables, requiredDrawables, drawableCount;
 	ALIGN(16) _Atomic uint32_t nextArray;
+	const struct Scene *s;
 };
 
 void Re_CollectDrawables(void **comp, struct CollectDrawablesArgs *args);

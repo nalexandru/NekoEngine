@@ -184,6 +184,7 @@ void *D3D12_MapBuffer(struct RenderDevice *dev, struct Buffer *buff);
 void D3D12_FlushBuffer(struct RenderDevice *dev, struct Buffer *buff, uint64_t offset, uint64_t size);
 void D3D12_UnmapBuffer(struct RenderDevice *dev, struct Buffer *buff);
 uint64_t D3D12_BufferAddress(struct RenderDevice *dev, const struct Buffer *buff, uint64_t offset);
+uint64_t D3D12_OffsetAddress(uint64_t addr, uint64_t offset);
 void D3D12_DestroyBuffer(struct RenderDevice *dev, struct Buffer *buff);
 
 // Acceleration Structure
@@ -197,7 +198,8 @@ void D3D12_SetAttachment(struct Framebuffer *fb, uint32_t pos, struct Texture *t
 void D3D12_DestroyFramebuffer(struct RenderDevice *dev, struct Framebuffer *fb);
 
 // Render Pass
-struct RenderPassDesc *D3D12_CreateRenderPassDesc(struct RenderDevice *dev, const struct AttachmentDesc *attachments, uint32_t count, const struct AttachmentDesc *depthAttachment);
+struct RenderPassDesc *D3D12_CreateRenderPassDesc(struct RenderDevice *dev, const struct AttachmentDesc *attachments, uint32_t count,
+													const struct AttachmentDesc *depthAttachment, const struct AttachmentDesc *inputAttachments, uint32_t inputCount);
 void D3D12_DestroyRenderPassDesc(struct RenderDevice *dev, struct RenderPassDesc *fb);
 
 // Descriptor Set

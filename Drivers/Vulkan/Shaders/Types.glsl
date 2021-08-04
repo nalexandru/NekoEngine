@@ -15,11 +15,6 @@ struct UIVertex
 	vec4 color;
 };
 
-/*layout(std430, set = 0, binding = 2) readonly buffer VertexBuffer
-{
-	Vertex data[];
-} Re_vertexBuffers[];*/
-
 layout(std430, buffer_reference) readonly buffer VertexBuffer
 {
 	Vertex data[];

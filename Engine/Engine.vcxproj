@@ -33,7 +33,6 @@
     <ClInclude Include="..\Deps\Lua\ltable.h" />
     <ClInclude Include="..\Deps\Lua\ltm.h" />
     <ClInclude Include="..\Deps\Lua\lua.h" />
-    <ClInclude Include="..\Deps\Lua\lua.hpp" />
     <ClInclude Include="..\Deps\Lua\luaconf.h" />
     <ClInclude Include="..\Deps\Lua\lualib.h" />
     <ClInclude Include="..\Deps\Lua\lundump.h" />
@@ -114,6 +113,7 @@
     <ClInclude Include="..\Include\Runtime\Runtime.h" />
     <ClInclude Include="..\Include\Scene\Camera.h" />
     <ClInclude Include="..\Include\Scene\Components.h" />
+    <ClInclude Include="..\Include\Scene\Light.h" />
     <ClInclude Include="..\Include\Scene\Scene.h" />
     <ClInclude Include="..\Include\Scene\ScriptHost.h" />
     <ClInclude Include="..\Include\Scene\Sky.h" />
@@ -235,6 +235,7 @@
     <ClCompile Include="Render\Render.c" />
     <ClCompile Include="Render\Systems.c" />
     <ClCompile Include="Scene\Camera.c" />
+    <ClCompile Include="Scene\Light.c" />
     <ClCompile Include="Scene\Scene.c" />
     <ClCompile Include="Scene\ScriptHost.c" />
     <ClCompile Include="Scene\Transform.c" />
@@ -266,13 +267,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
     <EnableASAN>false</EnableASAN>

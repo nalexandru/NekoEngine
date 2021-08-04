@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30114.105
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31512.422
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Application", "Application\Application.vcxproj", "{5944411B-4DBA-4597-9160-ADEEFEE7F5B8}"
 EndProject
@@ -30,6 +30,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Direct3D12", "Drivers\Direc
 	ProjectSection(ProjectDependencies) = postProject
 		{073BCE1A-16D7-45DD-AD74-0134E52F2A24} = {073BCE1A-16D7-45DD-AD74-0134E52F2A24}
 	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ModelImporter", "Tools\ModelImporter\ModelImporter.vcxproj", "{62E7C2A5-430C-4554-9224-AB52FB35BC3B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -63,6 +65,10 @@ Global
 		{442F6F7A-A38F-4900-B8E4-92BA03953F6D}.Debug|x64.Build.0 = Debug|x64
 		{442F6F7A-A38F-4900-B8E4-92BA03953F6D}.Release|x64.ActiveCfg = Release|x64
 		{442F6F7A-A38F-4900-B8E4-92BA03953F6D}.Release|x64.Build.0 = Release|x64
+		{62E7C2A5-430C-4554-9224-AB52FB35BC3B}.Debug|x64.ActiveCfg = Debug|x64
+		{62E7C2A5-430C-4554-9224-AB52FB35BC3B}.Debug|x64.Build.0 = Debug|x64
+		{62E7C2A5-430C-4554-9224-AB52FB35BC3B}.Release|x64.ActiveCfg = Release|x64
+		{62E7C2A5-430C-4554-9224-AB52FB35BC3B}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -74,6 +80,7 @@ Global
 		{07D25205-2CE4-44FA-ADE8-FA56E9BAEBAF} = {E3F35753-B3EA-4278-8520-055304BAF923}
 		{332DE8A2-3349-4887-BC7F-6A25E067BC4C} = {E3F35753-B3EA-4278-8520-055304BAF923}
 		{442F6F7A-A38F-4900-B8E4-92BA03953F6D} = {E3F35753-B3EA-4278-8520-055304BAF923}
+		{62E7C2A5-430C-4554-9224-AB52FB35BC3B} = {9FD41958-F3FF-4EF9-B7CA-F623860BB575}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B4EB6C4E-5B5E-4A8A-A33C-99E3ADA3CDE3}

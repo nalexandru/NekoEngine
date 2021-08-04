@@ -63,6 +63,17 @@ struct ModelCreateInfo
 	bool keepData, loadMaterials;
 };
 
+#pragma pack(push, 1)
+struct ModelInstance
+{
+	struct mat4 mvp;
+	struct mat4 model;
+	struct mat4 normal;
+	uint64_t vertexAddress;
+	uint64_t materialAddress;
+};
+#pragma pack(pop)
+
 bool Re_CreateModelResource(const char *name, const struct ModelCreateInfo *ci, struct Model *mdl, Handle h);
 bool Re_LoadModelResource(struct ResourceLoadInfo *li, const char *args, struct Model *mdl, Handle h);
 void Re_UnloadModelResource(struct Model *mdl, Handle h);

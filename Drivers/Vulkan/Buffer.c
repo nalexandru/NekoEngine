@@ -149,6 +149,12 @@ Vk_BufferAddress(struct RenderDevice *dev, const struct Buffer *buff, uint64_t o
 	return addr ? addr + offset : 0;
 }
 
+uint64_t
+Vk_OffsetAddress(uint64_t addr, uint64_t offset)
+{
+	return addr + offset;
+}
+
 void
 Vk_DestroyBuffer(struct RenderDevice *dev, struct Buffer *buff)
 {

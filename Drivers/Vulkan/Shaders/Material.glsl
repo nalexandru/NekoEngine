@@ -1,6 +1,9 @@
 #ifndef _RE_MATERIAL_H_
 #define _RE_MATERIAL_H_
 
+#include "Texture.glsl"
+#include "Constants.glsl"
+
 struct Material
 {
 	vec4 diffuseColor;
@@ -14,15 +17,16 @@ struct Material
 	float clearCoatRoughness;
 
 	float transmission;
+	float specularWeight;
 	uint diffuseMap;
 	uint normalMap;
-	uint metallicRoughnessMap;
 
+	uint metallicRoughnessMap;
 	uint occlusionMap;
 	uint transmissionMap;
 	uint emissionMap;
-	uint clearCoatNormalMap;
 
+	uint clearCoatNormalMap;
 	uint clearCoatRoughnessMap;
 	uint clearCoatMap;
 	uint alphaMaskMap;

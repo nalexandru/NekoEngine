@@ -142,6 +142,8 @@ Vk_AcquireNextImage(struct RenderDevice *dev, struct Swapchain *sw)
 	if (!Re_deviceInfo.features.coherentMemory)
 		Vkd_CommitStagingArea(dev, sw->frameStart[Re_frameId]);
 
+	vkResetDescriptorPool(dev->dev, dev->iaDescriptorPool[Re_frameId], 0);
+
 	return (void *)(uint64_t)imageId;
 }
 

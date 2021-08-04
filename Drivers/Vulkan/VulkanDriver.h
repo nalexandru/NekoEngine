@@ -30,6 +30,9 @@ struct RenderDevice
 
 	VkDescriptorSetLayout setLayout;
 	VkDescriptorPool descriptorPool;
+
+	VkDescriptorSetLayout iaSetLayout;
+	VkDescriptorPool iaDescriptorPool[RE_NUM_FRAMES];
 };
 
 struct RenderContext
@@ -40,7 +43,7 @@ struct RenderContext
 	struct Array *graphicsCmdBuffers, *secondaryCmdBuffers, *xferCmdBuffers, *computeCmdBuffers;
 	VkFence executeFence;
 	VkDevice vkDev;
-	VkDescriptorSet descriptorSet;
+	VkDescriptorSet descriptorSet, iaSet;
 	struct RenderDevice *neDev;
 	uint32_t lastSubmittedXfer, lastSubmittedCompute;
 };
@@ -94,6 +97,7 @@ struct RenderPassDesc
 	VkRenderPass rp;
 	uint32_t clearValueCount;
 	VkClearValue *clearValues;
+	uint32_t inputAttachments;
 };
 
 struct Pipeline
@@ -169,6 +173,7 @@ void *Vk_MapBuffer(struct RenderDevice *dev, struct Buffer *buff);
 void Vk_FlushBuffer(struct RenderDevice *dev, struct Buffer *buff, uint64_t offset, uint64_t size);
 void Vk_UnmapBuffer(struct RenderDevice *dev, struct Buffer *buff);
 uint64_t Vk_BufferAddress(struct RenderDevice *dev, const struct Buffer *buff, uint64_t offset);
+uint64_t Vk_OffsetAddress(uint64_t addr, uint64_t offset);
 void Vk_DestroyBuffer(struct RenderDevice *dev, struct Buffer *buff);
 
 // Acceleration Structure
@@ -182,14 +187,17 @@ void Vk_SetAttachment(struct Framebuffer *fb, uint32_t pos, struct Texture *tex)
 void Vk_DestroyFramebuffer(struct RenderDevice *dev, struct Framebuffer *fb);
 
 // Render Pass
-struct RenderPassDesc *Vk_CreateRenderPassDesc(struct RenderDevice *dev, const struct AttachmentDesc *attachments, uint32_t count, const struct AttachmentDesc *depthAttachment);
+struct RenderPassDesc *Vk_CreateRenderPassDesc(struct RenderDevice *dev, const struct AttachmentDesc *attachments, uint32_t count,
+												const struct AttachmentDesc *depthAttachment, const struct AttachmentDesc *inputAttachments, uint32_t inputCount);
 void Vk_DestroyRenderPassDesc(struct RenderDevice *dev, struct RenderPassDesc *fb);
 
 // Descriptor Set
 bool Vk_CreateDescriptorSet(struct RenderDevice *dev);
+VkDescriptorSet Vk_AllocateIADescriptorSet(struct RenderDevice *dev);
 void Vk_SetSampler(struct RenderDevice *dev, uint16_t location, VkSampler sampler);
 void Vk_SetBuffer(struct RenderDevice *dev, uint16_t location, VkBuffer buffer);
 void Vk_SetTexture(struct RenderDevice *dev, uint16_t location, VkImageView imageView);
+void Vk_SetInputAttachment(struct RenderDevice *dev, VkDescriptorSet set, uint16_t location, VkImageView imageView);
 void Vk_TermDescriptorSet(struct RenderDevice *dev);
 
 // Shader

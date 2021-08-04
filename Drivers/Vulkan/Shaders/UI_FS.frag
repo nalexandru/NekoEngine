@@ -6,8 +6,8 @@
 #extension GL_EXT_nonuniform_qualifier : require
 #extension GL_EXT_shader_explicit_arithmetic_types_int16 : require
 
-#include "Texture.h"
-#include "UIDrawInfo.h"
+#include "Texture.glsl"
+#include "UIDrawInfo.glsl"
 
 layout(location = 0) out vec4 o_fragColor;
 

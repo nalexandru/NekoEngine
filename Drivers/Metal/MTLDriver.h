@@ -104,7 +104,7 @@ struct Framebuffer
 struct RenderPassDesc
 {
 	MTLRenderPassDescriptor *desc;
-	uint32_t attachmentCount;
+	uint32_t colorAttachments, inputAttachments;
 	MTLPixelFormat* attachmentFormats;
 	MTLPixelFormat depthFormat;
 };
@@ -164,6 +164,7 @@ void *MTL_MapBuffer(id<MTLDevice> dev, struct Buffer *buff);
 void MTL_FlushBuffer(id<MTLDevice> dev, struct Buffer *buff, uint64_t offset, uint64_t size);
 void MTL_UnmapBuffer(id<MTLDevice> dev, struct Buffer *buff);
 uint64_t MTL_BufferAddress(id<MTLDevice> dev, const struct Buffer *buff, uint64_t offset);
+uint64_t MTL_OffsetAddress(uint64_t address, uint64_t offset);
 void MTL_DestroyBuffer(id<MTLDevice> dev, struct Buffer *buff);
 
 // Acceleration Structure
@@ -178,7 +179,8 @@ const struct FramebufferDesc *MTL_FramebufferDesc(const struct Framebuffer *fb);
 void MTL_DestroyFramebuffer(id<MTLDevice> dev, struct Framebuffer *fb);
 
 // Render Pass
-struct RenderPassDesc *MTL_CreateRenderPassDesc(id<MTLDevice> dev, const struct AttachmentDesc *attachments, uint32_t count, const struct AttachmentDesc *depthAttachment);
+struct RenderPassDesc *MTL_CreateRenderPassDesc(id<MTLDevice> dev, const struct AttachmentDesc *attachments, uint32_t count, const struct AttachmentDesc *depthAttachment,
+												const struct AttachmentDesc *inputAttachments, uint32_t inputCount);
 void MTL_DestroyRenderPassDesc(id<MTLDevice> dev, struct RenderPassDesc *pass);
 
 // Argument Buffer

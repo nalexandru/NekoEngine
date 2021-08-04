@@ -21,13 +21,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -68,6 +68,7 @@
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <FloatingPointModel>Fast</FloatingPointModel>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -75,7 +76,7 @@
       <AdditionalDependencies>NekoEngine.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <CustomBuild>
-      <Command>glslc --target-env=vulkan1.2 %(FullPath) -o $(SolutionDir)/bin/Data/Shaders/Vulkan/%(Filename).spv</Command>
+      <Command>glslc -g --target-env=vulkan1.2 %(FullPath) -o $(SolutionDir)/bin/Data/Shaders/Vulkan/%(Filename).spv</Command>
     </CustomBuild>
     <CustomBuild>
       <Message>glslc %(Filename)</Message>
@@ -99,6 +100,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <DebugInformationFormat>None</DebugInformationFormat>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -140,13 +142,17 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Shaders\DrawInfo.h" />
-    <ClInclude Include="Shaders\Material.h" />
-    <ClInclude Include="Shaders\Object.h" />
-    <ClInclude Include="Shaders\Texture.h" />
-    <ClInclude Include="Shaders\Types.h" />
-    <ClInclude Include="Shaders\UIDrawInfo.h" />
-    <ClInclude Include="Shaders\Vertex.h" />
+    <ClInclude Include="Shaders\Constants.glsl" />
+    <ClInclude Include="Shaders\DepthDrawInfo.glsl" />
+    <ClInclude Include="Shaders\DrawInfo.glsl" />
+    <ClInclude Include="Shaders\Light.glsl" />
+    <ClInclude Include="Shaders\Material.glsl" />
+    <ClInclude Include="Shaders\Scene.glsl" />
+    <ClInclude Include="Shaders\Texture.glsl" />
+    <ClInclude Include="Shaders\Tonemap.glsl" />
+    <ClInclude Include="Shaders\Types.glsl" />
+    <ClInclude Include="Shaders\UIDrawInfo.glsl" />
+    <ClInclude Include="Shaders\Vertex.glsl" />
     <ClInclude Include="volk.h" />
     <ClInclude Include="VulkanDriver.h" />
   </ItemGroup>
@@ -173,6 +179,9 @@
     <CustomBuild Include="Shaders\Depth_VS.vert">
       <FileType>Document</FileType>
     </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Shaders\PBR.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

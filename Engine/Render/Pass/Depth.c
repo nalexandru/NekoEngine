@@ -25,14 +25,14 @@ struct DepthPrePass
 	struct Framebuffer *fb;
 	struct Pipeline *pipeline;
 	struct RenderPassDesc *rpd;
-	uint64_t normalHash, depthHash;
+	uint64_t normalHash, depthHash, instancesHash;
 };
 
 struct Constants
 {
 	uint64_t vertexAddress;
 	uint64_t materialAddress;
-	struct mat4 mvp;
+	uint64_t instanceAddress;
 };
 
 static bool 
@@ -40,7 +40,7 @@ _Setup(struct DepthPrePass *pass, struct Array *resources)
 {
 	struct FramebufferAttachmentDesc fbAtDesc[2] =
 	{
-		{ .usage = TU_COLOR_ATTACHMENT, .format = TF_R16G16B16A16_SFLOAT },
+		{ .usage = TU_COLOR_ATTACHMENT | TU_INPUT_ATTACHMENT, .format = TF_R16G16B16A16_SFLOAT },
 		{ .usage = TU_DEPTH_STENCIL_ATTACHMENT, .format = TF_D32_SFLOAT }
 	};
 	struct FramebufferDesc fbDesc =
@@ -61,7 +61,7 @@ _Setup(struct DepthPrePass *pass, struct Array *resources)
 		.height = *E_screenHeight,
 		.depth = 1,
 		.type = TT_2D,
-		.usage = TU_COLOR_ATTACHMENT,
+		.usage = TU_COLOR_ATTACHMENT | TU_INPUT_ATTACHMENT,
 		.format = TF_R16G16B16A16_SFLOAT,
 		.arrayLayers = 1,
 		.mipLevels = 1,
@@ -95,6 +95,7 @@ _Execute(struct DepthPrePass *pass, const struct Array *resources)
 
 	Re_SetAttachment(pass->fb, 0, Re_GraphTexture(pass->normalHash, resources));
 	Re_SetAttachment(pass->fb, 1, Re_GraphTexture(pass->depthHash, resources));
+	uint64_t instanceRoot = Re_GraphBuffer(pass->instancesHash, resources);
 
 	Re_BeginDrawCommandBuffer();
 	Re_CmdBeginRenderPass(pass->rpd, pass->fb, RENDER_COMMANDS_INLINE);
@@ -104,6 +105,7 @@ _Execute(struct DepthPrePass *pass, const struct Array *resources)
 
 	Re_CmdBindPipeline(pass->pipeline);
 
+	uint32_t instance = 0; 
 	for (uint32_t i = 0; i < E_JobWorkerThreads(); ++i) {
 		struct Array *drawables = &Scn_activeScene->collect.arrays[i];
 		struct Drawable *d = NULL;
@@ -116,7 +118,7 @@ _Execute(struct DepthPrePass *pass, const struct Array *resources)
 
 			constants.vertexAddress = d->vertexAddress;
 			constants.materialAddress = d->materialAddress;
-			m4_copy(&constants.mvp, &d->mvp);
+			constants.instanceAddress = Re_OffsetAddress(instanceRoot, (instance++ * sizeof(struct ModelInstance)));
 
 			Re_CmdPushConstants(SS_ALL, sizeof(constants), &constants);
 			Re_CmdDrawIndexed(d->indexCount, 1, d->firstIndex, 0, 0);
@@ -145,7 +147,7 @@ _Init(struct DepthPrePass **pass)
 		.samples = ASC_1_SAMPLE,
 		.initialLayout = TL_UNKNOWN,
 		.layout = TL_COLOR_ATTACHMENT,
-		.finalLayout = TL_COLOR_ATTACHMENT,
+		.finalLayout = TL_SHADER_READ_ONLY,
 		.clearColor = { 0.f, 0.f, 0.f, 0.f }
 	};
 	struct AttachmentDesc depthDesc =
@@ -160,7 +162,7 @@ _Init(struct DepthPrePass **pass)
 		.finalLayout = TL_DEPTH_READ_ONLY_ATTACHMENT,
 		.clearDepth = 0.f
 	};
-	(*pass)->rpd = Re_CreateRenderPassDesc(&atDesc, 1, &depthDesc);
+	(*pass)->rpd = Re_CreateRenderPassDesc(&atDesc, 1, &depthDesc, NULL, 0);
 	if (!(*pass)->rpd)
 		goto error;
 
@@ -186,6 +188,7 @@ _Init(struct DepthPrePass **pass)
 
 	(*pass)->normalHash = Rt_HashString("Re_normalBuffer");
 	(*pass)->depthHash = Rt_HashString("Re_depthBuffer");
+	(*pass)->instancesHash = Rt_HashString("Scn_instances");
 
 	return true;
 

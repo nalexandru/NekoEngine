@@ -36,25 +36,37 @@
     <ClInclude Include="volk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Shaders\DrawInfo.h">
+    <ClInclude Include="Shaders\DrawInfo.glsl">
       <Filter>Shaders\Headers</Filter>
     </ClInclude>
-    <ClInclude Include="Shaders\Material.h">
+    <ClInclude Include="Shaders\Material.glsl">
       <Filter>Shaders\Headers</Filter>
     </ClInclude>
-    <ClInclude Include="Shaders\Object.h">
+    <ClInclude Include="Shaders\Texture.glsl">
       <Filter>Shaders\Headers</Filter>
     </ClInclude>
-    <ClInclude Include="Shaders\Texture.h">
+    <ClInclude Include="Shaders\Vertex.glsl">
       <Filter>Shaders\Headers</Filter>
     </ClInclude>
-    <ClInclude Include="Shaders\Vertex.h">
+    <ClInclude Include="Shaders\UIDrawInfo.glsl">
       <Filter>Shaders\Headers</Filter>
     </ClInclude>
-    <ClInclude Include="Shaders\UIDrawInfo.h">
+    <ClInclude Include="Shaders\Types.glsl">
       <Filter>Shaders\Headers</Filter>
     </ClInclude>
-    <ClInclude Include="Shaders\Types.h">
+    <ClInclude Include="Shaders\Scene.glsl">
+      <Filter>Shaders\Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Shaders\DepthDrawInfo.glsl">
+      <Filter>Shaders\Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Shaders\Constants.glsl">
+      <Filter>Shaders\Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Shaders\Tonemap.glsl">
+      <Filter>Shaders\Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Shaders\Light.glsl">
       <Filter>Shaders\Headers</Filter>
     </ClInclude>
   </ItemGroup>
@@ -139,5 +151,10 @@
     <CustomBuild Include="Shaders\Depth_FS.frag">
       <Filter>Shaders\Fragment</Filter>
     </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Shaders\PBR.glsl">
+      <Filter>Shaders\Headers</Filter>
+    </None>
   </ItemGroup>
 </Project>

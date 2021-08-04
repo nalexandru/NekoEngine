@@ -2,6 +2,7 @@
 
 #include <System/Log.h>
 #include <System/Memory.h>
+#include <Engine/Config.h>
 
 #include "VulkanDriver.h"
 
@@ -233,7 +234,12 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 	devProcs->WaitForFence = (bool(*)(struct RenderDevice *, struct Fence *, uint64_t))Vk_WaitForFence;
 	devProcs->DestroyFence = (void(*)(struct RenderDevice *, struct Fence *))Vk_DestroyFence;
 
+	devProcs->OffsetAddress = Vk_OffsetAddress;
+
 	Vk_InitContextProcs(ctxProcs);
+
+	if (dev->physDevProps.vendorID == 0x1002)
+		(void)E_GetCVarBln(L"AMD_DisableDepthPrePass", true);
 
 	VkSemaphoreTypeCreateInfo typeInfo =
 	{

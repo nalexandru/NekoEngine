@@ -41,7 +41,7 @@ MTL_GraphicsPipeline(id<MTLDevice> dev, const struct GraphicsPipelineDesc *gpDes
 	desc.alphaToOneEnabled = gpDesc->flags & RE_ALPHA_TO_ONE;
 	desc.rasterizationEnabled = true;
 	
-	for (uint32_t i = 0; i < gpDesc->attachmentCount; ++i) {
+	for (uint32_t i = 0; i < gpDesc->renderPassDesc->colorAttachments; ++i) {
 		desc.colorAttachments[i].pixelFormat = gpDesc->renderPassDesc->attachmentFormats[i];
 		desc.colorAttachments[i].blendingEnabled = gpDesc->attachments[i].enableBlend;
 	
@@ -53,7 +53,8 @@ MTL_GraphicsPipeline(id<MTLDevice> dev, const struct GraphicsPipelineDesc *gpDes
 		desc.colorAttachments[i].sourceAlphaBlendFactor = NeToMTLBlendFactor(gpDesc->attachments[i].srcAlpha);
 		desc.colorAttachments[i].destinationAlphaBlendFactor = NeToMTLBlendFactor(gpDesc->attachments[i].dstAlpha);
 	}
-	
+
+	bool depth = false;
 	if (gpDesc->flags & RE_DEPTH_TEST) {
 		desc.depthAttachmentPixelFormat = NeToMTLTextureFormat(gpDesc->depthFormat);
 	
@@ -72,8 +73,22 @@ MTL_GraphicsPipeline(id<MTLDevice> dev, const struct GraphicsPipelineDesc *gpDes
 		
 		p->render.depthStencil = [dev newDepthStencilStateWithDescriptor: dssDesc];
 		[dssDesc release];
+
+		depth = true;
 	}
-	
+
+	for (uint32_t i = 0; i < gpDesc->renderPassDesc->inputAttachments; ++i) {
+		const uint32_t idx = gpDesc->renderPassDesc->colorAttachments + i;
+		desc.colorAttachments[idx].pixelFormat = gpDesc->renderPassDesc->attachmentFormats[idx];
+		desc.colorAttachments[idx].blendingEnabled = false;
+	}
+
+	desc.vertexBuffers[0].mutability = MTLMutabilityImmutable;
+	desc.vertexBuffers[1].mutability = MTLMutabilityImmutable;
+
+	desc.fragmentBuffers[0].mutability = MTLMutabilityImmutable;
+	desc.fragmentBuffers[1].mutability = MTLMutabilityImmutable;
+
 	NSError *err;
 	id<MTLRenderPipelineState> pso = [dev newRenderPipelineStateWithDescriptor: desc error: &err];
 

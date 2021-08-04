@@ -1,6 +1,7 @@
 #ifndef _NE_RENDER_MATERIAL_H_
 #define _NE_RENDER_MATERIAL_H_
 
+#include <Math/defs.h>
 #include <Render/Types.h>
 #include <Runtime/Runtime.h>
 
@@ -54,19 +55,19 @@ struct DefaultMaterial
 	float clearCoatRoughness;
 
 	float transmission;
+	float specularWeight;
 	uint32_t diffuseMap;
 	uint32_t normalMap;
-	uint32_t metallicRoughnessMap;
 
+	uint32_t metallicRoughnessMap;
 	uint32_t occlusionMap;
 	uint32_t transmissionMap;
 	uint32_t emissionMap;
-	uint32_t clearCoatNormalMap;
 
+	uint32_t clearCoatNormalMap;
 	uint32_t clearCoatRoughnessMap;
 	uint32_t clearCoatMap;
 	uint32_t alphaMaskMap;
-	uint32_t __padding;
 };
 
 struct MaterialResourceCreateInfo
@@ -75,6 +76,15 @@ struct MaterialResourceCreateInfo
 	char name[64];
 	char type[64];
 	const char **args;
+};
+
+struct MaterialRenderConstants
+{
+	uint64_t vertexAddress;
+	uint64_t sceneAddress;
+	uint64_t visibleIndicesAddress;
+	uint64_t instanceAddress;
+	uint64_t materialAddress;
 };
 
 extern struct RenderPassDesc *Re_MaterialRenderPassDesc;

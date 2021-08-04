@@ -8,7 +8,8 @@
 //static inline void _SetAttachment(VkAttachmentDescription *dst, const struct AttachmentDesc *src);
 
 struct RenderPassDesc *
-D3D12_CreateRenderPassDesc(struct RenderDevice *dev, const struct AttachmentDesc *attachments, uint32_t count, const struct AttachmentDesc *depthAttachment)
+D3D12_CreateRenderPassDesc(struct RenderDevice *dev, const struct AttachmentDesc *attachments, uint32_t count, const struct AttachmentDesc *depthAttachment,
+							const struct AttachmentDesc *inputAttachments, uint32_t inputCount)
 {
 	struct RenderPassDesc *rp = Sys_Alloc(sizeof(*rp), 1, MH_RenderDriver);
 	if (!rp)

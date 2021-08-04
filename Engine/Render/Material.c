@@ -298,14 +298,32 @@ Re_InitMaterialSystem(void)
 		.mayAlias = true,
 		.format = TF_D32_SFLOAT,
 		.loadOp = ATL_LOAD,
-		.storeOp = ATS_STORE,
+		.storeOp = ATS_DONT_CARE,
 		.samples = ASC_1_SAMPLE,
 		.initialLayout = TL_UNKNOWN,
 		.layout = TL_DEPTH_READ_ONLY_ATTACHMENT,
 		.finalLayout = TL_DEPTH_READ_ONLY_ATTACHMENT,
 		.clearDepth = 0.f
 	};
-	Re_MaterialRenderPassDesc = Re_CreateRenderPassDesc(&atDesc, 1, &depthDesc);
+	struct AttachmentDesc normalDesc =
+	{
+		.mayAlias = false,
+		.format = TF_R16G16B16A16_SFLOAT,
+		.loadOp = ATL_LOAD,
+		.storeOp = ATS_DONT_CARE,
+		.samples = ASC_1_SAMPLE,
+		.initialLayout = TL_SHADER_READ_ONLY,
+		.layout = TL_SHADER_READ_ONLY,
+		.finalLayout = TL_SHADER_READ_ONLY,
+		.clearColor = { .3f, .0f, .4f, 1.f }
+	};
+
+	if (E_GetCVarBln(L"AMD_DisableDepthPrePass", false)->bln) {
+		depthDesc.loadOp = ATL_CLEAR;
+		depthDesc.layout = TL_DEPTH_ATTACHMENT;
+	}
+
+	Re_MaterialRenderPassDesc = Re_CreateRenderPassDesc(&atDesc, 1, &depthDesc, &normalDesc, 1);
 	
 	Rt_InitArray(&_freeList, 10, sizeof(struct Block), MH_Render);
 
@@ -340,6 +358,10 @@ _initDefaultMaterial(const char **args, struct DefaultMaterial *data)
 			clearCoatNormalMap = E_INVALID_HANDLE, emissiveMap = E_INVALID_HANDLE,
 			transmissionMap = E_INVALID_HANDLE;
 
+	data->metallic = 1.f;
+	data->roughness = 1.f;
+	data->specularWeight = 1.f;
+
 	for (; args && *args; ++args) {
 		const char *arg = *args;
 		size_t len = strlen(arg);
@@ -357,6 +379,8 @@ _initDefaultMaterial(const char **args, struct DefaultMaterial *data)
 			data->clearCoat = strtof((char *)*(++args), NULL);
 		} else if (!strncmp(arg, "ClearCoatRoughness", len)) {
 			data->clearCoatRoughness = strtof((char *)*(++args), NULL);
+		} else if (!strncmp(arg, "SpecularWeight", len)) {
+			data->specularWeight = strtof((char *)*(++args), NULL);
 		} else if (!strncmp(arg, "DiffuseMap", len)) {
 			diffuseMap = E_LoadResource(*(++args), RES_TEXTURE);
 		} else if (!strncmp(arg, "NormalMap", len)) {
@@ -444,11 +468,17 @@ _createPipeline(const struct MaterialResource *mr, struct Shader *shader)
 					RE_DEPTH_TEST | RE_DEPTH_OP_EQUAL,
 		.shader = shader,
 		.renderPassDesc = Re_MaterialRenderPassDesc,
-		.pushConstantSize = 16 + 64,
+		.pushConstantSize = sizeof(struct MaterialRenderConstants),
 		.attachmentCount = sizeof(blendAttachments) / sizeof(blendAttachments[0]),
 		.attachments = blendAttachments,
 		.depthFormat = TF_D32_SFLOAT
 	};
+
+	if (E_GetCVarBln(L"AMD_DisableDepthPrePass", false)->bln) {
+		desc.flags &= ~RE_DEPTH_OP_EQUAL;
+		desc.flags |= RE_DEPTH_WRITE | RE_DEPTH_OP_GREATER_EQUAL;
+	}
+
 	return Re_GraphicsPipeline(&desc);
 }
 

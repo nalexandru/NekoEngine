@@ -381,9 +381,6 @@
     <ClInclude Include="..\Deps\Lua\lua.h">
       <Filter>Source Files\Deps\Lua</Filter>
     </ClInclude>
-    <ClInclude Include="..\Deps\Lua\lua.hpp">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClInclude>
     <ClInclude Include="..\Deps\Lua\luaconf.h">
       <Filter>Source Files\Deps\Lua</Filter>
     </ClInclude>
@@ -500,6 +497,9 @@
     </ClInclude>
     <ClInclude Include="..\Deps\PhysFS\physfs_platforms.h">
       <Filter>Source Files\Deps\PhysFS</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Scene\Light.h">
+      <Filter>Header Files\Scene</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -841,6 +841,9 @@
     </ClCompile>
     <ClCompile Include="UI\UIPass.c">
       <Filter>Source Files\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Light.c">
+      <Filter>Source Files\Scene</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

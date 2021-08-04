@@ -434,6 +434,9 @@
 		FADBC13825CF613F00085E38 /* MTLDevice.m in Sources */ = {isa = PBXBuildFile; fileRef = FADBC13725CF613F00085E38 /* MTLDevice.m */; };
 		FADBC14125CF70CE00085E38 /* MTLContext.m in Sources */ = {isa = PBXBuildFile; fileRef = FADBC14025CF70CE00085E38 /* MTLContext.m */; };
 		FADD5C0D253D297900606B2A /* Memory.c in Sources */ = {isa = PBXBuildFile; fileRef = FADD5C0C253D297900606B2A /* Memory.c */; };
+		FAE0748F26A9888A00AC81D3 /* Light.c in Sources */ = {isa = PBXBuildFile; fileRef = FAE0748E26A9888A00AC81D3 /* Light.c */; };
+		FAE0749026A9888A00AC81D3 /* Light.c in Sources */ = {isa = PBXBuildFile; fileRef = FAE0748E26A9888A00AC81D3 /* Light.c */; };
+		FAE0749126A9888A00AC81D3 /* Light.c in Sources */ = {isa = PBXBuildFile; fileRef = FAE0748E26A9888A00AC81D3 /* Light.c */; };
 		FAE5E11F2569BFD60091893B /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FAE5E11E2569BFD60091893B /* Metal.framework */; };
 		FAE5E1212569BFDC0091893B /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FAE5E1202569BFDC0091893B /* QuartzCore.framework */; };
 		FAEFB7542662AE6E00BFCF25 /* AnimationClip.c in Sources */ = {isa = PBXBuildFile; fileRef = FAEFB74F2662AE6E00BFCF25 /* AnimationClip.c */; };
@@ -482,6 +485,7 @@
 		FA44DB4B269B3FFB00F9BEFA /* UIPass.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = UIPass.c; path = Engine/UI/UIPass.c; sourceTree = "<group>"; };
 		FA44DB4F269B404500F9BEFA /* Frame.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = Frame.c; path = Engine/Render/Frame.c; sourceTree = "<group>"; };
 		FA44DB54269B5DA500F9BEFA /* Depth.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; name = Depth.metal; path = Drivers/Metal/Shaders/Depth.metal; sourceTree = "<group>"; };
+		FA46200526BAF32900863A89 /* PBR.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = PBR.h; path = Drivers/Metal/Shaders/PBR.h; sourceTree = "<group>"; };
 		FA49A58A264646C3009EF9B9 /* Downloader.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Downloader.plist; path = Platform/iOS/Downloader.plist; sourceTree = "<group>"; };
 		FA4A193D25FD321400040940 /* l_Render.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = l_Render.c; path = Engine/Script/l_Render.c; sourceTree = "<group>"; };
 		FA4A194225FD40FA00040940 /* Interface.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Interface.h; path = Engine/Script/Interface.h; sourceTree = "<group>"; };
@@ -735,6 +739,9 @@
 		FADBC13C25CF616E00085E38 /* MTLDriver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = MTLDriver.h; path = Drivers/Metal/MTLDriver.h; sourceTree = "<group>"; };
 		FADBC14025CF70CE00085E38 /* MTLContext.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = MTLContext.m; path = Drivers/Metal/MTLContext.m; sourceTree = "<group>"; };
 		FADD5C0C253D297900606B2A /* Memory.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = Memory.c; path = Engine/System/Memory.c; sourceTree = "<group>"; };
+		FAE0748E26A9888A00AC81D3 /* Light.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = Light.c; path = Engine/Scene/Light.c; sourceTree = "<group>"; };
+		FAE0749226A9896000AC81D3 /* Tonemap.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Tonemap.h; path = Drivers/Metal/Shaders/Tonemap.h; sourceTree = "<group>"; };
+		FAE0749726A98B0E00AC81D3 /* Material.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Material.h; path = Drivers/Metal/Shaders/Material.h; sourceTree = "<group>"; };
 		FAE5E11E2569BFD60091893B /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
 		FAE5E1202569BFDC0091893B /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
 		FAE5E1252569C3400091893B /* vec4_neon.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = vec4_neon.h; path = Include/Math/neon/vec4_neon.h; sourceTree = "<group>"; };
@@ -1232,6 +1239,9 @@
 				FAFCD95325EE4767006CA7FF /* ShaderTypes.h */,
 				FA28E6CA2668F4B2000B591E /* UI.metal */,
 				FA44DB54269B5DA500F9BEFA /* Depth.metal */,
+				FAE0749226A9896000AC81D3 /* Tonemap.h */,
+				FAE0749726A98B0E00AC81D3 /* Material.h */,
+				FA46200526BAF32900863A89 /* PBR.h */,
 			);
 			name = Shaders;
 			sourceTree = "<group>";
@@ -1300,6 +1310,7 @@
 		FAAF9B762521F39200F7C24B /* Scene */ = {
 			isa = PBXGroup;
 			children = (
+				FAE0748E26A9888A00AC81D3 /* Light.c */,
 				FAAF9BA12521F42000F7C24B /* Camera.c */,
 				FAAF9BA22521F42000F7C24B /* Scene.c */,
 				FAAF9BA32521F42000F7C24B /* ScriptHost.c */,
@@ -1764,6 +1775,7 @@
 				FAAF9C8E2522A81F00F7C24B /* physfs_archiver_vdf.c in Sources */,
 				FA04A9F82653FD5100534686 /* ModelRender.c in Sources */,
 				FAAF9C8F2522A81F00F7C24B /* physfs_archiver_wad.c in Sources */,
+				FAE0748F26A9888A00AC81D3 /* Light.c in Sources */,
 				FAAF9C902522A81F00F7C24B /* physfs_archiver_zip.c in Sources */,
 				FAAF9C912522A81F00F7C24B /* physfs_byteorder.c in Sources */,
 				FAFEF82C25D59F9500D8D1FB /* MTLSwapchain.m in Sources */,
@@ -1958,6 +1970,7 @@
 				FA44DB4E269B3FFB00F9BEFA /* UIPass.c in Sources */,
 				FA396F95266F7B760069B484 /* Component.c in Sources */,
 				FA396FBA266F7BB40069B484 /* reallocarray.c in Sources */,
+				FAE0749126A9888A00AC81D3 /* Light.c in Sources */,
 				FA396FC6266F7BEC0069B484 /* ltm.c in Sources */,
 				FA396FBD266F7BC40069B484 /* Darwin.m in Sources */,
 				FA396FE2266F7BEC0069B484 /* lfunc.c in Sources */,
@@ -2087,6 +2100,7 @@
 				FA4CFF3025D7753A00B37A5B /* loadlib.c in Sources */,
 				FA4CFF0925D774FF00B37A5B /* reallocarray.c in Sources */,
 				FA44DB4D269B3FFB00F9BEFA /* UIPass.c in Sources */,
+				FAE0749026A9888A00AC81D3 /* Light.c in Sources */,
 				FA4CFF3425D7753A00B37A5B /* ltable.c in Sources */,
 				FA4CFED225D774C100B37A5B /* iOS.m in Sources */,
 				FA8F56CA26679A4F00592E60 /* Skeleton.c in Sources */,
@@ -2279,6 +2293,7 @@
 				);
 				INFOPLIST_FILE = Platform/macOS/Info.plist;
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
 				STRIP_INSTALLED_PRODUCT = NO;
@@ -2341,6 +2356,7 @@
 				);
 				INFOPLIST_FILE = Platform/macOS/Info.plist;
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = macosx;
 				STRIP_INSTALLED_PRODUCT = NO;
 				STRIP_STYLE = "non-global";

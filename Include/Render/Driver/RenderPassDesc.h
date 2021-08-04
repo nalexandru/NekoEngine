@@ -21,8 +21,8 @@ struct AttachmentDesc
 	};
 };
 
-static inline struct RenderPassDesc *Re_CreateRenderPassDesc(const struct AttachmentDesc *attachments, uint32_t count, const struct AttachmentDesc *depthAttachment)
-{ return Re_deviceProcs.CreateRenderPassDesc(Re_device, attachments, count, depthAttachment); }
+static inline struct RenderPassDesc *Re_CreateRenderPassDesc(const struct AttachmentDesc *attachments, uint32_t count, const struct AttachmentDesc *depthAttachment, const struct AttachmentDesc *inputAttachments, uint32_t inputCount)
+{ return Re_deviceProcs.CreateRenderPassDesc(Re_device, attachments, count, depthAttachment, inputAttachments, inputCount); }
 static inline void Re_DestroyRenderPassDesc(struct RenderPassDesc *pass) { Re_deviceProcs.DestroyRenderPassDesc(Re_device, pass); }
 
 #endif /* _NE_RENDER_DRIVER_RENDER_PASS_DESC_H_ */

@@ -1,4 +1,5 @@
 #include <Engine/Job.h>
+#include <Scene/Scene.h>
 #include <Runtime/Runtime.h>
 #include <Render/Graph/Graph.h>
 #include <Render/Graph/Pass.h>
@@ -21,7 +22,10 @@ struct GraphResource
 	} info;
 	union {
 		struct Texture *texture;
-		BufferHandle buffer;
+		struct {
+			uint64_t bufferAddress;
+			BufferHandle buffer;
+		};
 	} handle;
 };
 
@@ -69,13 +73,13 @@ Re_GraphTexture(uint64_t hash, const struct Array *resources)
 	return res->info.type == PRT_TEXTURE ? res->handle.texture : NULL;
 }
 
-BufferHandle
+uint64_t
 Re_GraphBuffer(uint64_t hash, const struct Array *resources)
 {
 	struct GraphResource *res = _GetResource(hash, resources);
 	if (!res)
 		return 0;
-	return res->info.type == PRT_BUFFER ? res->handle.buffer : 0;
+	return res->info.type == PRT_BUFFER ? res->handle.bufferAddress : 0;
 }
 
 struct RenderGraph *
@@ -107,6 +111,8 @@ Re_AddPass(struct RenderGraph *g, struct RenderPass *pass)
 void
 Re_BuildGraph(struct RenderGraph *g, struct Texture *output)
 {
+	const struct Scene *s = Scn_activeScene;
+
 	Rt_InitArray(&g->execPasses, g->allPasses.count, g->allPasses.elemSize, MH_Transient);
 	Rt_ClearArray(&g->resources, false);
 
@@ -140,6 +146,21 @@ Re_BuildGraph(struct RenderGraph *g, struct Texture *output)
 		.info.type = PRT_TEXTURE,
 		.handle.texture = output
 	};
+	Rt_ArrayAdd(&g->resources, &res);
+
+	uint64_t sceneAddr, instAddr;
+	Scn_DataAddress(s, &sceneAddr, &instAddr);
+
+	res.hash = Rt_HashString("Scn_data");
+	res.info.type = PRT_BUFFER,
+	res.handle.bufferAddress = sceneAddr;
+	res.handle.buffer = s->sceneData;
+	Rt_ArrayAdd(&g->resources, &res);
+
+	res.hash = Rt_HashString("Scn_instances");
+	res.info.type = PRT_BUFFER,
+	res.handle.bufferAddress = instAddr;
+	res.handle.buffer = s->sceneData;
 	Rt_ArrayAdd(&g->resources, &res);
 }
 

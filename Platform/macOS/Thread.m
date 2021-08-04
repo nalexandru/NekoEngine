@@ -3,6 +3,7 @@
 
 #include <System/Thread.h>
 #include <System/Memory.h>
+#include <Runtime/Runtime.h>
 
 #include <mach/thread_act.h>
 #include <mach/thread_policy.h>
@@ -42,11 +43,18 @@ Sys_Yield(void)
 bool
 Sys_InitThread(Thread *t, const wchar_t *name, void (*proc)(void *), void *args)
 {
+	pthread_attr_t attr;
+
 	(void)name;
-	
-	if (!pthread_create((pthread_t *)t, NULL, (void *(*)(void *))proc, args))
+
+	pthread_attr_init(&attr);
+	pthread_attr_set_qos_class_np(&attr, QOS_CLASS_USER_INTERACTIVE, 0);
+
+	if (!pthread_create((pthread_t *)t, &attr, (void *(*)(void *))proc, args))
 		return false;
-	
+
+	pthread_attr_destroy(&attr);
+
 	return true;
 }
 

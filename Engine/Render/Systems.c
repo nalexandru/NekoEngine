@@ -25,7 +25,10 @@ Re_CollectDrawables(void **comp, struct CollectDrawablesArgs *args)
 	Rt_InitArray(&transparentDrawables, _transparentDrawableCount, sizeof(struct Drawable), MH_Transient);
 
 	// TODO: visibility
-	struct Array *drawables = &args->arrays[atomic_fetch_add(&args->nextArray, 1)];
+	const uint32_t array = atomic_fetch_add(&args->nextArray, 1);
+	struct Array *drawables = &args->arrays[array];
+	struct Array *instances = &args->instanceArrays[array];
+
 	mdl = E_ResourcePtr(mr->model);
 	if (!mdl)
 		return;
@@ -36,7 +39,8 @@ Re_CollectDrawables(void **comp, struct CollectDrawablesArgs *args)
 		// TODO: visibility
 
 		struct Drawable *d = NULL;
-		
+		struct ModelInstance *mi = Rt_ArrayAllocate(instances);
+
 		if (!mr->materials[i].alphaBlend) {
 			d = Rt_ArrayAllocate(drawables);
 		} else {
@@ -60,6 +64,13 @@ Re_CollectDrawables(void **comp, struct CollectDrawablesArgs *args)
 		d->materialAddress = Re_MaterialAddress(&mr->materials[i]);
 
 		m4_copy(&d->mvp, &mvp);
+
+		m4_copy(&mi->mvp, &mvp);
+		m4_copy(&mi->model, &xform->mat);
+		m4_transpose(&mi->normal, m4_inverse(&mi->normal, &xform->mat));
+
+		mi->vertexAddress = Re_BufferAddress(mdl->gpu.vertexBuffer, sizeof(struct Vertex) * mdl->meshes[i].vertexOffset);
+		mi->materialAddress = Re_MaterialAddress(&mr->materials[i]);
 	}
 
 	if (transparentDrawables.count) {

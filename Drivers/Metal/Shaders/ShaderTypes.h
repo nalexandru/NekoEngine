@@ -1,6 +1,13 @@
 #ifndef ShaderTypes_h
 #define ShaderTypes_h
 
+#include <metal_stdlib>
+using namespace metal;
+
+#define NE_BUFFER(x) \
+	uint32_t x ## Buffer; \
+	uint32_t x ## Offset
+
 struct Vertex
 {
 	float x, y, z;
@@ -24,38 +31,44 @@ struct VertexBones
 
 struct Light
 {
-	float4 position;	// xyz - position, w - type
-	float4 direction;	// xyz - direction
-	float4 color;		// xyz - color, w - intensity
-	float4 data;		// x - inner radius, y - outer radius, z - inner spot cutoff, w - outer spot cutoff
+	float x, y, z;
+	uint type;
+
+	float4 direction;
+	float4 color;
+
+	float innerRadius, outerRadius;
+	float innerCutoff, outerCutoff;
 };
 
-struct Material
+struct Scene
 {
-	float4 diffuseColor;
+	float4x4 viewProjection;
+	float4 cameraPosition;
 
-	float4 emissionColor;
-	//float metallic;
+	float4 sunPosition;
+	uint4 enviornmentMap;
 
-	float roughness;
-	float alphaCutoff;
-	float clearCoat;
-	float clearCoatRoughness;
+	uint lightCount;
+	uint xTileCount;
 
-	float transmission;
-	uint32_t diffuseMap;
-	uint32_t normalMap;
-	uint32_t metallicRoughnessMap;
+	NE_BUFFER(instances);
 
-	uint32_t occlusionMap;
-	uint32_t transmissionMap;
-	uint32_t emissionMap;
-	uint32_t clearCoatNormalMap;
+	float exposure;
+	float gamma;
+	float invGamma;
+	uint sampleCount;
 
-	uint32_t clearCoatRoughnessMap;
-	uint32_t clearCoatMap;
-	uint32_t alphaMaskMap;
-	//uint32_t __padding;
+	Light lightStart;
+};
+
+struct ModelInstance
+{
+	float4x4 mvp;
+	float4x4 model;
+	float4x4 normal;
+	NE_BUFFER(vertex);
+	NE_BUFFER(material);
 };
 
 #define LT_DIRECTIONAL	0

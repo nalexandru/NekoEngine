@@ -32,6 +32,7 @@ struct RenderDeviceInfo
 
 struct RenderDeviceProcs
 {
+	uint64_t (*OffsetAddress)(uint64_t address, uint64_t offset);
 	uint64_t (*AccelerationStructureHandle)(struct RenderDevice *dev, const struct AccelerationStructure *as);
 	uint64_t (*BufferAddress)(struct RenderDevice *dev, const struct Buffer *buff, uint64_t offset);
 	void (*ResetContext)(struct RenderDevice *dev, struct RenderContext *ctx);
@@ -83,7 +84,7 @@ struct RenderDeviceProcs
 	struct Framebuffer *(*CreateFramebuffer)(struct RenderDevice *dev, const struct FramebufferDesc *desc);
 	void (*DestroyFramebuffer)(struct RenderDevice *dev, struct Framebuffer *fb);
 
-	struct RenderPassDesc *(*CreateRenderPassDesc)(struct RenderDevice *dev, const struct AttachmentDesc *attachments, uint32_t count, const struct AttachmentDesc *depthAttachment);
+	struct RenderPassDesc *(*CreateRenderPassDesc)(struct RenderDevice *dev, const struct AttachmentDesc *attachments, uint32_t count, const struct AttachmentDesc *depthAttachment, const struct AttachmentDesc *inputAttachments, uint32_t inputCount);
 	void (*DestroyRenderPassDesc)(struct RenderDevice *dev, struct RenderPassDesc *rp);
 
 	void (*LoadPipelineCache)(struct RenderDevice *dev);
@@ -121,5 +122,7 @@ static inline struct Surface *Re_CreateSurface(void *window) { return Re_deviceP
 static inline void Re_DestroySurface(struct Surface *surface) { Re_deviceProcs.DestroySurface(Re_device, surface); }
 
 static inline void Re_WaitIdle(void) { Re_deviceProcs.WaitIdle(Re_device); }
+
+static inline uint64_t Re_OffsetAddress(uint64_t addr, uint64_t offset) { return Re_deviceProcs.OffsetAddress(addr, offset); }
 
 #endif /* _NE_RENDER_DRIVER_DEVICE_H_ */

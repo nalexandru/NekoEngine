@@ -46,7 +46,7 @@ MTL_CreateDevice(struct RenderDeviceInfo *info,
 	devProcs->SavePipelineCache = (void(*)(struct RenderDevice *))MTL_LoadPipelineCache;
 	devProcs->DestroyPipeline = (void(*)(struct RenderDevice *, struct Pipeline *))MTL_DestroyPipeline;
 	
-	devProcs->CreateRenderPassDesc = (struct RenderPassDesc *(*)(struct RenderDevice *, const struct AttachmentDesc *, uint32_t, const struct AttachmentDesc *))MTL_CreateRenderPassDesc;
+	devProcs->CreateRenderPassDesc = (struct RenderPassDesc *(*)(struct RenderDevice *, const struct AttachmentDesc *, uint32_t, const struct AttachmentDesc *, const struct AttachmentDesc *inputAttachments, uint32_t inputCount))MTL_CreateRenderPassDesc;
 	devProcs->DestroyRenderPassDesc = (void(*)(struct RenderDevice *, struct RenderPassDesc *))MTL_DestroyRenderPassDesc;
 	
 	devProcs->CreateFramebuffer = (struct Framebuffer *(*)(struct RenderDevice *, const struct FramebufferDesc *))MTL_CreateFramebuffer;
@@ -72,7 +72,9 @@ MTL_CreateDevice(struct RenderDeviceInfo *info,
 	devProcs->SignalFence = (void(*)(struct RenderDevice *dev, struct Fence *))MTL_SignalFence;
 	devProcs->WaitForFence = (bool(*)(struct RenderDevice *dev, struct Fence *, uint64_t))MTL_WaitForFence;
 	devProcs->DestroyFence = (void(*)(struct RenderDevice *, struct Fence *))MTL_DestroyFence;
-	
+
+	devProcs->OffsetAddress = MTL_OffsetAddress;
+
 	MTL_InitLibrary((id<MTLDevice>)info->private);
 	MTL_InitContextProcs(ctxProcs);
 	MTL_InitArgumentBuffer((id<MTLDevice>)info->private);

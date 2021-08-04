@@ -116,6 +116,8 @@ D3D12_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devP
 	devProcs->WaitForFence = D3D12_WaitForFence;
 	devProcs->DestroyFence = D3D12_DestroyFence;
 
+	devProcs->OffsetAddress = D3D12_OffsetAddress;
+
 	D3D12_InitContextProcs(ctxProcs);
 
 	return dev;

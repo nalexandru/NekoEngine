@@ -25,6 +25,7 @@ Re_RenderFrame(void)
 	}
 	///////////////////////////////////
 
+	Scn_StartDataUpdate(Scn_activeScene, Scn_activeCamera);
 	Scn_StartDrawableCollection(Scn_activeScene, Scn_activeCamera);
 	Re_TransferMaterials();
 

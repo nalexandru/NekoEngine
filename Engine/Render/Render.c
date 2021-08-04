@@ -124,7 +124,7 @@ Re_InitRender(void)
 	Re_context = Re_contexts[E_JobWorkerThreads()];
 
 	CHK_FAIL(Re_InitResourceDestructor(), L"Failed to initialize resource destructor");
-	CHK_FAIL(Re_InitTransientHeap(E_GetCVarU64(L"Render_TransientHeapSize", 64 * 1024 * 1024)->u64), L"Failed to initialize transient heap");
+	CHK_FAIL(Re_InitTransientHeap(E_GetCVarU64(L"Render_TransientHeapSize", 128 * 1024 * 1024)->u64), L"Failed to initialize transient heap");
 
 	CHK_FAIL(Re_InitBufferSystem(), L"Failed to initialize buffer system");
 	CHK_FAIL(Re_InitTextureSystem(), L"Failed to initialize texture system");

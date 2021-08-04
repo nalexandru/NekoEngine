@@ -375,7 +375,7 @@ SIF_FUNC(CreateRenderPassDesc)
 		lua_remove(vm, v);
 	}
 
-	lua_pushlightuserdata(vm, Re_CreateRenderPassDesc(atDesc, count, depthDesc));
+	lua_pushlightuserdata(vm, Re_CreateRenderPassDesc(atDesc, count, depthDesc, NULL, 0));
 	
 	return 1;
 }

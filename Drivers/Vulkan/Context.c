@@ -218,8 +218,10 @@ _EndCommandBuffer(struct RenderContext *ctx)
 static void
 _BindPipeline(struct RenderContext *ctx, struct Pipeline *pipeline)
 {
+	VkDescriptorSet sets[] = { ctx->descriptorSet, ctx->iaSet };
+
 	vkCmdBindPipeline(ctx->cmdBuffer, pipeline->bindPoint, pipeline->pipeline);
-	vkCmdBindDescriptorSets(ctx->cmdBuffer, pipeline->bindPoint, pipeline->layout, 0, 1, &ctx->descriptorSet, 0, NULL);
+	vkCmdBindDescriptorSets(ctx->cmdBuffer, pipeline->bindPoint, pipeline->layout, 0, ctx->iaSet ? 2 : 1, sets, 0, NULL);
 
 	ctx->boundPipeline = pipeline;
 }
@@ -245,6 +247,12 @@ _ExecuteSecondary(struct RenderContext *ctx, CommandBufferHandle *cmdBuffers, ui
 static void
 _BeginRenderPass(struct RenderContext *ctx, struct RenderPassDesc *passDesc, struct Framebuffer *fb, enum RenderCommandContents contents)
 {
+	if (passDesc->inputAttachments) {
+		ctx->iaSet = Vk_AllocateIADescriptorSet(ctx->neDev);
+		for (uint32_t i = 0; i < passDesc->inputAttachments; ++i)
+			Vk_SetInputAttachment(ctx->neDev, ctx->iaSet, i, fb->attachments[fb->attachmentCount - i - 1]);
+	}
+
 	VkRenderPassAttachmentBeginInfo atbi =
 	{
 		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO,
@@ -268,6 +276,7 @@ static void
 _EndRenderPass(struct RenderContext *ctx)
 {
 	vkCmdEndRenderPass(ctx->cmdBuffer);
+	ctx->iaSet = VK_NULL_HANDLE;
 }
 
 static void

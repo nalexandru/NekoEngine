@@ -6,9 +6,8 @@
 
 /**
  * Last pull from upstream:
- *		description	PhysicsFS.
- *		owner	icculus@icculus.org
- *		last change	Thu, 29 Apr 2021 15:00:16 -0400 (2 weeks ago)
+ *      commit b8fa8fd
+ *      date: 2021/07/12
  */
 
 /**

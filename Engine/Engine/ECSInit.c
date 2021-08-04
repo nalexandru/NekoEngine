@@ -17,6 +17,8 @@
 
 #include <Animation/Animation.h>
 
+#include <Scene/Light.h>
+
 bool E_LoadComponents(void)
 {
 	E_RegisterComponent(MODEL_RENDER_COMP, sizeof(struct ModelRender), 1, (CompInitProc)Re_InitModelRender, (CompTermProc)Re_TermModelRender);
@@ -24,6 +26,7 @@ bool E_LoadComponents(void)
 	E_RegisterComponent(CAMERA_COMP, sizeof(struct Camera), 16, (CompInitProc)Scn_InitCamera, (CompTermProc)Scn_TermCamera);
 	E_RegisterComponent(UI_CONTEXT_COMP, sizeof(struct UIContext), 1, (CompInitProc)UI_InitContext, (CompTermProc)UI_TermContext);
 	E_RegisterComponent(ANIMATOR_COMP, sizeof(struct Animator), 16, (CompInitProc)Anim_InitAnimator, (CompTermProc)Anim_TermAnimator);
+	E_RegisterComponent(LIGHT_COMP, sizeof(struct Light), 16, (CompInitProc)Scn_InitLight, (CompTermProc)Scn_TermLight);
 
 	return true;
 }
@@ -34,9 +37,12 @@ bool E_RegisterSystems(void)
 	E_RegisterSystem(SCN_UPDATE_TRANSFORM, ECSYS_GROUP_PRE_RENDER, comp, 1, (ECSysExecProc)Scn_UpdateTransform, 0);
 	E_RegisterSystem(SCN_UPDATE_CAMERA, ECSYS_GROUP_PRE_RENDER, comp, 2, (ECSysExecProc)Scn_UpdateCamera, 0);
 
+	comp[1] = LIGHT_COMP;
+	E_RegisterSystem(SCN_COLLECT_LIGHTS, ECSYS_GROUP_MANUAL, comp, 2, (ECSysExecProc)Scn_CollectLights, 0);
+
 	comp[1] = MODEL_RENDER_COMP;
 	E_RegisterSystem(RE_COLLECT_DRAWABLES, ECSYS_GROUP_MANUAL, comp, 2, (ECSysExecProc)Re_CollectDrawables, 0);
-
+	
 	comp[0] = ANIMATOR_COMP;
 	E_RegisterSystem(ANIM_BUILD_SKELETON, ECSYS_GROUP_MANUAL, comp, 2, (ECSysExecProc)Anim_BuildSkeleton, 0);
 	E_RegisterSystem(ANIM_UPDATE_ANIMATOR, ECSYS_GROUP_PRE_RENDER, comp, 2, (ECSysExecProc)Anim_UpdateSkeleton, 10);

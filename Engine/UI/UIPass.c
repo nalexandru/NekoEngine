@@ -113,7 +113,7 @@ _Init(struct UIPass **pass)
 		.finalLayout = TL_PRESENT_SRC,
 		.clearColor = { .3f, .0f, .4f, 1.f }
 	};
-	(*pass)->rpd = Re_CreateRenderPassDesc(&atDesc, 1, NULL);
+	(*pass)->rpd = Re_CreateRenderPassDesc(&atDesc, 1, NULL, NULL, 0);
 	if (!(*pass)->rpd)
 		goto error;
 

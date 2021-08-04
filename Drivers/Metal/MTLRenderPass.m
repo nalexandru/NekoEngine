@@ -1,7 +1,8 @@
 #include "MTLDriver.h"
 
 struct RenderPassDesc *
-MTL_CreateRenderPassDesc(id<MTLDevice> dev, const struct AttachmentDesc *attachments, uint32_t count, const struct AttachmentDesc *depthAttachment)
+MTL_CreateRenderPassDesc(id<MTLDevice> dev, const struct AttachmentDesc *attachments, uint32_t count, const struct AttachmentDesc *depthAttachment,
+						 const struct AttachmentDesc *inputAttachments, uint32_t inputCount)
 {
 	struct RenderPassDesc *rp = Sys_Alloc(sizeof(*rp), 1, MH_RenderDriver);
 	if (!rp)
@@ -15,8 +16,9 @@ MTL_CreateRenderPassDesc(id<MTLDevice> dev, const struct AttachmentDesc *attachm
 	
 	[rp->desc retain];
 	
-	rp->attachmentCount = count;
-	rp->attachmentFormats = Sys_Alloc(sizeof(*rp->attachmentFormats), rp->attachmentCount, MH_RenderDriver);
+	rp->colorAttachments = count;
+	rp->inputAttachments = inputCount;
+	rp->attachmentFormats = Sys_Alloc(sizeof(*rp->attachmentFormats), count + inputCount, MH_RenderDriver);
 	
 	for (uint32_t i = 0; i < count; ++i) {
 		const struct AttachmentDesc *at = &attachments[i];
@@ -50,6 +52,26 @@ MTL_CreateRenderPassDesc(id<MTLDevice> dev, const struct AttachmentDesc *attachm
 		
 		rp->desc.depthAttachment.clearDepth = depthAttachment->clearDepth;
 		rp->depthFormat = NeToMTLTextureFormat(depthAttachment->format);
+	}
+
+	for (uint32_t i = 0; i < inputCount; ++i) {
+		int idx = i + count;
+
+		const struct AttachmentDesc *at = &inputAttachments[i];
+
+		switch (at->loadOp) {
+		case ATL_LOAD: rp->desc.colorAttachments[idx].loadAction = MTLLoadActionLoad; break;
+		case ATL_CLEAR: rp->desc.colorAttachments[idx].loadAction = MTLLoadActionClear; break;
+		case ATL_DONT_CARE: rp->desc.colorAttachments[idx].loadAction = MTLLoadActionDontCare; break;
+		}
+
+		switch (at->storeOp) {
+		case ATS_STORE: rp->desc.colorAttachments[idx].storeAction = MTLStoreActionStore; break;
+		case ATS_DONT_CARE: rp->desc.colorAttachments[idx].storeAction = MTLStoreActionDontCare; break;
+		}
+
+		rp->desc.colorAttachments[idx].clearColor = MTLClearColorMake(at->clearColor[0], at->clearColor[1], at->clearColor[2], at->clearColor[3]);
+		rp->attachmentFormats[idx] = NeToMTLTextureFormat(at->format);
 	}
 	
 	return rp;

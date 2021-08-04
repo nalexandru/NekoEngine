@@ -25,7 +25,7 @@ _NeToVkCompareOp(uint64_t flags)
 	return VK_COMPARE_OP_GREATER_OR_EQUAL;
 }
 
-static inline VkPipelineLayout _CreateLayout(struct RenderDevice *dev, uint32_t size);
+static inline VkPipelineLayout _CreateLayout(struct RenderDevice *dev, uint32_t size, bool inputAttachments);
 
 struct Pipeline *
 Vk_GraphicsPipeline(struct RenderDevice *dev, const struct GraphicsPipelineDesc *desc)
@@ -34,7 +34,7 @@ Vk_GraphicsPipeline(struct RenderDevice *dev, const struct GraphicsPipelineDesc 
 	if (!p)
 		return NULL;
 
-	VkPipelineLayout layout = _CreateLayout(dev, desc->pushConstantSize);
+	VkPipelineLayout layout = _CreateLayout(dev, desc->pushConstantSize, desc->renderPassDesc ? desc->renderPassDesc->inputAttachments > 0 : false);
 	if (!layout) {
 		Sys_Free(p);
 		return NULL;
@@ -357,8 +357,9 @@ Vk_DestroyPipeline(struct RenderDevice *dev, struct Pipeline *pipeline)
 }
 
 static inline VkPipelineLayout
-_CreateLayout(struct RenderDevice *dev, uint32_t size)
+_CreateLayout(struct RenderDevice *dev, uint32_t size, bool inputAttachments)
 {
+	VkDescriptorSetLayout layouts[] = { dev->setLayout, dev->iaSetLayout };
 	VkPushConstantRange range =
 	{
 		.stageFlags = VK_SHADER_STAGE_ALL,
@@ -368,8 +369,8 @@ _CreateLayout(struct RenderDevice *dev, uint32_t size)
 	VkPipelineLayoutCreateInfo info =
 	{
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-		.setLayoutCount = 1,
-		.pSetLayouts = &dev->setLayout,
+		.setLayoutCount = inputAttachments ? 2 : 1,
+		.pSetLayouts = layouts,
 		.pushConstantRangeCount = size > 0,
 		.pPushConstantRanges = &range
 	};
