@@ -1,5 +1,6 @@
 #include <Engine/Types.h>
 #include <Engine/Entity.h>
+#include <Engine/Events.h>
 #include <Engine/Component.h>
 #include <Scene/Scene.h>
 #include <System/Log.h>
@@ -28,15 +29,18 @@ E_CreateEntityS(struct Scene *s, const wchar_t *typeName)
 		ent = E_CreateEntityWithArgsS(s, type->comp_types, NULL, type->comp_count);
 	} else {
 		ent = Sys_Alloc(1, sizeof(*ent), MH_Scene);
+
+		if (!ent)
+			return ES_INVALID_ENTITY;
+
+		swprintf(ent->name, MAX_ENTITY_NAME, L"%ls", L"unnamed");
+		if (!Rt_ArrayAddPtr(&s->entities, ent)) {
+			Sys_Free(ent);
+			return ES_INVALID_ENTITY;
+		}
 	}
 
-	if (!ent)
-		return ES_INVALID_ENTITY;
-
-	if (!Rt_ArrayAddPtr(&s->entities, ent)) {
-		Sys_Free(ent);
-		return ES_INVALID_ENTITY;
-	}
+	E_Broadcast(EVT_ENTITY_CREATED, ent);
 
 	return ent;
 }
@@ -61,10 +65,13 @@ E_CreateEntityWithArgsS(struct Scene *s, const CompTypeId *compTypes, const void
 		}
 	}
 
+	swprintf(ent->name, MAX_ENTITY_NAME, L"%ls", L"unnamed");
 	if (!Rt_ArrayAddPtr(&s->entities, ent)) {
 		Sys_Free(ent);
 		return ES_INVALID_ENTITY;
 	}
+
+	E_Broadcast(EVT_ENTITY_CREATED, ent);
 
 	return ent;
 }
@@ -89,10 +96,13 @@ E_CreateEntityVS(struct Scene *s, int count, const struct EntityCompInfo *info)
 		}
 	}
 
+	swprintf(ent->name, MAX_ENTITY_NAME, L"%ls", L"unnamed");
 	if (!Rt_ArrayAddPtr(&s->entities, ent)) {
 		Sys_Free(ent);
 		return ES_INVALID_ENTITY;
 	}
+
+	E_Broadcast(EVT_ENTITY_CREATED, ent);
 
 	return ent;
 }
@@ -122,6 +132,7 @@ E_CreateEntityWithComponentsS(struct Scene *s, int count, ...)
 		}
 	}
 
+	swprintf(ent->name, MAX_ENTITY_NAME, L"%ls", L"unnamed");
 	if (!Rt_ArrayAddPtr(&s->entities, ent)) {
 		Sys_Free(ent);
 		return ES_INVALID_ENTITY;
@@ -129,6 +140,8 @@ E_CreateEntityWithComponentsS(struct Scene *s, int count, ...)
 
 	for (i = 0; i < ent->comp_count; ++i)
 		E_SetComponentOwnerS(s, ent->comp[i].handle, ent);
+
+	E_Broadcast(EVT_ENTITY_CREATED, ent);
 
 	return ent;
 }
@@ -195,6 +208,8 @@ E_DestroyEntityS(struct Scene *s, EntityHandle handle)
 	ent = Rt_ArrayGetPtr(&s->entities, dst_id);
 	ent->id = dst_id;
 	--s->entities.count;
+
+	E_Broadcast(EVT_ENTITY_DESTROYED, handle);
 }
 
 bool
@@ -223,6 +238,20 @@ uint32_t
 E_EntityCountS(struct Scene *s)
 {
 	return (uint32_t)s->entities.count;
+}
+
+const wchar_t *
+E_EntityName(EntityHandle handle)
+{
+	struct Entity *ent = handle;
+	return ent->name;
+}
+
+void
+E_RenameEntity(EntityHandle handle, const wchar_t *name)
+{
+	struct Entity *ent = handle;
+	wcsncpy(ent->name, name, MAX_ENTITY_NAME);
 }
 
 bool

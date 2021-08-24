@@ -10,7 +10,7 @@ bool Re_AddGraphTexture(const char *name, const struct TextureDesc *desc, struct
 bool Re_AddGraphBuffer(const char *name, const struct BufferDesc *desc, struct Array *resources);
 
 struct Texture *Re_GraphTexture(uint64_t hash, const struct Array *resources);
-uint64_t Re_GraphBuffer(uint64_t hash, const struct Array *resources);
+uint64_t Re_GraphBuffer(uint64_t hash, const struct Array *resources, struct Buffer **buff);
 
 struct RenderGraph *Re_CreateGraph(void);
 bool Re_AddPass(struct RenderGraph *g, struct RenderPass *pass);

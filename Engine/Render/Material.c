@@ -185,7 +185,7 @@ _LoadMaterialResource(struct ResourceLoadInfo *li, const char *args, struct Mate
 
 			uint32_t id;
 			if (!_findMaterialType(type, &id)) {
-				Sys_LogEntry(MAT_MOD, LOG_CRITICAL, L"Failed to load material resource %s, material type %s does not exist", li->path, type);
+				Sys_LogEntry(MAT_MOD, LOG_CRITICAL, L"Failed to load material resource %hs, material type %hs does not exist", li->path, type);
 				return false;
 			}
 			mr->typeId = id;
@@ -233,7 +233,7 @@ Re_RegisterMaterialType(const char *name, const char *shader, uint32_t dataSize,
 	};
 
 	if (!mt.shader) {
-		Sys_LogEntry(MAT_MOD, LOG_CRITICAL, L"Shader %s not found for material type %s", shader, name);
+		Sys_LogEntry(MAT_MOD, LOG_CRITICAL, L"Shader %hs not found for material type %hs", shader, name);
 		return false;
 	}
 
@@ -297,12 +297,12 @@ Re_InitMaterialSystem(void)
 	{
 		.mayAlias = true,
 		.format = TF_D32_SFLOAT,
-		.loadOp = ATL_LOAD,
+		.loadOp = ATL_CLEAR,
 		.storeOp = ATS_DONT_CARE,
 		.samples = ASC_1_SAMPLE,
 		.initialLayout = TL_UNKNOWN,
-		.layout = TL_DEPTH_READ_ONLY_ATTACHMENT,
-		.finalLayout = TL_DEPTH_READ_ONLY_ATTACHMENT,
+		.layout = TL_DEPTH_ATTACHMENT,
+		.finalLayout = TL_DEPTH_ATTACHMENT,
 		.clearDepth = 0.f
 	};
 	struct AttachmentDesc normalDesc =
@@ -317,11 +317,6 @@ Re_InitMaterialSystem(void)
 		.finalLayout = TL_SHADER_READ_ONLY,
 		.clearColor = { .3f, .0f, .4f, 1.f }
 	};
-
-	if (E_GetCVarBln(L"AMD_DisableDepthPrePass", false)->bln) {
-		depthDesc.loadOp = ATL_CLEAR;
-		depthDesc.layout = TL_DEPTH_ATTACHMENT;
-	}
 
 	Re_MaterialRenderPassDesc = Re_CreateRenderPassDesc(&atDesc, 1, &depthDesc, &normalDesc, 1);
 	
@@ -356,7 +351,7 @@ _initDefaultMaterial(const char **args, struct DefaultMaterial *data)
 			metallicRoughnessMap = E_INVALID_HANDLE, occlusionMap = E_INVALID_HANDLE,
 			clearCoatMap = E_INVALID_HANDLE, clearCoatRoughnessMap = E_INVALID_HANDLE,
 			clearCoatNormalMap = E_INVALID_HANDLE, emissiveMap = E_INVALID_HANDLE,
-			transmissionMap = E_INVALID_HANDLE;
+			transmissionMap = E_INVALID_HANDLE, opacityMap = E_INVALID_HANDLE;
 
 	data->metallic = 1.f;
 	data->roughness = 1.f;
@@ -399,6 +394,8 @@ _initDefaultMaterial(const char **args, struct DefaultMaterial *data)
 			emissiveMap = E_LoadResource(*(++args), RES_TEXTURE);
 		} else if (!strncmp(arg, "TransmissionMap", len)) {
 			transmissionMap = E_LoadResource(*(++args), RES_TEXTURE);
+		} else if (!strncmp(arg, "OpacityMap", len)) {
+			opacityMap = E_LoadResource(*(++args), RES_TEXTURE);
 		} else if (!strncmp(arg, "DiffuseColor", len)) {
 			char *ptr = (char *)*(++args);
 			data->diffuseColor[0] = strtof(ptr, &ptr);
@@ -425,6 +422,7 @@ _initDefaultMaterial(const char **args, struct DefaultMaterial *data)
 	data->clearCoatRoughnessMap = clearCoatRoughnessMap != E_INVALID_HANDLE ? E_ResHandleToGPU(clearCoatRoughnessMap) : 0;
 	data->clearCoatNormalMap = clearCoatNormalMap != E_INVALID_HANDLE ? E_ResHandleToGPU(clearCoatNormalMap) : 0;
 	data->clearCoatMap = clearCoatMap != E_INVALID_HANDLE ? E_ResHandleToGPU(clearCoatMap) : 0;
+	data->alphaMaskMap = opacityMap != E_INVALID_HANDLE ? E_ResHandleToGPU(opacityMap) : 0;
 
 	return true;
 }
@@ -443,6 +441,7 @@ _termDefaultMaterial(struct DefaultMaterial *data)
 	UNLOAD_TEX(data->clearCoatRoughnessMap);
 	UNLOAD_TEX(data->clearCoatNormalMap);
 	UNLOAD_TEX(data->clearCoatMap);
+	UNLOAD_TEX(data->alphaMaskMap);
 }
 
 static inline struct Pipeline *
@@ -465,8 +464,8 @@ _createPipeline(const struct MaterialResource *mr, struct Shader *shader)
 	{
 		.flags = RE_TOPOLOGY_TRIANGLES | RE_POLYGON_FILL |
 					RE_CULL_NONE | RE_FRONT_FACE_CW |
-					RE_DEPTH_TEST | RE_DEPTH_OP_EQUAL,
-		.shader = shader,
+					RE_DEPTH_TEST | RE_DEPTH_WRITE | RE_DEPTH_OP_GREATER_EQUAL,
+		.stageInfo = &shader->opaqueStages,
 		.renderPassDesc = Re_MaterialRenderPassDesc,
 		.pushConstantSize = sizeof(struct MaterialRenderConstants),
 		.attachmentCount = sizeof(blendAttachments) / sizeof(blendAttachments[0]),
@@ -474,10 +473,8 @@ _createPipeline(const struct MaterialResource *mr, struct Shader *shader)
 		.depthFormat = TF_D32_SFLOAT
 	};
 
-	if (E_GetCVarBln(L"AMD_DisableDepthPrePass", false)->bln) {
-		desc.flags &= ~RE_DEPTH_OP_EQUAL;
-		desc.flags |= RE_DEPTH_WRITE | RE_DEPTH_OP_GREATER_EQUAL;
-	}
+	if (mr->alphaBlend && shader->transparentStages.stageCount)
+		desc.stageInfo = &shader->transparentStages;
 
 	return Re_GraphicsPipeline(&desc);
 }

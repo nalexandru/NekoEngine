@@ -108,6 +108,15 @@ Re_CmdBindIndexBuffer(BufferHandle handle, uint64_t offset, enum IndexType type)
 	Re_contextProcs.BindIndexBuffer(Re_CurrentContext(), _buffers[handle].buff, offset, type);
 }
 
+struct Buffer *
+Re_CreateTransientBuffer(const struct BufferDesc *desc, BufferHandle location, uint64_t offset, uint64_t *size)
+{
+	_buffers[location].desc = *desc;
+	_buffers[location].buff = Re_deviceProcs.CreateTransientBuffer(Re_device, desc, location, offset, size);
+
+	return _buffers[location].buff;
+}
+
 bool
 Re_InitBufferSystem(void)
 {

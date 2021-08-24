@@ -157,10 +157,10 @@
     <ClInclude Include="VulkanDriver.h" />
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="Shaders\DefaultPBR_MR_FS.frag">
+    <CustomBuild Include="Shaders\DefaultPBR_MR_O_FS.frag">
       <FileType>Document</FileType>
     </CustomBuild>
-    <CustomBuild Include="Shaders\DefaultPBR_VS.vert">
+    <CustomBuild Include="Shaders\DefaultPBR_O_VS.vert">
       <FileType>Document</FileType>
     </CustomBuild>
   </ItemGroup>
@@ -181,6 +181,15 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
+    <CustomBuild Include="Shaders\DefaultPBR_MR_T_FS.frag">
+      <FileType>Document</FileType>
+    </CustomBuild>
+    <CustomBuild Include="Shaders\DefaultPBR_T_VS.vert">
+      <FileType>Document</FileType>
+    </CustomBuild>
+    <CustomBuild Include="Shaders\LightCulling_CS.comp">
+      <FileType>Document</FileType>
+    </CustomBuild>
     <None Include="Shaders\PBR.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

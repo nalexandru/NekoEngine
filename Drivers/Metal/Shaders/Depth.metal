@@ -16,13 +16,6 @@ struct VsOutput
 	float3 vPos;
 };
 
-struct ShaderArguments
-{
-	const array<sampler, 3> samplers [[ id(0) ]];
-	const array<texture2d<float>, 65535> textures [[ id(3) ]];
-	const array<constant uint8_t *, 65535> buffers [[ id(65538) ]];
-};
-
 struct DrawInfo
 {
 	NE_BUFFER(vertex);

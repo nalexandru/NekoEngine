@@ -375,7 +375,9 @@ _BuildAccelerationStructures(struct RenderContext *ctx, uint32_t count, struct A
 }
 
 static void
-_Barrier(struct RenderContext *ctx)
+_Barrier(struct RenderContext *ctx, enum PipelineStage srcStage, enum PipelineStage dstStage, enum PipelineDependency dep,
+	uint32_t memBarrierCount, const struct MemoryBarrier *memBarriers, uint32_t bufferBarrierCount, const struct BufferBarrier *bufferBarriers,
+	uint32_t imageBarrierCount, const struct ImageBarrier *imageBarriers)
 {
 //	vkCmdPipelineBarrier
 }

@@ -75,4 +75,11 @@ struct ModelInstance
 #define LT_POINT		1
 #define LT_SPOT			2
 
+struct ShaderArguments
+{
+	const array<sampler, 3> samplers [[ id(0) ]];
+	const array<texture2d<float>, 65535> textures [[ id(3) ]];
+	const array<constant uint8_t *, 65535> buffers [[ id(65538) ]];
+};
+
 #endif /* ShaderTypes_h */

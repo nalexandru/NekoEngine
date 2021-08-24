@@ -1,0 +1,132 @@
+#version 460 core
+
+#extension GL_EXT_buffer_reference : require
+#extension GL_EXT_shader_16bit_storage : require
+#extension GL_GOOGLE_include_directive : require
+#extension GL_EXT_nonuniform_qualifier : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int16 : require
+
+#include "Types.glsl"
+#include "Scene.glsl"
+#include "Light.glsl"
+
+shared uint minDepthInt;
+shared uint maxDepthInt;
+shared vec4 frustumPlanes[6];
+
+shared uint visibleLights;
+shared uint visibleIndices[1024];
+
+shared mat4 viewProjection;
+shared mat4 inverseProjection;
+
+#define TILE_SIZE 16
+layout(local_size_x = TILE_SIZE, local_size_y = TILE_SIZE, local_size_z = 1) in;
+
+layout(push_constant) uniform ConstantComputeArgs
+{
+	SceneBuffer scene;
+	VisibleLightIndicesBuffer visibleLightIndices;
+	mat4 view;
+} ComputeArgs;
+
+void
+main()
+{
+	ivec2 location = ivec2(gl_GlobalInvocationID.xy);
+	ivec2 item = ivec2(gl_LocalInvocationID.xy);
+	ivec2 tile = ivec2(gl_WorkGroupID.xy);
+	ivec2 tileNumber = ivec2(gl_NumWorkGroups.xy);
+	uint index = tile.y * tileNumber.x + tile.x;
+
+	if (gl_LocalInvocationIndex == 0) {
+		minDepthInt = 0xFFFFFFFF;
+		maxDepthInt = 0;
+		visibleLights = 0;
+		viewProjection = ComputeArgs.scene.viewProjection;
+		inverseProjection = inverse(viewProjection);
+	}
+
+	barrier();
+
+	float maxDepth, minDepth;
+	float depth = 1.f;// - texelFetch(depthMap, location, 0).r;
+	depth =  1.f / (depth * inverseProjection[2][3] + inverseProjection[3][3]);
+
+	uint depthInt = floatBitsToUint(depth);
+	atomicMin(minDepthInt, depthInt);
+	atomicMax(maxDepthInt, depthInt);
+
+	barrier();
+
+	if (gl_LocalInvocationIndex == 0) {
+		minDepth = uintBitsToFloat(minDepthInt);
+		maxDepth = uintBitsToFloat(maxDepthInt);
+
+		vec2 negativeStep = (2.0 * vec2(tile)) / vec2(tileNumber);
+		vec2 positiveStep = (2.0 * vec2(tile + ivec2(1, 1))) / vec2(tileNumber);
+
+		frustumPlanes[0]  = vec4(1.0, 0.0, 0.0, 1.0 - negativeStep.x) * viewProjection;
+		frustumPlanes[0] /= length(frustumPlanes[0].xyz);
+		frustumPlanes[1]  = vec4(-1.0, 0.0, 0.0, -1.0 + positiveStep.x) * viewProjection;
+		frustumPlanes[1] /= length(frustumPlanes[1].xyz);
+		frustumPlanes[2]  = vec4(0.0, 1.0, 0.0, 1.0 - negativeStep.y) * viewProjection;
+		frustumPlanes[2] /= length(frustumPlanes[2].xyz);
+		frustumPlanes[3]  = vec4(0.0, -1.0, 0.0, -1.0 + positiveStep.y) * viewProjection;
+		frustumPlanes[3] /= length(frustumPlanes[3].xyz);
+		frustumPlanes[4]  = vec4(0.0, 0.0, -1.0, -minDepth) * ComputeArgs.view;
+		frustumPlanes[4] /= length(frustumPlanes[4].xyz);
+		frustumPlanes[5]  = vec4(0.0, 0.0, 1.0, maxDepth) * ComputeArgs.view;
+		frustumPlanes[5] /= length(frustumPlanes[5].xyz);
+	}
+
+	barrier();
+
+	uint threadCount = TILE_SIZE * TILE_SIZE;
+	uint passCount = (ComputeArgs.scene.lightCount + threadCount - 1) / threadCount;
+
+	for (uint i = 0; i < passCount; ++i) {
+		uint lightIndex = i * threadCount + gl_LocalInvocationIndex;
+
+		if (lightIndex >= ComputeArgs.scene.lightCount)
+			break;
+
+		const Light light = ComputeArgs.scene.lights[lightIndex];
+
+		if (light.type != LT_DIRECTIONAL) {
+			float distance = dot(vec4(light.position.xyz, 1.0), frustumPlanes[0]) + light.outerRadius;
+			if (distance <= 0.0) continue;
+
+			distance = dot(vec4(light.position.xyz, 1.0), frustumPlanes[1]) + light.outerRadius;
+			if (distance <= 0.0) continue;
+
+			distance = dot(vec4(light.position.xyz, 1.0), frustumPlanes[2]) + light.outerRadius;
+			if (distance <= 0.0) continue;
+
+			distance = dot(vec4(light.position.xyz, 1.0), frustumPlanes[3]) + light.outerRadius;
+			if (distance <= 0.0) continue;
+
+			distance = dot(vec4(light.position.xyz, 1.0), frustumPlanes[4]) + light.outerRadius;
+			if (distance <= 0.0) continue;
+
+			distance = dot(vec4(light.position.xyz, 1.0), frustumPlanes[5]) + light.outerRadius;
+			if (distance <= 0.0) continue;
+		}
+
+		// Directional lights are always visible
+
+		uint offset = atomicAdd(visibleLights, 1);
+		visibleIndices[offset] = int(lightIndex);
+	}
+
+	barrier();
+
+	if (gl_LocalInvocationIndex == 0) {
+		uint offset = index * 1024;
+		for (uint i = 0; i < visibleLights; ++i)
+			ComputeArgs.visibleLightIndices.data[offset + i] = visibleIndices[i];
+
+		if (visibleLights != 1024)
+			ComputeArgs.visibleLightIndices.data[offset + visibleLights] = -1;
+	}
+}

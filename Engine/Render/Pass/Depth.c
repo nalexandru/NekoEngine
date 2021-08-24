@@ -95,7 +95,7 @@ _Execute(struct DepthPrePass *pass, const struct Array *resources)
 
 	Re_SetAttachment(pass->fb, 0, Re_GraphTexture(pass->normalHash, resources));
 	Re_SetAttachment(pass->fb, 1, Re_GraphTexture(pass->depthHash, resources));
-	uint64_t instanceRoot = Re_GraphBuffer(pass->instancesHash, resources);
+	uint64_t instanceRoot = Re_GraphBuffer(pass->instancesHash, resources, NULL);
 
 	Re_BeginDrawCommandBuffer();
 	Re_CmdBeginRenderPass(pass->rpd, pass->fb, RENDER_COMMANDS_INLINE);
@@ -105,10 +105,10 @@ _Execute(struct DepthPrePass *pass, const struct Array *resources)
 
 	Re_CmdBindPipeline(pass->pipeline);
 
-	uint32_t instance = 0; 
 	for (uint32_t i = 0; i < E_JobWorkerThreads(); ++i) {
-		struct Array *drawables = &Scn_activeScene->collect.arrays[i];
-		struct Drawable *d = NULL;
+		const uint32_t instanceOffset = Scn_activeScene->collect.instanceOffset[i];
+		const struct Array *drawables = &Scn_activeScene->collect.opaqueDrawableArrays[i];
+		const struct Drawable *d = NULL;
 
 		if (!drawables->count)
 			continue;
@@ -118,7 +118,7 @@ _Execute(struct DepthPrePass *pass, const struct Array *resources)
 
 			constants.vertexAddress = d->vertexAddress;
 			constants.materialAddress = d->materialAddress;
-			constants.instanceAddress = Re_OffsetAddress(instanceRoot, (instance++ * sizeof(struct ModelInstance)));
+			constants.instanceAddress = Re_OffsetAddress(instanceRoot, (((uint64_t)d->instanceId + instanceOffset) * sizeof(struct ModelInstance)));
 
 			Re_CmdPushConstants(SS_ALL, sizeof(constants), &constants);
 			Re_CmdDrawIndexed(d->indexCount, 1, d->firstIndex, 0, 0);
@@ -159,7 +159,7 @@ _Init(struct DepthPrePass **pass)
 		.samples = ASC_1_SAMPLE,
 		.initialLayout = TL_UNKNOWN,
 		.layout = TL_DEPTH_ATTACHMENT,
-		.finalLayout = TL_DEPTH_READ_ONLY_ATTACHMENT,
+		.finalLayout = TL_DEPTH_ATTACHMENT,
 		.clearDepth = 0.f
 	};
 	(*pass)->rpd = Re_CreateRenderPassDesc(&atDesc, 1, &depthDesc, NULL, 0);
@@ -175,7 +175,7 @@ _Init(struct DepthPrePass **pass)
 		.flags = RE_TOPOLOGY_TRIANGLES | RE_POLYGON_FILL |
 					RE_CULL_NONE | RE_FRONT_FACE_CW |
 					RE_DEPTH_TEST | RE_DEPTH_WRITE | RE_DEPTH_OP_GREATER_EQUAL,
-		.shader = shader,
+		.stageInfo = &shader->opaqueStages,
 		.renderPassDesc = (*pass)->rpd,
 		.pushConstantSize = sizeof(struct Constants),
 		.attachmentCount = sizeof(blendAttachments) / sizeof(blendAttachments[0]),

@@ -187,14 +187,14 @@ Vk_GraphicsPipeline(struct RenderDevice *dev, const struct GraphicsPipelineDesc 
 		.renderPass = desc->renderPassDesc ? desc->renderPassDesc->rp : VK_NULL_HANDLE
 	};
 
-	info.stageCount = desc->shader->stageCount;
+	info.stageCount = desc->stageInfo->stageCount;
 	VkPipelineShaderStageCreateInfo *stages = Sys_Alloc(sizeof(*stages), info.stageCount, MH_Transient);
 	info.pStages = stages;
 
 	for (uint32_t i = 0; i < info.stageCount; ++i) {
 		stages[i].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		stages[i].stage = desc->shader->stages[i].stage;
-		stages[i].module = desc->shader->stages[i].module;
+		stages[i].stage = desc->stageInfo->stages[i].stage;
+		stages[i].module = desc->stageInfo->stages[i].module;
 		stages[i].pName = "main";
 		stages[i].pSpecializationInfo = NULL;
 	}
@@ -243,11 +243,11 @@ Vk_ComputePipeline(struct RenderDevice *dev, const struct ComputePipelineDesc *d
 		.layout = VK_NULL_HANDLE
 	};
 
-	for (uint32_t i = 0; i < desc->shader->stageCount; ++i) {
-		if (desc->shader->stages[i].stage != SS_COMPUTE)
+	for (uint32_t i = 0; i < desc->stageInfo->stageCount; ++i) {
+		if (desc->stageInfo->stages[i].stage != SS_COMPUTE)
 			continue;
 
-		info.stage.module = desc->shader->stages[i].module;
+		info.stage.module = desc->stageInfo->stages[i].module;
 		break;
 	}
 

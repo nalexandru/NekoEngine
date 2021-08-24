@@ -24,10 +24,16 @@ Vk_CreateBuffer(struct RenderDevice *dev, const struct BufferDesc *desc, uint16_
 	if (desc->memoryType == MT_CPU_COHERENT && !Re_deviceInfo.features.coherentMemory) {
 		buff->staging = Vkd_AllocateStagingMemory(dev->dev, buff->buff, &req);
 	} else {
+		VkMemoryDedicatedAllocateInfo dai =
+		{
+			.sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,
+			.buffer = buff->buff
+		};
 		VkMemoryAllocateFlagsInfo fi =
 		{
 			.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO,
-			.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT
+			.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
+			.pNext = &dai
 		};
 		VkMemoryAllocateInfo ai =
 		{

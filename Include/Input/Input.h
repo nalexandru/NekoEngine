@@ -20,6 +20,7 @@ extern bool In_pointerVisible;
 extern bool In_pointerCaptured;
 extern bool In_buttonState[BTN_STATE_COUNT];
 extern float In_mouseAxis[3];
+extern float In_axisSensivity[255];
 extern uint8_t In_connectedControllers;
 extern struct ControllerState In_controllerState[IN_MAX_CONTROLLERS];
 

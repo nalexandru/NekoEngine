@@ -11,6 +11,7 @@ struct ImageSubresource
 	uint32_t mipLevel;
 	uint32_t baseArrayLayer;
 	uint32_t layerCount;
+	uint32_t levelCount;
 };
 
 struct BlitRegion
@@ -48,6 +49,10 @@ struct BufferImageCopy
 
 struct RenderContextProcs
 {
+	void (*Barrier)(struct RenderContext *dev, enum PipelineStage srcStage, enum PipelineStage dstStage, enum PipelineDependency dep,
+		uint32_t memBarrierCount, const struct MemoryBarrier *memBarriers, uint32_t bufferBarrierCount, const struct BufferBarrier *bufferBarriers,
+		uint32_t imageBarrierCount, const struct ImageBarrier *imageBarriers);
+
 	CommandBufferHandle (*BeginSecondary)(struct RenderContext *ctx, struct RenderPassDesc *passDesc);
 	void (*BeginDrawCommandBuffer)(struct RenderContext *ctx);
 	void (*BeginComputeCommandBuffer)(struct RenderContext *ctx);
@@ -80,7 +85,6 @@ struct RenderContextProcs
 	void (*TraceRays)(struct RenderContext *ctx, uint32_t width, uint32_t height, uint32_t depth);
 	void (*TraceRaysIndirect)(struct RenderContext *ctx, struct Buffer *buff, uint64_t offset);
 
-	void (*Barrier)(struct RenderContext *ctx);
 	void (*Transition)(struct RenderContext *ctx, struct Texture *tex, enum TextureLayout newLayout);
 
 	void (*Present)(struct RenderContext *ctx);
@@ -94,6 +98,7 @@ struct RenderContextProcs
 
 	bool (*Submit)(struct RenderDevice *dev, struct RenderContext *ctx);
 	bool (*SubmitTransfer)(struct RenderContext *ctx, struct Fence *f);
+	bool (*SubmitCompute)(struct RenderContext *ctx);
 };
 
 ENGINE_API extern struct RenderDevice *Re_device;
@@ -153,5 +158,11 @@ static inline void Re_CmdBlit(const struct Texture *src, struct Texture *dst, co
 { Re_contextProcs.Blit(Re_CurrentContext(), src, dst, regions, regionCount, filter); }
 
 static inline bool Re_SubmitTransfer(struct Fence *f) { return Re_contextProcs.SubmitTransfer(Re_CurrentContext(), f); }
+static inline bool Re_SubmitCompute(void) { return Re_contextProcs.SubmitCompute(Re_CurrentContext()); }
+
+static inline void Re_Barrier(enum PipelineStage srcStage, enum PipelineStage dstStage, enum PipelineDependency dep,
+	uint32_t memBarrierCount, struct MemoryBarrier *memBarriers, uint32_t bufferBarrierCount, struct BufferBarrier *bufferBarriers,
+	uint32_t imageBarrierCount, struct ImageBarrier *imageBarriers)
+{ Re_contextProcs.Barrier(Re_CurrentContext(), srcStage, dstStage, dep, memBarrierCount, memBarriers, bufferBarrierCount, bufferBarriers, imageBarrierCount, imageBarriers); }
 
 #endif /* _NE_RENDER_DRIVER_CONTEXT_H_ */

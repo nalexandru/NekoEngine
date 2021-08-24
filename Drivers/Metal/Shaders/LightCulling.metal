@@ -6,7 +6,7 @@ using namespace metal;
 #include "ShaderTypes.h"
 
 kernel void
-LightCulling(texture2d<float, access::read> depthBuffer [[texture(0)]],
+LightCulling_CS(texture2d<float, access::read> depthBuffer [[texture(0)]],
 			 constant struct Light *lights [[buffer(0)]],
 			 device uint *visibleIndices [[buffer(1)]],
 			 uint2 location [[thread_position_in_grid]],

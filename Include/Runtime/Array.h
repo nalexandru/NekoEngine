@@ -17,6 +17,7 @@
  * @count:
  * @size:
  * @elemSize
+ * @heap
  */
 struct Array
 {
@@ -82,6 +83,7 @@ Rt_InitAlignedArray(struct Array *a, size_t size, size_t elemSize, size_t alignm
 	a->size = size;
 	a->elemSize = (elemSize + alignment - 1) & ~(alignment - 1);
 	a->align = alignment;
+	a->heap = MH_ManualAlign;
 
 	return true;
 }
@@ -183,9 +185,19 @@ Rt_ResizeArray(struct Array *a, size_t size)
 	if (a->size == size)
 		return true;
 
-	if ((a->data = Sys_ReAlloc(a->data, size, a->elemSize, a->heap)) == NULL) {
-		a->data = ptr;
-		return false;
+	if (a->align > 1) {
+		if ((a->data = aligned_alloc(a->align, size * a->elemSize)) == NULL) {
+			a->data = ptr;
+			return false;
+		}
+
+		memcpy(a->data, ptr, Rt_ArrayUsedByteSize(a));
+		free(ptr);
+	} else {
+		if ((a->data = Sys_ReAlloc(a->data, size, a->elemSize, a->heap)) == NULL) {
+			a->data = ptr;
+			return false;
+		}
 	}
 
 	a->size = size;

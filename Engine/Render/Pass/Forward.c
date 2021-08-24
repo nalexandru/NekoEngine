@@ -60,23 +60,61 @@ _Execute(struct ForwardPass *pass, const struct Array *resources)
 {
 	struct MaterialRenderConstants constants;
 
-	constants.sceneAddress = Re_GraphBuffer(pass->sceneDataHash, resources);
-	uint64_t instanceRoot = Re_GraphBuffer(pass->instancesHash, resources);
+	constants.sceneAddress = Re_GraphBuffer(pass->sceneDataHash, resources, NULL);
+	uint64_t instanceRoot = Re_GraphBuffer(pass->instancesHash, resources, NULL);
 
+	struct Texture *depthTexture = Re_GraphTexture(pass->depthHash, resources);
+	struct Texture *normalTexture = Re_GraphTexture(pass->normalHash, resources);
 	Re_SetAttachment(pass->fb, 0, Re_GraphTexture(pass->outputHash, resources));
-	Re_SetAttachment(pass->fb, 1, Re_GraphTexture(pass->depthHash, resources));
-	Re_SetAttachment(pass->fb, 2, Re_GraphTexture(pass->normalHash, resources));
+	Re_SetAttachment(pass->fb, 1, depthTexture);
+	Re_SetAttachment(pass->fb, 2, normalTexture);
 
 	Re_BeginDrawCommandBuffer();
+
+	struct ImageBarrier depthBarrier =
+	{
+		.srcAccess = RE_PA_DEPTH_STENCIL_ATTACHMENT_WRITE,
+		.dstAccess = RE_PA_DEPTH_STENCIL_ATTACHMENT_READ,
+		.srcQueue = RE_QUEUE_GRAPHICS,
+		.dstQueue = RE_QUEUE_GRAPHICS,
+		.oldLayout = TL_DEPTH_ATTACHMENT,
+		.newLayout = TL_DEPTH_ATTACHMENT,
+		.texture = depthTexture,
+		.subresource.aspect = IA_DEPTH,
+		.subresource.baseArrayLayer = 0,
+		.subresource.layerCount = 1,
+		.subresource.mipLevel = 0,
+		.subresource.levelCount = 1
+	};
+
+	struct ImageBarrier normalBarrier =
+	{
+		.srcAccess = RE_PA_COLOR_ATTACHMENT_WRITE,
+		.dstAccess = RE_PA_INPUT_ATTACHMENT_READ,
+		.srcQueue = RE_QUEUE_GRAPHICS,
+		.dstQueue = RE_QUEUE_GRAPHICS,
+		.oldLayout = TL_SHADER_READ_ONLY,
+		.newLayout = TL_SHADER_READ_ONLY,
+		.texture = normalTexture,
+		.subresource.aspect = IA_COLOR,
+		.subresource.baseArrayLayer = 0,
+		.subresource.layerCount = 1,
+		.subresource.mipLevel = 0,
+		.subresource.levelCount = 1
+	};
+
+	Re_Barrier(RE_PS_LATE_FRAGMENT_TESTS, RE_PS_EARLY_FRAGMENT_TESTS, RE_PD_BY_REGION, 0, NULL, 0, NULL, 1, &depthBarrier);
+	Re_Barrier(RE_PS_COLOR_ATTACHMENT_OUTPUT, RE_PS_FRAGMENT_SHADER, RE_PD_BY_REGION, 0, NULL, 0, NULL, 1, &normalBarrier);
+
 	Re_CmdBeginRenderPass(Re_MaterialRenderPassDesc, pass->fb, RENDER_COMMANDS_INLINE);
 
 	Re_CmdSetViewport(0.f, 0.f, (float)*E_screenWidth, (float)*E_screenHeight, 0.f, 1.f);
 	Re_CmdSetScissor(0, 0, *E_screenWidth, *E_screenHeight);
 
-	uint32_t instance = 0;
+	const struct Drawable *d = NULL;
 	for (uint32_t i = 0; i < E_JobWorkerThreads(); ++i) {
-		struct Array *drawables = &Scn_activeScene->collect.arrays[i];
-		struct Drawable *d = NULL;
+		const uint32_t instanceOffset = Scn_activeScene->collect.instanceOffset[i];
+		const struct Array *drawables = &Scn_activeScene->collect.opaqueDrawableArrays[i];
 
 		if (!drawables->count)
 			continue;
@@ -87,11 +125,23 @@ _Execute(struct ForwardPass *pass, const struct Array *resources)
 			
 			constants.vertexAddress = d->vertexAddress;
 			constants.materialAddress = d->materialAddress;
-			constants.instanceAddress = Re_OffsetAddress(instanceRoot, (instance++ * sizeof(struct ModelInstance)));
+			constants.instanceAddress = Re_OffsetAddress(instanceRoot, (((uint64_t)d->instanceId + instanceOffset) * sizeof(struct ModelInstance)));
 
 			Re_CmdPushConstants(SS_ALL, sizeof(constants), &constants);
 			Re_CmdDrawIndexed(d->indexCount, 1, d->firstIndex, 0, 0);
 		}
+	}
+
+	Rt_ArrayForEach(d, &Scn_activeScene->collect.blendedDrawables) {
+		Re_CmdBindPipeline(d->material->pipeline);
+		Re_CmdBindIndexBuffer(d->indexBuffer, 0, d->indexType);
+		
+		constants.vertexAddress = d->vertexAddress;
+		constants.materialAddress = d->materialAddress;
+		constants.instanceAddress = Re_OffsetAddress(instanceRoot, (((uint64_t)d->instanceId) * sizeof(struct ModelInstance)));
+
+		Re_CmdPushConstants(SS_ALL, sizeof(constants), &constants);
+		Re_CmdDrawIndexed(d->indexCount, 1, d->firstIndex, 0, 0);
 	}
 
 	Re_CmdEndRenderPass();

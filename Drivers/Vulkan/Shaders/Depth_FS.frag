@@ -20,6 +20,12 @@ layout(location = 4) in vec3 v_n;
 void
 main()
 {
+	if (DrawInfo.material.data.alphaMaskMap != 0) {
+		float mask = Re_SampleSceneTexture(DrawInfo.material.data.alphaMaskMap, v_uv).r;
+		if (mask < DrawInfo.material.data.alphaCutoff)
+			discard;
+	}
+
 	if (DrawInfo.material.data.normalMap == 0) {
 		o_wsNormals = normalize(v_n);
 		return;
@@ -38,5 +44,5 @@ main()
 	const vec3 b = -normalize(cross(n, t));
 	const mat3 tbn = mat3(t, b, n);
 
-	o_wsNormals = tbn * texnm;
+	o_wsNormals = normalize(tbn * texnm);
 }

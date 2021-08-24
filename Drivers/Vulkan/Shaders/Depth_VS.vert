@@ -33,5 +33,5 @@ main()
 	v_b = normalize(normalMat * cross(v_t, v_n));
 	v_pos = pos.xyz / pos.w;
 
-	gl_Position = DrawInfo.instance.mvp * v;
+	gl_Position = mvp * v;
 }

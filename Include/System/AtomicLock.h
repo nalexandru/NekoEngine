@@ -12,10 +12,10 @@ struct AtomicLock
 
 void Sys_InitAtomicLock(struct AtomicLock *lock);
 
-void Sys_AtomicLockRead(struct AtomicLock *lock);
-void Sys_AtomicUnlockRead(struct AtomicLock *lock);
+void Sys_AtomicLockRead(volatile struct AtomicLock *lock);
+void Sys_AtomicUnlockRead(volatile struct AtomicLock *lock);
 
-void Sys_AtomicLockWrite(struct AtomicLock *lock);
-void Sys_AtomicUnlockWrite(struct AtomicLock *lock);
+void Sys_AtomicLockWrite(volatile struct AtomicLock *lock);
+void Sys_AtomicUnlockWrite(volatile struct AtomicLock *lock);
 
 #endif /* _NE_SYSTEM_ATOMIC_LOCK_H_ */

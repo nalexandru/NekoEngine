@@ -25,6 +25,7 @@ struct GraphResource
 		struct {
 			uint64_t bufferAddress;
 			BufferHandle buffer;
+			struct Buffer *ptr;
 		};
 	} handle;
 };
@@ -74,11 +75,15 @@ Re_GraphTexture(uint64_t hash, const struct Array *resources)
 }
 
 uint64_t
-Re_GraphBuffer(uint64_t hash, const struct Array *resources)
+Re_GraphBuffer(uint64_t hash, const struct Array *resources, struct Buffer **buff)
 {
 	struct GraphResource *res = _GetResource(hash, resources);
 	if (!res)
 		return 0;
+
+	if (buff)
+		*buff = res->handle.ptr;
+
 	return res->info.type == PRT_BUFFER ? res->handle.bufferAddress : 0;
 }
 
@@ -131,7 +136,7 @@ Re_BuildGraph(struct RenderGraph *g, struct Texture *output)
 			if (!gr->handle.buffer)
 				Re_ReserveBufferId(&gr->handle.buffer);
 
-			Re_CreateTransientBuffer(&gr->info.buffer, gr->handle.buffer, offset, &size);
+			gr->handle.ptr = Re_CreateTransientBuffer(&gr->info.buffer, gr->handle.buffer, offset, &size);
 			Re_Destroy(gr->handle.buffer);
 		} else {
 			size = 0;

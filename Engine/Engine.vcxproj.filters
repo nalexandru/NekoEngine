@@ -845,6 +845,9 @@
     <ClCompile Include="Scene\Light.c">
       <Filter>Source Files\Scene</Filter>
     </ClCompile>
+    <ClCompile Include="Render\Pass\SSAO.c">
+      <Filter>Source Files\Render\Pass</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Exports.def">

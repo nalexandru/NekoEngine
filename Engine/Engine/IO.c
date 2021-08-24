@@ -17,6 +17,8 @@
 extern unsigned char engine_res[];
 extern unsigned int engine_res_size;
 
+const char *E_RealPath(const char *path);
+
 File
 E_OpenFile(const char *path, FileOpenMode mode)
 {
@@ -41,20 +43,7 @@ void *
 E_MapFile(const char *path, FileOpenMode mode, uint64_t *size)
 {
 	void *ptr = NULL;
-	const char *realDir = NULL;
-	char *realPath = NULL;
-	
-	realDir = PHYSFS_getRealDir(path);
-	if (!realDir)
-		return NULL;
-
-	realPath = Sys_Alloc(sizeof(char), 4096, MH_Transient);
-	if (!realPath)
-		return NULL;
-
-	snprintf(realPath, 4096, "%s/%s", realDir, path);
-
-	if (!Sys_MapFile(realPath, mode == IO_WRITE, &ptr, size))
+	if (!Sys_MapFile(E_RealPath(path), mode == IO_WRITE, &ptr, size))
 		return NULL;
 
 	return ptr;
@@ -421,4 +410,19 @@ E_TermIOSystem(void)
 //		Sys_LogEntry(IO_MODULE, LOG_DEBUG, L"Failed to unmount engine_res.zip");
 
 	PHYSFS_deinit();
+}
+
+const char *
+E_RealPath(const char *path)
+{
+	const char *realDir = PHYSFS_getRealDir(path);
+	if (!realDir)
+		return NULL;
+
+	char *realPath = Sys_Alloc(sizeof(char), 4096, MH_Transient);
+	if (!realPath)
+		return NULL;
+
+	snprintf(realPath, 4096, "%s/%s", realDir, path);
+	return realPath;
 }

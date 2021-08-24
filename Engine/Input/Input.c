@@ -3,6 +3,7 @@
 #include <Engine/Engine.h>
 #include <Runtime/Runtime.h>
 #include <System/Memory.h>
+#include <System/Log.h>
 
 #define BUFF_SZ		64
 
@@ -41,10 +42,13 @@ bool In_pointerVisible = true;
 bool In_pointerCaptured = false;
 bool In_buttonState[BTN_STATE_COUNT];
 float In_mouseAxis[3] = { 0.f, 0.f, 0.f };
+float In_axisSensivity[255];
 uint8_t In_connectedControllers = 0;
 struct ControllerState In_controllerState[IN_MAX_CONTROLLERS];
 
-static bool _enableMouseAxis = false;
+bool __InSys_enableMouseAxis = false;
+extern bool __InSys_rawMouseAxis;
+
 static bool _prevButtonState[BTN_STATE_COUNT];
 static struct ControllerState _prevControllerState[IN_MAX_CONTROLLERS];
 static struct Array _map;
@@ -62,6 +66,12 @@ In_InitInput(void)
 
 	memset(In_buttonState, 0x0, sizeof(In_buttonState));
 	memset(In_controllerState, 0x0, sizeof(In_controllerState));
+
+	for (uint32_t i = 0; i < sizeof(In_axisSensivity) / sizeof(In_axisSensivity[0]); ++i)
+		In_axisSensivity[i] = 1.f;
+
+	In_axisSensivity[AXIS_MOUSE_X] = 10.f;
+	In_axisSensivity[AXIS_MOUSE_Y] = 10.f;
 
 	if (!In_SysInit())
 		return false;
@@ -175,27 +185,47 @@ In_Update(void)
 
 	In_SysPollControllers();
 
-	if (!_enableMouseAxis || !In_pointerCaptured)
+	if (!__InSys_enableMouseAxis || !In_pointerCaptured)
 		return;
 
-	uint16_t x = 0, y = 0, hwidth = *E_screenWidth / 2, hheight = *E_screenHeight / 2;
-	float dx = 0.f, dy = 0.f;
+	if (__InSys_rawMouseAxis) {
+		In_SetPointerPosition(*E_screenWidth / 2, *E_screenHeight / 2);
+		In_mouseAxis[0] = In_mouseAxis[1] = 0.f;
+	} else {
+		uint16_t x = 0, y = 0, hwidth = *E_screenWidth / 2, hheight = *E_screenHeight / 2;
+		float dx = 0.f, dy = 0.f;
+	
+		In_PointerPosition(&x, &y);
+		dx = (float)(hwidth - x);
+		dy = (float)(hheight - y);
+		In_SetPointerPosition(hwidth, hheight);
+	
+		In_mouseAxis[AXIS_MOUSE_X - MOUSE_AXIS_START] = dx / hwidth;
+		In_mouseAxis[AXIS_MOUSE_Y - MOUSE_AXIS_START] = dy / hheight;
 
-	In_PointerPosition(&x, &y);
-	dx = (float)(hwidth - x);
-	dy = (float)(hheight - y);
-	In_SetPointerPosition(hwidth, hheight);
-
-	In_mouseAxis[AXIS_MOUSE_X - MOUSE_AXIS_START] = -(dx / hwidth);
-	In_mouseAxis[AXIS_MOUSE_Y - MOUSE_AXIS_START] = dy / hheight;
-
-	// TODO: wheel support
+		// TODO: wheel support
+	}
 }
 
 void
 In_EnableMouseAxis(bool enable)
 {
-	_enableMouseAxis = enable;
+	__InSys_enableMouseAxis = enable;
+
+	if (enable) {
+		if (!In_pointerCaptured) {
+			In_CapturePointer(true);
+			In_ShowPointer(false);
+		}
+
+		In_SetPointerPosition(*E_screenWidth / 2, *E_screenHeight / 2);
+	} else {
+		if (In_pointerCaptured) {
+			In_CapturePointer(false);
+			In_ShowPointer(true);
+		}
+	}
+
 }
 
 enum Axis
@@ -341,9 +371,9 @@ In_UnmappedAxis(enum Axis axis, uint8_t controller)
 	float ret;
 
 	if (axis < CONTROLLER_AXIS_COUNT) {
-		return In_controllerState[controller].axis[axis];
+		return In_controllerState[controller].axis[axis] * In_axisSensivity[axis];
 	} else if (axis == AXIS_MOUSE_X || axis == AXIS_MOUSE_Y) {
-		return 0.f;
+		return In_mouseAxis[axis - MOUSE_AXIS_START] * In_axisSensivity[axis];
 	} else {
 		ka = Rt_ArrayGet(&_virtualAxis, (size_t)axis - VIRTUAL_AXIS_START);
 		if (!ka)
@@ -355,6 +385,6 @@ In_UnmappedAxis(enum Axis axis, uint8_t controller)
 		if (In_UnmappedButton(ka->min, controller))
 			ret -= 1.f;
 
-		return ret;
+		return ret * In_axisSensivity[axis];
 	}
 }

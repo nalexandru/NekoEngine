@@ -29,10 +29,10 @@ MTL_GraphicsPipeline(id<MTLDevice> dev, const struct GraphicsPipelineDesc *gpDes
 	
 	p->type = PS_RENDER;
 	
-	for (uint32_t i = 0; i < gpDesc->shader->stageCount; ++i) {
-		switch (gpDesc->shader->stages[i].stage) {
-		case SS_VERTEX: [desc setVertexFunction: (id<MTLFunction>)gpDesc->shader->stages[i].module]; break;
-		case SS_FRAGMENT: [desc setFragmentFunction: (id<MTLFunction>)gpDesc->shader->stages[i].module]; break;
+	for (uint32_t i = 0; i < gpDesc->stageInfo->stageCount; ++i) {
+		switch (gpDesc->stageInfo->stages[i].stage) {
+		case SS_VERTEX: [desc setVertexFunction: (id<MTLFunction>)gpDesc->stageInfo->stages[i].module]; break;
+		case SS_FRAGMENT: [desc setFragmentFunction: (id<MTLFunction>)gpDesc->stageInfo->stages[i].module]; break;
 		default: continue;
 		}
 	}
@@ -118,11 +118,11 @@ struct Pipeline *
 MTL_ComputePipeline(id<MTLDevice> dev, const struct ComputePipelineDesc *cpDesc)
 {
 	struct ShaderStageDesc *stageDesc = NULL;
-	for (uint32_t i = 0; i < cpDesc->shader->stageCount; ++i) {
-		if (cpDesc->shader->stages[i].stage != SS_COMPUTE)
+	for (uint32_t i = 0; i < cpDesc->stageInfo->stageCount; ++i) {
+		if (cpDesc->stageInfo->stages[i].stage != SS_COMPUTE)
 			continue;
 		
-		stageDesc = &cpDesc->shader->stages[i];
+		stageDesc = &cpDesc->stageInfo->stages[i];
 		break;
 	}
 	

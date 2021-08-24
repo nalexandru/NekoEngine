@@ -230,6 +230,7 @@ bool Vkd_InitStagingArea(struct RenderDevice *dev);
 void *Vkd_AllocateStagingMemory(VkDevice dev, VkBuffer buff, VkMemoryRequirements *mr);
 void Vkd_CommitStagingArea(struct RenderDevice *dev, VkSemaphore wait);
 void Vkd_TermStagingArea(struct RenderDevice *dev);
+void Vkd_StagingBarrier(VkCommandBuffer cmdBuffer);
 
 // Utility functions
 void Vk_InitContextProcs(struct RenderContextProcs *p);

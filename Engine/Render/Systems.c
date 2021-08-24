@@ -10,8 +10,6 @@
 #include <Scene/Transform.h>
 #include <System/Thread.h>
 
-static THREAD_LOCAL size_t _transparentDrawableCount = 10;
-
 void
 Re_CollectDrawables(void **comp, struct CollectDrawablesArgs *args)
 {
@@ -19,14 +17,11 @@ Re_CollectDrawables(void **comp, struct CollectDrawablesArgs *args)
 	struct ModelRender *mr = comp[1];
 	struct Model *mdl = NULL;
 	struct mat4 mvp;
-	struct Array transparentDrawables;
-	size_t usedTransparentDrawables = 0;
-
-	Rt_InitArray(&transparentDrawables, _transparentDrawableCount, sizeof(struct Drawable), MH_Transient);
 
 	// TODO: visibility
 	const uint32_t array = atomic_fetch_add(&args->nextArray, 1);
-	struct Array *drawables = &args->arrays[array];
+	struct Array *drawables = &args->opaqueDrawableArrays[array];
+	struct Array *blendedDrawables = &args->blendedDrawableArrays[array];
 	struct Array *instances = &args->instanceArrays[array];
 
 	mdl = E_ResourcePtr(mr->model);
@@ -39,18 +34,16 @@ Re_CollectDrawables(void **comp, struct CollectDrawablesArgs *args)
 		// TODO: visibility
 
 		struct Drawable *d = NULL;
-		struct ModelInstance *mi = Rt_ArrayAllocate(instances);
 
 		if (!mr->materials[i].alphaBlend) {
 			d = Rt_ArrayAllocate(drawables);
 		} else {
-			++usedTransparentDrawables;
-			
-			if (transparentDrawables.count == transparentDrawables.size)
-				continue;
-
-			d = Rt_ArrayAllocate(&transparentDrawables);
+			d = Rt_ArrayAllocate(blendedDrawables);
+			d->distance = v3_distance(&args->camPos, &xform->position);
 		}
+
+		d->instanceId = (uint32_t)instances->count;
+		struct ModelInstance *mi = Rt_ArrayAllocate(instances);
 
 		d->vertexAddress = Re_BufferAddress(mdl->gpu.vertexBuffer, sizeof(struct Vertex) * mdl->meshes[i].vertexOffset);
 		d->indexBuffer = mdl->gpu.indexBuffer;
@@ -71,10 +64,5 @@ Re_CollectDrawables(void **comp, struct CollectDrawablesArgs *args)
 
 		mi->vertexAddress = Re_BufferAddress(mdl->gpu.vertexBuffer, sizeof(struct Vertex) * mdl->meshes[i].vertexOffset);
 		mi->materialAddress = Re_MaterialAddress(&mr->materials[i]);
-	}
-
-	if (transparentDrawables.count) {
-		// TODO: sort transparent drawables
-		Rt_ArrayAddArray(drawables, &transparentDrawables);
 	}
 }

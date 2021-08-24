@@ -1,7 +1,6 @@
 // Microsoft Visual C++ generated resource script.
 //
 #include "resource.h"
-#include "TestApplication.h"
 #include "../Include/Engine/Version.h"
 
 #define APSTUDIO_READONLY_SYMBOLS
@@ -53,7 +52,7 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION A_VER_MAJOR,A_VER_MINOR,A_VER_BUILD,A_VER_REVISION
+ FILEVERSION E_VER_MAJOR,E_VER_MINOR,E_VER_BUILD,E_VER_REVISION
  PRODUCTVERSION E_VER_MAJOR,E_VER_MINOR,E_VER_BUILD,E_VER_REVISION
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
@@ -70,8 +69,8 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "CompanyName", "Alexandru Naiman"
-            VALUE "FileDescription", A_PGM_NAME
-            VALUE "FileVersion", A_VER_STR_A
+            VALUE "FileDescription", "NekoEngine Test Application"
+            VALUE "FileVersion", E_VER_STR_A
             VALUE "InternalName", "NekoEngine.exe"
             VALUE "LegalCopyright", E_CPY_STR
             VALUE "OriginalFilename", "NekoEngine.exe"

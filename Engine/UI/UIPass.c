@@ -133,7 +133,7 @@ _Init(struct UIPass **pass)
 	struct GraphicsPipelineDesc pipeDesc =
 	{
 		.flags = RE_TOPOLOGY_TRIANGLES | RE_POLYGON_FILL | RE_CULL_NONE | RE_FRONT_FACE_CW,
-		.shader = shader,
+		.stageInfo = &shader->opaqueStages,
 		.renderPassDesc = (*pass)->rpd,
 		.pushConstantSize = sizeof(struct UIConstants),
 		.attachmentCount = sizeof(blendAttachments) / sizeof(blendAttachments[0]),

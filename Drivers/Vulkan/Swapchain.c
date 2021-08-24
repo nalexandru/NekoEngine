@@ -152,14 +152,11 @@ Vk_Present(struct RenderDevice *dev, struct RenderContext *ctx, struct Swapchain
 {
 	dev->frameValues[Re_frameId] = ++dev->semaphoreValue;
 
-	uint64_t waitValues[] = { 0 };
+	uint64_t waitValues[] = { 0, 0 };
 	uint64_t signalValues[] = { dev->frameValues[Re_frameId], 0 };
-	VkSemaphore wait[] = { sw->frameStart[Re_frameId] };
+	VkSemaphore wait[] = { sw->frameStart[Re_frameId], VK_NULL_HANDLE };
 	VkSemaphore signal[] = { dev->frameSemaphore, sw->frameEnd[Re_frameId] };
 	VkPipelineStageFlags waitMasks[] = { VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT };
-
-	if (!Re_deviceInfo.features.coherentMemory)
-		wait[0] = Vkd_stagingSignal;
 
 	VkTimelineSemaphoreSubmitInfo timelineInfo =
 	{
@@ -181,6 +178,10 @@ Vk_Present(struct RenderDevice *dev, struct RenderContext *ctx, struct Swapchain
 		.signalSemaphoreCount = 2,
 		.pSignalSemaphores = signal
 	};
+
+	if (!Re_deviceInfo.features.coherentMemory)
+		wait[0] = Vkd_stagingSignal;
+
 	vkQueueSubmit(dev->graphicsQueue, 1, &si, VK_NULL_HANDLE);
 
 	uint32_t imageId = (uint32_t)(uint64_t)image;

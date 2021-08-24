@@ -119,12 +119,27 @@ struct ShaderStageDesc
 	void *module;
 };
 
+struct ShaderStageInfo
+{
+	uint32_t stageCount;
+	struct ShaderStageDesc *stages;
+};
+
 struct Shader
 {
 	uint64_t hash;
 	enum ShaderType type;
-	uint32_t stageCount;
-	struct ShaderStageDesc *stages;
+
+	union {
+		struct {
+			struct ShaderStageInfo opaqueStages, transparentStages;
+		};
+		struct {
+			uint32_t stageCount;
+			struct ShaderStageDesc *stages;
+		};
+	};
+
 	char name[256];
 };
 
@@ -223,7 +238,7 @@ struct BlendAttachmentDesc
 struct GraphicsPipelineDesc
 {
 	uint64_t flags;
-	struct Shader *shader;
+	struct ShaderStageInfo *stageInfo;
 	struct RenderPassDesc *renderPassDesc;
 	uint32_t pushConstantSize;
 	uint32_t attachmentCount;
@@ -233,7 +248,7 @@ struct GraphicsPipelineDesc
 
 struct ComputePipelineDesc
 {
-	struct Shader *shader;
+	struct ShaderStageInfo *stageInfo;
 	struct {
 		uint32_t x;
 		uint32_t y;
@@ -249,9 +264,40 @@ bool Re_InitPipelines(void);
 void Re_TermPipelines(void);
 
 // Synchronization
+
+struct MemoryBarrier
+{
+    enum PipelineAccess srcAccess;
+    enum PipelineAccess dstAccess;
+};
+
+struct BufferBarrier
+{
+    enum PipelineAccess srcAccess;
+    enum PipelineAccess dstAccess;
+	enum RenderQueue srcQueue;
+	enum RenderQueue dstQueue;
+	struct Buffer *buffer;
+	uint64_t offset;
+	uint64_t size;
+};
+
+struct ImageBarrier
+{
+    enum PipelineAccess srcAccess;
+    enum PipelineAccess dstAccess;
+	enum TextureLayout oldLayout;
+	enum TextureLayout newLayout;
+	enum RenderQueue srcQueue;
+	enum RenderQueue dstQueue;
+	struct Texture *texture;
+	struct ImageSubresource subresource;
+};
+
 static inline struct Semaphore *Re_CreateSemaphore(void) { return Re_deviceProcs.CreateSemaphore(Re_device); }
 static inline void Re_DestroySemaphore(struct Semaphore *s) { Re_deviceProcs.DestroySemaphore(Re_device, s); }
 static inline struct Fence *Re_CreateFence(bool createSignaled) { return Re_deviceProcs.CreateFence(Re_device, createSignaled); }
+static inline bool Re_WaitForFence(struct Fence *f, uint64_t timeout) { return Re_deviceProcs.WaitForFence(Re_device, f, timeout); }
 static inline void Re_DestroyFence(struct Fence *f) { Re_deviceProcs.DestroyFence(Re_device, f); }
 
 #endif /* _NE_RENDER_DRIVER_CORE_H_ */

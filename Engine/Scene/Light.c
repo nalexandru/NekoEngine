@@ -40,9 +40,9 @@ Scn_InitLight(struct Light *l, const void **args)
 		} else if (!strncmp(arg, "OuterRadius", len)) {
 			l->outerRadius = (float)atof(*(++args));
 		} else if (!strncmp(arg, "InnerCutoff", len)) {
-			l->innerCutoff = (float)atof(*(++args));
+			l->innerCutoff = cosf(deg_to_rad((float)atof(*(++args))));
 		} else if (!strncmp(arg, "OuterCutoff", len)) {
-			l->outerCutoff = (float)atof(*(++args));
+			l->outerCutoff = cosf(deg_to_rad((float)atof(*(++args))));
 		}
 	}
 

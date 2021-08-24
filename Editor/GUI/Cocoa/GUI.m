@@ -1,3 +1,10 @@
+#define Handle __EngineHandle
+
+#include <Engine/Engine.h>
+
+#undef Handle
+
+#import "Inspector.h"
 #import "AssetManager.h"
 #import "SceneHierarchy.h"
 #import "EditorController.h"
@@ -10,6 +17,8 @@ static inline bool _CreateMenu(void);
 #import <Cocoa/Cocoa.h>
 static inline bool _InitCocoa(void);
 #endif
+
+static NSAlert *_progressAlert;
 
 bool
 Ed_CreateGUI(void)
@@ -26,14 +35,25 @@ Ed_CreateGUI(void)
 	if (!_CreateMenu())
 		return false;
 
-	NSWindow *wnd = [[SceneHierarchy alloc] initWithContentRect: NSMakeRect(10, 10, 250, 400)];
-	[wnd cascadeTopLeftFromPoint: NSMakePoint(20, 20)];
+	NSRect bounds = [[NSScreen mainScreen] visibleFrame];
+
+	NSWindow *wnd = E_screen;
+	[wnd setFrameOrigin: NSMakePoint(bounds.origin.x + 250, bounds.size.height)];
+
+	wnd = [[Inspector alloc] initWithContentRect: NSMakeRect(0, 0, 250, *E_screenHeight)];
+	[wnd cascadeTopLeftFromPoint: NSMakePoint(bounds.origin.x + *E_screenWidth + 250, bounds.size.height)];
+	[wnd setTitle: @"Inspector"];
+	[wnd orderFront: NSApp];
+	[_controller setInspectorWindow: wnd];
+
+	wnd = [[SceneHierarchy alloc] initWithContentRect: NSMakeRect(0, 0, 250, *E_screenHeight) inspector: (Inspector *)wnd];
+	[wnd cascadeTopLeftFromPoint: NSMakePoint(bounds.origin.x, bounds.size.height)];
 	[wnd setTitle: @"Scene Hierarchy"];
 	[wnd orderFront: NSApp];
 	[_controller setSceneHierarchyWindow: wnd];
 
-	wnd = [[AssetManager alloc] initWithContentRect: NSMakeRect(100, 100, 600, 300)];
-	[wnd cascadeTopLeftFromPoint: NSMakePoint(20, 20)];
+	wnd = [[AssetManager alloc] initWithContentRect: NSMakeRect(0, 0, 600, 300)];
+	[wnd cascadeTopLeftFromPoint: NSMakePoint(bounds.origin.x, bounds.origin.y + [wnd frame].size.height)];
 	[wnd setTitle: @"Asset Manager"];
 	[wnd makeKeyAndOrderFront: NSApp];
 	[_controller setAssetManagerWindow: wnd];
@@ -41,6 +61,65 @@ Ed_CreateGUI(void)
 	[pool drain];
 
 	return true;
+}
+
+void
+EdGUI_MessageBox(const char *title, const char *message)
+{
+	dispatch_async(dispatch_get_main_queue(), ^{
+		NSAlert *a = [[NSAlert alloc] init];
+		[a addButtonWithTitle: @"OK"];
+		[a setMessageText: [NSString stringWithUTF8String: title]];
+		[a setInformativeText: [NSString stringWithUTF8String: message]];
+		[a runModal];
+		[a release];
+	});
+}
+
+void
+EdGUI_ShowProgressDialog(const char *text)
+{
+	dispatch_async(dispatch_get_main_queue(), ^{
+		if (!_progressAlert) {
+			_progressAlert = [[NSAlert alloc] init];
+
+			[_progressAlert addButtonWithTitle: @"OK"];
+			[_progressAlert.buttons.firstObject setHidden: YES];
+
+			NSProgressIndicator *pi = [[NSProgressIndicator alloc] initWithFrame: NSMakeRect(0, 0, 300, 25)];
+			pi.indeterminate = YES;
+
+			_progressAlert.accessoryView = pi;
+			_progressAlert.messageText = [NSString stringWithUTF8String: text];
+		}
+
+		[(NSProgressIndicator *)[_progressAlert accessoryView] startAnimation: nil];
+		[_progressAlert beginSheetModalForWindow: (NSWindow *)E_screen completionHandler: nil];
+	});
+}
+
+void
+EdGUI_UpdateProgressDialog(const char *text)
+{
+	dispatch_async(dispatch_get_main_queue(), ^{
+		_progressAlert.messageText = [NSString stringWithUTF8String: text];
+	});
+}
+
+void
+EdGUI_HideProgressDialog(void)
+{
+	dispatch_async(dispatch_get_main_queue(), ^{
+		[(NSProgressIndicator *)[_progressAlert accessoryView] stopAnimation: nil];
+		[_progressAlert.window orderOut: nil];
+	});
+}
+
+void
+Ed_TermGUI(void)
+{
+	[_controller release];
+	[_progressAlert release];
 }
 
 static inline bool
@@ -130,7 +209,7 @@ _CreateMenu(void)
 
 #ifndef __APPLE__
 void
-Ed_ProcessCocoaEvents(void)
+Ed_ProcessEvents(void)
 {
 	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
 

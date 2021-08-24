@@ -9,8 +9,7 @@ static inline bool Re_ResizeTransientHeap(uint64_t size) { return Re_deviceProcs
 
 static inline struct Texture *Re_CreateTransientTexture(const struct TextureDesc *desc, uint64_t offset, uint64_t *size)
 { return Re_deviceProcs.CreateTransientTexture(Re_device, desc, 0, offset, size); }
-static inline struct Buffer *Re_CreateTransientBuffer(const struct BufferDesc *desc, BufferHandle location, uint64_t offset, uint64_t *size)
-{ return Re_deviceProcs.CreateTransientBuffer(Re_device, desc, location, offset, size); }
+struct Buffer *Re_CreateTransientBuffer(const struct BufferDesc *desc, BufferHandle location, uint64_t offset, uint64_t *size);
 
 static inline void Re_TermTransientHeap(void) { Re_deviceProcs.TermTransientHeap(Re_device); }
 

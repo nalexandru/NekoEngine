@@ -3,10 +3,9 @@
 
 #include <Editor/Types.h>
 
-bool Ed_CreateGUI(void);
+extern const char *Ed_dataDir;
 
-#ifndef __APPLE__
-void Ed_ProcessCocoaEvents(void);
-#endif
+// This is not part of the exposed IO API
+const char *E_RealPath(const char *path);
 
 #endif /* _NE_EDITOR_EDITOR_H_ */

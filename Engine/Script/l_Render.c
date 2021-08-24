@@ -173,7 +173,7 @@ SIF_FUNC(GraphicsPipeline)
 	struct GraphicsPipelineDesc *desc = Sys_Alloc(sizeof(*desc), 1, MH_Transient);
 
 	desc->flags = SIF_INTFIELD(1, "flags");
-	desc->shader = SIF_LUSRDATAFIELD(1, "shader");
+	desc->stageInfo = SIF_LUSRDATAFIELD(1, "stageInfo");
 	desc->renderPassDesc = SIF_LUSRDATAFIELD(1, "renderPassDesc");
 	desc->pushConstantSize = SIF_INTFIELD(1, "pushConstantSize");
 	desc->attachmentCount = SIF_INTFIELD(1, "attachmentCount");

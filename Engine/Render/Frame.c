@@ -20,14 +20,13 @@ Re_RenderFrame(void)
 		Re_activeGraph = Re_CreateGraph();
 
 		Re_AddPass(Re_activeGraph, &RP_depthPrePass);
+	//	Re_AddPass(Re_activeGraph, &RP_lightCulling);
 		Re_AddPass(Re_activeGraph, &RP_forward);
 		Re_AddPass(Re_activeGraph, &RP_ui);
 	}
 	///////////////////////////////////
 
-	Scn_StartDataUpdate(Scn_activeScene, Scn_activeCamera);
 	Scn_StartDrawableCollection(Scn_activeScene, Scn_activeCamera);
-	Re_TransferMaterials();
 
 	void *image = Re_AcquireNextImage(Re_swapchain);
 	if (image == RE_INVALID_IMAGE)
@@ -37,6 +36,9 @@ Re_RenderFrame(void)
 		Re_ResetContext(Re_contexts[i]);
 	Re_DestroyResources();
 	Sys_ResetHeap(MH_Frame);
+
+	Scn_StartDataUpdate(Scn_activeScene, Scn_activeCamera);
+	Re_TransferMaterials();
 
 	Re_BuildGraph(Re_activeGraph, Re_SwapchainTexture(Re_swapchain, image));
 	Re_ExecuteGraph(Re_activeGraph);

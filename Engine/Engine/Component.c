@@ -67,6 +67,13 @@ E_CreateComponentS(struct Scene *s, const wchar_t *typeName, EntityHandle owner,
 		return ES_INVALID_COMPONENT;
 	}
 
+	struct ComponentCreationData *ccd = Sys_Alloc(sizeof(*ccd), 1, MH_Transient);
+	ccd->type = id;
+	ccd->handle = handle->handle;
+	ccd->owner = owner;
+	ccd->ptr = comp;
+	E_Broadcast(EVT_COMPONENT_CREATED, ccd);
+
 	return handle->handle;
 }
 
@@ -108,6 +115,13 @@ E_CreateComponentIdS(struct Scene *s, CompTypeId id, EntityHandle owner, const v
 		return ES_INVALID_COMPONENT;
 	}
 
+	struct ComponentCreationData *ccd = Sys_Alloc(sizeof(*ccd), 1, MH_Transient);
+	ccd->type = id;
+	ccd->handle = handle->handle;
+	ccd->owner = owner;
+	ccd->ptr = comp;
+	E_Broadcast(EVT_COMPONENT_CREATED, ccd);
+
 	return handle->handle;
 }
 
@@ -146,6 +160,8 @@ E_DestroyComponentS(struct Scene *s, CompHandle comp)
 	handle->index = dst_index;
 
 	--a->count;
+
+	E_Broadcast(EVT_COMPONENT_DESTROYED, (void *)comp);
 }
 
 void *

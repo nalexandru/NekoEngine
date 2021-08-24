@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <ctype.h>
 
+#include <Math/Math.h>
 #include <Engine/IO.h>
 #include <Engine/Job.h>
 #include <Engine/Config.h>
@@ -64,8 +65,9 @@ struct Scene *Scn_activeScene = NULL;
 static inline bool _InitScene(struct Scene *s);
 static void _LoadJob(int worker, struct Scene *scn);
 static inline void _ReadSceneInfo(struct Scene *s, struct Stream *stm, char *data, wchar_t *buff);
-static inline void _ReadEntity(struct Scene *s, struct Stream *stm, char *data, wchar_t *wbuff, struct Array *args);
+static inline void _ReadEntity(struct Scene *s, char *name, struct Stream *stm, char *data, wchar_t *wbuff, struct Array *args);
 static inline uint64_t _DataOffset(const struct Scene *s);
+static int32_t _SortDrawables(const struct Drawable *a, const struct Drawable *b);
 
 struct Scene *
 Scn_CreateScene(const wchar_t *name)
@@ -109,10 +111,15 @@ Scn_UnloadScene(struct Scene *s)
 {
 	for (uint32_t i = 0; i < E_JobWorkerThreads(); ++i) {
 		Rt_TermArray(&s->collect.instanceArrays[i]);
-		Rt_TermArray(&s->collect.arrays[i]);
+		Rt_TermArray(&s->collect.opaqueDrawableArrays[i]);
+		Rt_TermArray(&s->collect.blendedDrawableArrays[i]);
 	}
+	Sys_Free(s->collect.instanceOffset);
 	Sys_Free(s->collect.instanceArrays);
-	Sys_Free(s->collect.arrays);
+	Sys_Free(s->collect.opaqueDrawableArrays);
+	Sys_Free(s->collect.blendedDrawableArrays);
+
+	Rt_TermArray(&s->collect.blendedDrawables);
 
 	Re_Destroy(s->sceneData);
 
@@ -129,6 +136,7 @@ Scn_ActivateScene(struct Scene *s)
 		return false;
 
 	Scn_activeScene = s;
+	E_Broadcast(EVT_SCENE_ACTIVATED, s);
 
 	return true;
 }
@@ -147,22 +155,40 @@ Scn_StartDrawableCollection(struct Scene *s, const struct Camera *c)
 	s->collect.nextArray = 0;
 	m4_mul(&s->collect.vp, &c->projMatrix, &c->viewMatrix);
 
+	const EntityHandle camEnt = c->_owner;
+	const struct Transform *camXform = E_GetComponentS(s, camEnt, E_ComponentTypeId(TRANSFORM_COMP));
+	v3_copy(&s->collect.camPos, &camXform->position);
+
 	for (uint32_t i = 0; i < E_JobWorkerThreads(); ++i) {
-		Rt_ClearArray(&s->collect.arrays[i], false);
+		Rt_ClearArray(&s->collect.opaqueDrawableArrays[i], false);
+		Rt_ClearArray(&s->collect.blendedDrawableArrays[i], false);
 		Rt_ClearArray(&s->collect.instanceArrays[i], false);
 	}
+	Rt_ClearArray(&s->collect.blendedDrawables, false);
 
 	E_ExecuteSystemS(s, RE_COLLECT_DRAWABLES, &s->collect);
 
+	uint32_t offset = 0;
 	uint8_t *dst = s->dataPtr + _DataOffset(s) + sizeof(struct SceneData) + s->lightDataSize;
 	for (uint32_t i = 0; i < E_JobWorkerThreads(); ++i) {
+		s->collect.instanceOffset[i] = offset;
+		offset += (uint32_t)s->collect.instanceArrays[i].count;
+
 		const size_t sz = Rt_ArrayUsedByteSize(&s->collect.instanceArrays[i]);
 		if (!sz)
 			continue;
 
 		memcpy(dst, s->collect.instanceArrays[i].data, sz);
 		dst += sz;
+
+		struct Drawable *d = NULL;
+		Rt_ArrayForEach(d, &Scn_activeScene->collect.blendedDrawableArrays[i]) {
+			d->instanceId += s->collect.instanceOffset[i];
+			Rt_ArrayAdd(&s->collect.blendedDrawables, d);
+		}
 	}
+
+	Rt_ArraySort(&s->collect.blendedDrawables, (RtSortFunc)_SortDrawables);
 }
 
 void
@@ -240,21 +266,34 @@ _InitScene(struct Scene *s)
 	if (!s->dataPtr)
 		goto error;
 
-	s->collect.arrays = Sys_Alloc(E_JobWorkerThreads(), sizeof(struct Array), MH_Scene);
-	if (!s->collect.arrays)
+	s->collect.opaqueDrawableArrays = Sys_Alloc(E_JobWorkerThreads(), sizeof(struct Array), MH_Scene);
+	if (!s->collect.opaqueDrawableArrays)
+		goto error;
+
+	s->collect.blendedDrawableArrays = Sys_Alloc(E_JobWorkerThreads(), sizeof(struct Array), MH_Scene);
+	if (!s->collect.blendedDrawableArrays)
 		goto error;
 
 	s->collect.instanceArrays = Sys_Alloc(E_JobWorkerThreads(), sizeof(struct Array), MH_Scene);
 	if (!s->collect.instanceArrays)
 		goto error;
 
+	s->collect.instanceOffset = Sys_Alloc(E_JobWorkerThreads(), sizeof(uint32_t), MH_Scene);
+	if (!s->collect.instanceOffset)
+		goto error;
+
 	for (uint32_t i = 0; i < E_JobWorkerThreads(); ++i) {
-		if (!Rt_InitArray(&s->collect.arrays[i], 10, sizeof(struct Drawable), MH_Scene))
+		if (!Rt_InitArray(&s->collect.opaqueDrawableArrays[i], 10, sizeof(struct Drawable), MH_Scene))
+			goto error;
+
+		if (!Rt_InitArray(&s->collect.blendedDrawableArrays[i], 10, sizeof(struct Drawable), MH_Scene))
 			goto error;
 
 		if (!Rt_InitArray(&s->collect.instanceArrays[i], 10, sizeof(struct ModelInstance), MH_Scene))
 			goto error;
 	}
+
+	Rt_InitArray(&s->collect.blendedDrawables, 10, sizeof(struct Drawable), MH_Scene);
 
 	s->collect.s = s;
 
@@ -304,7 +343,8 @@ _LoadJob(int wid, struct Scene *s)
 		} else if (!strncmp(line, "EndSceneInfo", len)) {
 			//
 		} else if (strstr(line, "Entity")) {
-			_ReadEntity(s, &stm, data, wbuff, &args);
+			char *name = strchr(line, '=') + 1;
+			_ReadEntity(s, name, &stm, data, wbuff, &args);
 		}
 
 		memset(data, 0x0, BUFF_SZ);
@@ -353,11 +393,13 @@ _ReadSceneInfo(struct Scene *s, struct Stream *stm, char *data, wchar_t *buff)
 }
 
 void
-_ReadEntity(struct Scene *s, struct Stream *stm, char *data, wchar_t *wbuff, struct Array *args)
+_ReadEntity(struct Scene *s, char *name, struct Stream *stm, char *data, wchar_t *wbuff, struct Array *args)
 {
 	EntityHandle entity = NULL;
 	wchar_t *compType = NULL;
+	wchar_t entityName[MAX_ENTITY_NAME];
 
+	swprintf(entityName, MAX_ENTITY_NAME, L"%hs", name);
 	compType = Sys_Alloc(sizeof(wchar_t), BUFF_SZ, MH_Transient);
 
 	while (!E_EndOfStream(stm)) {
@@ -383,6 +425,9 @@ _ReadEntity(struct Scene *s, struct Stream *stm, char *data, wchar_t *wbuff, str
 				continue;
 			}
 
+			void *guard = NULL;
+			Rt_ArrayAddPtr(args, guard);
+
 			E_AddNewComponentS(s, entity, E_ComponentTypeId(compType), (const void **)args->data);
 			memset(compType, 0x0, sizeof(wchar_t) * BUFF_SZ);
 		} else if (!strncmp(line, "EndEntity", len)) {
@@ -390,7 +435,7 @@ _ReadEntity(struct Scene *s, struct Stream *stm, char *data, wchar_t *wbuff, str
 		} else if (compType[0] == 0x0) {
 			if (!strncmp(line, "Type=", 5)) {
 				mbstowcs(wbuff, line, BUFF_SZ);
-				E_CreateEntityS(s, wbuff);
+				entity = E_CreateEntityS(s, wbuff);
 			}
 		} else {
 			char *arg = line, *dst = NULL;
@@ -411,11 +456,25 @@ _ReadEntity(struct Scene *s, struct Stream *stm, char *data, wchar_t *wbuff, str
 			Rt_ArrayAddPtr(args, dst);
 		}
 	}
+
+	struct Entity *ent = entity;
+	wcsncpy(ent->name, entityName, MAX_ENTITY_NAME);
 }
 
 static inline uint64_t
 _DataOffset(const struct Scene *s)
 {
 	return s->sceneDataSize * Re_frameId;
+}
+
+static int32_t
+_SortDrawables(const struct Drawable *a, const struct Drawable *b)
+{
+	if (a->distance < b->distance)
+		return 1;
+	else if (a->distance > b->distance)
+		return -1;
+	else
+		return 0;
 }
 

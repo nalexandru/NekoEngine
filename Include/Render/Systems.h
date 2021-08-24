@@ -14,9 +14,8 @@ struct Drawable
 	uint32_t indexType, firstIndex, indexCount;
 	uint32_t vertexCount;
 	struct mat4 mvp;
-	bool transparent;
-	float distance;
 	const struct Material *material;
+	float distance;
 	uint32_t instanceId;
 	const struct ModelInstance *mi;
 	uint64_t vertexAddress, materialAddress;
@@ -25,10 +24,12 @@ struct Drawable
 struct CollectDrawablesArgs
 {
 	struct mat4 vp;
-	struct Array *arrays, *instanceArrays;
+	struct Array *opaqueDrawableArrays, *blendedDrawableArrays, *instanceArrays, blendedDrawables;
+	uint32_t *instanceOffset;
 	uint32_t maxDrawables, requiredDrawables, drawableCount;
 	ALIGN(16) _Atomic uint32_t nextArray;
 	const struct Scene *s;
+	struct vec3 camPos;
 };
 
 void Re_CollectDrawables(void **comp, struct CollectDrawablesArgs *args);

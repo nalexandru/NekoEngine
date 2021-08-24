@@ -46,4 +46,19 @@ Rt_SkipWhitespace(char *str)
 	return str;
 }
 
+static inline char *
+Rt_StrDup(const char *str, enum MemoryHeap mh)
+{
+	size_t len = strlen(str);
+	char *ret = Sys_Alloc(sizeof(*ret), len + 1, mh);
+	strncpy(ret, str, len);
+	return ret;
+}
+
+static inline char *
+Rt_TransientStrDup(const char *str)
+{
+	return Rt_StrDup(str, MH_Transient);
+}
+
 #endif /* _NE_RUNTIME_RUNTIME_H_ */

@@ -16,14 +16,15 @@ struct EntityComp
 struct Entity
 {
 	size_t id;
-	uint8_t comp_count;
+	uint32_t comp_count;
 	struct EntityComp comp[MAX_ENTITY_COMPONENTS];
+	wchar_t name[MAX_ENTITY_NAME];
 };
 
 struct EntityType
 {
 	uint64_t hash;
-	uint8_t comp_count;
+	uint32_t comp_count;
 	CompTypeId comp_types[MAX_ENTITY_COMPONENTS];
 };
 

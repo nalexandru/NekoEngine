@@ -16,7 +16,7 @@ MTL_CreateTransientTexture(id<MTLDevice> dev, const struct TextureDesc *tDesc, u
 	}
 	
 	desc.storageMode = MTLStorageModePrivate;
-	desc.cpuCacheMode = MTLCPUCacheModeDefaultCache;
+	desc.cpuCacheMode = MTLCPUCacheModeWriteCombined;
 	
 	tex->tex = [_heap newTextureWithDescriptor: desc offset: offset];
 	[desc release];
@@ -60,7 +60,7 @@ MTL_InitTransientHeap(id<MTLDevice> dev, uint64_t size)
 	MTLHeapDescriptor *heapDesc = [[MTLHeapDescriptor alloc] init];
 	heapDesc.size = size;
 	heapDesc.storageMode = MTLStorageModePrivate;
-	heapDesc.cpuCacheMode = MTLCPUCacheModeDefaultCache;
+	heapDesc.cpuCacheMode = MTLCPUCacheModeWriteCombined;
 	heapDesc.hazardTrackingMode = MTLHazardTrackingModeUntracked;
 	heapDesc.type = MTLHeapTypePlacement;
 	_heap = [dev newHeapWithDescriptor: heapDesc];

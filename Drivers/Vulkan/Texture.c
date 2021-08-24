@@ -98,9 +98,16 @@ Vk_CreateTexture(struct RenderDevice *dev, const struct TextureDesc *desc, uint1
 	VkMemoryRequirements req = { 0 };
 	vkGetImageMemoryRequirements(dev->dev, tex->image, &req);
 
+	VkMemoryDedicatedAllocateInfo dai =
+	{
+		.sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,
+		.image = tex->image
+	};
+
 	VkMemoryAllocateInfo ai =
 	{
 		.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+		.pNext = &dai,
 		.allocationSize = req.size,
 		.memoryTypeIndex = Vkd_MemoryTypeIndex(dev, req.memoryTypeBits, NeToVkMemoryProperties(desc->memoryType))
 	};

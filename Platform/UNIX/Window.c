@@ -101,6 +101,12 @@ Sys_SetWindowTitle(const wchar_t *name)
 }
 
 void
+Sys_MoveWindow(int x, int y)
+{
+	XMoveWindow(X11_display, (Window)E_screen, x, y);
+}
+
+void
 Sys_DestroyWindow(void)
 {
 	XDestroyWindow(X11_display, (Window)E_screen);

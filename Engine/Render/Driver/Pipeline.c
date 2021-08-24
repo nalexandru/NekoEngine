@@ -13,13 +13,13 @@ struct PipelineInfo
 	uint32_t type;
 	union {
 		struct {
-			struct Shader *sh;
+			struct ShaderStageInfo *stageInfo;
 			uint64_t flags;
 			struct BlendAttachmentDesc *at;
 			uint32_t atCount;
 		} graphics;
 		struct {
-			struct Shader *sh;
+			struct ShaderStageInfo *stageInfo;
 			struct {
 				uint32_t x;
 				uint32_t y;
@@ -51,7 +51,7 @@ Re_GraphicsPipeline(const struct GraphicsPipelineDesc *desc)
 	struct PipelineInfo *pi;
 	Rt_ArrayForEach(pi, &_pipelines) {
 		if (pi->type != P_GRAPHICS ||
-				pi->graphics.sh != desc->shader ||
+				pi->graphics.stageInfo != desc->stageInfo ||
 				pi->graphics.flags != desc->flags ||
 				pi->graphics.atCount != desc->attachmentCount)
 			continue;
@@ -76,7 +76,7 @@ Re_GraphicsPipeline(const struct GraphicsPipelineDesc *desc)
 	struct PipelineInfo new =
 	{
 		.type = P_GRAPHICS,
-		.graphics.sh = desc->shader,
+		.graphics.stageInfo = desc->stageInfo,
 		.graphics.flags = desc->flags,
 		.graphics.at = newAt,
 		.graphics.atCount = desc->attachmentCount,
@@ -97,7 +97,7 @@ Re_ComputePipeline(const struct ComputePipelineDesc *desc)
 	struct PipelineInfo *pi;
 	Rt_ArrayForEach(pi, &_pipelines) {
 		if (pi->type != P_GRAPHICS ||
-				pi->compute.sh != desc->shader ||
+				pi->compute.stageInfo != desc->stageInfo ||
 				pi->compute.threadsPerThreadgroup.x != desc->threadsPerThreadgroup.x ||
 				pi->compute.threadsPerThreadgroup.y != desc->threadsPerThreadgroup.y ||
 				pi->compute.threadsPerThreadgroup.z != desc->threadsPerThreadgroup.z)
@@ -109,7 +109,7 @@ Re_ComputePipeline(const struct ComputePipelineDesc *desc)
 	struct PipelineInfo new =
 	{
 		.type = P_COMPUTE,
-		.compute.sh = desc->shader,
+		.compute.stageInfo = desc->stageInfo,
 		.compute.threadsPerThreadgroup.x = desc->threadsPerThreadgroup.x,
 		.compute.threadsPerThreadgroup.y = desc->threadsPerThreadgroup.y,
 		.compute.threadsPerThreadgroup.z = desc->threadsPerThreadgroup.z,

@@ -28,6 +28,9 @@
     <Filter Include="Shaders\Fragment">
       <UniqueIdentifier>{d307c795-996d-447e-9936-b18536de98a3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders\Compute">
+      <UniqueIdentifier>{adeeff07-83d9-4e29-8ad0-60aa9062f8fc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="VulkanDriver.h">
@@ -133,10 +136,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="Shaders\DefaultPBR_VS.vert">
+    <CustomBuild Include="Shaders\DefaultPBR_O_VS.vert">
       <Filter>Shaders\Vertex</Filter>
     </CustomBuild>
-    <CustomBuild Include="Shaders\DefaultPBR_MR_FS.frag">
+    <CustomBuild Include="Shaders\DefaultPBR_MR_O_FS.frag">
       <Filter>Shaders\Fragment</Filter>
     </CustomBuild>
     <CustomBuild Include="Shaders\UI_VS.vert">
@@ -150,6 +153,15 @@
     </CustomBuild>
     <CustomBuild Include="Shaders\Depth_FS.frag">
       <Filter>Shaders\Fragment</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Shaders\DefaultPBR_T_VS.vert">
+      <Filter>Shaders\Vertex</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Shaders\DefaultPBR_MR_T_FS.frag">
+      <Filter>Shaders\Fragment</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Shaders\LightCulling_CS.comp">
+      <Filter>Shaders\Compute</Filter>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>

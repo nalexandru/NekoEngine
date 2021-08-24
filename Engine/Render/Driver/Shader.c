@@ -105,6 +105,81 @@ _shaderModuleCompare(const struct ShaderModuleInfo *item, const uint64_t *hash)
 		return 1;
 }
 
+static inline uint32_t
+_loadModules(struct Shader *s, uint32_t startPos, uint32_t count, const struct Metadata *meta, struct ShaderStageInfo *si)
+{
+	uint32_t pos = startPos;
+	for (uint32_t j = 0; j < count; ++j) {
+		while (meta->tokens[++pos].type != JSMN_OBJECT) ;
+
+		do {
+			const jsmntok_t key = meta->tokens[++pos];
+			const jsmntok_t val = meta->tokens[++pos];
+
+			if (JSON_STRING("name", key, meta->json)) {
+				char *tmp = meta->json + val.start;
+				meta->json[val.end] = 0x0;
+
+				uint64_t hash = Rt_HashString(tmp);
+				struct ShaderModuleInfo *modInfo = Rt_ArrayBSearch(&_shaders, &hash, (RtCmpFunc)_shaderModuleCompare);
+
+				if (modInfo) {
+					s->stages[j].module = modInfo->module;
+				} else {
+					struct ShaderModuleInfo info =
+					{
+						.hash = hash,
+						.module = Re_deviceProcs.ShaderModule(Re_device, tmp)
+					};
+
+					if (!info.module) {
+						return pos;
+					}
+
+					si->stages[j].module = info.module;
+
+					Rt_ArrayAdd(&_modules, &info);
+					Rt_ArraySort(&_modules, (RtSortFunc)_sortShaderModules);
+				}
+			} else if (JSON_STRING("stage", key, meta->json)) {
+				if (JSON_STRING(SSTR_VERTEX, val, meta->json))
+					si->stages[j].stage = SS_VERTEX;
+				else if (JSON_STRING(SSTR_TESS_CTRL, val, meta->json))
+					si->stages[j].stage = SS_TESS_CTRL;
+				else if (JSON_STRING(SSTR_TESS_EVAL, val, meta->json))
+					si->stages[j].stage = SS_TESS_EVAL;
+				else if (JSON_STRING(SSTR_GEOMETRY, val, meta->json))
+					si->stages[j].stage = SS_GEOMETRY;
+				else if (JSON_STRING(SSTR_FRAGMENT, val, meta->json))
+					si->stages[j].stage = SS_FRAGMENT;
+				else if (JSON_STRING(SSTR_COMPUTE, val, meta->json))
+					si->stages[j].stage = SS_COMPUTE;
+				else if (JSON_STRING(SSTR_RAY_GEN, val, meta->json))
+					si->stages[j].stage = SS_RAYGEN;
+				else if (JSON_STRING(SSTR_ANY_HIT, val, meta->json))
+					si->stages[j].stage = SS_ANY_HIT;
+				else if (JSON_STRING(SSTR_CLOSEST_HIT, val, meta->json))
+					si->stages[j].stage = SS_CLOSEST_HIT;
+				else if (JSON_STRING(SSTR_MISS, val, meta->json))
+					si->stages[j].stage = SS_MISS;
+				else if (JSON_STRING(SSTR_INTERSECTION, val, meta->json))
+					si->stages[j].stage = SS_INTERSECTION;
+				else if (JSON_STRING(SSTR_CALLABLE, val, meta->json))
+					si->stages[j].stage = SS_CALLABLE;
+				else if (JSON_STRING(SSTR_TASK, val, meta->json))
+					si->stages[j].stage = SS_TASK;
+				else if (JSON_STRING(SSTR_MESH, val, meta->json))
+					si->stages[j].stage = SS_MESH;
+			} else {
+				pos -= 2;
+				break;
+			}
+		} while (pos + 1 < meta->tokenCount && (meta->tokens[pos + 1].type != JSMN_OBJECT));
+	}
+
+	return pos;
+}
+
 static void
 _loadShader(const char *path)
 {
@@ -132,80 +207,22 @@ _loadShader(const char *path)
 				s.type = ST_COMPUTE;
 			else if (JSON_STRING(TSTR_RAY_TRACING, val, meta.json))
 				s.type = ST_RAY_TRACING;
-		} else if (JSON_STRING("modules", key, meta.json)) {
+		} else if (JSON_STRING("opaqueModules", key, meta.json) || JSON_STRING("modules", key, meta.json)) {
 			if (val.type != JSMN_ARRAY)
 				continue;
 
-			s.stageCount = val.size;
-			s.stages = Sys_Alloc(s.stageCount, sizeof(*s.stages), MH_Render);
+			s.opaqueStages.stageCount = val.size;
+			s.opaqueStages.stages = Sys_Alloc(s.opaqueStages.stageCount, sizeof(*s.opaqueStages.stages), MH_Render);
 
-			uint32_t pos = i;
-			for (int j = 0; j < val.size; ++j) {
-				while (meta.tokens[++pos].type != JSMN_OBJECT) ;
+			i = _loadModules(&s, i, val.size, &meta, &s.opaqueStages);
+		} else if (JSON_STRING("transparentModules", key, meta.json)) {
+			if (val.type != JSMN_ARRAY)
+				continue;
 
-				do {
-					jsmntok_t mKey = meta.tokens[++pos];
-					jsmntok_t mVal = meta.tokens[++pos];
+			s.transparentStages.stageCount = val.size;
+			s.transparentStages.stages = Sys_Alloc(s.transparentStages.stageCount, sizeof(*s.transparentStages.stages), MH_Render);
 
-					if (JSON_STRING("name", mKey, meta.json)) {
-						char *tmp = meta.json + mVal.start;
-						meta.json[mVal.end] = 0x0;
-
-						uint64_t hash = Rt_HashString(tmp);
-						struct ShaderModuleInfo *modInfo = Rt_ArrayBSearch(&_shaders, &hash, (RtCmpFunc)_shaderModuleCompare);
-
-						if (modInfo) {
-							s.stages[j].module = modInfo->module;
-						} else {
-							struct ShaderModuleInfo info =
-							{
-								.hash = hash,
-								.module = Re_deviceProcs.ShaderModule(Re_device, tmp)
-							};
-
-							if (!info.module) {
-								return;
-							}
-
-							s.stages[j].module = info.module;
-
-							Rt_ArrayAdd(&_modules, &info);
-							Rt_ArraySort(&_modules, (RtSortFunc)_sortShaderModules);
-						}
-					} else if (JSON_STRING("stage", mKey, meta.json)) {
-						if (JSON_STRING(SSTR_VERTEX, mVal, meta.json))
-							s.stages[j].stage = SS_VERTEX;
-						else if (JSON_STRING(SSTR_TESS_CTRL, mVal, meta.json))
-							s.stages[j].stage = SS_TESS_CTRL;
-						else if (JSON_STRING(SSTR_TESS_EVAL, mVal, meta.json))
-							s.stages[j].stage = SS_TESS_EVAL;
-						else if (JSON_STRING(SSTR_GEOMETRY, mVal, meta.json))
-							s.stages[j].stage = SS_GEOMETRY;
-						else if (JSON_STRING(SSTR_FRAGMENT, mVal, meta.json))
-							s.stages[j].stage = SS_FRAGMENT;
-						else if (JSON_STRING(SSTR_COMPUTE, mVal, meta.json))
-							s.stages[j].stage = SS_COMPUTE;
-						else if (JSON_STRING(SSTR_RAY_GEN, mVal, meta.json))
-							s.stages[j].stage = SS_RAYGEN;
-						else if (JSON_STRING(SSTR_ANY_HIT, mVal, meta.json))
-							s.stages[j].stage = SS_ANY_HIT;
-						else if (JSON_STRING(SSTR_CLOSEST_HIT, mVal, meta.json))
-							s.stages[j].stage = SS_CLOSEST_HIT;
-						else if (JSON_STRING(SSTR_MISS, mVal, meta.json))
-							s.stages[j].stage = SS_MISS;
-						else if (JSON_STRING(SSTR_INTERSECTION, mVal, meta.json))
-							s.stages[j].stage = SS_INTERSECTION;
-						else if (JSON_STRING(SSTR_CALLABLE, mVal, meta.json))
-							s.stages[j].stage = SS_CALLABLE;
-						else if (JSON_STRING(SSTR_TASK, mVal, meta.json))
-							s.stages[j].stage = SS_TASK;
-						else if (JSON_STRING(SSTR_MESH, mVal, meta.json))
-							s.stages[j].stage = SS_MESH;
-					}
-				} while (pos + 1 < meta.tokenCount && meta.tokens[pos + 1].type != JSMN_OBJECT);
-			}
-
-			i = pos;
+			i = _loadModules(&s, i, val.size, &meta, &s.transparentStages);
 		}
 	}
 

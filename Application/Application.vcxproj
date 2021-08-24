@@ -119,14 +119,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
-    <ClInclude Include="TestApplication.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Application.rc" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Application.c" />
-    <ClCompile Include="Balls.c" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Icon.ico" />

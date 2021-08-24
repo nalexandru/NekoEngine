@@ -24,6 +24,9 @@
 	cs->axis[dsty] = y / m;								\
 }
 
+bool __InSys_rawMouseAxis = true;
+extern bool __InSys_enableMouseAxis;
+
 static enum Button _keymap[256];
 static DWORD _lastPacket[IN_MAX_CONTROLLERS];
 
@@ -205,11 +208,13 @@ HandleInput(HWND wnd, LPARAM lParam, WPARAM wParam)
 		In_buttonState[BTN_MOUSE_BTN4] = btn & RI_MOUSE_BUTTON_4_DOWN;
 		In_buttonState[BTN_MOUSE_BTN5] = btn & RI_MOUSE_BUTTON_5_DOWN;
 
-		In_mouseAxis[0] = (float)raw->data.mouse.lLastX / (float)(*E_screenWidth / 2);
-		In_mouseAxis[1] = (float)raw->data.mouse.lLastY / (float)(*E_screenHeight / 2);
+		if (__InSys_enableMouseAxis) {
+			In_mouseAxis[0] = ((float)raw->data.mouse.lLastX / (float)(*E_screenWidth / 2)) * -1.f;
+			In_mouseAxis[1] = ((float)raw->data.mouse.lLastY / (float)(*E_screenHeight / 2));
 
-		if ((raw->data.mouse.usButtonFlags & RI_MOUSE_WHEEL) == RI_MOUSE_WHEEL)
-			In_mouseAxis[2] = (float)(short)raw->data.mouse.usButtonData / WHEEL_DELTA;
+			if ((raw->data.mouse.usButtonFlags & RI_MOUSE_WHEEL) == RI_MOUSE_WHEEL)
+				In_mouseAxis[2] = (float)(short)raw->data.mouse.usButtonData / WHEEL_DELTA;
+		}
 	}
 
 	DefRawInputProc(&raw, 1, sizeof(RAWINPUTHEADER));

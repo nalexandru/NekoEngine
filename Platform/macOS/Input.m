@@ -18,6 +18,8 @@
 
 enum Button macOS_keymap[256];
 
+bool __InSys_rawMouseAxis = false;
+
 static inline enum Button _mapKey(const int key);
 
 bool
@@ -123,7 +125,7 @@ In_SetPointerPosition(uint16_t x, uint16_t y)
 void
 In_CapturePointer(bool capture)
 {
-	(void)capture;
+	In_pointerCaptured = capture;
 }
 
 void
@@ -133,6 +135,8 @@ In_ShowPointer(bool show)
 		CGDisplayShowCursor(kCGNullDirectDisplay);
 	else
 		CGDisplayHideCursor(kCGNullDirectDisplay);
+
+	In_pointerVisible = show;
 }
 
 enum Button

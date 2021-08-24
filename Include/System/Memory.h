@@ -24,6 +24,10 @@ enum MemoryHeap
 	MH_Debug,
 	MH_System,
 
+	MH_Editor,
+
+	MH_ManualAlign,
+
 	MH_FORCE_UINT32 = 0xFFFFFFFF
 };
 

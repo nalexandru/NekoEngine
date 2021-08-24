@@ -207,7 +207,7 @@ _InitTexture(struct Texture *tex, const struct TextureCreateInfo *tci)
 	
 	struct Fence *f = Re_CreateFence(false);
 	Re_SubmitTransfer(f);
-	Re_deviceProcs.WaitForFence(Re_device, f, UINT64_MAX);
+	Re_WaitForFence(f, UINT64_MAX);
 	
 	Re_DestroyBuffer(staging);
 	Re_DestroyFence(f);

@@ -232,6 +232,7 @@
     <ClCompile Include="Render\Pass\Depth.c" />
     <ClCompile Include="Render\Pass\Forward.c" />
     <ClCompile Include="Render\Pass\LightCulling.c" />
+    <ClCompile Include="Render\Pass\SSAO.c" />
     <ClCompile Include="Render\Render.c" />
     <ClCompile Include="Render\Systems.c" />
     <ClCompile Include="Scene\Camera.c" />

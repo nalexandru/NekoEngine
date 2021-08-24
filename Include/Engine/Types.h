@@ -53,6 +53,8 @@ struct SkeletonNode;
 struct AnimationClip;
 struct AnimationClipCreateInfo;
 
+struct ComponentCreationData;
+
 struct Version
 {
 	uint8_t major;

@@ -238,9 +238,6 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 
 	Vk_InitContextProcs(ctxProcs);
 
-	if (dev->physDevProps.vendorID == 0x1002)
-		(void)E_GetCVarBln(L"AMD_DisableDepthPrePass", true);
-
 	VkSemaphoreTypeCreateInfo typeInfo =
 	{
 		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
@@ -278,6 +275,11 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 	};
 	if (vkCreateCommandPool(dev->dev, &poolInfo, Vkd_allocCb, &dev->driverTransferPool) != VK_SUCCESS)
 		goto error;
+
+	if (E_GetCVarBln(L"VulkanDrv_ForceNonCoherentStaging", false)->bln) {
+		Re_deviceInfo.features.coherentMemory = false;
+		Sys_LogEntry(VKDRV_MOD, LOG_DEBUG, L"Forcing non-coherent staging memory");
+	}
 
 	if (!Re_deviceInfo.features.coherentMemory)
 		if (!Vkd_InitStagingArea(dev))

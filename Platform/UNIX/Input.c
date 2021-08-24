@@ -14,6 +14,8 @@
 
 enum Button X11_keymap[256];
 
+bool __InSys_rawMouseAxis = false;
+
 static inline enum Button _mapKey(const int key);
 
 bool
@@ -66,6 +68,8 @@ In_CapturePointer(bool capture)
 	} else {
 		XUngrabPointer(X11_display, CurrentTime);
 	}
+
+	In_pointerCaptured = capture;
 }
 
 void
@@ -90,6 +94,8 @@ In_ShowPointer(bool show)
 	}
 
 	XFlush(X11_display);
+
+	In_pointerVisible = show;
 }
 
 enum Button

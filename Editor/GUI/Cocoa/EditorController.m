@@ -95,6 +95,7 @@
 
 - (void)showInspector: (id)sender
 {
+	[inspectorWindow makeKeyAndOrderFront: sender];
 }
 
 #pragma mark Help Menu

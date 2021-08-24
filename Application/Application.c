@@ -4,13 +4,12 @@
 #include <Engine/Job.h>
 #include <Engine/Engine.h>
 #include <Engine/Events.h>
+#include <Engine/Version.h>
 #include <Engine/ECSystem.h>
 #include <Engine/Application.h>
 #include <Input/Input.h>
 #include <System/Log.h>
 #include <UI/UI.h>
-
-#include "TestApplication.h"
 
 #ifndef _countof
 #	define _countof(array) (sizeof(array) / sizeof(array[0]))
@@ -18,9 +17,9 @@
 
 struct ApplicationInfo App_applicationInfo =
 {
-	A_PGM_NAME,
-	A_CPY_STR,
-	{ A_VER_MAJOR, A_VER_MINOR, A_VER_BUILD, A_VER_REVISION }
+	L"NekoEngine Test Application",
+	E_CPY_STR,
+	{ E_VER_MAJOR, E_VER_MINOR, E_VER_BUILD, E_VER_REVISION }
 };
 
 static uint64_t _sceneLoadedEvt;
@@ -81,7 +80,7 @@ App_InitApplication(int argc, char *argv[])
 
 	_sceneLoadedEvt = E_RegisterHandler(EVT_SCENE_LOADED, App_SceneLoaded, NULL);
 
-//	Scn_StartSceneLoad("/Scenes/Kat.scn");
+//	Scn_StartSceneLoad("/Scenes/Anna.scn");
 //	Scn_StartSceneLoad("/Scenes/Helmet.scn");
 //	Scn_StartSceneLoad("/Scenes/Sphere.scn");
 	Scn_StartSceneLoad("/Scenes/Main.scn");
@@ -139,6 +138,11 @@ App_PlayerMovement(void **comp, void *args)
 
 	if (In_UnmappedButtonDown(BTN_KEY_ESCAPE, 0))
 		E_Shutdown();
+
+	if (In_UnmappedButtonDown(BTN_KEY_M, 0))
+		In_EnableMouseAxis(true);
+	else if (In_UnmappedButtonUp(BTN_KEY_M, 0))
+		In_EnableMouseAxis(false);
 
 	xlate = mvmt->movementSpeed * (float)E_deltaTime;
 	rot = mvmt->rotationSpeed * (float)E_deltaTime;

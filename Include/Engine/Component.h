@@ -3,6 +3,14 @@
 
 #include <Engine/Types.h>
 
+struct ComponentCreationData
+{
+	CompTypeId type;
+	CompHandle handle;
+	EntityHandle owner;
+	void *ptr;
+};
+
 #define COMPONENT_BASE		\
 	void *_self;			\
 	EntityHandle _owner

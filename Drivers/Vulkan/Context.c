@@ -11,6 +11,8 @@ struct SubmitInfo
 	VkQueue queue;
 };
 
+static inline uint32_t _queueFamilyIndex(struct RenderDevice *dev, enum RenderQueue queue);
+
 struct RenderContext *
 Vk_CreateContext(struct RenderDevice *dev)
 {
@@ -247,6 +249,9 @@ _ExecuteSecondary(struct RenderContext *ctx, CommandBufferHandle *cmdBuffers, ui
 static void
 _BeginRenderPass(struct RenderContext *ctx, struct RenderPassDesc *passDesc, struct Framebuffer *fb, enum RenderCommandContents contents)
 {
+	//if (!Re_deviceInfo.features.coherentMemory)
+	//	Vkd_StagingBarrier(ctx->cmdBuffer);
+
 	if (passDesc->inputAttachments) {
 		ctx->iaSet = Vk_AllocateIADescriptorSet(ctx->neDev);
 		for (uint32_t i = 0; i < passDesc->inputAttachments; ++i)
@@ -394,9 +399,64 @@ _BuildAccelerationStructures(struct RenderContext *ctx, uint32_t count, struct A
 }
 
 static void
-_Barrier(struct RenderContext *ctx)
+_Barrier(struct RenderContext *ctx, enum PipelineStage srcStage, enum PipelineStage dstStage, enum PipelineDependency dep,
+	uint32_t memBarrierCount, const struct MemoryBarrier *memBarriers, uint32_t bufferBarrierCount, const struct BufferBarrier *bufferBarriers,
+	uint32_t imageBarrierCount, const struct ImageBarrier *imageBarriers)
 {
-//	vkCmdPipelineBarrier
+	VkMemoryBarrier *vkMemBarriers = NULL;
+	VkBufferMemoryBarrier *vkBufferBarriers = NULL;
+	VkImageMemoryBarrier *vkImageBarriers = NULL;
+
+	if (memBarrierCount) {
+		vkMemBarriers = Sys_Alloc(sizeof(*vkMemBarriers), memBarrierCount, MH_Transient);
+
+		for (uint32_t i = 0; i < memBarrierCount; ++i) {
+			vkMemBarriers[i].sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+			vkMemBarriers[i].pNext = NULL;
+			vkMemBarriers[i].srcAccessMask = memBarriers[i].srcAccess;
+			vkMemBarriers[i].dstAccessMask = memBarriers[i].dstAccess;
+		}
+	}
+
+	if (bufferBarrierCount) {
+		vkBufferBarriers = Sys_Alloc(sizeof(*vkBufferBarriers), bufferBarrierCount, MH_Transient);
+
+		for (uint32_t i = 0; i < bufferBarrierCount; ++i) {
+			vkBufferBarriers[i].sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+			vkBufferBarriers[i].pNext = NULL;
+			vkBufferBarriers[i].srcAccessMask = bufferBarriers[i].srcAccess;
+			vkBufferBarriers[i].dstAccessMask = bufferBarriers[i].dstAccess;
+			vkBufferBarriers[i].srcQueueFamilyIndex = _queueFamilyIndex(ctx->neDev, bufferBarriers[i].srcQueue);
+			vkBufferBarriers[i].dstQueueFamilyIndex = _queueFamilyIndex(ctx->neDev, bufferBarriers[i].dstQueue);
+			vkBufferBarriers[i].buffer = bufferBarriers[i].buffer->buff;
+			vkBufferBarriers[i].offset = bufferBarriers[i].offset;
+			vkBufferBarriers[i].size = bufferBarriers[i].size;
+		}
+	}
+
+	if (imageBarrierCount) {
+		vkImageBarriers = Sys_Alloc(sizeof(*vkImageBarriers), imageBarrierCount, MH_Transient);
+
+		for (uint32_t i = 0; i < imageBarrierCount; ++i) {
+			vkImageBarriers[i].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+			vkImageBarriers[i].pNext = NULL;
+			vkImageBarriers[i].srcAccessMask = imageBarriers[i].srcAccess;
+			vkImageBarriers[i].dstAccessMask = imageBarriers[i].dstAccess;
+			vkImageBarriers[i].oldLayout = NeToVkImageLayout(imageBarriers[i].oldLayout);
+			vkImageBarriers[i].newLayout = NeToVkImageLayout(imageBarriers[i].newLayout);
+			vkImageBarriers[i].srcQueueFamilyIndex = _queueFamilyIndex(ctx->neDev, imageBarriers[i].srcQueue);
+			vkImageBarriers[i].dstQueueFamilyIndex = _queueFamilyIndex(ctx->neDev, imageBarriers[i].dstQueue);
+			vkImageBarriers[i].image = imageBarriers[i].texture->image;
+			vkImageBarriers[i].subresourceRange.aspectMask = imageBarriers[i].subresource.aspect;
+			vkImageBarriers[i].subresourceRange.baseMipLevel = imageBarriers[i].subresource.mipLevel;
+			vkImageBarriers[i].subresourceRange.baseArrayLayer = imageBarriers[i].subresource.baseArrayLayer;
+			vkImageBarriers[i].subresourceRange.layerCount = imageBarriers[i].subresource.layerCount;
+			vkImageBarriers[i].subresourceRange.levelCount = imageBarriers[i].subresource.levelCount;
+		}
+	}
+
+	vkCmdPipelineBarrier(ctx->cmdBuffer, srcStage, dstStage, dep, memBarrierCount, vkMemBarriers,
+							bufferBarrierCount, vkBufferBarriers, imageBarrierCount, vkImageBarriers);
 }
 
 static void
@@ -565,4 +625,16 @@ Vk_InitContextProcs(struct RenderContextProcs *p)
 	p->Blit = _Blit;
 	p->Submit = _Submit;
 	p->SubmitTransfer = (bool(*)(struct RenderContext *, struct Fence *))_SubmitTransfer;
+}
+
+static inline uint32_t
+_queueFamilyIndex(struct RenderDevice *dev, enum RenderQueue queue)
+{
+	switch (queue) {
+	case RE_QUEUE_GRAPHICS: return dev->graphicsFamily;
+	case RE_QUEUE_TRANSFER: return dev->transferFamily;
+	case RE_QUEUE_COMPUTE: return dev->computeFamily;
+	}
+
+	return 0;
 }

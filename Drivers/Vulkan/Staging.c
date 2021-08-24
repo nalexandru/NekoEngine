@@ -34,9 +34,15 @@ Vkd_InitStagingArea(struct RenderDevice *dev)
 	VkMemoryRequirements mr;
 	vkGetBufferMemoryRequirements(dev->dev, _cpu, &mr);
 
+	VkMemoryDedicatedAllocateInfo dai =
+	{
+		.sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,
+		.buffer = _cpu
+	};
 	VkMemoryAllocateInfo ai =
 	{
 		.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+		.pNext = &dai,
 		.allocationSize = mr.size,
 		.memoryTypeIndex = Vkd_MemoryTypeIndex(dev, mr.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
 	};
@@ -84,6 +90,15 @@ Vkd_CommitStagingArea(struct RenderDevice *dev, VkSemaphore wait)
 		vkFreeCommandBuffers(dev->dev, dev->driverTransferPool, 1, &_cmdBuffers[Re_frameId]);
 	_cmdBuffers[Re_frameId] = Vkd_TransferCmdBuffer(dev);
 
+	VkMemoryBarrier memBarrier =
+	{
+		.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+		.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT,
+		.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT
+	};
+	vkCmdPipelineBarrier(_cmdBuffers[Re_frameId], VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+							VK_DEPENDENCY_BY_REGION_BIT, 1, &memBarrier, 0, NULL, 0, NULL);
+
 	VkBufferCopy c = { .size = _offset };
 	vkCmdCopyBuffer(_cmdBuffers[Re_frameId], _cpu, _gpu, 1, &c);
 
@@ -102,6 +117,24 @@ Vkd_CommitStagingArea(struct RenderDevice *dev, VkSemaphore wait)
 		.pSignalSemaphores = &Vkd_stagingSignal
 	};
 	vkQueueSubmit(dev->transferQueue, 1, &si, VK_NULL_HANDLE);
+}
+
+void
+Vkd_StagingBarrier(VkCommandBuffer cmdBuffer)
+{
+	VkBufferMemoryBarrier stagingBarrier =
+	{
+		.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+		.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+		.dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+		.srcQueueFamilyIndex = Re_device->computeFamily,
+		.dstQueueFamilyIndex = Re_device->graphicsFamily,
+		.buffer = _gpu,
+		.offset = 0,
+		.size = _offset 
+	};
+	vkCmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+		VK_DEPENDENCY_BY_REGION_BIT, 0, NULL, 1, &stagingBarrier, 0, NULL);
 }
 
 void

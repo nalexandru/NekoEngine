@@ -5,6 +5,7 @@
 
 #include <Engine/Types.h>
 
+#define MAX_ENTITY_NAME				64
 #define MAX_ENTITY_COMPONENTS		30
 #define ES_INVALID_COMPONENT		-1
 #define ES_INVALID_COMPONENT_TYPE	-1
@@ -38,7 +39,7 @@ bool E_AddNewComponentS(struct Scene *s, EntityHandle ent, CompTypeId type, cons
 static inline bool E_AddNewComponent(EntityHandle ent, CompTypeId type, const void **args) { return E_AddNewComponentS(Scn_activeScene, ent, type, args); }
 
 void *E_GetComponentS(struct Scene *s, EntityHandle ent, CompTypeId type);
-static inline void *E_GetComponent(EntityHandle ent, CompTypeId type) { return E_GetComponentS(Scn_activeScene, ent, type); }
+static inline void *E_GetComponent(EntityHandle ent, CompTypeId type) { return Scn_activeScene ? E_GetComponentS(Scn_activeScene, ent, type) : NULL; }
 
 void E_RemoveComponentS(struct Scene *s, EntityHandle ent, CompTypeId type);
 static inline void E_RemoveComponent(EntityHandle ent, CompTypeId type) { E_RemoveComponentS(Scn_activeScene, ent, type); }
@@ -53,5 +54,8 @@ bool E_RegisterEntityType(const wchar_t *name, const CompTypeId *comp_types, uin
 
 uint32_t E_EntityCountS(struct Scene *s);
 static inline uint32_t E_EntityCount(void) { return E_EntityCountS(Scn_activeScene); }
+
+const wchar_t *E_EntityName(EntityHandle ent);
+void E_RenameEntity(EntityHandle ent, const wchar_t *name);
 
 #endif /* _NE_ENGINE_ENTITY_H_ */
