@@ -71,7 +71,7 @@ pkg install vulkan-headers vulkan-loader vulkan-tools vulkan-validation-layers c
 
 #### Notes
 * It has only been tested on a M1 Mac Mini / iPhone 11.
-* Metal debugging works only in Xcode 13 beta.
+* Metal debugging only works in Xcode 13 beta.
 
 ## 3rd Party libraries
 
