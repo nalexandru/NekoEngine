@@ -11,7 +11,7 @@
 Cross-platform game engine.
 
 Supported platforms:
-* Windows 7 64-bit or newer
+* Windows 10 64-bit or newer
 * Linux x86_64
 * macOS 11.0+ arm64 (x86_64 with a Metal 2 (MSL 2.3) GPU should work too)
 * iOS 14.4+
@@ -29,8 +29,8 @@ This repository is a mirror which is not frequently updated.
 ### Windows
 
 #### Prerequisites
-* Visual Studio 2019 16.8 or later
-* Vulkan SDK 1.2.170 or later
+* Visual Studio 2022
+* Vulkan SDK 1.2.182 or later
 * (Optional) FreeType for building the FontGen tool
 
 #### Build
@@ -62,7 +62,7 @@ pkg install vulkan-headers vulkan-loader vulkan-tools vulkan-validation-layers c
 ### macOS / iOS
 
 #### Prerequisites
-* Xcode 12
+* Xcode 13
 
 #### Build
 1. Clone the repository
@@ -71,7 +71,6 @@ pkg install vulkan-headers vulkan-loader vulkan-tools vulkan-validation-layers c
 
 #### Notes
 * It has only been tested on a M1 Mac Mini / iPhone 11.
-* Metal debugging only works in Xcode 13 beta.
 
 ## 3rd Party libraries
 
