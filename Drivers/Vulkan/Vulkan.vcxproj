@@ -59,7 +59,7 @@
     <LibraryPath>$(VK_SDK_PATH)\Lib;$(SolutionDir)bin\$(Configuration);$(LibraryPath)</LibraryPath>
     <OutDir>$(SolutionDir)\bin\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\build\$(Configuration)\$(ProjectName)\</IntDir>
-    <CustomBuildBeforeTargets>ClCompile</CustomBuildBeforeTargets>
+    <CustomBuildBeforeTargets>PreBuildEvent</CustomBuildBeforeTargets>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -126,10 +126,10 @@
       <AdditionalDependencies>NekoEngine.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <CustomBuild>
-      <Command>glslc --target-env=vulkan1.2 %(FullPath) -o $(SolutionDir)/bin/Data/Shaders/Vulkan/%(Filename).spv</Command>
+      <Command>glslc --target-env=vulkan1.2 %(FullPath) -o $(IntDir)Shaders\Vulkan\%(Filename).spv</Command>
       <Message>glslc %(Filename)</Message>
       <TreatOutputAsContent>true</TreatOutputAsContent>
-      <Outputs>$(SolutionDir)/bin/Data/Shaders/Vulkan/%(Filename).spv</Outputs>
+      <Outputs>$(IntDir)Shaders\Vulkan\%(Filename).spv</Outputs>
     </CustomBuild>
     <PreLinkEvent>
       <Command>
@@ -137,7 +137,14 @@
     </PreLinkEvent>
     <CustomBuildStep>
       <Command>powershell "Compress-Archive -Force $(IntDir)Shaders $(IntDir)Shaders.zip"</Command>
+      <Message>Building shader archive</Message>
+      <Outputs>$(IntDir)Shaders.zip</Outputs>
+      <TreatOutputAsContent>true</TreatOutputAsContent>
     </CustomBuildStep>
+    <PreBuildEvent>
+      <Command>$(OutDir)bin2c.exe -c $(IntDir)Shaders.zip $(IntDir)Shaders.h</Command>
+      <Message>Generate Shaders.h</Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="AccelerationStructure.c" />
