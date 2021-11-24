@@ -3,6 +3,20 @@
 
 #include <Render/Types.h>
 
+#define	RE_VENDOR_ID_NVIDIA			0x10DE
+#define RE_VENDOR_ID_ATI_AMD		0x1002
+#define RE_VENDOR_ID_INTEL			0x8086
+#define RE_VENDOR_ID_S3				0x5333
+#define RE_VENDOR_ID_MATROX			0x102B
+#define RE_VENDOR_ID_3DLABS			0x3D3D
+#define RE_VENDOR_ID_APPLE			0x106B
+#define RE_VENDOR_ID_ARM			0x13B5
+#define RE_VENDOR_ID_QUALCOMM		0x5143
+#define RE_VENDOR_ID_IMAGINATION	0x1010
+#define RE_VENDOR_ID_NEC			0x1033
+#define RE_VENDOR_ID_STMICRO		0x104A
+#define RE_VENDOR_ID_BROADCOM		0x14E4
+
 struct RenderDeviceInfo
 {
 	char deviceName[256];
@@ -27,6 +41,12 @@ struct RenderDeviceInfo
 		uint32_t maxTextureSize;
 	} limits;
 
+	struct {
+		uint32_t vendorId;
+		uint32_t deviceId;
+		uint32_t driverVersion;
+	} hardwareInfo;
+
 	void *private;
 };
 
@@ -35,6 +55,11 @@ struct RenderDeviceProcs
 	uint64_t (*OffsetAddress)(uint64_t address, uint64_t offset);
 	uint64_t (*AccelerationStructureHandle)(struct RenderDevice *dev, const struct AccelerationStructure *as);
 	uint64_t (*BufferAddress)(struct RenderDevice *dev, const struct Buffer *buff, uint64_t offset);
+
+	bool (*WaitSemaphore)(struct RenderDevice *dev, struct Semaphore *s, uint64_t value, uint64_t timeout);
+	bool (*WaitSemaphores)(struct RenderDevice *dev, uint32_t count, struct Semaphore *s, uint64_t *values, uint64_t timeout);
+	bool (*SignalSemaphore)(struct RenderDevice *dev, struct Semaphore *s, uint64_t value);
+
 	void (*ResetContext)(struct RenderDevice *dev, struct RenderContext *ctx);
 
 	struct Texture *(*CreateTransientTexture)(struct RenderDevice *dev, const struct TextureDesc *desc, uint16_t location, uint64_t offset, uint64_t *size);
@@ -50,7 +75,7 @@ struct RenderDeviceProcs
 	struct Texture *(*SwapchainTexture)(struct Swapchain *swapchain, void *image);
 	enum TextureFormat (*SwapchainFormat)(struct Swapchain *swapchain);
 	void (*SwapchainDesc)(struct Swapchain *swapchain, struct FramebufferAttachmentDesc *desc);
-	bool (*Present)(struct RenderDevice *dev, struct RenderContext *ctx, struct Swapchain *swapchain, void *image);
+	bool (*Present)(struct RenderDevice *dev, struct RenderContext *ctx, struct Swapchain *swapchain, void *image, struct Semaphore *wait);
 
 	bool (*Execute)(struct RenderDevice *dev, struct RenderContext *ctx, bool wait);
 	

@@ -28,8 +28,10 @@ Re_CreateModelResource(const char *name, const struct ModelCreateInfo *ci, struc
 	memcpy(mdl->meshes, ci->meshes, meshSize);
 	mdl->meshCount = ci->meshCount;
 
-	for (uint32_t i = 0; i < mdl->meshCount; ++i)
-		mdl->meshes[i].materialResource = E_LoadResource(ci->materials[i], RES_MATERIAL);
+	if (ci->materials) {
+		for (uint32_t i = 0; i < mdl->meshCount; ++i)
+			mdl->meshes[i].materialResource = E_LoadResource(ci->materials[i], RES_MATERIAL);
+	}
 
 	if (!ci->keepData) {
 		Sys_Free(ci->vertices);

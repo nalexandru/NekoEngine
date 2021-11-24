@@ -7,7 +7,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (c) 2015-2020, Alexandru Naiman
+ * Copyright (c) 2015-2021, Alexandru Naiman
  *
  * All rights reserved.
  *
@@ -72,12 +72,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * then the origin is used. Returns pBox.
  */
 static inline struct aabb3 *
-aabb3(
-	struct aabb3 *dst,
-	const struct vec3 *center,
-	const float width,
-	const float height,
-	const float depth)
+aabb3(struct aabb3 *dst, const struct vec3 *center,
+	const float width, const float height, const float depth)
 {
 	struct vec3 origin;
 	struct vec3 *point;
@@ -101,9 +97,7 @@ aabb3(
  * otherwise.
  */
 static inline int
-aabb3_contains_pt(
-	const struct aabb3 *aabb,
-	const struct vec3 *pt)
+aabb3_contains_pt(const struct aabb3 *aabb, const struct vec3 *pt)
 {
 	return (pt->x >= aabb->min.x && pt->x <= aabb->max.x &&
 		pt->y >= aabb->min.y && pt->y <= aabb->max.y &&
@@ -111,9 +105,7 @@ aabb3_contains_pt(
 }
 
 static inline uint8_t
-aabb3_contains_aabb3(
-	const struct aabb3 *aabb,
-	const struct aabb3 *chk)
+aabb3_contains_aabb3(const struct aabb3 *aabb, const struct aabb3 *chk)
 {
 	uint8_t i;
 	struct vec3 corners[8];
@@ -153,9 +145,7 @@ aabb3_contains_aabb3(
  * Assigns pIn to pOut, returns pOut.
  */
 static inline struct aabb3 *
-aabb3_copy(
-	struct aabb3 *dst,
-	const struct aabb3 *src)
+aabb3_copy(struct aabb3 *dst, const struct aabb3 *src)
 {
 	v3_copy(&dst->min, &src->min);
 	v3_copy(&dst->max, &src->max);
@@ -167,10 +157,7 @@ aabb3_copy(
  * Scales pIn by s, stores the resulting AABB in pOut. Returns pOut
  */
 static inline struct aabb3 *
-aabb3_scale(
-	struct aabb3 *dst,
-	const struct aabb3 *src,
-	float s)
+aabb3_scale(struct aabb3 *dst, const struct aabb3 *src, float s)
 {
 	v3_scale(&(dst->max), &(src->max), s);
 	v3_scale(&(dst->min), &(src->min), s);
@@ -179,11 +166,8 @@ aabb3_scale(
 }
 
 static inline bool
-aabb3_intersects_triangle(
-	struct aabb3 *box,
-	const struct vec3 *p1,
-	const struct vec3 *p2,
-	const struct vec3 *p3)
+aabb3_intersects_triangle(struct aabb3 *box, const struct vec3 *p1,
+	const struct vec3 *p2, const struct vec3 *p3)
 {
 	(void)box; (void)p1; (void)p2; (void)p3;
 	// FIXME: Not implemented
@@ -191,12 +175,8 @@ aabb3_intersects_triangle(
 }
 
 static inline bool
-aabb3_intersects_aabb3(
-	const struct aabb3 *box,
-	const struct aabb3 *other)
+aabb3_intersects_aabb3(const struct aabb3 *box, const struct aabb3 *other)
 {
-	// Probably should store center point and radius for things like this
-
 	float acx = (box->min.x + box->max.x) * .5f;
 	float acy = (box->min.y + box->max.y) * .5f;
 	float acz = (box->min.z + box->max.z) * .5f;
@@ -239,9 +219,7 @@ aabb3_size_z(const struct aabb3 *aabb)
 }
 
 static inline struct vec3 *
-aabb3_center(
-	const struct aabb3 *aabb,
-	struct vec3 *dst)
+aabb3_center(const struct aabb3 *aabb, struct vec3 *dst)
 {
 	v3_add(dst, &aabb->min, &aabb->max);
 	v3_scale(dst, dst, 0.5);
@@ -251,16 +229,13 @@ aabb3_center(
 
 /*
  * @brief aabb3_expand
- * @param pOut - The resulting AABB
- * @param pIn - The original AABB
- * @param other - Another AABB that you want pIn expanded to contain
+ * @param dst - The resulting AABB
+ * @param src - The original AABB
+ * @param other - Another AABB that you want src expanded to contain
  * @return
  */
 static inline struct aabb3 *
-aabb3_expand(
-	struct aabb3 *dst,
-	const struct aabb3 *src,
-	const struct aabb3 *other)
+aabb3_expand(struct aabb3 *dst, const struct aabb3 *src, const struct aabb3 *other)
 {
 	dst->min.x = (src->min.x < other->min.x) ? src->min.x : other->min.x;
 	dst->max.x = (src->max.x > other->max.x) ? src->max.x : other->max.x;

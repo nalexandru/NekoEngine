@@ -8,7 +8,7 @@
 
 struct SSAO
 {
-	struct Pipeline* pipeline;
+	struct Pipeline *pipeline;
 	BufferHandle visibleIndices;
 };
 
@@ -59,7 +59,7 @@ _Execute(struct SSAO *pass, const struct Array *resources)
 
 	Re_EndCommandBuffer();
 
-	Re_SubmitCompute();
+	Re_QueueCompute(NULL, NULL);
 
 	//Re_CreateTransientBuffer(&bci, 0, 0);
 	/*struct {

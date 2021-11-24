@@ -1,6 +1,8 @@
 #include <Engine/IO.h>
+#include <System/Log.h>
 #include <Runtime/Runtime.h>
 
+#include "Shaders.h"
 #include "VulkanDriver.h"
 
 struct ShaderModuleInfo
@@ -31,6 +33,9 @@ Vk_ShaderModule(struct RenderDevice *dev, const char *name)
 bool
 Vk_LoadShaders(VkDevice dev)
 {
+	if (!E_MountMemory("Shaders.zip", Shaders_zip, sizeof(Shaders_zip), "/"))
+		return false;
+
 	if (!Rt_InitArray(&_modules, 10, sizeof(struct ShaderModuleInfo), MH_RenderDriver))
 		return false;
 
@@ -49,6 +54,7 @@ Vk_UnloadShaders(VkDevice dev)
 	Rt_ArrayForEach(info, &_modules)
 		vkDestroyShaderModule(dev, info->module, Vkd_allocCb);
 	Rt_TermArray(&_modules);
+	E_Unmount("Shaders.zip");
 }
 
 void

@@ -47,3 +47,4 @@
 
 # Visual Studio
 .vs
+.vcxproj.user

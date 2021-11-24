@@ -19,6 +19,8 @@ __MathDbg_SanityTest(void)
 		L"Altivec"
 #elif defined(USE_NEON)
 		L"NEON"
+#elif defined(USE_VMX128)
+		L"VMX128"
 #else
 		L"none"
 #endif
@@ -58,7 +60,7 @@ __MathDbg_SanityTest(void)
 		v4_log(&c, L"v4_norm (0.73721, 0.29488, 0.58977, 0.14744)", MSMOD);
 		
 		v4_scale(&c, v4(&a, 1.f, 2.f, 3.f, 4.f), 5.f);
-		v4_log(&c, L"v4_scale", MSMOD);
+		v4_log(&c, L"v4_scale (0.91287, 1.82574, 2.73861, 3.65148)", MSMOD);
 		
 		v4_swap(v4(&a, 5.f, 6.f, 7.f, 8.f), v4(&b, 1.f, 2.f, 3.f, 4.f));
 		v4_log(&a, L"v4_swap_a (1, 2, 3, 4)", MSMOD);
@@ -113,8 +115,8 @@ __MathDbg_SanityTest(void)
 		m4_mul(&e, &a, &d);
 		m4_log(&e, L"mvp", MSMOD);
 		
-		m4_mul_scalar(&d, &e, 5.f);
-		m4_log(&d, L"m4_mul_scalar", MSMOD);
+		m4_muls(&d, &e, 5.f);
+		m4_log(&d, L"m4_muls", MSMOD);
 	}
 }
 

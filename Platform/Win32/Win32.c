@@ -384,13 +384,15 @@ Sys_Sleep(uint32_t sec)
 void
 Sys_MSleep(uint32_t msec)
 {
-	Sleep(msec);
+	LARGE_INTEGER li = { .QuadPart = (LONGLONG)msec * -10000 };
+	NtDelayExecution(FALSE, &li);
 }
 
 void
 Sys_USleep(uint32_t usec)
 {
-	Sleep(usec / 1000);
+	LARGE_INTEGER li = { .QuadPart = (LONGLONG)usec * -10 };
+	NtDelayExecution(FALSE, &li);
 }
 
 void

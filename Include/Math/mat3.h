@@ -7,7 +7,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (c) 2015-2020, Alexandru Naiman
+ * Copyright (c) 2015-2021, Alexandru Naiman
  *
  * All rights reserved.
  *
@@ -72,17 +72,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <Math/vec3.h>
 
 static inline struct mat3 *
-m3(
-	struct mat3 *dst,
-	const float *m)
+m3(struct mat3 *dst, const float *m)
 {
 	memcpy(dst->mat, m, sizeof(float) * 9);
 	return dst;
 }
 
 static inline struct mat3 *
-m3f(
-	struct mat3 *dst,
+m3f(struct mat3 *dst,
 	float m0, float m1, float m2,
 	float m3, float m4, float m5,
 	float m6, float m7, float m8)
@@ -98,9 +95,7 @@ m3f(
  * Assigns the value of pIn to pOut
  */
 static inline struct mat3 *
-m3_copy(
-	struct mat3 *dst,
-	const struct mat3 *src)
+m3_copy(struct mat3 *dst, const struct mat3 *src)
 {
 	memcpy(dst->mat, src->mat, sizeof(float) * 9);
 	return dst;
@@ -149,10 +144,7 @@ m3_det(const struct mat3 *m)
  * Multiplies pM1 with pM2, stores the result in pOut, returns pOut
  */
 static inline struct mat3 *
-m3_mul(
-	struct mat3 *dst,
-	const struct mat3 *m1,
-	const struct mat3 *m2)
+m3_mul(struct mat3 *dst, const struct mat3 *m1, const struct mat3 *m2)
 {
 	float mat[9];
 
@@ -172,10 +164,7 @@ m3_mul(
 }
 
 static inline struct mat3 *
-m3_mul_scalar(
-	struct mat3 *dst,
-	const struct mat3 *m,
-	const float f)
+m3_mul_scalar(struct mat3 *dst, const struct mat3 *m, const float f)
 {
 	dst->mat[0] = m->mat[0] * f;
 	dst->mat[1] = m->mat[1] * f;
@@ -194,9 +183,7 @@ m3_mul_scalar(
  * Sets pOut to the transpose of pIn, returns pOut
  */
 static inline struct mat3 *
-m3_transpose(
-	struct mat3 *dst,
-	const struct mat3 *src)
+m3_transpose(struct mat3 *dst, const struct mat3 *src)
 {
 	float temp[9];
 
@@ -218,9 +205,7 @@ m3_transpose(
 }
 
 static inline struct mat3 *
-m3_adjugate(
-	struct mat3 *dst,
-	const struct mat3 *src)
+m3_adjugate(struct mat3 *dst, const struct mat3 *src)
 {
 	dst->mat[0] = src->mat[4] * src->mat[8] - src->mat[5] * src->mat[7];
 	dst->mat[1] = src->mat[2] * src->mat[7] - src->mat[1] * src->mat[8];
@@ -236,9 +221,7 @@ m3_adjugate(
 }
 
 static inline struct mat3 *
-m3_inverse(
-	struct mat3 *dst,
-	const struct mat3 *m)
+m3_inverse(struct mat3 *dst, const struct mat3 *m)
 {
 	float d = m3_det(m);
 	float d_inv;
@@ -259,9 +242,7 @@ m3_inverse(
  * Builds an X-axis rotation matrix and stores it in pOut, returns pOut
  */
 static inline struct mat3 *
-m3_rot_x(
-	struct mat3 *dst,
-	const float radians)
+m3_rot_x(struct mat3 *dst, const float radians)
 {
 	/*
 	 *		|  1  0       0      |
@@ -289,9 +270,7 @@ m3_rot_x(
  * The result is stored in pOut, pOut is returned.
  */
 static inline struct mat3 *
-m3_rot_y(
-	struct mat3 *dst,
-	const float radians)
+m3_rot_y(struct mat3 *dst, const float radians)
 {
 	/*
 	 *		|  cos(A)  0   sin(A) |
@@ -319,9 +298,7 @@ m3_rot_y(
  * matrix is stored in pOut. pOut is returned.
  */
 static inline struct mat3 *
-m3_rot_z(
-	struct mat3 *dst,
-	const float radians)
+m3_rot_z(struct mat3 *dst, const float radians)
 {
 	/*
 	 *		|  cos(A)  -sin(A)   0  |
@@ -345,9 +322,7 @@ m3_rot_z(
 }
 
 static inline struct mat3 *
-m3_rot_quat(
-	struct mat3 *dst,
-	const struct quat *src)
+m3_rot_quat(struct mat3 *dst, const struct quat *src)
 {
 	/* First row */
 	dst->mat[0] = 1.f - 2.f * (src->y * src->y + src->z * src->z);
@@ -368,13 +343,10 @@ m3_rot_quat(
 }
 
 static inline struct mat3 *
-m3_rot_axis_angle(
-	struct mat3 *dst,
-	const struct vec3 *axis,
-	const float radians)
+m3_rot_axis_angle(struct mat3 *dst, const struct vec3 *axis, const float radians)
 {
-	float rcos = cosf(radians);
-	float rsin = sinf(radians);
+	const float rcos = cosf(radians);
+	const float rsin = sinf(radians);
 
 	dst->mat[0] = rcos + axis->x * axis->x * (1 - rcos);
 	dst->mat[1] = axis->z * rsin + axis->y * axis->x * (1 - rcos);
@@ -396,20 +368,15 @@ m3_rot_axis_angle(
  * matrix is stored in pOut and pOut is returned
  */
 static inline struct mat3 *
-m3_rot_pitch_yaw_roll(
-	struct mat3 *dst,
-	const float pitch,
-	const float yaw,
-	const float roll)
+m3_rot_pitch_yaw_roll(struct mat3 *dst,
+	const float pitch, const float yaw, const float roll)
 {
 	struct mat3 yaw_matrix;
 	struct mat3 roll_matrix;
 	struct mat3 pitch_matrix;
 
 	m3_rot_y(&yaw_matrix, yaw);
-
 	m3_rot_x(&pitch_matrix, pitch);
-
 	m3_rot_z(&roll_matrix, roll);
 
 	m3_mul(dst, &pitch_matrix, &roll_matrix);
@@ -420,11 +387,8 @@ m3_rot_pitch_yaw_roll(
 
 
 static inline struct mat3 *
-m3_look_at(
-	struct mat3 *dst,
-	const struct vec3 *eye,
-	const struct vec3 *center,
-	const struct vec3 *up)
+m3_look_at(struct mat3 *dst, const struct vec3 *eye,
+	const struct vec3 *center, const struct vec3 *up)
 {
 	struct vec3 f, n_up, s, u;
 
@@ -459,10 +423,7 @@ m3_look_at(
  * Builds a scaling matrix
  */
 static inline struct mat3 *
-m3_scale(
-	struct mat3 *dst,
-	const float x,
-	const float y)
+m3_scale(struct mat3 *dst, const float x, const float y)
 {
 	m3_ident(dst);
 	
@@ -473,10 +434,7 @@ m3_scale(
 }
 
 static inline struct mat3 *
-m3_translate(
-	struct mat3 *dst,
-	const float x,
-	const float y)
+m3_translate(struct mat3 *dst, const float x, const float y)
 {
 	m3_ident(dst);
 
@@ -487,9 +445,7 @@ m3_translate(
 }
 
 static inline struct vec3 *
-m3_up(
-	const struct mat3 *m,
-	struct vec3 *v)
+m3_up(const struct mat3 *m, struct vec3 *v)
 {
 	v->x = m->mat[3];
 	v->y = m->mat[4];
@@ -499,9 +455,7 @@ m3_up(
 }
 
 static inline struct vec3 *
-m3_fwd(
-	const struct mat3 *m,
-	struct vec3 *v)
+m3_fwd(const struct mat3 *m, struct vec3 *v)
 {
 	v->x = m->mat[6];
 	v->y = m->mat[7];
@@ -511,9 +465,7 @@ m3_fwd(
 }
 
 static inline struct vec3 *
-m3_right(
-	const struct mat3 *m,
-	struct vec3 *v)
+m3_right(const struct mat3 *m, struct vec3 *v)
 {
 	v->x = m->mat[0];
 	v->y = m->mat[1];

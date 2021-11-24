@@ -35,7 +35,9 @@ xform_move(struct Transform *t, struct vec3 *movement)
 static inline void
 xform_rotate(struct Transform *t, float angle, const struct vec3 *axis)
 {
-	quat_rot_axis_angle(&t->rotation, axis, angle);
+	struct quat tmp;
+	quat_from_axis_angle(&tmp, axis, angle);
+	quat_mul(&t->rotation, &t->rotation, &tmp);
 	t->dirty = true;
 }
 
@@ -70,26 +72,40 @@ xform_look_at(struct Transform *t, struct vec3 *target, struct vec3 *up)
 }
 
 static inline void
+xform_update_orientation_mat(struct Transform *t, struct mat4 *rot)
+{
+	struct vec4 tmp;
+
+	v4_mul_m4(&tmp, v4(&tmp, 0.f, 0.f, 1.f, 1.f), rot);
+	v3(&t->forward, tmp.x, tmp.y, tmp.z);
+
+	v4_mul_m4(&tmp, v4(&tmp, 1.f, 0.f, 0.f, 1.f), rot);
+	v3(&t->right, tmp.x, tmp.y, tmp.z);
+
+	v4_mul_m4(&tmp, v4(&tmp, 0.f, 1.f, 0.f, 1.f), rot);
+	v3(&t->up, tmp.x, tmp.y, tmp.z);
+}
+
+static inline void
+xform_update_orientation(struct Transform *t)
+{
+	struct mat4 rot;
+	m4_rot_quat(&rot, &t->rotation);
+	xform_update_orientation_mat(t, &rot);
+}
+
+static inline void
 xform_update(struct Transform *t)
 {
 	struct mat4 m1;
 	struct mat4 m2;
-	struct vec4 tmp;
 	size_t i;
 
 	if ((t->parent && !t->parent->dirty) && !t->dirty)
 		return;
 
 	m4_rot_quat(&m1, &t->rotation);
-
-	v4_mul_m4(&tmp, v4(&tmp, 0.f, 0.f, 1.f, 1.f), &m1);
-	v3(&t->forward, tmp.x, tmp.y, tmp.z);
-
-	v4_mul_m4(&tmp, v4(&tmp, 1.f, 0.f, 0.f, 1.f), &m1);
-	v3(&t->right, tmp.x, tmp.y, tmp.z);
-
-	v4_mul_m4(&tmp, v4(&tmp, 0.f, 1.f, 0.f, 1.f), &m1);
-	v3(&t->up, tmp.x, tmp.y, tmp.z);
+	xform_update_orientation_mat(t, &m1);
 
 	m4_translate(&m2, t->position.x, t->position.y, t->position.z);
 	m4_mul(&m1, &m2, &m1);
@@ -131,15 +147,33 @@ xform_rotation(const struct Transform *t, struct quat *rot)
 	return rot;
 }
 
+static inline void
+xform_rotation_angles_f(const struct Transform *t, float *pitch, float *yaw, float *roll)
+{
+	struct quat q;
+	xform_rotation(t, &q);
+
+	if (pitch)
+		*pitch = quat_pitch(&q);
+
+	if (yaw)
+		*yaw = quat_yaw(&q);
+
+	if (roll)
+		*roll = quat_roll(&q);
+}
+
 static inline struct vec3 *
 xform_rotation_angles(const struct Transform *t, struct vec3 *rot)
 {
 	struct quat q;
 	xform_rotation(t, &q);
 
-	rot->x = quat_roll(&q);
-	rot->y = quat_pitch(&q);
-	rot->z = quat_yaw(&q);
+	rot->x = quat_pitch(&q);
+	rot->y = quat_yaw(&q);
+	rot->z = quat_roll(&q);
+
+	xform_rotation_angles_f(t, &rot->x, &rot->y, &rot->z);
 
 	return rot;
 }

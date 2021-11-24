@@ -37,6 +37,10 @@
 			#define SYS_PLATFORM_LINUX_ARM
 			#define SYS_ARCH_ARM
 		#endif
+	#elif defined(__ARM_ARCH)
+		#define SYS_PLATFORM_LINUX_ARM64
+		#define SYS_ARCH_ARM64
+		#define SYS_64BIT
 	#elif defined(__sparc)
 		#ifdef __LP64__
 			#define SYS_PLATFORM_LINUX_SPARC64

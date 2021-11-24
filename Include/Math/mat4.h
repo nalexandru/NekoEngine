@@ -7,7 +7,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (c) 2015-2020, Alexandru Naiman
+ * Copyright (c) 2015-2021, Alexandru Naiman
  *
  * All rights reserved.
  *
@@ -69,31 +69,37 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #if defined(USE_SSE)
 #	include <Math/sse/mat4_sse.h>
-#elif defined (USE_ALTIVEC)
+#elif defined(USE_ALTIVEC)
 #	include <Math/altivec/mat4_altivec.h>
-#elif defined (USE_NEON)
+#elif defined(USE_NEON)
 #	include <Math/neon/mat4_neon.h>
-#else
+#elif defined(USE_VMX128)
+#	include <Math/vmx128/mat4_vmx128.h>
+#endif
 
 #include <Math/vec3.h>
+#include <Math/vec4.h>
 #include <Math/quat.h>
 
-/*
-A 4x4 matrix
+#ifdef MATH_SIMD
 
-      | 0   4   8  12 |
-mat = | 1   5   9  13 |
-      | 2   6  10  14 |
-      | 3   7  11  15 |
-*/
+#define m4				m4_simd
+#define m4f				m4f_simd
+#define m4_copy			m4_copy_simd
+#define m4_mul			m4_mul_simd
+#define m4_muls			m4_muls_simd
+#define v4_mul_m4		v4_mul_m4_simd
 
-/*
- * Fills a mat4 structure with the values from a 16
- * element array of floats
- * @Params dst - A pointer to the destination matrix
- * 		   m - A 16 element array of floats
- * @Return Returns dst so that the call can be nested
- */
+#ifndef M4_TRANSPOSE_NOSIMD
+#define m4_transpose	m4_transpose_simd
+#endif
+
+#ifndef M4_INVERSE_NOSIMD
+#define m4_inverse		m4_inverse_simd
+#endif
+
+#else
+
 static inline struct mat4 *
 m4(struct mat4 *dst, const float *m)
 {
@@ -116,9 +122,6 @@ m4f(struct mat4 *dst,
 	return dst;
 }
 
-/*
- * Assigns the value of src to dst
- */
 static inline struct mat4 *
 m4_copy(struct mat4 *dst, const struct mat4 *src)
 {
@@ -126,79 +129,39 @@ m4_copy(struct mat4 *dst, const struct mat4 *src)
 	return dst;
 }
 
-/*
- * Sets m to an identity matrix returns m
- * @Params m - A pointer to the matrix to set to identity
- * @Return Returns m so that the call can be nested
- */
-static inline struct mat4 *
-m4_ident(struct mat4 *m)
-{
-	memset(m->m, 0, sizeof(float) * 16);
-	m->m[0] = m->m[5] = m->m[10] = m->m[15] = 1.f;
-	return m;
-}
-
-static inline struct mat4 *
-m4_init_m3(struct mat4 *m4, const struct mat3 *m3)
-{
-	m4_ident(m4);
-	
-	m4->m[0] = m3->mat[0];
-	m4->m[1] = m3->mat[1];
-	m4->m[2] = m3->mat[2];
-	m4->m[3] = 0.0;
-	
-	m4->m[4] = m3->mat[3];
-	m4->m[5] = m3->mat[4];
-	m4->m[6] = m3->mat[5];
-	m4->m[7] = 0.0;
-	
-	m4->m[8] = m3->mat[6];
-	m4->m[9] = m3->mat[7];
-	m4->m[10] = m3->mat[8];
-	m4->m[11] = 0.0;
-	
-	m4->m[15] = 1.f;
-	
-	return m4;
-}
-
-/*
- * Multiplies pM1 with pM2, stores the result in pOut, returns pOut
- */
 static inline struct mat4 *
 m4_mul(struct mat4 *dst, const struct mat4 *m1, const struct mat4 *m2)
 {
-	float mat[16];
+	const float mat[16] =
+	{
+		m1->m[0] * m2->m[0] + m1->m[4] * m2->m[1] + m1->m[8]  * m2->m[2]  + m1->m[12] * m2->m[3],
+		m1->m[1] * m2->m[0] + m1->m[5] * m2->m[1] + m1->m[9]  * m2->m[2]  + m1->m[13] * m2->m[3],
+		m1->m[2] * m2->m[0] + m1->m[6] * m2->m[1] + m1->m[10] * m2->m[2]  + m1->m[14] * m2->m[3],
+		m1->m[3] * m2->m[0] + m1->m[7] * m2->m[1] + m1->m[11] * m2->m[2]  + m1->m[15] * m2->m[3],
 
-	mat[0] = m1->m[0] * m2->m[0] + m1->m[4] * m2->m[1] + m1->m[8]  * m2->m[2]  + m1->m[12] * m2->m[3];
-	mat[1] = m1->m[1] * m2->m[0] + m1->m[5] * m2->m[1] + m1->m[9]  * m2->m[2]  + m1->m[13] * m2->m[3];
-	mat[2] = m1->m[2] * m2->m[0] + m1->m[6] * m2->m[1] + m1->m[10] * m2->m[2]  + m1->m[14] * m2->m[3];
-	mat[3] = m1->m[3] * m2->m[0] + m1->m[7] * m2->m[1] + m1->m[11] * m2->m[2]  + m1->m[15] * m2->m[3];
+		m1->m[0] * m2->m[4] + m1->m[4] * m2->m[5] + m1->m[8]  * m2->m[6]  + m1->m[12] * m2->m[7],
+		m1->m[1] * m2->m[4] + m1->m[5] * m2->m[5] + m1->m[9]  * m2->m[6]  + m1->m[13] * m2->m[7],
+		m1->m[2] * m2->m[4] + m1->m[6] * m2->m[5] + m1->m[10] * m2->m[6]  + m1->m[14] * m2->m[7],
+		m1->m[3] * m2->m[4] + m1->m[7] * m2->m[5] + m1->m[11] * m2->m[6]  + m1->m[15] * m2->m[7],
 
-	mat[4] = m1->m[0] * m2->m[4] + m1->m[4] * m2->m[5] + m1->m[8]  * m2->m[6]  + m1->m[12] * m2->m[7];
-	mat[5] = m1->m[1] * m2->m[4] + m1->m[5] * m2->m[5] + m1->m[9]  * m2->m[6]  + m1->m[13] * m2->m[7];
-	mat[6] = m1->m[2] * m2->m[4] + m1->m[6] * m2->m[5] + m1->m[10] * m2->m[6]  + m1->m[14] * m2->m[7];
-	mat[7] = m1->m[3] * m2->m[4] + m1->m[7] * m2->m[5] + m1->m[11] * m2->m[6]  + m1->m[15] * m2->m[7];
+		m1->m[0] * m2->m[8] + m1->m[4] * m2->m[9] + m1->m[8]  * m2->m[10] + m1->m[12] * m2->m[11],
+		m1->m[1] * m2->m[8] + m1->m[5] * m2->m[9] + m1->m[9]  * m2->m[10] + m1->m[13] * m2->m[11],
+		m1->m[2] * m2->m[8]  + m1->m[6] * m2->m[9]  + m1->m[10] * m2->m[10] + m1->m[14] * m2->m[11],
+		m1->m[3] * m2->m[8]  + m1->m[7] * m2->m[9]  + m1->m[11] * m2->m[10] + m1->m[15] * m2->m[11],
 
-	mat[8] = m1->m[0] * m2->m[8] + m1->m[4] * m2->m[9] + m1->m[8]  * m2->m[10] + m1->m[12] * m2->m[11];
-	mat[9] = m1->m[1] * m2->m[8] + m1->m[5] * m2->m[9] + m1->m[9]  * m2->m[10] + m1->m[13] * m2->m[11];
-	mat[10] = m1->m[2] * m2->m[8]  + m1->m[6] * m2->m[9]  + m1->m[10] * m2->m[10] + m1->m[14] * m2->m[11];
-	mat[11] = m1->m[3] * m2->m[8]  + m1->m[7] * m2->m[9]  + m1->m[11] * m2->m[10] + m1->m[15] * m2->m[11];
-
-	mat[12] = m1->m[0] * m2->m[12] + m1->m[4] * m2->m[13] + m1->m[8]  * m2->m[14] + m1->m[12] * m2->m[15];
-	mat[13] = m1->m[1] * m2->m[12] + m1->m[5] * m2->m[13] + m1->m[9]  * m2->m[14] + m1->m[13] * m2->m[15];
-	mat[14] = m1->m[2] * m2->m[12] + m1->m[6] * m2->m[13] + m1->m[10] * m2->m[14] + m1->m[14] * m2->m[15];
-	mat[15] = m1->m[3] * m2->m[12] + m1->m[7] * m2->m[13] + m1->m[11] * m2->m[14] + m1->m[15] * m2->m[15];
-
+		m1->m[0] * m2->m[12] + m1->m[4] * m2->m[13] + m1->m[8]  * m2->m[14] + m1->m[12] * m2->m[15],
+		m1->m[1] * m2->m[12] + m1->m[5] * m2->m[13] + m1->m[9]  * m2->m[14] + m1->m[13] * m2->m[15],
+		m1->m[2] * m2->m[12] + m1->m[6] * m2->m[13] + m1->m[10] * m2->m[14] + m1->m[14] * m2->m[15],
+		m1->m[3] * m2->m[12] + m1->m[7] * m2->m[13] + m1->m[11] * m2->m[14] + m1->m[15] * m2->m[15],
+	};
+	
 	memcpy(dst->m, mat, sizeof(float) * 16);
 
 	return dst;
 }
 
 static inline struct mat4 *
-m4_mul_scalar(struct mat4 *dst, const struct mat4 *m, const float f)
+m4_muls(struct mat4 *dst, const struct mat4 *m, const float f)
 {
 	dst->m[0] = m->m[0] * f;
 	dst->m[1] = m->m[1] * f;
@@ -223,9 +186,147 @@ m4_mul_scalar(struct mat4 *dst, const struct mat4 *m, const float f)
 	return dst;
 }
 
-/*
- * Sets pOut to the transpose of src, returns dst
- */
+#endif
+
+#if !defined(MATH_SIMD) || defined(M4_INVERSE_NOSIMD)
+static inline struct mat4 *
+m4_inverse(struct mat4 *dst, const struct mat4 *src)
+{
+	struct mat4 tmp;
+	float det = 0.f;
+	int i = 0;
+
+	tmp.m[0] = src->m[5] * src->m[10] * src->m[15] -
+		src->m[5] * src->m[11] * src->m[14] -
+		src->m[9] * src->m[6] * src->m[15] +
+		src->m[9] * src->m[7] * src->m[14] +
+		src->m[13] * src->m[6] * src->m[11] -
+		src->m[13] * src->m[7] * src->m[10];
+
+	tmp.m[4] = -src->m[4] * src->m[10] * src->m[15] +
+		src->m[4] * src->m[11] * src->m[14] +
+		src->m[8] * src->m[6] * src->m[15] -
+		src->m[8] * src->m[7] * src->m[14] -
+		src->m[12] * src->m[6] * src->m[11] +
+		src->m[12] * src->m[7] * src->m[10];
+
+	tmp.m[8] = src->m[4] * src->m[9] * src->m[15] -
+		src->m[4] * src->m[11] * src->m[13] -
+		src->m[8] * src->m[5] * src->m[15] +
+		src->m[8] * src->m[7] * src->m[13] +
+		src->m[12] * src->m[5] * src->m[11] -
+		src->m[12] * src->m[7] * src->m[9];
+
+	tmp.m[12] = -src->m[4] * src->m[9] * src->m[14] +
+		src->m[4] * src->m[10] * src->m[13] +
+		src->m[8] * src->m[5] * src->m[14] -
+		src->m[8] * src->m[6] * src->m[13] -
+		src->m[12] * src->m[5] * src->m[10] +
+		src->m[12] * src->m[6] * src->m[9];
+
+	tmp.m[1] = -src->m[1] * src->m[10] * src->m[15] +
+		src->m[1] * src->m[11] * src->m[14] +
+		src->m[9] * src->m[2] * src->m[15] -
+		src->m[9] * src->m[3] * src->m[14] -
+		src->m[13] * src->m[2] * src->m[11] +
+		src->m[13] * src->m[3] * src->m[10];
+
+	tmp.m[5] = src->m[0] * src->m[10] * src->m[15] -
+		src->m[0] * src->m[11] * src->m[14] -
+		src->m[8] * src->m[2] * src->m[15] +
+		src->m[8] * src->m[3] * src->m[14] +
+		src->m[12] * src->m[2] * src->m[11] -
+		src->m[12] * src->m[3] * src->m[10];
+
+	tmp.m[9] = -src->m[0] * src->m[9] * src->m[15] +
+		src->m[0] * src->m[11] * src->m[13] +
+		src->m[8] * src->m[1] * src->m[15] -
+		src->m[8] * src->m[3] * src->m[13] -
+		src->m[12] * src->m[1] * src->m[11] +
+		src->m[12] * src->m[3] * src->m[9];
+
+	tmp.m[13] = src->m[0] * src->m[9] * src->m[14] -
+		src->m[0] * src->m[10] * src->m[13] -
+		src->m[8] * src->m[1] * src->m[14] +
+		src->m[8] * src->m[2] * src->m[13] +
+		src->m[12] * src->m[1] * src->m[10] -
+		src->m[12] * src->m[2] * src->m[9];
+
+	tmp.m[2] = src->m[1] * src->m[6] * src->m[15] -
+		src->m[1] * src->m[7] * src->m[14] -
+		src->m[5] * src->m[2] * src->m[15] +
+		src->m[5] * src->m[3] * src->m[14] +
+		src->m[13] * src->m[2] * src->m[7] -
+		src->m[13] * src->m[3] * src->m[6];
+
+	tmp.m[6] = -src->m[0] * src->m[6] * src->m[15] +
+		src->m[0] * src->m[7] * src->m[14] +
+		src->m[4] * src->m[2] * src->m[15] -
+		src->m[4] * src->m[3] * src->m[14] -
+		src->m[12] * src->m[2] * src->m[7] +
+		src->m[12] * src->m[3] * src->m[6];
+
+	tmp.m[10] = src->m[0] * src->m[5] * src->m[15] -
+		src->m[0] * src->m[7] * src->m[13] -
+		src->m[4] * src->m[1] * src->m[15] +
+		src->m[4] * src->m[3] * src->m[13] +
+		src->m[12] * src->m[1] * src->m[7] -
+		src->m[12] * src->m[3] * src->m[5];
+
+	tmp.m[14] = -src->m[0] * src->m[5] * src->m[14] +
+		src->m[0] * src->m[6] * src->m[13] +
+		src->m[4] * src->m[1] * src->m[14] -
+		src->m[4] * src->m[2] * src->m[13] -
+		src->m[12] * src->m[1] * src->m[6] +
+		src->m[12] * src->m[2] * src->m[5];
+
+	tmp.m[3] = -src->m[1] * src->m[6] * src->m[11] +
+		src->m[1] * src->m[7] * src->m[10] +
+		src->m[5] * src->m[2] * src->m[11] -
+		src->m[5] * src->m[3] * src->m[10] -
+		src->m[9] * src->m[2] * src->m[7] +
+		src->m[9] * src->m[3] * src->m[6];
+
+	tmp.m[7] = src->m[0] * src->m[6] * src->m[11] -
+		src->m[0] * src->m[7] * src->m[10] -
+		src->m[4] * src->m[2] * src->m[11] +
+		src->m[4] * src->m[3] * src->m[10] +
+		src->m[8] * src->m[2] * src->m[7] -
+		src->m[8] * src->m[3] * src->m[6];
+
+	tmp.m[11] = -src->m[0] * src->m[5] * src->m[11] +
+		src->m[0] * src->m[7] * src->m[9] +
+		src->m[4] * src->m[1] * src->m[11] -
+		src->m[4] * src->m[3] * src->m[9] -
+		src->m[8] * src->m[1] * src->m[7] +
+		src->m[8] * src->m[3] * src->m[5];
+
+	tmp.m[15] = src->m[0] * src->m[5] * src->m[10] -
+		src->m[0] * src->m[6] * src->m[9] -
+		src->m[4] * src->m[1] * src->m[10] +
+		src->m[4] * src->m[2] * src->m[9] +
+		src->m[8] * src->m[1] * src->m[6] -
+		src->m[8] * src->m[2] * src->m[5];
+
+	det = src->m[0] *
+		tmp.m[0] + src->m[1] *
+		tmp.m[4] + src->m[2] *
+		tmp.m[8] + src->m[3] *
+		tmp.m[12];
+
+	if (det == 0)
+		return NULL;
+
+	det = 1.f / det;
+
+	for (i = 0; i < 16; i++)
+		dst->m[i] = tmp.m[i] * det;
+
+	return dst;
+}
+#endif
+
+#if !defined(MATH_SIMD) || defined(M4_TRANSPOSE_NOSIMD)
 static inline struct mat4 *
 m4_transpose(struct mat4 *dst, const struct mat4 *src)
 {
@@ -240,303 +341,91 @@ m4_transpose(struct mat4 *dst, const struct mat4 *src)
 
 	return dst;
 }
+#endif
 
-/*
- * Calculates the inverse of src and stores the result in dst.
- * @Return Returns NULL if there is no inverse, else dst
- */
-static inline struct mat4 *
-m4_inverse(struct mat4 *dst, const struct mat4 *src)
+#if !defined(MATH_SIMD)
+static inline struct vec4 *
+v4_mul_m4(struct vec4 *dst, const struct vec4 *v, const struct mat4 *m)
 {
-	struct mat4 tmp;
-	float det = 0.f;
-	int i = 0;
-	
-	tmp.m[0] = src->m[5] * src->m[10] * src->m[15] -
-		src->m[5] * src->m[11] * src->m[14] -
-		src->m[9] * src->m[6] * src->m[15] +
-		src->m[9] * src->m[7] * src->m[14] +
-		src->m[13] * src->m[6] * src->m[11] -
-		src->m[13] * src->m[7] * src->m[10];
-	
-	tmp.m[4] = -src->m[4] * src->m[10] * src->m[15] +
-		src->m[4] * src->m[11] * src->m[14] +
-		src->m[8] * src->m[6] * src->m[15] -
-		src->m[8] * src->m[7] * src->m[14] -
-		src->m[12] * src->m[6] * src->m[11] +
-		src->m[12] * src->m[7] * src->m[10];
-	
-	tmp.m[8] = src->m[4] * src->m[9] * src->m[15] -
-		src->m[4] * src->m[11] * src->m[13] -
-		src->m[8] * src->m[5] * src->m[15] +
-		src->m[8] * src->m[7] * src->m[13] +
-		src->m[12] * src->m[5] * src->m[11] -
-		src->m[12] * src->m[7] * src->m[9];
-	
-	tmp.m[12] = -src->m[4] * src->m[9] * src->m[14] +
-		src->m[4] * src->m[10] * src->m[13] +
-		src->m[8] * src->m[5] * src->m[14] -
-		src->m[8] * src->m[6] * src->m[13] -
-		src->m[12] * src->m[5] * src->m[10] +
-		src->m[12] * src->m[6] * src->m[9];
-	
-	tmp.m[1] = -src->m[1] * src->m[10] * src->m[15] +
-		src->m[1] * src->m[11] * src->m[14] +
-		src->m[9] * src->m[2] * src->m[15] -
-		src->m[9] * src->m[3] * src->m[14] -
-		src->m[13] * src->m[2] * src->m[11] +
-		src->m[13] * src->m[3] * src->m[10];
-	
-	tmp.m[5] = src->m[0] * src->m[10] * src->m[15] -
-		src->m[0] * src->m[11] * src->m[14] -
-		src->m[8] * src->m[2] * src->m[15] +
-		src->m[8] * src->m[3] * src->m[14] +
-		src->m[12] * src->m[2] * src->m[11] -
-		src->m[12] * src->m[3] * src->m[10];
-	
-	tmp.m[9] = -src->m[0] * src->m[9] * src->m[15] +
-		src->m[0] * src->m[11] * src->m[13] +
-		src->m[8] * src->m[1] * src->m[15] -
-		src->m[8] * src->m[3] * src->m[13] -
-		src->m[12] * src->m[1] * src->m[11] +
-		src->m[12] * src->m[3] * src->m[9];
-	
-	tmp.m[13] = src->m[0] * src->m[9] * src->m[14] -
-		src->m[0] * src->m[10] * src->m[13] -
-		src->m[8] * src->m[1] * src->m[14] +
-		src->m[8] * src->m[2] * src->m[13] +
-		src->m[12] * src->m[1] * src->m[10] -
-		src->m[12] * src->m[2] * src->m[9];
-	
-	tmp.m[2] = src->m[1] * src->m[6] * src->m[15] -
-		src->m[1] * src->m[7] * src->m[14] -
-		src->m[5] * src->m[2] * src->m[15] +
-		src->m[5] * src->m[3] * src->m[14] +
-		src->m[13] * src->m[2] * src->m[7] -
-		src->m[13] * src->m[3] * src->m[6];
-	
-	tmp.m[6] = -src->m[0] * src->m[6] * src->m[15] +
-		src->m[0] * src->m[7] * src->m[14] +
-		src->m[4] * src->m[2] * src->m[15] -
-		src->m[4] * src->m[3] * src->m[14] -
-		src->m[12] * src->m[2] * src->m[7] +
-		src->m[12] * src->m[3] * src->m[6];
-	
-	tmp.m[10] = src->m[0] * src->m[5] * src->m[15] -
-		src->m[0] * src->m[7] * src->m[13] -
-		src->m[4] * src->m[1] * src->m[15] +
-		src->m[4] * src->m[3] * src->m[13] +
-		src->m[12] * src->m[1] * src->m[7] -
-		src->m[12] * src->m[3] * src->m[5];
-	
-	tmp.m[14] = -src->m[0] * src->m[5] * src->m[14] +
-		src->m[0] * src->m[6] * src->m[13] +
-		src->m[4] * src->m[1] * src->m[14] -
-		src->m[4] * src->m[2] * src->m[13] -
-		src->m[12] * src->m[1] * src->m[6] +
-		src->m[12] * src->m[2] * src->m[5];
-	
-	tmp.m[3] = -src->m[1] * src->m[6] * src->m[11] +
-		src->m[1] * src->m[7] * src->m[10] +
-		src->m[5] * src->m[2] * src->m[11] -
-		src->m[5] * src->m[3] * src->m[10] -
-		src->m[9] * src->m[2] * src->m[7] +
-		src->m[9] * src->m[3] * src->m[6];
-	
-	tmp.m[7] = src->m[0] * src->m[6] * src->m[11] -
-		src->m[0] * src->m[7] * src->m[10] -
-		src->m[4] * src->m[2] * src->m[11] +
-		src->m[4] * src->m[3] * src->m[10] +
-		src->m[8] * src->m[2] * src->m[7] -
-		src->m[8] * src->m[3] * src->m[6];
-	
-	tmp.m[11] = -src->m[0] * src->m[5] * src->m[11] +
-		src->m[0] * src->m[7] * src->m[9] +
-		src->m[4] * src->m[1] * src->m[11] -
-		src->m[4] * src->m[3] * src->m[9] -
-		src->m[8] * src->m[1] * src->m[7] +
-		src->m[8] * src->m[3] * src->m[5];
-	
-	tmp.m[15] = src->m[0] * src->m[5] * src->m[10] -
-		src->m[0] * src->m[6] * src->m[9] -
-		src->m[4] * src->m[1] * src->m[10] +
-		src->m[4] * src->m[2] * src->m[9] +
-		src->m[8] * src->m[1] * src->m[6] -
-		src->m[8] * src->m[2] * src->m[5];
-	
-	det = src->m[0] *
-		tmp.m[0] + src->m[1] *
-		tmp.m[4] + src->m[2] *
-		tmp.m[8] + src->m[3] *
-		tmp.m[12];
-	
-	if (det == 0)
-		return NULL;
-	
-	det = 1.f / det;
-	
-	for (i = 0; i < 16; i++)
-		dst->m[i] = tmp.m[i] * det;
-	
-	return dst;
-}
-
-/*
- * Builds an X-axis rotation matrix and stores it in pOut, returns pOut
- */
-static inline struct mat4 *
-m4_rot_x(struct mat4 *dst, const float radians)
-{
-	/*
-	 *		|  1  0       0       0 |
-	 *	M =	|  0  cos(A) -sin(A)  0 |
-	 *		|  0  sin(A)  cos(A)  0 |
-	 *		|  0  0       0       1 |
-	 */
-
-	dst->m[0] = 1.f;
-	dst->m[1] = 0.f;
-	dst->m[2] = 0.f;
-	dst->m[3] = 0.f;
-
-	dst->m[4] = 0.f;
-	dst->m[5] = cosf(radians);
-	dst->m[6] = sinf(radians);
-	dst->m[7] = 0.f;
-	
-	dst->m[8] = 0.f;
-	dst->m[9] = -sinf(radians);
-	dst->m[10] = cosf(radians);
-	dst->m[11] = 0.f;
-	
-	dst->m[12] = 0.f;
-	dst->m[13] = 0.f;
-	dst->m[14] = 0.f;
-	dst->m[15] = 1.f;
+	dst->x = v->x * m->m[0] + v->y * m->m[1] + v->z * m->m[2] + v->w * m->m[3];
+	dst->y = v->x * m->m[4] + v->y * m->m[5] + v->z * m->m[6] + v->w * m->m[7];
+	dst->z = v->x * m->m[8] + v->y * m->m[9] + v->z * m->m[10] + v->w * m->m[11];
+	dst->w = v->x * m->m[12] + v->y * m->m[13] + v->z * m->m[14] + v->w * m->m[15];
 
 	return dst;
 }
+#endif
 
-/*
- * Builds a rotation matrix using the rotation around the Y-axis
- * The result is stored in pOut, pOut is returned.
- */
 static inline struct mat4 *
-m4_rot_y(struct mat4 *dst, const float radians)
+m4_ident(struct mat4 *m)
 {
-	/*
-	 *		|  cos(A)  0   sin(A)  0 |
-	 *	M =	|  0       1   0       0 |
-	 *		| -sin(A)  0   cos(A)  0 |
-	 *		|  0       0   0       1 |
-	 */
-
-	dst->m[0] = cosf(radians);
-	dst->m[1] = 0.f;
-	dst->m[2] = -sinf(radians);
-	dst->m[3] = 0.f;
-	
-	dst->m[4] = 0.f;
-	dst->m[5] = 1.f;
-	dst->m[6] = 0.f;
-	dst->m[7] = 0.f;
-	
-	dst->m[8] = sinf(radians);
-	dst->m[9] = 0.f;
-	dst->m[10] = cosf(radians);
-	dst->m[11] = 0.f;
-
-	dst->m[12] = 0.f;
-	dst->m[13] = 0.f;
-	dst->m[14] = 0.f;
-	dst->m[15] = 1.f;
-
-	return dst;
+	float md[16] = { 0.f };
+	md[0] = md[5] = md[10] = md[15] = 1.f;
+	return m4(m, md);
 }
 
-/*
- * Builds a rotation matrix around the Z-axis. The resulting
- * matrix is stored in pOut. pOut is returned.
- */
 static inline struct mat4 *
-m4_rot_z(struct mat4 *dst, const float radians)
+m4_init_m3(struct mat4 *dst, const struct mat3 *src)
 {
-	/*
-	 *		|  cos(A)  -sin(A)   0   0 |
-	 *	M =	|  sin(A)   cos(A)   0   0 |
-	 *		|  0        0        1   0 |
-	 *		|  0        0        0   1 |
-	 */
-
-	dst->m[0] = cosf(radians);
-	dst->m[1] = sinf(radians);
-	dst->m[2] = 0.f;
-	dst->m[3] = 0.f;
-
-	dst->m[4] = -sinf(radians);
-	dst->m[5] = cosf(radians);
-	dst->m[6] = 0.f;
-	dst->m[7] = 0.f;
-
-	dst->m[8] = 0.f;
-	dst->m[9] = 0.f;
-	dst->m[10] = 1.f;
-	dst->m[11] = 0.f;
-
-	dst->m[12] = 0.f;
-	dst->m[13] = 0.f;
-	dst->m[14] = 0.f;
-	dst->m[15] = 1.f;
-
-	return dst;
+	return m4f(dst,
+		src->mat[0], src->mat[1], src->mat[2], 0.f,
+		src->mat[3], src->mat[4], src->mat[5], 0.f,
+		src->mat[6], src->mat[7], src->mat[8], 0.f,
+		0.f, 0.f, 0.f, 1.f);
 }
 
-/*
- * Converts a quaternion to a rotation matrix,
- * the result is stored in pOut, returns pOut
- */
 static inline struct mat4 *
-m4_rot_quat(struct mat4 *dst, const struct quat *pQ)
+m4_rot_x(struct mat4 *dst, const float rad)
 {
-	const float xx = pQ->x * pQ->x;
-	const float xy = pQ->x * pQ->y;
-	const float xz = pQ->x * pQ->z;
-	const float xw = pQ->x * pQ->w;
-
-	const float yy = pQ->y * pQ->y;
-	const float yz = pQ->y * pQ->z;
-	const float yw = pQ->y * pQ->w;
-
-	const float zz = pQ->z * pQ->z;
-	const float zw = pQ->z * pQ->w;
-
-	dst->m[0] = 1.f - 2.f * (yy + zz);
-	dst->m[1] = 2.f * (xy + zw);
-	dst->m[2] = 2.f * (xz - yw);
-	dst->m[3] = 0.f;
-	
-	dst->m[4] = 2.f * (xy - zw);
-	dst->m[5] = 1.f - 2.f * (xx + zz);
-	dst->m[6] = 2.f * (yz + xw);
-	dst->m[7] = 0.f;
-	
-	dst->m[8] = 2.f * (xz + yw);
-	dst->m[9] = 2.f * (yz - xw);
-	dst->m[10] = 1.f - 2.f * (xx + yy);
-	dst->m[11] = 0.f;
-
-	dst->m[12] = 0.f;
-	dst->m[13] = 0.f;
-	dst->m[14] = 0.f;
-	dst->m[15] = 1.f;
-
-	return dst;
+	return m4f(dst,
+		1.f, 0.f, 0.f, 0.f,
+		0.f, cosf(rad), sinf(rad), 0.f,
+		0.f, -sinf(rad), cosf(rad), 0.f,
+		0.f, 0.f, 0.f, 1.f);
 }
 
-/*
- * Build a rotation matrix from an axis and an angle. Result is stored in pOut.
- * pOut is returned.
- */
+static inline struct mat4 *
+m4_rot_y(struct mat4 *dst, const float rad)
+{
+	return m4f(dst,
+		cosf(rad), 0.f, -sinf(rad), 0.f,
+		0.f, 1.f, 0.f, 0.f,
+		sinf(rad), 0.f, cosf(rad), 0.f,
+		0.f, 0.f, 0.f, 1.f);
+}
+
+static inline struct mat4 *
+m4_rot_z(struct mat4 *dst, const float rad)
+{
+	return m4f(dst,
+		cosf(rad), sinf(rad), 0.f, 0.f,
+		-sinf(rad), cosf(rad), 0.f, 0.f,
+		0.f, 0.f, 1.f, 0.f,
+		0.f, 0.f, 0.f, 1.f);
+}
+
+static inline struct mat4 *
+m4_rot_quat(struct mat4 *dst, const struct quat *q)
+{
+	const float xx = q->x * q->x;
+	const float xy = q->x * q->y;
+	const float xz = q->x * q->z;
+	const float xw = q->x * q->w;
+
+	const float yy = q->y * q->y;
+	const float yz = q->y * q->z;
+	const float yw = q->y * q->w;
+
+	const float zz = q->z * q->z;
+	const float zw = q->z * q->w;
+
+	return m4f(dst,
+		1.f - 2.f * (yy + zz), 2.f * (xy + zw), 2.f * (xz - yw), 0.f,
+		2.f * (xy - zw), 1.f - 2.f * (xx + zz), 2.f * (yz + xw), 0.f,
+		2.f * (xz + yw), 2.f * (yz - xw), 1.f - 2.f * (xx + yy), 0.f,
+		0.f, 0.f, 0.f, 1.f);
+}
+
 static inline struct mat4 *
 m4_rot_axis_angle(struct mat4 *dst, const struct vec3 *axis, float deg)
 {
@@ -546,10 +435,6 @@ m4_rot_axis_angle(struct mat4 *dst, const struct vec3 *axis, float deg)
 	return dst;
 }
 
-/*
- * Builds a rotation matrix from pitch, yaw and roll. The resulting
- * matrix is stored in pOut and pOut is returned
- */
 static inline struct mat4 *
 m4_rot_pitch_yaw_roll(struct mat4 *dst, const float pitch, const float yaw, const float roll)
 {
@@ -558,9 +443,7 @@ m4_rot_pitch_yaw_roll(struct mat4 *dst, const float pitch, const float yaw, cons
 	struct mat4 pitch_matrix;
 
 	m4_rot_y(&yaw_matrix, yaw);
-
 	m4_rot_x(&pitch_matrix, pitch);
-
 	m4_rot_z(&roll_matrix, roll);
 
 	m4_mul(dst, &pitch_matrix, &roll_matrix);
@@ -569,10 +452,6 @@ m4_rot_pitch_yaw_roll(struct mat4 *dst, const float pitch, const float yaw, cons
 	return dst;
 }
 
-/*
- * Builds a translation matrix in the same way as gluLookAt()
- * the resulting matrix is stored in pOut. pOut is returned.
- */
 static inline struct mat4 *
 m4_look_at(struct mat4 *dst, const struct vec3 *eye, const struct vec3 *center, const struct vec3 *up)
 {
@@ -588,123 +467,74 @@ m4_look_at(struct mat4 *dst, const struct vec3 *eye, const struct vec3 *center, 
 
 	v3_cross(&u, &s, &f);
 
-	dst->m[0] = s.x;
-	dst->m[1] = u.x;
-	dst->m[2] = -f.x;
-	dst->m[3] = 0.f;
-	
-	dst->m[4] = s.y;
-	dst->m[5] = u.y;
-	dst->m[6] = -f.y;
-	dst->m[7] = 0.f;
-	
-	dst->m[8] = s.z;
-	dst->m[9] = u.z;
-	dst->m[10] = -f.z;
-	dst->m[11] = 0.f;
-	
-	dst->m[12] = -v3_dot(&s, eye);
-	dst->m[13] = -v3_dot(&u, eye);
-	dst->m[14] = v3_dot(&f, eye);
-	dst->m[15] = 1.f;
-
-	return dst;
+	return m4f(dst,
+		s.x, u.x, -f.x, 0.f,
+		s.y, u.y, -f.y, 0.f,
+		s.z, u.z, -f.z, 0.f,
+		-v3_dot(&s, eye), -v3_dot(&u, eye), v3_dot(&f, eye), 1.f);
 }
 
-/*
- * Builds a scaling matrix
- */
+
 static inline struct mat4 *
 m4_scale(struct mat4 *dst, const float x, const float y, const float z)
 {
-	memset(dst->m, 0, sizeof(float) * 16);
-	
-	dst->m[0] = x;
-	dst->m[5] = y;
-	dst->m[10] = z;
-	dst->m[15] = 1.f;
-
-	return dst;
+	return m4f(dst,
+		  x, 0.f, 0.f, 0.f,
+		0.f,   y, 0.f, 0.f,
+		0.f, 0.f,   z, 0.f,
+		0.f, 0.f, 0.f, 1.f);
 }
 
 static inline struct mat4 *
-m4_scale_v(struct mat4 *dst, struct vec3 *v)
+m4_scale_v(struct mat4 *dst, const struct vec3 *v)
 {
 	return m4_scale(dst, v->x, v->y, v->z);
 }
 
-/*
- * Builds a translation matrix. All other elements in the matrix
- * will be set to zero except for the diagonal which is set to 1.0
- */
 static inline struct mat4 *
 m4_translate(struct mat4 *dst, const float x, const float y, const float z)
 {
-	memset(dst->m, 0, sizeof(float) * 16);
-
-	dst->m[0] = 1.f;
-	dst->m[5] = 1.f;
-	dst->m[10] = 1.f;
-
-	dst->m[12] = x;
-	dst->m[13] = y;
-	dst->m[14] = z;
-	dst->m[15] = 1.f;
-
-	return dst;
+	return m4f(dst,
+		1.f, 0.f, 0.f, 0.f,
+		0.f, 1.f, 0.f, 0.f,
+		0.f, 0.f, 1.f, 0.f,
+		  x,   y,   z, 1.f);
 }
 
 static inline struct mat4 *
-m4_translate_v(struct mat4 *dst, struct vec3 *v)
+m4_translate_v(struct mat4 *dst, const struct vec3 *v)
 {
 	return m4_translate(dst, v->x, v->y, v->z);
 }
 
-/*
- * Get the up vector from a matrix. pIn is the matrix you
- * wish to extract the vector from. pOut is a pointer to the
- * vec3 structure that should hold the resulting vector
- */
 static inline struct vec3 *
 m4_up(struct vec3 *v, const struct mat4 *m)
 {
-	v3_mul_m4(v, &KM_VEC3_POS_Y, m);
+	v3_mul_m4(v, &v3_pos_y, m);
 	return v3_norm(v, v);
 }
 
-/*
- * Extract the forward vector from a 4x4 matrix. The result is
- * stored in pOut. Returns pOut.
- */
 static inline struct vec3 *
 m4_fwd_rh(struct vec3 *v, const struct mat4 *m)
 {
-	v3_mul_m4(v, &KM_VEC3_NEG_Z, m);
+	v3_mul_m4(v, &v3_neg_z, m);
 	return v3_norm(v, v);
 }
 
 static inline struct vec3 *
 m4_fwd_lh(struct vec3 *v, const struct mat4 *m)
 {
-	v3_mul_m4(v, &KM_VEC3_POS_Z, m);
+	v3_mul_m4(v, &v3_pos_z, m);
 	return v3_norm(v, v);
 }
 
-/*
- * Extract the right vector from a 4x4 matrix. The result is
- * stored in pOut. Returns pOut.
- */
 static inline struct vec3 *
 m4_right(struct vec3 *v, const struct mat4 *m)
 {
-	v3_mul_m4(v, &KM_VEC3_POS_X, m);
+	v3_mul_m4(v, &v3_pos_x, m);
 	return v3_norm(v, v);
 }
 
-/*
- * Creates a perspective projection matrix in the
- * same way as gluPerspective
- */
 static inline struct mat4 *
 m4_perspective(struct mat4 *dst, float fov_y, float aspect, float z_near, float z_far)
 {
@@ -712,16 +542,14 @@ m4_perspective(struct mat4 *dst, float fov_y, float aspect, float z_near, float 
 	const float h = cosf(rad) / sinf(rad);
 	const float w = h / aspect;
 
-	memset(dst, 0x0, sizeof(*dst));
-	
-	dst->r[0][0] = w;
-	dst->r[1][1] = h;
-	dst->r[2][2] = z_far / (z_near - z_far);
-	dst->r[2][3] = -1.0f;
-	dst->r[3][2] = -(z_far * z_near) / (z_far - z_near);
-	dst->r[3][3] = 1.f;
-	
-	return dst;
+	const float m22 = z_far / (z_near - z_far);
+	const float m32 = -(z_far * z_near) / (z_far - z_near);
+
+	return m4f(dst,
+		  w, 0.f, 0.f,  0.f,
+		0.f,   h, 0.f,  0.f,
+		0.f, 0.f, m22, -1.f,
+		0.f, 0.f, m32,  1.f);
 }
 
 static inline struct mat4 *
@@ -730,17 +558,15 @@ m4_perspective_nd(struct mat4 *dst, float fov_y, float aspect, float z_near, flo
 	const float rad = 0.5f * deg_to_rad(fov_y / 2.f);
 	const float h = cosf(rad) / sinf(rad);
 	const float w = h / aspect;
-	
-	memset(dst, 0x0, sizeof(*dst));
-	
-	dst->r[0][0] = w;
-	dst->r[1][1] = h;
-	dst->r[2][2] = -(z_far * z_near) / (z_far - z_near);
-	dst->r[2][3] = -1.0f;
-	dst->r[3][2] = -(2.f * z_far * z_near) / (z_far - z_near);
-	dst->r[3][3] = 1.f;
-	
-	return dst;
+
+	const float m22 = -(z_far * z_near) / (z_far - z_near);
+	const float m32 = -(2.f * z_far * z_near) / (z_far - z_near);
+
+	return m4f(dst,
+		  w, 0.f, 0.f,  0.f,
+		0.f,   h, 0.f,  0.f,
+		0.f, 0.f, m22, -1.f,
+		0.f, 0.f, m32,  1.f);
 }
 
 static inline struct mat4 *
@@ -748,52 +574,32 @@ m4_infinite_perspective_rz(struct mat4 *dst, float fov_y, float aspect, float z_
 {
 	const float rad = 0.5f * deg_to_rad(fov_y / 2.f);
 	const float h = cosf(rad) / sinf(rad);
-	
-	memset(dst, 0x0, sizeof(*dst));
-	
-	dst->r[0][0] = h / aspect;
-	dst->r[1][1] = h;
-	dst->r[2][3] = -1.f;
-	dst->r[3][2] = z_near;
 
-	return dst;
+	return m4f(dst,
+		h / aspect, 0.f, 0.f,  0.f,
+		0.f,   h, 0.f,  0.f,
+		0.f, 0.f, 0.f, -1.f,
+		0.f, 0.f, z_near,  0.f);
 }
 
-/*
- * Creates an orthographic projection matrix like glOrtho
- */
 static inline struct mat4 *
 m4_ortho(struct mat4 *dst, float left, float right, float bottom, float top, float z_near, float z_far)
 {
-	memset(dst, 0x0, sizeof(*dst));
-	
-	dst->r[0][0] = 2.f / (right - left);
-	dst->r[1][1] = 2.f / (top - bottom);
-	dst->r[2][2] = 1.f / (z_far - z_near);
-	dst->r[3][0] = -((right + left) / (right - left));
-	dst->r[3][1] = -((top + bottom) / (top - bottom));
-	dst->r[3][2] = -dst->r[2][2] * z_near;
-	dst->r[3][3] = 1.f;
-	
-	return dst;
+	return m4f(dst,
+		2.f / (right - left), 0.f, 0.f,  0.f,
+		0.f, 2.f / (top - bottom), 0.f,  0.f,
+		0.f, 0.f, 1.f / (z_far - z_near), 0.f,
+		-((right + left) / (right - left)), -((top + bottom) / (top - bottom)), -dst->r[2][2] * z_near, 1.f);
 }
 
 static inline struct mat4 *
 m4_ortho_nd(struct mat4 *dst, float left, float right, float bottom, float top, float z_near, float z_far)
 {
-	memset(dst, 0x0, sizeof(*dst));
-	
-	dst->r[0][0] = 2.f / (right - left);
-	dst->r[1][1] = 2.f / (top - bottom);
-	dst->r[2][2] = -2.f / (z_far - z_near);
-	dst->r[3][0] = -((right + left) / (right - left));
-	dst->r[3][1] = -((top + bottom) / (top - bottom));
-	dst->r[3][2] = -((z_far + z_near) / (z_far - z_near));
-	dst->r[3][3] = 1.f;
-	
-	return dst;
+	return m4f(dst,
+		2.f / (right - left), 0.f, 0.f,  0.f,
+		0.f, 2.f / (top - bottom), 0.f,  0.f,
+		0.f, 0.f, -2.f / (z_far - z_near), 0.f,
+		-((right + left) / (right - left)), -((top + bottom) / (top - bottom)), -((z_far + z_near) / (z_far - z_near)), 1.f);
 }
-
-#endif
 
 #endif /* _NE_MATH_MAT4_H_ */

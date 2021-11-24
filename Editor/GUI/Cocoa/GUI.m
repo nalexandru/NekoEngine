@@ -9,26 +9,15 @@
 #import "SceneHierarchy.h"
 #import "EditorController.h"
 
+static NSAlert *_progressAlert;
 static EditorController *_controller;
 
 static inline bool _CreateMenu(void);
-
-#ifndef __APPLE__
-#import <Cocoa/Cocoa.h>
-static inline bool _InitCocoa(void);
-#endif
-
-static NSAlert *_progressAlert;
 
 bool
 Ed_CreateGUI(void)
 {
 	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-
-#ifndef __APPLE__
-	if (!_InitCocoa())
-		return false;
-#endif
 
 	_controller = [[EditorController alloc] init];
 
@@ -125,12 +114,7 @@ Ed_TermGUI(void)
 static inline bool
 _CreateMenu(void)
 {
-
-#ifdef __APPLE__
-#	define SEPARATOR(x) [x addItem: [NSMenuItem separatorItem]]
-#else
-#	define SEPARATOR(x) (void)x;
-#endif
+#define SEPARATOR(x) [x addItem: [NSMenuItem separatorItem]]
 
 #define MENU(title) \
 	menuItem = [[[NSMenuItem alloc] init] autorelease];	\
@@ -160,9 +144,7 @@ _CreateMenu(void)
 
 	// Application Menu
 	menuItem = [[[NSMenuItem alloc] init] autorelease];
-#ifndef __APPLE__
-	[menuItem setTitle: @"Info"];
-#endif
+
 	[mainMenu addItem: menuItem];
 	[NSApp setMainMenu: mainMenu];
 
@@ -206,37 +188,3 @@ _CreateMenu(void)
 
 	return true;
 }
-
-#ifndef __APPLE__
-void
-Ed_ProcessEvents(void)
-{
-	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-
-	while (1) {
-		NSEvent *e = [NSApp nextEventMatchingMask: NSAnyEventMask
-										untilDate: [NSDate distantPast]
-										   inMode: NSDefaultRunLoopMode
-										  dequeue: YES];
-
-		if (!e)
-			break;
-
-		[NSApp sendEvent: e];
-	}
-
-	[pool drain];
-}
-
-static inline bool
-_InitCocoa(void)
-{
-	//NSApplicationLoad();
-	[NSApplication sharedApplication];
-	[NSApp finishLaunching];
-
-	//[NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
-
-	return true;
-}
-#endif

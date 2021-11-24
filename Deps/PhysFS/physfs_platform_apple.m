@@ -13,6 +13,7 @@
 
 #ifdef PHYSFS_PLATFORM_APPLE
 
+#include <AvailabilityMacros.h>
 #include <Foundation/Foundation.h>
 
 #include "physfs_internal.h"
@@ -164,7 +165,11 @@ void __PHYSFS_platformDetectAvailableCDs(PHYSFS_StringCallback cb, void *data)
     struct statfs *mntbufp;
     int i, mounts;
 
-    if (IOMasterPort(MACH_PORT_NULL, &masterPort) != KERN_SUCCESS)
+#if defined(MAC_OS_VERSION_12_0) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_VERSION_12_0
+	if (IOMainPort(MACH_PORT_NULL, &masterPort) != KERN_SUCCESS)
+#else
+	if (IOMasterPort(MACH_PORT_NULL, &masterPort) != KERN_SUCCESS)
+#endif
         BAIL(PHYSFS_ERR_OS_ERROR, ) /*return void*/;
 
     mounts = getmntinfo(&mntbufp, MNT_WAIT);  /* NOT THREAD SAFE! */
@@ -185,4 +190,3 @@ void __PHYSFS_platformDetectAvailableCDs(PHYSFS_StringCallback cb, void *data)
 #endif /* PHYSFS_PLATFORM_APPLE */
 
 /* end of physfs_platform_apple.m ... */
-

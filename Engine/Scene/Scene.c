@@ -65,6 +65,7 @@ struct Scene *Scn_activeScene = NULL;
 static inline bool _InitScene(struct Scene *s);
 static void _LoadJob(int worker, struct Scene *scn);
 static inline void _ReadSceneInfo(struct Scene *s, struct Stream *stm, char *data, wchar_t *buff);
+static inline void _ReadTerrain(struct Scene *s, struct Stream *stm, char *data);
 static inline void _ReadEntity(struct Scene *s, char *name, struct Stream *stm, char *data, wchar_t *wbuff, struct Array *args);
 static inline uint64_t _DataOffset(const struct Scene *s);
 static int32_t _SortDrawables(const struct Drawable *a, const struct Drawable *b);
@@ -120,6 +121,9 @@ Scn_UnloadScene(struct Scene *s)
 	Sys_Free(s->collect.blendedDrawableArrays);
 
 	Rt_TermArray(&s->collect.blendedDrawables);
+
+	if (s->environmentMap != E_INVALID_HANDLE)
+		E_UnloadResource(s->environmentMap);
 
 	Re_Destroy(s->sceneData);
 
@@ -340,6 +344,8 @@ _LoadJob(int wid, struct Scene *s)
 
 		if (!strncmp(line, "SceneInfo", len)) {
 			_ReadSceneInfo(s, &stm, data, wbuff);
+		} else if (!strncmp(line, "Terrain", len)) {
+			_ReadTerrain(s, &stm, data);
 		} else if (!strncmp(line, "EndSceneInfo", len)) {
 			//
 		} else if (strstr(line, "Entity")) {
@@ -380,8 +386,8 @@ _ReadSceneInfo(struct Scene *s, struct Stream *stm, char *data, wchar_t *buff)
 			char *type = strchr(line, '=') + 1;
 			mbstowcs(s->name, type, sizeof(s->name) / sizeof(wchar_t));
 		} else if (!strncmp(line, "EnvironmentMap", 14)) {
-//			char *file = strchr(line, '=') + 1;
-//			s->environmentMap = E_LoadResource(file, RES_TEXTURE);
+			char *file = strchr(line, '=') + 1;
+			s->environmentMap = E_LoadResource(file, RES_TEXTURE);
 		} else if (!strncmp(line, "MaxLights", 9)) {
 			s->maxLights = atoi(strchr(line, '=') + 1);
 		} else if (!strncmp(line, "EndSceneInfo", len)) {
@@ -390,6 +396,38 @@ _ReadSceneInfo(struct Scene *s, struct Stream *stm, char *data, wchar_t *buff)
 	}
 
 	_InitScene(s);
+}
+
+void
+_ReadTerrain(struct Scene *s, struct Stream *stm, char *data)
+{
+	struct TerrainCreateInfo tci = { 0 };
+	
+	while (!E_EndOfStream(stm)) {
+		char *line = E_ReadStreamLine(stm, data, BUFF_SZ);
+		size_t len;
+
+		if (!*(line = Rt_SkipWhitespace(line)) || line[0] == '#')
+			continue;
+		
+		len = strlen(line);
+
+		if (!strncmp(line, "TileSize", 8)) {
+			tci.tileSize = atoi(strchr(line, '=') + 1);
+		} else if (!strncmp(line, "TileCount", 9)) {
+			tci.tileCount = atoi(strchr(line, '=') + 1);
+		} else if (!strncmp(line, "Material", 8)) {
+			tci.material = E_LoadResource(strchr(line, '=') + 1, RES_MATERIAL);
+		} else if (!strncmp(line, "Map", 3)) {
+			tci.mapFile = Rt_StrDup(strchr(line, '=') + 1, MH_Asset);
+		} else if (!strncmp(line, "MaxHeight", 9)) {
+			tci.maxHeight = (float)atof(strchr(line, '=') + 1);
+		} else if (!strncmp(line, "EndTerrain", len)) {
+			break;
+		}
+	}
+	
+	Scn_CreateTerrain(s, &tci);
 }
 
 void

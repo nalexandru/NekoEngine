@@ -7,7 +7,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (c) 2015-2020, Alexandru Naiman
+ * Copyright (c) 2015-2021, Alexandru Naiman
  *
  * All rights reserved.
  *
@@ -183,6 +183,16 @@ v3_add(struct vec3 *dst, const struct vec3 *v1, const struct vec3 *v2)
 	return dst;
 }
 
+static inline struct vec3 *
+v3_adds(struct vec3 *dst, const struct vec3 *v1, const float s)
+{
+	dst->x = v1->x + s;
+	dst->y = v1->y + s;
+	dst->z = v1->z + s;
+
+	return dst;
+}
+
 /*
  * Subtracts 2 vectors and returns the result. The result is stored in
  * pOut.
@@ -198,6 +208,16 @@ v3_sub(struct vec3 *dst, const struct vec3 *v1, const struct vec3 *v2)
 }
 
 static inline struct vec3 *
+v3_subs(struct vec3 *dst, const struct vec3 *v1, const float s)
+{
+	dst->x = v1->x - s;
+	dst->y = v1->y - s;
+	dst->z = v1->z - s;
+
+	return dst;
+}
+
+static inline struct vec3 *
 v3_mul(struct vec3 *dst, const struct vec3 *v1, const struct vec3 *v2)
 {
 	dst->x = v1->x * v2->x;
@@ -208,49 +228,21 @@ v3_mul(struct vec3 *dst, const struct vec3 *v1, const struct vec3 *v2)
 }
 
 static inline struct vec3 *
+v3_muls(struct vec3 *dst, const struct vec3 *v1, const float s)
+{
+	dst->x = v1->x * s;
+	dst->y = v1->y * s;
+	dst->z = v1->z * s;
+
+	return dst;
+}
+
+static inline struct vec3 *
 v3_div(struct vec3 *dst, const struct vec3 *v1, const struct vec3 *v2)
 {
 	dst->x = v1->x / v2->x;
 	dst->y = v1->y / v2->y;
 	dst->z = v1->z / v2->z;
-
-	return dst;
-}
-
-/*
- * Adds 2 vectors and returns the result. The resulting
- * vector is stored in pOut.
- */
-static inline struct vec3 *
-v3_adds(struct vec3 *dst, const struct vec3 *v, const float s)
-{
-	dst->x = v->x + s;
-	dst->y = v->y + s;
-	dst->z = v->z + s;
-
-	return dst;
-}
-
-/*
- * Subtracts 2 vectors and returns the result. The result is stored in
- * pOut.
- */
-static inline struct vec3 *
-v3_subs(struct vec3 *dst, const struct vec3 *v, const float s)
-{
-	dst->x = v->x - s;
-	dst->y = v->y - s;
-	dst->z = v->z - s;
-
-	return dst;
-}
-
-static inline struct vec3 *
-v3_muls(struct vec3 *dst, const struct vec3 *v, const float s)
-{
-	dst->x = v->x * s;
-	dst->y = v->y * s;
-	dst->z = v->z * s;
 
 	return dst;
 }
@@ -295,8 +287,7 @@ v3_cross(struct vec3 *dst, const struct vec3 *v1, const struct vec3 *v2)
 static inline struct vec3 *
 v3_scale(struct vec3 *dst, const struct vec3 *src, const float s)
 {
-	v3_norm(dst, src);
-	return v3_muls(dst, dst, s);
+	return v3_muls(dst, v3_norm(dst, src), s);
 }
 
 /*
@@ -336,9 +327,7 @@ static inline float
 v3_distance(const struct vec3 *v1, const struct vec3 *v2)
 {
 	struct vec3 diff;
-
 	v3_sub(&diff, v2, v1);
-
 	return fabsf(v3_len(&diff));
 }
 
@@ -431,8 +420,7 @@ static inline struct vec3 *
 v3_reflect(struct vec3 *dst, const struct vec3 *src, const struct vec3 *normal)
 {
 	struct vec3 tmp;
-	return v3_sub(dst, src,
-		v3_scale(&tmp, normal, 2.f * v3_dot(src, normal)));
+	return v3_sub(dst, src, v3_scale(&tmp, normal, 2.f * v3_dot(src, normal)));
 }
 
 /*
@@ -462,9 +450,7 @@ v3_swap(struct vec3 *a, struct vec3 *b)
 static inline bool
 v3_equal(const struct vec3 *a, const struct vec3 *b)
 {
-	return float_equal(a->x, b->x) &&
-		float_equal(a->y, b->y) &&
-		float_equal(a->z, b->z);
+	return float_equal(a->x, b->x) && float_equal(a->y, b->y) && float_equal(a->z, b->z);
 }
 
 static inline struct vec3 *
@@ -491,12 +477,11 @@ v3_mul_m4(struct vec3 *dst, const struct vec3 *v, const struct mat4 *m)
 	return dst;
 }
 
-static const struct vec3 KM_VEC3_POS_Z = { 0, 0, 1 };
-static const struct vec3 KM_VEC3_NEG_Z = { 0, 0, -1 };
-static const struct vec3 KM_VEC3_POS_Y = { 0, 1, 0 };
-static const struct vec3 KM_VEC3_NEG_Y = { 0, -1, 0 };
-static const struct vec3 KM_VEC3_NEG_X = { -1, 0, 0 };
-static const struct vec3 KM_VEC3_POS_X = { 1, 0, 0 };
-static const struct vec3 KM_VEC3_ZERO = { 0, 0, 0 };
+static const struct vec3 v3_pos_z = { 0, 0, 1 };
+static const struct vec3 v3_neg_z = { 0, 0, -1 };
+static const struct vec3 v3_pos_y = { 0, 1, 0 };
+static const struct vec3 v3_neg_y = { 0, -1, 0 };
+static const struct vec3 v3_neg_x = { -1, 0, 0 };
+static const struct vec3 v3_pos_x = { 1, 0, 0 };
 
 #endif /* _NE_MATH_VEC3_H_ */

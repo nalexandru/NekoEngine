@@ -12,6 +12,8 @@
 #include <Runtime/Runtime.h>
 #include <Engine/Application.h>
 
+#include "EngineRes.h"
+
 #define IO_MODULE L"I/O"
 
 extern unsigned char engine_res[];
@@ -228,6 +230,12 @@ E_MountMemory(const char *name, const void *ptr, uint64_t size, const char *poin
 	return true;
 }
 
+bool
+E_Unmount(const char *name)
+{
+	return PHYSFS_unmount(name);
+}
+
 const char **
 E_ListFiles(const char *dir)
 {
@@ -332,12 +340,14 @@ E_FileStream(const char *path, FileOpenMode mode, struct Stream *stm)
 		stm->type = ST_File;
 	}
 
-	return stm->ptr || stm->f;
+	stm->open = stm->ptr || stm->f;
+	return stm->open;
 }
 
 bool
 E_MemoryStream(void *buff, uint64_t size, struct Stream *stm)
 {
+	stm->open = false;
 	return false;
 }
 
@@ -394,11 +404,9 @@ E_InitIOSystem(void)
 	if (!PHYSFS_mount(dir, "/Config", 1))
 		return false;
 
-	/*if (!PHYSFS_mountMemory(engine_res, engine_res_size, 0,
-		"engine_res.zip", "/system", 0))
-		Sys_LogEntry(IO_MODULE, LOG_CRITICAL,
-			L"Failed to load builtin resources: %ls",
-			PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));*/
+	if (!PHYSFS_mountMemory(EngineRes_zip, sizeof(EngineRes_zip), 0, "EngineRes.zip", "/", 0))
+		Sys_LogEntry(IO_MODULE, LOG_CRITICAL, L"Failed to load builtin resources: %ls",
+										PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
 
 	return true;
 }
@@ -406,8 +414,8 @@ E_InitIOSystem(void)
 void
 E_TermIOSystem(void)
 {
-//	if (!PHYSFS_unmount("engine_res.zip"))
-//		Sys_LogEntry(IO_MODULE, LOG_DEBUG, L"Failed to unmount engine_res.zip");
+	if (!PHYSFS_unmount("EngineRes.zip"))
+		Sys_LogEntry(IO_MODULE, LOG_DEBUG, L"Failed to unmount EngineRes.zip");
 
 	PHYSFS_deinit();
 }

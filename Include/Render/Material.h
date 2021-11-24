@@ -88,6 +88,7 @@ struct MaterialRenderConstants
 };
 
 extern struct RenderPassDesc *Re_MaterialRenderPassDesc;
+extern struct RenderPassDesc *Re_TransparentMaterialRenderPassDesc;
 
 bool Re_InitMaterial(Handle res, struct Material *mat);
 void Re_TermMaterial(struct Material *mat);

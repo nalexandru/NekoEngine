@@ -189,7 +189,6 @@ In_Update(void)
 		return;
 
 	if (__InSys_rawMouseAxis) {
-		In_SetPointerPosition(*E_screenWidth / 2, *E_screenHeight / 2);
 		In_mouseAxis[0] = In_mouseAxis[1] = 0.f;
 	} else {
 		uint16_t x = 0, y = 0, hwidth = *E_screenWidth / 2, hheight = *E_screenHeight / 2;
@@ -217,8 +216,6 @@ In_EnableMouseAxis(bool enable)
 			In_CapturePointer(true);
 			In_ShowPointer(false);
 		}
-
-		In_SetPointerPosition(*E_screenWidth / 2, *E_screenHeight / 2);
 	} else {
 		if (In_pointerCaptured) {
 			In_CapturePointer(false);
@@ -226,6 +223,7 @@ In_EnableMouseAxis(bool enable)
 		}
 	}
 
+	In_SetPointerPosition(*E_screenWidth / 2, *E_screenHeight / 2);
 }
 
 enum Axis

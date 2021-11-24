@@ -7,17 +7,12 @@
 #include <Engine/Entity.h>
 #include <Engine/Component.h>
 
-struct EntityComp
-{
-	CompTypeId type;
-	CompHandle handle;
-};
-
 struct Entity
 {
 	size_t id;
 	uint32_t comp_count;
 	struct EntityComp comp[MAX_ENTITY_COMPONENTS];
+	uint64_t hash;
 	wchar_t name[MAX_ENTITY_NAME];
 };
 

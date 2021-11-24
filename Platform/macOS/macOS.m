@@ -86,7 +86,7 @@ Sys_ProcessEvents(void)
 							
 			if (!e)
 				break;
-				
+
 			[NSApp sendEvent: e];
 		}
 	}

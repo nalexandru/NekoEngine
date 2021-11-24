@@ -154,7 +154,7 @@ void D3D12_DestroyPipeline(struct RenderDevice *dev, struct Pipeline *pipeline);
 struct Swapchain *D3D12_CreateSwapchain(struct RenderDevice *dev, void *surface, bool verticalSync);
 void D3D12_DestroySwapchain(struct RenderDevice *dev, struct Swapchain *sw);
 void *D3D12_AcquireNextImage(struct RenderDevice *, struct Swapchain *sw);
-bool D3D12_Present(struct RenderDevice *dev, struct RenderContext *ctx, struct Swapchain *sw, void *image);
+bool D3D12_Present(struct RenderDevice *dev, struct RenderContext *ctx, struct Swapchain *sw, void *image, struct Semaphore *sem);
 enum TextureFormat D3D12_SwapchainFormat(struct Swapchain *sw);
 struct Texture *D3D12_SwapchainTexture(struct Swapchain *sw, void *image);
 void D3D12_ScreenResized(struct RenderDevice *dev, struct Swapchain *sw);

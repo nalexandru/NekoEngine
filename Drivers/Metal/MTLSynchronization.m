@@ -20,6 +20,24 @@ MTL_WaitSemaphore(id<MTLDevice> dev, dispatch_semaphore_t s, uint64_t timeout)
 	return dispatch_semaphore_wait(s, timeout) == 0;
 }*/
 
+bool
+MTL_WaitSemaphore(id<MTLDevice> dev, id<MTLFence> f, uint64_t value, uint64_t timeout)
+{
+	return false;
+}
+
+bool
+MTL_WaitSemaphores(id<MTLDevice> dev, uint32_t count, id<MTLFence> *f, uint64_t *values, uint64_t timeout)
+{
+	return false;
+}
+
+bool
+MTL_SignalSemaphore(id<MTLDevice> dev, id<MTLFence> f, uint64_t value)
+{
+	return false;
+}
+
 void
 MTL_DestroySemaphore(id<MTLDevice> dev, id<MTLFence> fence)
 {

@@ -9,6 +9,8 @@
 #include <System/Thread.h>
 #include <System/AtomicLock.h>
 
+#define JOBMOD	L"JobSystem"
+
 #define ST_WAITING	0
 #define ST_RUNNING	1
 #define ST_DONE		2
@@ -199,10 +201,11 @@ static void
 _ThreadProc(void *args)
 {
 	static volatile _Atomic uint32_t workerId = 0;
-	uint32_t id = atomic_fetch_add(&workerId, 1);
+	uint32_t id = atomic_fetch_add_explicit(&workerId, 1, memory_order_acq_rel);
 	struct Job job = { 0, 0 };
 
 	_workerId = id;
+	Sys_LogEntry(JOBMOD, LOG_INFORMATION, L"Worker %d started", _workerId);
 
 	while (!_shutdown) {
 		Sys_LockFutex(_wakeLock);

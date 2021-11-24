@@ -16,7 +16,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
 
 if (NOT MSVC)
-	set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g2 -march=native -mtune=native -D_DEBUG -Wall -Wno-switch -Wno-int-in-bool-context -O0 -DRE_BUILTIN")
+	set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g2 -march=native -mtune=native -D_DEBUG -Wall -Wno-switch -Wno-int-in-bool-context -Wno-missing-braces -O0 -DRE_BUILTIN")
 	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DNDEBUG -g0 -Ofast -fomit-frame-pointer -march=native -mtune=native -Werror -DRE_BUILTIN")
 	set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} -g2 -Ofast -march=native -mtune=native -Wall -O0 -DRE_BUILTIN")
 
@@ -48,12 +48,12 @@ else ()
 endif ()
 
 add_compile_definitions(RENDER_DRIVER_BUILTIN)
-add_compile_definitions(AUDIO_DRIVER_BUILTIN)
 
 include_directories(Include)
 include_directories(Deps)
 include_directories(Deps/PhysFS)
 include_directories(Deps/Lua)
+include_directories(Deps/OpenAL/include)
 include_directories($ENV{VULKAN_SDK}/include)
 
 if (WIN32)
@@ -67,8 +67,11 @@ else ()
 	link_directories(/usr/X11R6/lib)
 endif ()
 
+add_subdirectory(Tools/bin2c)
+
 add_subdirectory(Deps/PhysFS)
 add_subdirectory(Deps/Lua)
+add_subdirectory(Deps/OpenAL)
 
 add_subdirectory(Engine)
 
@@ -78,7 +81,6 @@ else ()
 	add_subdirectory(Platform/UNIX)
 endif ()
 
-add_subdirectory(Drivers/OpenAL)
 add_subdirectory(Drivers/Vulkan)
 
 add_subdirectory(Application)

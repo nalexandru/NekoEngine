@@ -91,6 +91,8 @@
     <ClInclude Include="..\Include\Math\vec2.h" />
     <ClInclude Include="..\Include\Math\vec3.h" />
     <ClInclude Include="..\Include\Math\vec4.h" />
+    <ClInclude Include="..\Include\Math\vmx128\mat4_vmx128.h" />
+    <ClInclude Include="..\Include\Math\vmx128\vec4_vmx128.h" />
     <ClInclude Include="..\Include\Render\Components\ModelRender.h" />
     <ClInclude Include="..\Include\Render\DestroyResource.h" />
     <ClInclude Include="..\Include\Render\Driver\Context.h" />
@@ -134,6 +136,7 @@
     <ClInclude Include="..\Platform\Win32\Compat\stdatomic.h" />
     <ClInclude Include="..\Platform\Win32\Win32Platform.h" />
     <ClInclude Include="Engine\ECS.h" />
+    <ClInclude Include="Render\Internal.h" />
     <ClInclude Include="Script\Interface.h" />
     <ClInclude Include="UI\Internal.h" />
   </ItemGroup>
@@ -215,7 +218,10 @@
     <ClCompile Include="Engine\Engine.c" />
     <ClCompile Include="Engine\Entity.c" />
     <ClCompile Include="Engine\Event.c" />
-    <ClCompile Include="Engine\IO.c" />
+    <ClCompile Include="Engine\IO.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)</AdditionalIncludeDirectories>
+    </ClCompile>
     <ClCompile Include="Engine\Job.c" />
     <ClCompile Include="Engine\Resource.c" />
     <ClCompile Include="Input\Input.c" />
@@ -232,13 +238,17 @@
     <ClCompile Include="Render\Pass\Depth.c" />
     <ClCompile Include="Render\Pass\Forward.c" />
     <ClCompile Include="Render\Pass\LightCulling.c" />
+    <ClCompile Include="Render\Pass\Opaque.c" />
+    <ClCompile Include="Render\Pass\Sky.c" />
     <ClCompile Include="Render\Pass\SSAO.c" />
+    <ClCompile Include="Render\Pass\Transparent.c" />
     <ClCompile Include="Render\Render.c" />
     <ClCompile Include="Render\Systems.c" />
     <ClCompile Include="Scene\Camera.c" />
     <ClCompile Include="Scene\Light.c" />
     <ClCompile Include="Scene\Scene.c" />
     <ClCompile Include="Scene\ScriptHost.c" />
+    <ClCompile Include="Scene\Terrain.c" />
     <ClCompile Include="Scene\Transform.c" />
     <ClCompile Include="Script\l_Engine.c" />
     <ClCompile Include="Script\l_Render.c" />
@@ -268,13 +278,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
     <EnableASAN>false</EnableASAN>
@@ -293,14 +303,14 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(SolutionDir)Include;$(SolutionDir)Deps;$(SolutionDir)Deps\PhysFS;$(SolutionDir)Deps\Lua;$(SolutionDir)Platform\Win32\Compat;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)Include;$(SolutionDir)Deps;$(SolutionDir)Deps\PhysFS;$(SolutionDir)Deps\Lua;$(SolutionDir)Deps\OpenAL\include;$(SolutionDir)Platform\Win32\Compat;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)\bin\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\build\$(Configuration)\$(ProjectName)\</IntDir>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)Include;$(SolutionDir)Deps;$(SolutionDir)Deps\PhysFS;$(SolutionDir)Deps\Lua;$(SolutionDir)Platform\Win32\Compat;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)Include;$(SolutionDir)Deps;$(SolutionDir)Deps\PhysFS;$(SolutionDir)Deps\Lua;$(SolutionDir)Deps\OpenAL\include;$(SolutionDir)Platform\Win32\Compat;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)\bin\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\build\$(Configuration)\$(ProjectName)\</IntDir>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
@@ -331,6 +341,13 @@
       <AdditionalDependencies>
       </AdditionalDependencies>
     </Lib>
+    <PreBuildEvent>
+      <Command>powershell "Compress-Archive -Force $(SolutionDir)Resources\Engine\* $(IntDir)EngineRes.zip"
+$(OutDir)bin2c.exe -c $(IntDir)EngineRes.zip $(IntDir)EngineRes.h</Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>Generating resources...</Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -366,6 +383,13 @@
       <AdditionalDependencies>
       </AdditionalDependencies>
     </Lib>
+    <PreBuildEvent>
+      <Command>powershell "Compress-Archive -Force $(SolutionDir)Resources\Engine\* $(IntDir)EngineRes.zip"
+$(OutDir)bin2c.exe -c $(IntDir)EngineRes.zip $(IntDir)EngineRes.h</Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>Generating resources...</Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

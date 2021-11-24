@@ -9,6 +9,8 @@
 #include <Render/Graph/Pass.h>
 #include <Render/Graph/Graph.h>
 
+#include "Internal.h"
+
 uint32_t Re_frameId = 0;
 struct RenderGraph *Re_activeGraph = NULL;
 
@@ -21,7 +23,10 @@ Re_RenderFrame(void)
 
 		Re_AddPass(Re_activeGraph, &RP_depthPrePass);
 	//	Re_AddPass(Re_activeGraph, &RP_lightCulling);
-		Re_AddPass(Re_activeGraph, &RP_forward);
+	//	Re_AddPass(Re_activeGraph, &RP_forward);
+		Re_AddPass(Re_activeGraph, &RP_opaque);
+		Re_AddPass(Re_activeGraph, &RP_sky);
+		Re_AddPass(Re_activeGraph, &RP_transparent);
 		Re_AddPass(Re_activeGraph, &RP_ui);
 	}
 	///////////////////////////////////
@@ -43,7 +48,7 @@ Re_RenderFrame(void)
 	Re_BuildGraph(Re_activeGraph, Re_SwapchainTexture(Re_swapchain, image));
 	Re_ExecuteGraph(Re_activeGraph);
 
-	Re_Present(Re_swapchain, image);
+	Re_Present(Re_swapchain, image, Re_activeGraph->semaphore);
 
 	Re_frameId = (Re_frameId + 1) % RE_NUM_FRAMES;
 }

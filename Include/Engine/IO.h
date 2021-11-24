@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include <Engine/Types.h>
+#include <System/Memory.h>
 
 typedef enum FileOpenMode
 {
@@ -42,6 +43,7 @@ struct Stream
 	uint64_t pos, size;
 	File f;
 	enum StreamType type;
+	bool open;
 };
 
 File		  E_OpenFile(const char *path, FileOpenMode mode);
@@ -60,6 +62,7 @@ bool		  E_FileExists(const char *path);
 void		  E_CloseFile(File file);
 bool		  E_Mount(const char *path, const char *point);
 bool		  E_MountMemory(const char *name, const void *ptr, uint64_t size, const char *point);
+bool		  E_Unmount(const char *name);
 const char	**E_ListFiles(const char *dir);
 bool		  E_IsDirectory(const char *path);
 void		  E_FreeFileList(const char **list);
@@ -77,65 +80,6 @@ bool		  E_InitIOSystem(void);
 void		  E_TermIOSystem(void);
 
 // Inline functions
-static inline int64_t
-E_ReadStream(struct Stream *stm, void *ptr, int64_t size)
-{
-	if (stm->ptr) {
-		memmove(ptr, stm->ptr + stm->pos, (size_t)size);
-		stm->pos += size;
-		return size;
-	} else if (stm->f) {
-		return E_ReadFile(stm->f, ptr, size);
-	} else {
-		return -1;
-	}
-}
-
-static inline char *
-E_ReadStreamLine(struct Stream *stm, char *ptr, int64_t size)
-{
-	char *ret = NULL;
-
-	if (stm->ptr) {
-		if (stm->pos == stm->size)
-			return NULL;
-
-		ret = ptr;
-
-		while (size && (stm->pos < stm->size)) {
-			*ptr = *(stm->ptr + stm->pos++);
-
-			if (*ptr == '\n') {
-				*ptr-- = 0x0;
-				if (*ptr == '\r')
-					*ptr = 0x0;
-				break;
-			}
-
-			++ptr;
-			--size;
-		}
-	} else if (stm->f) {
-		ret = E_FGets(stm->f, ptr, size);
-	}
-
-	return ret;
-}
-
-static inline int64_t
-E_WriteStream(struct Stream *stm, void *ptr, int64_t size)
-{
-	if (stm->ptr) {
-		memmove(stm->ptr + stm->pos, ptr, (size_t)size);
-		stm->pos += size;
-		return size;
-	} else if (stm->f) {
-		return E_WriteFile(stm->f, ptr, size);
-	} else {
-		return -1;
-	}
-}
-
 static inline int64_t
 E_StreamTell(const struct Stream *stm)
 {
@@ -186,5 +130,106 @@ E_EndOfStream(const struct Stream *stm)
 	else
 		return true;
 }
+
+static inline int64_t
+E_ReadStream(struct Stream *stm, void *ptr, int64_t size)
+{
+	if (stm->ptr) {
+		memmove(ptr, stm->ptr + stm->pos, (size_t)size);
+		stm->pos += size;
+		return size;
+	} else if (stm->f) {
+		return E_ReadFile(stm->f, ptr, size);
+	} else {
+		return -1;
+	}
+}
+
+static inline char *
+E_ReadStreamLine(struct Stream *stm, char *ptr, int64_t size)
+{
+	char *ret = NULL;
+
+	if (stm->ptr) {
+		if (stm->pos == stm->size)
+			return NULL;
+
+		ret = ptr;
+
+		while (size && (stm->pos < stm->size)) {
+			*ptr = *(stm->ptr + stm->pos++);
+
+			if (*ptr == '\n') {
+				*ptr-- = 0x0;
+				if (*ptr == '\r')
+					*ptr = 0x0;
+				break;
+			}
+
+			++ptr;
+			--size;
+		}
+	} else if (stm->f) {
+		ret = E_FGets(stm->f, ptr, size);
+	}
+
+	return ret;
+}
+
+static inline int64_t
+E_ReadFullStream(struct Stream *stm, void *ptr)
+{
+	size_t size = (size_t)E_StreamLength(stm);
+	if (stm->ptr) {
+		stm->pos = 0;
+		memmove(ptr, stm->ptr + stm->pos, size);
+		stm->pos += size;
+		return size;
+	} else if (stm->f) {
+		E_FSeek(stm->f, 0, IO_SEEK_SET);
+		return E_ReadFile(stm->f, ptr, size);
+	} else {
+		return -1;
+	}
+}
+
+static inline void *
+E_ReadStreamBlob(struct Stream *stm, enum MemoryHeap heap)
+{
+	size_t size = (size_t)E_StreamLength(stm);
+	if (!stm->open || !size)
+		return NULL;
+
+	void *blob = Sys_Alloc(size, 1, heap);
+
+	if (stm->ptr) {
+		stm->pos = 0;
+		memmove(blob, stm->ptr + stm->pos, size);
+		stm->pos += size;
+	} else if (stm->f) {
+		E_FSeek(stm->f, 0, IO_SEEK_SET);
+		E_ReadFile(stm->f, blob, size);
+	} else {
+		Sys_Free(blob);
+		return NULL;
+	}
+
+	return blob;
+}
+
+static inline int64_t
+E_WriteStream(struct Stream *stm, void *ptr, int64_t size)
+{
+	if (stm->ptr) {
+		memmove(stm->ptr + stm->pos, ptr, (size_t)size);
+		stm->pos += size;
+		return size;
+	} else if (stm->f) {
+		return E_WriteFile(stm->f, ptr, size);
+	} else {
+		return -1;
+	}
+}
+
 
 #endif /* _NE_ENGINE_IO_H_ */

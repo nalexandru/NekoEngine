@@ -1,4 +1,5 @@
 #include <Scene/Scene.h>
+#include <Scene/Camera.h>
 #include <Scene/Transform.h>
 #include <Scene/Components.h>
 #include <Engine/Job.h>
@@ -24,11 +25,11 @@ struct ApplicationInfo App_applicationInfo =
 
 static uint64_t _sceneLoadedEvt;
 
-struct PlayerMovement
+struct FPSController
 {
 	COMPONENT_BASE;
 
-	float movementSpeed, rotationSpeed;
+	float movementSpeed, hRotationSpeed, vRotationSpeed;
 	uint32_t moveForward, moveRight, moveUp, rotateHorizontal, rotateVertical;
 };
 
@@ -42,13 +43,13 @@ struct Statistics
 	wchar_t ftBuff[30];
 };
 
-static bool App_InitPlayerMovement(struct PlayerMovement *comp, const void **args);
-static void App_TermPlayerMovement(struct PlayerMovement *comp) { }
-static void App_PlayerMovement(void **comp, void *args);
+static bool App_InitFlyController(struct FPSController *comp, const void **args);
+static void App_TermFlyController(struct FPSController *comp) { }
+static void App_FlyController(void **comp, void *args);
 static void App_SceneLoaded(void *user, void *args);
 
-static bool App_InitStatistics(struct PlayerMovement *comp, const void **args) { return true; }
-static void App_TermStatistics(struct PlayerMovement *comp) { }
+static bool App_InitStatistics(struct Statistics *comp, const void **args) { return true; }
+static void App_TermStatistics(struct Statistics *comp) { }
 static void App_DrawStatistics(void **comp, void *args);
 
 static volatile uint64_t _jobStart;
@@ -69,21 +70,22 @@ _SleepCompleted(uint64_t id)
 bool
 App_InitApplication(int argc, char *argv[])
 {
-	const wchar_t *comp[] = { TRANSFORM_COMP, L"PlayerMovement" };
+	const wchar_t *comp[] = { TRANSFORM_COMP, CAMERA_COMP, L"FlyController" };
 
-	E_RegisterComponent(L"PlayerMovement", sizeof(struct PlayerMovement), 1, (CompInitProc)App_InitPlayerMovement, (CompTermProc)App_TermPlayerMovement);
-	E_RegisterSystem(L"App_PlayerMovement", ECSYS_GROUP_LOGIC, comp, _countof(comp), (ECSysExecProc)App_PlayerMovement, 0);
+	E_RegisterComponent(L"FlyController", sizeof(struct FPSController), 1, (CompInitProc)App_InitFlyController, (CompTermProc)App_TermFlyController);
+	E_RegisterSystem(L"App_FlyController", ECSYS_GROUP_LOGIC, comp, _countof(comp), (ECSysExecProc)App_FlyController, 0);
 
 	comp[0] = UI_CONTEXT_COMP; comp[1] = L"Statistics";
 	E_RegisterComponent(L"Statistics", sizeof(struct Statistics), 1, (CompInitProc)App_InitStatistics, (CompTermProc)App_TermStatistics);
-	E_RegisterSystem(L"App_DrawStatistics", ECSYS_GROUP_LOGIC, comp, _countof(comp), (ECSysExecProc)App_DrawStatistics, 0);
+	E_RegisterSystem(L"App_DrawStatistics", ECSYS_GROUP_LOGIC, comp, 2, (ECSysExecProc)App_DrawStatistics, 0);
 
 	_sceneLoadedEvt = E_RegisterHandler(EVT_SCENE_LOADED, App_SceneLoaded, NULL);
 
 //	Scn_StartSceneLoad("/Scenes/Anna.scn");
 //	Scn_StartSceneLoad("/Scenes/Helmet.scn");
 //	Scn_StartSceneLoad("/Scenes/Sphere.scn");
-	Scn_StartSceneLoad("/Scenes/Main.scn");
+//	Scn_StartSceneLoad("/Scenes/Main.scn");
+	Scn_StartSceneLoad("/Scenes/Terrain.scn");
 
 	_jobStart = Sys_Time();
 	E_DispatchJobs(E_JobWorkerThreads(), _SleepJob, NULL, _SleepCompleted);
@@ -104,10 +106,11 @@ App_TermApplication(void)
 }
 
 bool
-App_InitPlayerMovement(struct PlayerMovement *comp, const void **args)
+App_InitFlyController(struct FPSController *comp, const void **args)
 {
 	comp->movementSpeed = 100.f;
-	comp->rotationSpeed = 50.f;
+	comp->hRotationSpeed = 250.f;
+	comp->vRotationSpeed = 100.f;
 
 	for (; args && *args; ++args) {
 		const char *arg = *args;
@@ -115,8 +118,10 @@ App_InitPlayerMovement(struct PlayerMovement *comp, const void **args)
 
 		if (!strncmp(arg, "MovementSpeed", len))
 			comp->movementSpeed = strtof(*(++args), NULL);
-		else if (!strncmp(arg, "RotationSpeed", len))
-			comp->rotationSpeed = strtof(*(++args), NULL);
+		else if (!strncmp(arg, "HRotationSpeed", len))
+			comp->hRotationSpeed = strtof(*(++args), NULL);
+		else if (!strncmp(arg, "VRotationSpeed", len))
+			comp->vRotationSpeed = strtof(*(++args), NULL);
 	}
 
 	comp->moveForward = In_CreateMap(L"forward");
@@ -129,32 +134,36 @@ App_InitPlayerMovement(struct PlayerMovement *comp, const void **args)
 }
 
 void
-App_PlayerMovement(void **comp, void *args)
+App_FlyController(void **comp, void *args)
 {
 	struct Transform *xform = comp[0];
-	struct PlayerMovement *mvmt = comp[1];
-	struct vec3 raxis = { 0.f, -1.f, 0.f };
-	float xlate, rot;
+	struct Camera *cam = comp[1];
+	struct FPSController *ctrl = comp[2];
 
 	if (In_UnmappedButtonDown(BTN_KEY_ESCAPE, 0))
 		E_Shutdown();
 
-	if (In_UnmappedButtonDown(BTN_KEY_M, 0))
+	if (In_UnmappedButtonDown(BTN_MOUSE_MMB, 0))
 		In_EnableMouseAxis(true);
-	else if (In_UnmappedButtonUp(BTN_KEY_M, 0))
+	else if (In_UnmappedButtonUp(BTN_MOUSE_MMB, 0))
 		In_EnableMouseAxis(false);
 
-	xlate = mvmt->movementSpeed * (float)E_deltaTime;
-	rot = mvmt->rotationSpeed * (float)E_deltaTime;
+	const float mvmt = ctrl->movementSpeed * (float)E_deltaTime;
+	const float vRot = ctrl->vRotationSpeed * (float)E_deltaTime;
+	const float hRot = ctrl->hRotationSpeed * (float)E_deltaTime;
 
-	xform_rotate(xform, In_Axis(mvmt->rotateHorizontal) * rot, &raxis);
+	cam->rotation.x += In_Axis(ctrl->rotateVertical) * vRot;
+	cam->rotation.y += In_Axis(ctrl->rotateHorizontal) * hRot;
 
-	v3_copy(&raxis, &xform->right);
-	xform_rotate(xform, In_Axis(mvmt->rotateVertical) * rot, &raxis);
+	xform_rotate(xform, In_Axis(ctrl->rotateHorizontal) * hRot, &v3_neg_y);
+	xform_update_orientation(xform);
 
-	xform_move_forward(xform, In_Axis(mvmt->moveForward) * xlate);
-	xform_move_right(xform, In_Axis(mvmt->moveRight) * xlate);
-	xform_move_up(xform, In_Axis(mvmt->moveUp) * xlate);
+	xform_rotate(xform, In_Axis(ctrl->rotateVertical) * vRot, &xform->right);
+	xform_update_orientation(xform);
+
+	xform_move_forward(xform, In_Axis(ctrl->moveForward) * mvmt);
+	xform_move_right(xform, In_Axis(ctrl->moveRight) * mvmt);
+	xform_move_up(xform, In_Axis(ctrl->moveUp) * mvmt);
 }
 
 void

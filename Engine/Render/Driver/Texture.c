@@ -42,12 +42,12 @@ _LoadTextureResource(struct ResourceLoadInfo *li, const char *args, struct Textu
 	if ((h & 0x00000000FFFFFFFF) > (uint64_t)65535)
 		return false;
 
-	bool rc = false;
+	bool rc = false, cube = args && !strncmp(args, "cube", strlen(args));
 	struct TextureCreateInfo ci =
 	{
 		.desc =
 		{
-			.type = TT_2D,
+			.type = cube ? TT_Cube : TT_2D,
 			.depth = 1,
 			.usage = TU_SAMPLED | TU_TRANSFER_DST,
 			.gpuOptimalTiling = true,
@@ -61,6 +61,48 @@ _LoadTextureResource(struct ResourceLoadInfo *li, const char *args, struct Textu
 		rc = E_LoadTGAAsset(&li->stm, &ci);
 	else
 		rc = E_LoadImageAsset(&li->stm, &ci);
+
+	if (cube && ci.desc.type == TT_2D) {
+		// cubemap not loaded from a DDS file
+
+		ci.desc.width /= 4;
+		ci.desc.height /= 3;
+
+		uint64_t rowSize = ci.desc.width * 4;
+		uint64_t imageSize = ci.desc.width * rowSize;
+
+		uint8_t *cubeData = Sys_Alloc(imageSize, 6, MH_Asset);
+		uint64_t cubeOffset = 0;
+
+		for (uint32_t i = 0; i < 6; ++i) {
+			uint64_t offset = 0;
+
+			switch (i) {
+			case 0: offset = 4 * imageSize + rowSize * 2; break;
+			case 1: offset = 4 * imageSize; break;
+			case 2: offset = rowSize; break;
+			case 3: offset = 8 * imageSize + rowSize; break;
+			case 4: offset = 4 * imageSize + rowSize; break;
+			case 5: offset = 4 * imageSize + rowSize * 3; break;
+			}
+
+			for (uint32_t j = 0; j < ci.desc.width; ++j) {
+				const uint64_t dstOffset = cubeOffset + rowSize * j;
+				const uint64_t srcOffset = offset + 4 * rowSize * j;
+
+				memcpy(cubeData + dstOffset, (uint8_t *)ci.data + srcOffset, rowSize);
+			}
+
+			cubeOffset += imageSize;
+		}
+
+		Sys_Free(ci.data);
+
+		ci.data = cubeData;
+		ci.dataSize = imageSize * 6;
+		ci.desc.arrayLayers = 6;
+		ci.desc.type = TT_Cube;
+	}
 
 	if (rc)
 		tex->texture = _CreateTexture(&ci.desc, E_ResHandleToGPU(h));
@@ -177,30 +219,33 @@ _InitTexture(struct Texture *tex, const struct TextureCreateInfo *tci)
 	Re_BeginTransferCommandBuffer();
 
 	uint64_t offset = 0;
-	for (uint32_t i = 0; i < tci->desc.mipLevels; ++i) {
-		uint32_t w = tci->desc.width >> i; w = w ? w : 1;
-		uint32_t h = tci->desc.height >> i; h = h ? h : 1;
-		uint32_t d = tci->desc.depth >> i; d = d ? d : 1;
-		
-		struct BufferImageCopy bic =
-		{
-			.bufferOffset = offset,
-			.bytesPerRow = _RowSize(tci->desc.format, w),
-			.rowLength = w,
-			.imageHeight = h,
-			.subresource =
+
+	for (uint32_t i = 0; i < tci->desc.arrayLayers; ++i) {
+		for (uint32_t j = 0; j < tci->desc.mipLevels; ++j) {
+			uint32_t w = tci->desc.width >> j; w = w ? w : 1;
+			uint32_t h = tci->desc.height >> j; h = h ? h : 1;
+			uint32_t d = tci->desc.depth >> j; d = d ? d : 1;
+
+			struct BufferImageCopy bic =
 			{
-				.aspect = IA_COLOR,
-				.mipLevel = i,
-				.baseArrayLayer = 0,
-				.layerCount = 1
-			},
-			.imageOffset = { 0, 0, 0 },
-			.imageSize = { w, h, d }
-		};
-		Re_CmdCopyBufferToTexture(staging, tex, &bic);
-		
-		offset += _ByteSize(tci->desc.format, w, h);
+				.bufferOffset = offset,
+				.bytesPerRow = _RowSize(tci->desc.format, w),
+				.rowLength = w,
+				.imageHeight = h,
+				.subresource =
+				{
+					.aspect = IA_COLOR,
+					.mipLevel = j,
+					.baseArrayLayer = i,
+					.layerCount = 1
+				},
+				.imageOffset = { 0, 0, 0 },
+				.imageSize = { w, h, d }
+			};
+			Re_CmdCopyBufferToTexture(staging, tex, &bic);
+
+			offset += _ByteSize(tci->desc.format, w, h);
+		}
 	}
 	
 	Re_EndCommandBuffer();

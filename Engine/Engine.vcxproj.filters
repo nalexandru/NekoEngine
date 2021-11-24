@@ -124,6 +124,9 @@
     <Filter Include="Source Files\Animation">
       <UniqueIdentifier>{d5139749-6a79-483a-8104-81e3f0f9d926}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Math\vmx128">
+      <UniqueIdentifier>{f2f08e2c-e7f5-490d-ae88-1af920bbc524}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Include\System\System.h">
@@ -501,6 +504,15 @@
     <ClInclude Include="..\Include\Scene\Light.h">
       <Filter>Header Files\Scene</Filter>
     </ClInclude>
+    <ClInclude Include="..\Include\Math\vmx128\mat4_vmx128.h">
+      <Filter>Header Files\Math\vmx128</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Math\vmx128\vec4_vmx128.h">
+      <Filter>Header Files\Math\vmx128</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\Internal.h">
+      <Filter>Source Files\Render</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="System\System.c">
@@ -846,6 +858,18 @@
       <Filter>Source Files\Scene</Filter>
     </ClCompile>
     <ClCompile Include="Render\Pass\SSAO.c">
+      <Filter>Source Files\Render\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Terrain.c">
+      <Filter>Source Files\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Pass\Opaque.c">
+      <Filter>Source Files\Render\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Pass\Transparent.c">
+      <Filter>Source Files\Render\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Pass\Sky.c">
       <Filter>Source Files\Render\Pass</Filter>
     </ClCompile>
   </ItemGroup>

@@ -7,7 +7,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (c) 2015-2020, Alexandru Naiman
+ * Copyright (c) 2015-2021, Alexandru Naiman
  *
  * All rights reserved.
  *
@@ -68,10 +68,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <Math/defs.h>
 
 static inline struct vec2 *
-v2(
-	struct vec2 *v,
-	float x,
-	float y)
+v2(struct vec2 *v, float x, float y)
 {
 	v->x = x;
 	v->y = y;
@@ -80,9 +77,7 @@ v2(
 }
 
 static inline struct vec2 *
-v2_fill(
-	struct vec2 *v,
-	float f)
+v2_fill(struct vec2 *v, float f)
 {
 	v->x = v->y = f;
 
@@ -90,9 +85,7 @@ v2_fill(
 }
 
 static inline struct vec2 *
-v2_copy(
-	struct vec2 *dst,
-	const struct vec2 *src)
+v2_copy(struct vec2 *dst, const struct vec2 *src)
 {
 	dst->x = src->x;
 	dst->y = src->y;
@@ -122,11 +115,9 @@ v2_len(const struct vec2 *v)
 }
 
 static inline struct vec2 *
-v2_norm(
-	struct vec2 *dst,
-	const struct vec2 *v)
+v2_norm(struct vec2 *dst, const struct vec2 *v)
 {
-	float l = 1.0f / v2_len(v);
+	const float l = 1.0f / v2_len(v);
 
 	dst->x = v->x * l;
 	dst->y = v->y * l;
@@ -135,11 +126,8 @@ v2_norm(
 }
 
 static inline struct vec2 *
-v2_lerp(
-	struct vec2 *dst,
-	const struct vec2 *v1,
-	const struct vec2 *v2,
-	float t)
+v2_lerp(struct vec2 *dst, const struct vec2 *v1,
+	const struct vec2 *v2, float t)
 {
 	dst->x = v1->x + t * (v2->x - v1->x);
 	dst->y = v1->y + t * (v2->y - v1->y);
@@ -148,10 +136,7 @@ v2_lerp(
 }
 
 static inline struct vec2 *
-v2_add(
-	struct vec2 *dst,
-	const struct vec2 *v1,
-	const struct vec2 *v2)
+v2_add(struct vec2 *dst, const struct vec2 *v1, const struct vec2 *v2)
 {
 	dst->x = v1->x + v2->x;
 	dst->y = v1->y + v2->y;
@@ -160,10 +145,16 @@ v2_add(
 }
 
 static inline struct vec2 *
-v2_sub(
-	struct vec2 *dst,
-	const struct vec2 *v1,
-	const struct vec2 *v2)
+v2_adds(struct vec2 *dst, const struct vec2 *v1, const float s)
+{
+	dst->x = v1->x + s;
+	dst->y = v1->y + s;
+
+	return dst;
+}
+
+static inline struct vec2 *
+v2_sub(struct vec2 *dst, const struct vec2 *v1, const struct vec2 *v2)
 {
 	dst->x = v1->x - v2->x;
 	dst->y = v1->y - v2->y;
@@ -172,10 +163,16 @@ v2_sub(
 }
 
 static inline struct vec2 *
-v2_mul(
-	struct vec2 *dst,
-	const struct vec2 *v1,
-	const struct vec2 *v2)
+v2_subs(struct vec2 *dst, const struct vec2 *v1, const float s)
+{
+	dst->x = v1->x - s;
+	dst->y = v1->y - s;
+
+	return dst;
+}
+
+static inline struct vec2 *
+v2_mul(struct vec2 *dst, const struct vec2 *v1, const struct vec2 *v2)
 {
 	dst->x = v1->x * v2->x;
 	dst->y = v1->y * v2->y;
@@ -184,10 +181,16 @@ v2_mul(
 }
 
 static inline struct vec2 *
-v2_div(
-	struct vec2 *dst,
-	const struct vec2 *v1,
-	const struct vec2 *v2)
+v2_muls(struct vec2 *dst, const struct vec2 *v1, const float s)
+{
+	dst->x = v1->x * s;
+	dst->y = v1->y * s;
+
+	return dst;
+}
+
+static inline struct vec2 *
+v2_div(struct vec2 *dst, const struct vec2 *v1, const struct vec2 *v2)
 {
 	dst->x = v1->x / v2->x;
 	dst->y = v1->y / v2->y;
@@ -195,27 +198,29 @@ v2_div(
 	return dst;
 }
 
+static inline struct vec2 *
+v2_divs(struct vec2 *dst, const struct vec2 *v1, const float s)
+{
+	dst->x = v1->x / s;
+	dst->y = v1->y / s;
+
+	return dst;
+}
+
 static inline float
-v2_dot(
-	const struct vec2 *v1,
-	const struct vec2 *v2)
+v2_dot(const struct vec2 *v1, const struct vec2 *v2)
 {
 	return v1->x * v2->x + v1->y * v2->y;
 }
 
 static inline float
-v2_cross(
-	const struct vec2 *v1,
-	const struct vec2 *v2)
+v2_cross(const struct vec2 *v1, const struct vec2 *v2)
 {
 	return v1->x * v2->y - v1->y * v2->x;
 }
 
 static inline struct vec2 *
-v2_mul_m3(
-	struct vec2 *dst,
-	const struct vec2 *v,
-	const struct mat3 *m)
+v2_mul_m3(struct vec2 *dst, const struct vec2 *v, const struct mat3 *m)
 {
 	dst->x = v->x * m->mat[0] + v->y * m->mat[3] + m->mat[6];
 	dst->y = v->x * m->mat[1] + v->y * m->mat[4] + m->mat[7];
@@ -224,29 +229,19 @@ v2_mul_m3(
 }
 
 static inline struct vec2 *
-v2_scale(
-	struct vec2 *dst,
-	const struct vec2 *v,
-	const float s)
+v2_scale(struct vec2 *dst, const struct vec2 *v, const float s)
 {
-	dst->x = v->x * s;
-	dst->y = v->y * s;
-
-	return dst;
+	return v2_muls(dst, v2_norm(dst, v), s);
 }
 
 static inline bool
-v2_equal(
-	const struct vec2 *v1,
-	const struct vec2 *v2)
+v2_equal(const struct vec2 *v1, const struct vec2 *v2)
 {
 	return float_equal(v1->x, v2->x) && float_equal(v1->y, v2->y);
 }
 
 static inline float
-v2_angle(
-	const struct vec2 *v1,
-	const struct vec2 *v2)
+v2_angle(const struct vec2 *v1, const struct vec2 *v2)
 {
 	struct vec2 t1, t2;
 	float cross;
@@ -274,22 +269,15 @@ v2_angle(
 }
 
 static inline float
-v2_distance(
-	const struct vec2 *v1,
-	const struct vec2 *v2)
+v2_distance(const struct vec2 *v1, const struct vec2 *v2)
 {
 	struct vec2 diff;
-	
 	v2_sub(&diff, v2, v1);
-
 	return fabsf(v2_len(&diff));
 }
 
 static inline struct vec2 *
-v2_mid(
-	struct vec2 *dst,
-	const struct vec2 *v1,
-	const struct vec2 *v2)
+v2_mid(struct vec2 *dst, const struct vec2 *v1, const struct vec2 *v2)
 {
 	struct vec2 sum;
 
@@ -302,10 +290,7 @@ v2_mid(
 }
 
 static inline struct vec2 *
-v2_reflect(
-	struct vec2 *dst,
-	const struct vec2 *v,
-	const struct vec2 *n)
+v2_reflect(struct vec2 *dst, const struct vec2 *v, const struct vec2 *n)
 {
 	struct vec2 tmp;
 
@@ -313,9 +298,7 @@ v2_reflect(
 }
 
 static inline void
-kmVec2Swap(
-	struct vec2 *v1,
-	struct vec2 *v2)
+v2_swap( struct vec2 *v1, struct vec2 *v2)
 {
 	float x = v1->x;
 	float y = v1->y;

@@ -100,7 +100,9 @@ Re_InitRender(void)
 	Re_device = Re_driver->CreateDevice(&Re_deviceInfo, &Re_deviceProcs, &Re_contextProcs);
 	CHK_FAIL(Re_device, L"Failed to create device");
 
-	Sys_LogEntry(RE_MOD, LOG_INFORMATION, L"GPU: %hs (%ls)", Re_deviceInfo.deviceName, Re_driver->driverName);
+	Sys_LogEntry(RE_MOD, LOG_INFORMATION, L"GPU: %hs (%hX:%hX)", Re_deviceInfo.deviceName,
+											Re_deviceInfo.hardwareInfo.vendorId, Re_deviceInfo.hardwareInfo.deviceId);
+	Sys_LogEntry(RE_MOD, LOG_INFORMATION, L"\tAPI: %ls", Re_driver->driverName);
 	Sys_LogEntry(RE_MOD, LOG_INFORMATION, L"\tMemory: %llu MB", Re_deviceInfo.localMemorySize / 1024 / 1024);
 	Sys_LogEntry(RE_MOD, LOG_INFORMATION, L"\tRay Tracing: %ls", Re_deviceInfo.features.rayTracing ? L"yes" : L"no");
 	Sys_LogEntry(RE_MOD, LOG_INFORMATION, L"\tMesh Shading: %ls", Re_deviceInfo.features.meshShading ? L"yes" : L"no");

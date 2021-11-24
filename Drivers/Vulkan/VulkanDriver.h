@@ -46,6 +46,10 @@ struct RenderContext
 	VkDescriptorSet descriptorSet, iaSet;
 	struct RenderDevice *neDev;
 	uint32_t lastSubmittedXfer, lastSubmittedCompute;
+	struct
+	{
+		struct Array graphics, compute, xfer;
+	} submitted;
 };
 
 struct VulkanDeviceInfo
@@ -120,6 +124,13 @@ struct AccelerationStructure
 	VkAccelerationStructureKHR as;
 };
 
+struct Vkd_SubmitInfo
+{
+	VkSemaphore wait, signal;
+	uint64_t waitValue, signalValue;
+	VkCommandBuffer cmdBuffer;
+};
+
 extern VkInstance Vkd_inst;
 extern VkAllocationCallbacks *Vkd_allocCb, *Vkd_transientAllocCb;
 extern VkCommandPool Vkd_transferPool;
@@ -143,7 +154,7 @@ void Vk_DestroyPipeline(struct RenderDevice *dev, struct Pipeline *pipeline);
 struct Swapchain *Vk_CreateSwapchain(struct RenderDevice *dev, VkSurfaceKHR surface, bool verticalSync);
 void Vk_DestroySwapchain(struct RenderDevice *dev, struct Swapchain *sw);
 void *Vk_AcquireNextImage(struct RenderDevice *, struct Swapchain *sw);
-bool Vk_Present(struct RenderDevice *dev, struct RenderContext *ctx, struct Swapchain *sw, void *image);
+bool Vk_Present(struct RenderDevice *dev, struct RenderContext *ctx, struct Swapchain *sw, void *image, struct Semaphore *wait);
 enum TextureFormat Vk_SwapchainFormat(struct Swapchain *sw);
 struct Texture *Vk_SwapchainTexture(struct Swapchain *sw, void *image);
 void Vk_SwapchainDesc(struct Swapchain *sw, struct FramebufferAttachmentDesc *desc);
@@ -217,8 +228,11 @@ bool Vk_ResizeTransientHeap(struct RenderDevice *dev, uint64_t size);
 void Vk_TermTransientHeap(struct RenderDevice *dev);
 
 // Synchronization
-VkSemaphore Vk_CreateSemaphore(struct RenderDevice *dev);
-void Vk_DestroySemaphore(struct RenderDevice *dev, VkSemaphore *s);
+struct Semaphore *Vk_CreateSemaphore(struct RenderDevice *dev);
+bool Vk_WaitSemaphore(struct RenderDevice *dev, struct Semaphore *s, uint64_t value, uint64_t timeout);
+bool Vk_WaitSemaphores(struct RenderDevice *dev, uint32_t count, struct Semaphore *s, uint64_t *values, uint64_t timeout);
+bool Vk_SignalSemaphore(struct RenderDevice *dev, struct Semaphore *s, uint64_t value);
+void Vk_DestroySemaphore(struct RenderDevice *dev, struct Semaphore *s);
 
 VkFence Vk_CreateFence(struct RenderDevice *dev, bool createSignaled);
 void Vk_SignalFence(struct RenderDevice *dev, VkFence f);

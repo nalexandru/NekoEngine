@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 45;
+	objectVersion = 54;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -18,9 +18,10 @@
 		FA25968C26261E2200BFF167 /* l_System.c in Sources */ = {isa = PBXBuildFile; fileRef = FA25968A26261E2200BFF167 /* l_System.c */; };
 		FA28E6CB2668F4B2000B591E /* UI.metal in Sources */ = {isa = PBXBuildFile; fileRef = FA28E6CA2668F4B2000B591E /* UI.metal */; };
 		FA28E6CC2668F4B2000B591E /* UI.metal in Sources */ = {isa = PBXBuildFile; fileRef = FA28E6CA2668F4B2000B591E /* UI.metal */; };
-		FA396F6C266F7B3F0069B484 /* AVFDriver.m in Sources */ = {isa = PBXBuildFile; fileRef = FA4A195E25FE43E900040940 /* AVFDriver.m */; };
-		FA396F6D266F7B430069B484 /* AVFDevice.m in Sources */ = {isa = PBXBuildFile; fileRef = FA4A196625FE448F00040940 /* AVFDevice.m */; };
-		FA396F6E266F7B430069B484 /* AVFSource.m in Sources */ = {isa = PBXBuildFile; fileRef = FA4A196B25FE44B700040940 /* AVFSource.m */; };
+		FA2AAFD9273808C9009FEBCB /* Sky.metal in Sources */ = {isa = PBXBuildFile; fileRef = FA2AAFD8273808C9009FEBCB /* Sky.metal */; };
+		FA2AAFDA273808C9009FEBCB /* Sky.metal in Sources */ = {isa = PBXBuildFile; fileRef = FA2AAFD8273808C9009FEBCB /* Sky.metal */; };
+		FA2AAFDB273808C9009FEBCB /* Sky.metal in Sources */ = {isa = PBXBuildFile; fileRef = FA2AAFD8273808C9009FEBCB /* Sky.metal */; };
+		FA2CBEE5274BE3E5004638D2 /* bin2c.c in Sources */ = {isa = PBXBuildFile; fileRef = FA2CBEE3274BE3DF004638D2 /* bin2c.c */; };
 		FA396F6F266F7B4E0069B484 /* MTLFramebuffer.m in Sources */ = {isa = PBXBuildFile; fileRef = FAFEF84925D5CA4800D8D1FB /* MTLFramebuffer.m */; };
 		FA396F70266F7B4E0069B484 /* MTLShaderBindingTable.m in Sources */ = {isa = PBXBuildFile; fileRef = FAFEF83B25D5A0D900D8D1FB /* MTLShaderBindingTable.m */; };
 		FA396F71266F7B4E0069B484 /* MTLDriver.m in Sources */ = {isa = PBXBuildFile; fileRef = FA1A7EEF25CF0FAF003B4259 /* MTLDriver.m */; };
@@ -187,12 +188,6 @@
 		FA49A58B264646C3009EF9B9 /* Downloader.plist in Resources */ = {isa = PBXBuildFile; fileRef = FA49A58A264646C3009EF9B9 /* Downloader.plist */; };
 		FA4A193E25FD321400040940 /* l_Render.c in Sources */ = {isa = PBXBuildFile; fileRef = FA4A193D25FD321400040940 /* l_Render.c */; };
 		FA4A193F25FD321400040940 /* l_Render.c in Sources */ = {isa = PBXBuildFile; fileRef = FA4A193D25FD321400040940 /* l_Render.c */; };
-		FA4A195F25FE43E900040940 /* AVFDriver.m in Sources */ = {isa = PBXBuildFile; fileRef = FA4A195E25FE43E900040940 /* AVFDriver.m */; };
-		FA4A196025FE43E900040940 /* AVFDriver.m in Sources */ = {isa = PBXBuildFile; fileRef = FA4A195E25FE43E900040940 /* AVFDriver.m */; };
-		FA4A196725FE448F00040940 /* AVFDevice.m in Sources */ = {isa = PBXBuildFile; fileRef = FA4A196625FE448F00040940 /* AVFDevice.m */; };
-		FA4A196825FE448F00040940 /* AVFDevice.m in Sources */ = {isa = PBXBuildFile; fileRef = FA4A196625FE448F00040940 /* AVFDevice.m */; };
-		FA4A196C25FE44B700040940 /* AVFSource.m in Sources */ = {isa = PBXBuildFile; fileRef = FA4A196B25FE44B700040940 /* AVFSource.m */; };
-		FA4A196D25FE44B700040940 /* AVFSource.m in Sources */ = {isa = PBXBuildFile; fileRef = FA4A196B25FE44B700040940 /* AVFSource.m */; };
 		FA4A197125FE452C00040940 /* Model.c in Sources */ = {isa = PBXBuildFile; fileRef = FA4A197025FE452C00040940 /* Model.c */; };
 		FA4A197225FE452C00040940 /* Model.c in Sources */ = {isa = PBXBuildFile; fileRef = FA4A197025FE452C00040940 /* Model.c */; };
 		FA4A197B25FE947C00040940 /* MTLSampler.m in Sources */ = {isa = PBXBuildFile; fileRef = FA4A197A25FE947B00040940 /* MTLSampler.m */; };
@@ -369,6 +364,18 @@
 		FA80D6CB264616CD0053CE56 /* Texture.c in Sources */ = {isa = PBXBuildFile; fileRef = FA80D6C7264616CD0053CE56 /* Texture.c */; };
 		FA80D6CC264616CD0053CE56 /* Pipeline.c in Sources */ = {isa = PBXBuildFile; fileRef = FA80D6C8264616CD0053CE56 /* Pipeline.c */; };
 		FA80D6CE264616D90053CE56 /* Graph.c in Sources */ = {isa = PBXBuildFile; fileRef = FA80D6CD264616D90053CE56 /* Graph.c */; };
+		FA8283F42746B4F400F7E822 /* Opaque.c in Sources */ = {isa = PBXBuildFile; fileRef = FA8283F12746B4F400F7E822 /* Opaque.c */; };
+		FA8283F52746B4F400F7E822 /* Opaque.c in Sources */ = {isa = PBXBuildFile; fileRef = FA8283F12746B4F400F7E822 /* Opaque.c */; };
+		FA8283F62746B4F400F7E822 /* Opaque.c in Sources */ = {isa = PBXBuildFile; fileRef = FA8283F12746B4F400F7E822 /* Opaque.c */; };
+		FA8283F72746B4F400F7E822 /* Sky.c in Sources */ = {isa = PBXBuildFile; fileRef = FA8283F22746B4F400F7E822 /* Sky.c */; };
+		FA8283F82746B4F400F7E822 /* Sky.c in Sources */ = {isa = PBXBuildFile; fileRef = FA8283F22746B4F400F7E822 /* Sky.c */; };
+		FA8283F92746B4F400F7E822 /* Sky.c in Sources */ = {isa = PBXBuildFile; fileRef = FA8283F22746B4F400F7E822 /* Sky.c */; };
+		FA8283FA2746B4F400F7E822 /* Transparent.c in Sources */ = {isa = PBXBuildFile; fileRef = FA8283F32746B4F400F7E822 /* Transparent.c */; };
+		FA8283FB2746B4F400F7E822 /* Transparent.c in Sources */ = {isa = PBXBuildFile; fileRef = FA8283F32746B4F400F7E822 /* Transparent.c */; };
+		FA8283FC2746B4F400F7E822 /* Transparent.c in Sources */ = {isa = PBXBuildFile; fileRef = FA8283F32746B4F400F7E822 /* Transparent.c */; };
+		FA88A34126EA092500C01272 /* Terrain.c in Sources */ = {isa = PBXBuildFile; fileRef = FA88A34026EA092500C01272 /* Terrain.c */; };
+		FA88A34226EA092500C01272 /* Terrain.c in Sources */ = {isa = PBXBuildFile; fileRef = FA88A34026EA092500C01272 /* Terrain.c */; };
+		FA88A34326EA092500C01272 /* Terrain.c in Sources */ = {isa = PBXBuildFile; fileRef = FA88A34026EA092500C01272 /* Terrain.c */; };
 		FA8A94DB25D41935008B5823 /* MTLPipeline.m in Sources */ = {isa = PBXBuildFile; fileRef = FA8A94DA25D41935008B5823 /* MTLPipeline.m */; };
 		FA8F56C826679A4900592E60 /* Animation.c in Sources */ = {isa = PBXBuildFile; fileRef = FAEFB7502662AE6E00BFCF25 /* Animation.c */; };
 		FA8F56C926679A4C00592E60 /* AnimationClip.c in Sources */ = {isa = PBXBuildFile; fileRef = FAEFB74F2662AE6E00BFCF25 /* AnimationClip.c */; };
@@ -381,6 +388,9 @@
 		FA99953F25E2E684002CB0D3 /* MTLShader.m in Sources */ = {isa = PBXBuildFile; fileRef = FA99953D25E2E684002CB0D3 /* MTLShader.m */; };
 		FA99954425E2E804002CB0D3 /* DefaultPBR.metal in Sources */ = {isa = PBXBuildFile; fileRef = FA99954325E2E804002CB0D3 /* DefaultPBR.metal */; };
 		FA99954525E2E804002CB0D3 /* DefaultPBR.metal in Sources */ = {isa = PBXBuildFile; fileRef = FA99954325E2E804002CB0D3 /* DefaultPBR.metal */; };
+		FAA16D482747CEE00080DD5C /* OpenAL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FAA16D472747CEE00080DD5C /* OpenAL.framework */; };
+		FAA16D4A2747CEE90080DD5C /* OpenAL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FAA16D492747CEE90080DD5C /* OpenAL.framework */; };
+		FAA16D4B2747CF040080DD5C /* OpenAL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FAA16D472747CEE00080DD5C /* OpenAL.framework */; };
 		FAA9108825D3D85D005FCDA2 /* Application.c in Sources */ = {isa = PBXBuildFile; fileRef = FAA9108725D3D85D005FCDA2 /* Application.c */; };
 		FAAF9B5C2521F2D600F7C24B /* Font.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B552521F2D600F7C24B /* Font.c */; };
 		FAAF9B5E2521F2D600F7C24B /* Image.c in Sources */ = {isa = PBXBuildFile; fileRef = FAAF9B572521F2D600F7C24B /* Image.c */; };
@@ -429,7 +439,6 @@
 		FAB68E84266B93A3003F51FD /* DDS.c in Sources */ = {isa = PBXBuildFile; fileRef = FAB68E82266B93A3003F51FD /* DDS.c */; };
 		FAB68E86266BA655003F51FD /* MTLSynchronization.m in Sources */ = {isa = PBXBuildFile; fileRef = FAB68E85266BA655003F51FD /* MTLSynchronization.m */; };
 		FAB68E87266BA655003F51FD /* MTLSynchronization.m in Sources */ = {isa = PBXBuildFile; fileRef = FAB68E85266BA655003F51FD /* MTLSynchronization.m */; };
-		FABF18F725BECFD0005C1329 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FABF18F625BECFD0005C1329 /* AVFoundation.framework */; };
 		FAC4B4B0253BE2E30074EE3C /* Job.c in Sources */ = {isa = PBXBuildFile; fileRef = FAC4B4AF253BE2E30074EE3C /* Job.c */; };
 		FAC4B4B2253BE2F60074EE3C /* AtomicLock.c in Sources */ = {isa = PBXBuildFile; fileRef = FAC4B4B1253BE2F60074EE3C /* AtomicLock.c */; };
 		FAC670FD25EA7BB3001BF95A /* Metadata.c in Sources */ = {isa = PBXBuildFile; fileRef = FAC670FC25EA7BB3001BF95A /* Metadata.c */; };
@@ -464,6 +473,28 @@
 		FAFEF84A25D5CA4800D8D1FB /* MTLFramebuffer.m in Sources */ = {isa = PBXBuildFile; fileRef = FAFEF84925D5CA4800D8D1FB /* MTLFramebuffer.m */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		FA2CBEE6274BE427004638D2 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 29B97313FDCFA39411CA2CEA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = FA2CBED8274BE36F004638D2;
+			remoteInfo = bin2c;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		FA2CBED7274BE36F004638D2 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
 		13E42FB307B3F0F600E4EEF1 /* CoreData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreData.framework; path = /System/Library/Frameworks/CoreData.framework; sourceTree = "<absolute>"; };
@@ -481,6 +512,9 @@
 		FA25968A26261E2200BFF167 /* l_System.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = l_System.c; path = Engine/Script/l_System.c; sourceTree = "<group>"; };
 		FA28E6C92668F482000B591E /* Internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Internal.h; path = Engine/UI/Internal.h; sourceTree = "<group>"; };
 		FA28E6CA2668F4B2000B591E /* UI.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; name = UI.metal; path = Drivers/Metal/Shaders/UI.metal; sourceTree = "<group>"; };
+		FA2AAFD8273808C9009FEBCB /* Sky.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; name = Sky.metal; path = Drivers/Metal/Shaders/Sky.metal; sourceTree = "<group>"; };
+		FA2CBED9274BE36F004638D2 /* bin2c */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = bin2c; sourceTree = BUILT_PRODUCTS_DIR; };
+		FA2CBEE3274BE3DF004638D2 /* bin2c.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = bin2c.c; path = Tools/bin2c/bin2c.c; sourceTree = SOURCE_ROOT; };
 		FA396F5A266F7AB20069B484 /* NekoEditor.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NekoEditor.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		FA396F6B266F7AFF0069B484 /* GameController.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameController.framework; path = System/Library/Frameworks/GameController.framework; sourceTree = SDKROOT; };
 		FA396FFD266F7C3E0069B484 /* Editor.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = Editor.c; path = Editor/Editor.c; sourceTree = "<group>"; };
@@ -496,10 +530,6 @@
 		FA4A194225FD40FA00040940 /* Interface.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Interface.h; path = Engine/Script/Interface.h; sourceTree = "<group>"; };
 		FA4A195725FE42B500040940 /* Driver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Driver.h; path = Include/Audio/Driver.h; sourceTree = "<group>"; };
 		FA4A195825FE42B500040940 /* Device.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Device.h; path = Include/Audio/Device.h; sourceTree = "<group>"; };
-		FA4A195E25FE43E900040940 /* AVFDriver.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = AVFDriver.m; path = Drivers/AVFAudio/AVFDriver.m; sourceTree = "<group>"; };
-		FA4A196525FE445D00040940 /* AVFDriver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = AVFDriver.h; path = Drivers/AVFAudio/AVFDriver.h; sourceTree = "<group>"; };
-		FA4A196625FE448F00040940 /* AVFDevice.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = AVFDevice.m; path = Drivers/AVFAudio/AVFDevice.m; sourceTree = "<group>"; };
-		FA4A196B25FE44B700040940 /* AVFSource.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = AVFSource.m; path = Drivers/AVFAudio/AVFSource.m; sourceTree = "<group>"; };
 		FA4A197025FE452C00040940 /* Model.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = Model.c; path = Engine/Render/Model.c; sourceTree = "<group>"; };
 		FA4A197A25FE947B00040940 /* MTLSampler.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = MTLSampler.m; path = Drivers/Metal/MTLSampler.m; sourceTree = "<group>"; };
 		FA4A1983260A8BE500040940 /* Types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Types.h; path = Include/Render/Types.h; sourceTree = "<group>"; };
@@ -537,6 +567,8 @@
 		FA5D333425CFE7FD001EB5E2 /* Material.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Material.h; path = Include/Render/Material.h; sourceTree = "<group>"; };
 		FA61FDDE266FD7AD008E35B1 /* Editor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Editor.h; path = Include/Editor/Editor.h; sourceTree = "<group>"; };
 		FA61FDDF266FD7AD008E35B1 /* Types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Types.h; path = Include/Editor/Types.h; sourceTree = "<group>"; };
+		FA6578F426DB030A006FAF5D /* mat4_vmx128.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mat4_vmx128.h; path = Include/Math/vmx128/mat4_vmx128.h; sourceTree = "<group>"; };
+		FA6578F526DB030A006FAF5D /* vec4_vmx128.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = vec4_vmx128.h; path = Include/Math/vmx128/vec4_vmx128.h; sourceTree = "<group>"; };
 		FA67DAD526C870100033F9AA /* SSAO.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = SSAO.c; path = Engine/Render/Pass/SSAO.c; sourceTree = "<group>"; };
 		FA67DAD926C87C8C0033F9AA /* Light.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Light.h; path = Drivers/Metal/Shaders/Light.h; sourceTree = "<group>"; };
 		FA6BDD022522B75D00806A2D /* aabb2.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = aabb2.h; path = Include/Math/aabb2.h; sourceTree = "<group>"; };
@@ -678,9 +710,16 @@
 		FA80D6C7264616CD0053CE56 /* Texture.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = Texture.c; path = Engine/Render/Driver/Texture.c; sourceTree = "<group>"; };
 		FA80D6C8264616CD0053CE56 /* Pipeline.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = Pipeline.c; path = Engine/Render/Driver/Pipeline.c; sourceTree = "<group>"; };
 		FA80D6CD264616D90053CE56 /* Graph.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = Graph.c; path = Engine/Render/Graph/Graph.c; sourceTree = "<group>"; };
+		FA8283F12746B4F400F7E822 /* Opaque.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = Opaque.c; path = Engine/Render/Pass/Opaque.c; sourceTree = "<group>"; };
+		FA8283F22746B4F400F7E822 /* Sky.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = Sky.c; path = Engine/Render/Pass/Sky.c; sourceTree = "<group>"; };
+		FA8283F32746B4F400F7E822 /* Transparent.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = Transparent.c; path = Engine/Render/Pass/Transparent.c; sourceTree = "<group>"; };
+		FA8283FD2746B50900F7E822 /* Internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Internal.h; path = Engine/Render/Internal.h; sourceTree = "<group>"; };
+		FA88A34026EA092500C01272 /* Terrain.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = Terrain.c; path = Engine/Scene/Terrain.c; sourceTree = "<group>"; };
 		FA8A94DA25D41935008B5823 /* MTLPipeline.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = MTLPipeline.m; path = Drivers/Metal/MTLPipeline.m; sourceTree = "<group>"; };
 		FA99953D25E2E684002CB0D3 /* MTLShader.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = MTLShader.m; path = Drivers/Metal/MTLShader.m; sourceTree = "<group>"; };
 		FA99954325E2E804002CB0D3 /* DefaultPBR.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; name = DefaultPBR.metal; path = Drivers/Metal/Shaders/DefaultPBR.metal; sourceTree = "<group>"; };
+		FAA16D472747CEE00080DD5C /* OpenAL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenAL.framework; path = System/Library/Frameworks/OpenAL.framework; sourceTree = SDKROOT; };
+		FAA16D492747CEE90080DD5C /* OpenAL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenAL.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.0.sdk/System/Library/Frameworks/OpenAL.framework; sourceTree = DEVELOPER_DIR; };
 		FAA9108725D3D85D005FCDA2 /* Application.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = Application.c; path = Application/Application.c; sourceTree = "<group>"; };
 		FAA9108A25D3D886005FCDA2 /* TestApplication.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TestApplication.h; path = Application/TestApplication.h; sourceTree = "<group>"; };
 		FAAF9B552521F2D600F7C24B /* Font.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = Font.c; path = Engine/Asset/Font.c; sourceTree = "<group>"; };
@@ -798,7 +837,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				FABF18F725BECFD0005C1329 /* AVFoundation.framework in Frameworks */,
+				FAA16D482747CEE00080DD5C /* OpenAL.framework in Frameworks */,
 				FAE5E1212569BFDC0091893B /* QuartzCore.framework in Frameworks */,
 				8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */,
 				FAD516662569DFB9008FCD04 /* GameController.framework in Frameworks */,
@@ -807,10 +846,18 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		FA2CBED6274BE36F004638D2 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		FA396F57266F7AB20069B484 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FAA16D4B2747CF040080DD5C /* OpenAL.framework in Frameworks */,
 				FA396FF9266F7C150069B484 /* AVFoundation.framework in Frameworks */,
 				FA396FFA266F7C1D0069B484 /* Cocoa.framework in Frameworks */,
 				FA396FF7266F7C100069B484 /* QuartzCore.framework in Frameworks */,
@@ -824,6 +871,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FAA16D4A2747CEE90080DD5C /* OpenAL.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -857,6 +905,7 @@
 				8D1107320486CEB800E47090 /* NekoEngine.app */,
 				FA4CFE8525D771AF00B37A5B /* NekoEngine iOS.app */,
 				FA396F5A266F7AB20069B484 /* NekoEditor.app */,
+				FA2CBED9274BE36F004638D2 /* bin2c */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -868,6 +917,7 @@
 				FA6BDCF12522B69E00806A2D /* Include */,
 				FAAF9CD02522AB0600F7C24B /* Source */,
 				29B97317FDCFA39411CA2CEA /* Resources */,
+				FA2CBEE1274BE3B5004638D2 /* Tools */,
 				29B97323FDCFA39411CA2CEA /* Frameworks */,
 				19C28FACFE9D520D11CA2CBB /* Products */,
 			);
@@ -904,6 +954,8 @@
 		29B97323FDCFA39411CA2CEA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				FAA16D472747CEE00080DD5C /* OpenAL.framework */,
+				FAA16D492747CEE90080DD5C /* OpenAL.framework */,
 				FABF18F625BECFD0005C1329 /* AVFoundation.framework */,
 				FAD516652569DFB9008FCD04 /* GameController.framework */,
 				FAE5E1202569BFDC0091893B /* QuartzCore.framework */,
@@ -925,7 +977,6 @@
 		FA1A7EED25CF0EEC003B4259 /* Drivers */ = {
 			isa = PBXGroup;
 			children = (
-				FA4A195D25FE435A00040940 /* AVFAudio */,
 				FA1A7EEE25CF0F15003B4259 /* Metal */,
 			);
 			name = Drivers;
@@ -964,6 +1015,22 @@
 				FA24C19E25D95DDA003D590F /* vec4_altivec.h */,
 			);
 			name = altivec;
+			sourceTree = "<group>";
+		};
+		FA2CBEE1274BE3B5004638D2 /* Tools */ = {
+			isa = PBXGroup;
+			children = (
+				FA2CBEE2274BE3CF004638D2 /* bin2c */,
+			);
+			name = Tools;
+			sourceTree = "<group>";
+		};
+		FA2CBEE2274BE3CF004638D2 /* bin2c */ = {
+			isa = PBXGroup;
+			children = (
+				FA2CBEE3274BE3DF004638D2 /* bin2c.c */,
+			);
+			path = bin2c;
 			sourceTree = "<group>";
 		};
 		FA3500692521DC6A00CE048F /* Platform */ = {
@@ -1012,17 +1079,6 @@
 			name = GUI;
 			sourceTree = "<group>";
 		};
-		FA4A195D25FE435A00040940 /* AVFAudio */ = {
-			isa = PBXGroup;
-			children = (
-				FA4A195E25FE43E900040940 /* AVFDriver.m */,
-				FA4A196525FE445D00040940 /* AVFDriver.h */,
-				FA4A196625FE448F00040940 /* AVFDevice.m */,
-				FA4A196B25FE44B700040940 /* AVFSource.m */,
-			);
-			name = AVFAudio;
-			sourceTree = "<group>";
-		};
 		FA4A1992261F715C00040940 /* Graph */ = {
 			isa = PBXGroup;
 			children = (
@@ -1057,6 +1113,15 @@
 				FA61FDDF266FD7AD008E35B1 /* Types.h */,
 			);
 			name = Editor;
+			sourceTree = "<group>";
+		};
+		FA6578F326DB02FD006FAF5D /* vmx128 */ = {
+			isa = PBXGroup;
+			children = (
+				FA6578F426DB030A006FAF5D /* mat4_vmx128.h */,
+				FA6578F526DB030A006FAF5D /* vec4_vmx128.h */,
+			);
+			name = vmx128;
 			sourceTree = "<group>";
 		};
 		FA6BDCF12522B69E00806A2D /* Include */ = {
@@ -1156,6 +1221,7 @@
 		FA6BDCFC2522B70200806A2D /* Math */ = {
 			isa = PBXGroup;
 			children = (
+				FA6578F326DB02FD006FAF5D /* vmx128 */,
 				FA24C19D25D95DBD003D590F /* altivec */,
 				FAE5E1242569C32E0091893B /* neon */,
 				FA6BDD002522B73300806A2D /* sse */,
@@ -1297,6 +1363,7 @@
 				FAE0749726A98B0E00AC81D3 /* Material.h */,
 				FA46200526BAF32900863A89 /* PBR.h */,
 				FA67DAD926C87C8C0033F9AA /* Light.h */,
+				FA2AAFD8273808C9009FEBCB /* Sky.metal */,
 			);
 			name = Shaders;
 			sourceTree = "<group>";
@@ -1365,6 +1432,7 @@
 		FAAF9B762521F39200F7C24B /* Scene */ = {
 			isa = PBXGroup;
 			children = (
+				FA88A34026EA092500C01272 /* Terrain.c */,
 				FAE0748E26A9888A00AC81D3 /* Light.c */,
 				FAAF9BA12521F42000F7C24B /* Camera.c */,
 				FAAF9BA22521F42000F7C24B /* Scene.c */,
@@ -1381,6 +1449,7 @@
 				FA04A9F62653FD4500534686 /* Components */,
 				FA80D6C3264616B10053CE56 /* Driver */,
 				FA80D6C4264616BA0053CE56 /* Graph */,
+				FA8283FD2746B50900F7E822 /* Internal.h */,
 				FA71247E263616DA00916C6D /* Material.c */,
 				FA4A198B261F714A00040940 /* DestroyResource.c */,
 				FA4A197025FE452C00040940 /* Model.c */,
@@ -1635,6 +1704,9 @@
 		FAEFB75D2662AEC200BFCF25 /* Pass */ = {
 			isa = PBXGroup;
 			children = (
+				FA8283F12746B4F400F7E822 /* Opaque.c */,
+				FA8283F22746B4F400F7E822 /* Sky.c */,
+				FA8283F32746B4F400F7E822 /* Transparent.c */,
 				FA67DAD526C870100033F9AA /* SSAO.c */,
 				FA44DB47269B3FF100F9BEFA /* Forward.c */,
 				FAEFB75E2662AECE00BFCF25 /* Depth.c */,
@@ -1650,6 +1722,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = C01FCF4A08A954540054247B /* Build configuration list for PBXNativeTarget "NekoEngine" */;
 			buildPhases = (
+				FA2CBEE8274BE44A004638D2 /* ShellScript */,
 				8D1107290486CEB800E47090 /* Resources */,
 				8D11072C0486CEB800E47090 /* Sources */,
 				8D11072E0486CEB800E47090 /* Frameworks */,
@@ -1657,12 +1730,30 @@
 			buildRules = (
 			);
 			dependencies = (
+				FA2CBEE7274BE427004638D2 /* PBXTargetDependency */,
 			);
 			name = NekoEngine;
 			productInstallPath = "$(HOME)/Applications";
 			productName = NekoEngine;
 			productReference = 8D1107320486CEB800E47090 /* NekoEngine.app */;
 			productType = "com.apple.product-type.application";
+		};
+		FA2CBED8274BE36F004638D2 /* bin2c */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FA2CBEDF274BE36F004638D2 /* Build configuration list for PBXNativeTarget "bin2c" */;
+			buildPhases = (
+				FA2CBED5274BE36F004638D2 /* Sources */,
+				FA2CBED6274BE36F004638D2 /* Frameworks */,
+				FA2CBED7274BE36F004638D2 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = bin2c;
+			productName = bin2c;
+			productReference = FA2CBED9274BE36F004638D2 /* bin2c */;
+			productType = "com.apple.product-type.tool";
 		};
 		FA396F59266F7AB20069B484 /* NekoEditor */ = {
 			isa = PBXNativeTarget;
@@ -1706,6 +1797,9 @@
 			attributes = {
 				LastUpgradeCheck = 1230;
 				TargetAttributes = {
+					FA2CBED8274BE36F004638D2 = {
+						CreatedOnToolsVersion = 13.1;
+					};
 					FA396F59266F7AB20069B484 = {
 						CreatedOnToolsVersion = 12.5;
 					};
@@ -1732,6 +1826,7 @@
 				8D1107260486CEB800E47090 /* NekoEngine */,
 				FA4CFE8425D771AF00B37A5B /* NekoEngine iOS */,
 				FA396F59266F7AB20069B484 /* NekoEditor */,
+				FA2CBED8274BE36F004638D2 /* bin2c */,
 			);
 		};
 /* End PBXProject section */
@@ -1764,6 +1859,31 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		FA2CBEE8274BE44A004638D2 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/Resources/Engine/Shaders",
+				"$(SRCROOT)/Resources/Engine/System/System.fnt",
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/EngineRes.zip",
+				"$(DERIVED_FILE_DIR)/EngineRes.h",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cd $SRCROOT/Resources/Engine && zip -r $DERIVED_FILE_DIR/EngineRes.zip *\n$BUILT_PRODUCTS_DIR/bin2c -c $DERIVED_FILE_DIR/EngineRes.zip $DERIVED_FILE_DIR/EngineRes.h\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		8D11072C0486CEB800E47090 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -1784,6 +1904,7 @@
 				FA99953E25E2E684002CB0D3 /* MTLShader.m in Sources */,
 				FAAF9B822521F3C500F7C24B /* Source.c in Sources */,
 				FA28E6CB2668F4B2000B591E /* UI.metal in Sources */,
+				FA88A34126EA092500C01272 /* Terrain.c in Sources */,
 				FAAF9B8D2521F3D700F7C24B /* Component.c in Sources */,
 				FA04A9FA2653FD5A00534686 /* Systems.c in Sources */,
 				FAAF9B8E2521F3D700F7C24B /* Config.c in Sources */,
@@ -1794,7 +1915,6 @@
 				FAAF9B922521F3D700F7C24B /* Entity.c in Sources */,
 				FAAF9B932521F3D700F7C24B /* Event.c in Sources */,
 				FA4CFF8A25D8453200B37A5B /* MTLRenderPass.m in Sources */,
-				FA4A196725FE448F00040940 /* AVFDevice.m in Sources */,
 				FAFEF82F25D5A01B00D8D1FB /* MTLAccelerationStructure.m in Sources */,
 				FAAF9B942521F3D700F7C24B /* IO.c in Sources */,
 				FAAF9B952521F3D700F7C24B /* Resource.c in Sources */,
@@ -1816,6 +1936,7 @@
 				FA4CFFC925D8DA7900B37A5B /* Darwin.m in Sources */,
 				FAAF9C852522A81F00F7C24B /* physfs_archiver_7z.c in Sources */,
 				FAAF9C862522A81F00F7C24B /* physfs_archiver_dir.c in Sources */,
+				FA8283FA2746B4F400F7E822 /* Transparent.c in Sources */,
 				FAEFB7622662AECE00BFCF25 /* LightCulling.c in Sources */,
 				FA55844226717EAD0015BB90 /* MTLMemory.m in Sources */,
 				FAAF9C872522A81F00F7C24B /* physfs_archiver_grp.c in Sources */,
@@ -1843,9 +1964,9 @@
 				FA6BDE7C2523382100806A2D /* lapi.c in Sources */,
 				FA6BDE7D2523382100806A2D /* lauxlib.c in Sources */,
 				FA44DB48269B3FF100F9BEFA /* Forward.c in Sources */,
-				FA4A196C25FE44B700040940 /* AVFSource.m in Sources */,
 				FA6BDE7E2523382100806A2D /* lbaselib.c in Sources */,
 				FA6BDE7F2523382100806A2D /* lcode.c in Sources */,
+				FA8283F72746B4F400F7E822 /* Sky.c in Sources */,
 				FA8A94DB25D41935008B5823 /* MTLPipeline.m in Sources */,
 				FADBC13825CF613F00085E38 /* MTLDevice.m in Sources */,
 				FA44DB4C269B3FFB00F9BEFA /* UIPass.c in Sources */,
@@ -1861,7 +1982,6 @@
 				FA6BDE862523382100806A2D /* lfunc.c in Sources */,
 				FAEFB7612662AECE00BFCF25 /* Depth.c in Sources */,
 				FA4CFFCB25D8DA7900B37A5B /* Thread.m in Sources */,
-				FA4A195F25FE43E900040940 /* AVFDriver.m in Sources */,
 				FA6BDE872523382100806A2D /* lgc.c in Sources */,
 				FA6BDE882523382100806A2D /* linit.c in Sources */,
 				FA4A193E25FD321400040940 /* l_Render.c in Sources */,
@@ -1880,7 +2000,9 @@
 				FAEFB7562662AE6E00BFCF25 /* Animator.c in Sources */,
 				FA6BDE8F2523382100806A2D /* lopcodes.c in Sources */,
 				FAA9108825D3D85D005FCDA2 /* Application.c in Sources */,
+				FA8283F42746B4F400F7E822 /* Opaque.c in Sources */,
 				FA6BDE902523382100806A2D /* loslib.c in Sources */,
+				FA2AAFD9273808C9009FEBCB /* Sky.metal in Sources */,
 				FA6BDE912523382100806A2D /* lparser.c in Sources */,
 				FA6BDE922523382100806A2D /* lstate.c in Sources */,
 				FA6BDE932523382100806A2D /* lstring.c in Sources */,
@@ -1915,6 +2037,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		FA2CBED5274BE36F004638D2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FA2CBEE5274BE3E5004638D2 /* bin2c.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		FA396F56266F7AB20069B484 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1925,6 +2055,7 @@
 				FA396F8E266F7B680069B484 /* Wave.c in Sources */,
 				FA396FD9266F7BEC0069B484 /* lstrlib.c in Sources */,
 				FA396F84266F7B5F0069B484 /* Skeleton.c in Sources */,
+				FA88A34326EA092500C01272 /* Terrain.c in Sources */,
 				FA6EF44426CFC07100014A7F /* glTF.c in Sources */,
 				FA396FE7266F7BFA0069B484 /* physfs_archiver_vdf.c in Sources */,
 				FA396FA8266F7B8D0069B484 /* Texture.c in Sources */,
@@ -1953,7 +2084,6 @@
 				FA396FB8266F7BAF0069B484 /* Log.c in Sources */,
 				FA396F87266F7B680069B484 /* Font.c in Sources */,
 				FA396FD8266F7BEC0069B484 /* lmathlib.c in Sources */,
-				FA396F6C266F7B3F0069B484 /* AVFDriver.m in Sources */,
 				FA396F9D266F7B760069B484 /* Config.c in Sources */,
 				FA396FB4266F7BA30069B484 /* l_System.c in Sources */,
 				FA396FE5266F7BFA0069B484 /* physfs_archiver_7z.c in Sources */,
@@ -1984,8 +2114,9 @@
 				FA396F71266F7B4E0069B484 /* MTLDriver.m in Sources */,
 				FA396F81266F7B540069B484 /* Skinning.metal in Sources */,
 				FA396FBB266F7BBD0069B484 /* Text.c in Sources */,
-				FA396F6D266F7B430069B484 /* AVFDevice.m in Sources */,
+				FA8283F62746B4F400F7E822 /* Opaque.c in Sources */,
 				FA396FAE266F7B9C0069B484 /* Camera.c in Sources */,
+				FA8283F92746B4F400F7E822 /* Sky.c in Sources */,
 				FA44DB57269B5DA500F9BEFA /* Depth.metal in Sources */,
 				FA396F75266F7B4E0069B484 /* MTLSwapchain.m in Sources */,
 				FA396FD7266F7BEC0069B484 /* lutf8lib.c in Sources */,
@@ -1997,6 +2128,7 @@
 				FA396FAF266F7B9C0069B484 /* Transform.c in Sources */,
 				FA396FB7266F7BA90069B484 /* AtomicLock.c in Sources */,
 				FA396FF1266F7BFA0069B484 /* physfs_platform_apple.m in Sources */,
+				FA2AAFDB273808C9009FEBCB /* Sky.metal in Sources */,
 				FA396F77266F7B4E0069B484 /* MTLShader.m in Sources */,
 				FA396F91266F7B6C0069B484 /* AudioClip.c in Sources */,
 				FA396F88266F7B680069B484 /* NMesh.c in Sources */,
@@ -2014,7 +2146,7 @@
 				FA396FD5266F7BEC0069B484 /* ldblib.c in Sources */,
 				FA396F94266F7B760069B484 /* Resource.c in Sources */,
 				FA396FDC266F7BEC0069B484 /* lgc.c in Sources */,
-				FA396F6E266F7B430069B484 /* AVFSource.m in Sources */,
+				FA8283FC2746B4F400F7E822 /* Transparent.c in Sources */,
 				FA6EF44226CFC07100014A7F /* Import.c in Sources */,
 				FA4BD8D526CA5F4800225DB7 /* EditorController.m in Sources */,
 				FA396F9A266F7B760069B484 /* Event.c in Sources */,
@@ -2093,6 +2225,7 @@
 				FA4CFF0B25D774FF00B37A5B /* System.c in Sources */,
 				FA4CFF8B25D8453200B37A5B /* MTLRenderPass.m in Sources */,
 				FA4CFF4925D7754700B37A5B /* physfs_archiver_iso9660.c in Sources */,
+				FA8283FB2746B4F400F7E822 /* Transparent.c in Sources */,
 				FA28E6CC2668F4B2000B591E /* UI.metal in Sources */,
 				FA4CFF1D25D7753A00B37A5B /* lbaselib.c in Sources */,
 				FA4CFEDE25D774D800B37A5B /* Ogg.c in Sources */,
@@ -2103,7 +2236,6 @@
 				FA4CFEE125D774D800B37A5B /* Wave.c in Sources */,
 				FAC6710525EBE7B6001BF95A /* LightCulling.metal in Sources */,
 				FA8F56CE26679A6F00592E60 /* LightCulling.c in Sources */,
-				FA4A196825FE448F00040940 /* AVFDevice.m in Sources */,
 				FA4CFF5C25D7758600B37A5B /* MTLSwapchain.m in Sources */,
 				FA4CFEE525D774DD00B37A5B /* Audio.c in Sources */,
 				FA4A193F25FD321400040940 /* l_Render.c in Sources */,
@@ -2139,6 +2271,7 @@
 				FA99954525E2E804002CB0D3 /* DefaultPBR.metal in Sources */,
 				FA4CFF2625D7753A00B37A5B /* lapi.c in Sources */,
 				FA4CFF0A25D774FF00B37A5B /* Log.c in Sources */,
+				FA2AAFDA273808C9009FEBCB /* Sky.metal in Sources */,
 				FA4CFEEC25D774E600B37A5B /* IO.c in Sources */,
 				FA4CFEBB25D7733700B37A5B /* EngineAppDelegate.m in Sources */,
 				FA49A584264639BF009EF9B9 /* Buffer.c in Sources */,
@@ -2174,6 +2307,7 @@
 				FA4CFF2D25D7753A00B37A5B /* llex.c in Sources */,
 				FA4CFF2825D7753A00B37A5B /* lmem.c in Sources */,
 				FA4CFEEB25D774E600B37A5B /* ECSInit.c in Sources */,
+				FA8283F82746B4F400F7E822 /* Sky.c in Sources */,
 				FA4CFEFF25D774F300B37A5B /* Scene.c in Sources */,
 				FA4CFF4525D7754700B37A5B /* physfs_archiver_qpak.c in Sources */,
 				FA49A583264639BF009EF9B9 /* Pipeline.c in Sources */,
@@ -2183,11 +2317,13 @@
 				FA4CFF3825D7753A00B37A5B /* liolib.c in Sources */,
 				FA4CFF0E25D7750500B37A5B /* Text.c in Sources */,
 				FAC6710A25EBE812001BF95A /* Skinning.metal in Sources */,
+				FA8283F52746B4F400F7E822 /* Opaque.c in Sources */,
 				FA4CFF5625D7758600B37A5B /* MTLTexture.m in Sources */,
 				FA4CFF0225D774F700B37A5B /* Script.c in Sources */,
 				FA4CFF0525D774FB00B37A5B /* AtomicLock.c in Sources */,
 				FA8F56CB26679A5300592E60 /* Animator.c in Sources */,
 				FA4CFF3C25D7754700B37A5B /* physfs_platform_posix.c in Sources */,
+				FA88A34226EA092500C01272 /* Terrain.c in Sources */,
 				FA4CFEFC25D774F300B37A5B /* Transform.c in Sources */,
 				FA4CFEF525D774EA00B37A5B /* Input.c in Sources */,
 				FA4CFF2725D7753A00B37A5B /* lutf8lib.c in Sources */,
@@ -2204,7 +2340,6 @@
 				FA4CFF3625D7753A00B37A5B /* lundump.c in Sources */,
 				FA4CFED525D774C400B37A5B /* Input.m in Sources */,
 				FA49A587264639C3009EF9B9 /* Graph.c in Sources */,
-				FA4A196025FE43E900040940 /* AVFDriver.m in Sources */,
 				FA4CFF2525D7753A00B37A5B /* lvm.c in Sources */,
 				FA4CFF3F25D7754700B37A5B /* physfs.c in Sources */,
 				FA49A582264639B7009EF9B9 /* Material.c in Sources */,
@@ -2221,11 +2356,18 @@
 				FA4CFF4A25D7754700B37A5B /* physfs_archiver_vdf.c in Sources */,
 				FA4CFEFD25D774F300B37A5B /* Camera.c in Sources */,
 				FA4CFF2125D7753A00B37A5B /* loslib.c in Sources */,
-				FA4A196D25FE44B700040940 /* AVFSource.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		FA2CBEE7274BE427004638D2 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = FA2CBED8274BE36F004638D2 /* bin2c */;
+			targetProxy = FA2CBEE6274BE427004638D2 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		C01FCF4B08A954540054247B /* Debug */ = {
@@ -2237,7 +2379,7 @@
 				CODE_SIGN_ENTITLEMENTS = "";
 				CODE_SIGN_IDENTITY = "-";
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 129;
+				CURRENT_PROJECT_VERSION = 184;
 				ENABLE_HARDENED_RUNTIME = NO;
 				GCC_CW_ASM_SYNTAX = NO;
 				GCC_DYNAMIC_NO_PIC = NO;
@@ -2255,11 +2397,12 @@
 				);
 				INFOPLIST_FILE = Platform/macOS/Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
-				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
 				MARKETING_VERSION = 0.8;
 				OTHER_CFLAGS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = xyz.nalexandru.NekoEngine;
 				PRODUCT_NAME = NekoEngine;
+				VALIDATE_WORKSPACE_SKIPPED_SDK_FRAMEWORKS = OpenAL;
 				WARNING_CFLAGS = "-Wno-compare-distinct-pointer-types";
 				WRAPPER_EXTENSION = app;
 				ZERO_LINK = YES;
@@ -2274,7 +2417,7 @@
 				CLANG_ENABLE_OBJC_WEAK = YES;
 				CODE_SIGN_ENTITLEMENTS = "";
 				CODE_SIGN_IDENTITY = "-";
-				CURRENT_PROJECT_VERSION = 129;
+				CURRENT_PROJECT_VERSION = 184;
 				ENABLE_HARDENED_RUNTIME = NO;
 				GCC_CW_ASM_SYNTAX = NO;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
@@ -2291,11 +2434,12 @@
 				);
 				INFOPLIST_FILE = Platform/macOS/Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
-				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
 				MARKETING_VERSION = 0.8;
 				OTHER_CFLAGS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = xyz.nalexandru.NekoEngine;
 				PRODUCT_NAME = NekoEngine;
+				VALIDATE_WORKSPACE_SKIPPED_SDK_FRAMEWORKS = OpenAL;
 				WARNING_CFLAGS = "-Wno-compare-distinct-pointer-types";
 				WRAPPER_EXTENSION = app;
 			};
@@ -2427,6 +2571,70 @@
 			};
 			name = Release;
 		};
+		FA2CBEDD274BE36F004638D2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_STYLE = Automatic;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 9HAM5X8W52;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		FA2CBEDE274BE36F004638D2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_STYLE = Automatic;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 9HAM5X8W52;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_NS_ASSERTIONS = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
 		FA396F68266F7AB30069B484 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -2449,7 +2657,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 129;
+				CURRENT_PROJECT_VERSION = 184;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 9HAM5X8W52;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -2459,13 +2667,17 @@
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				INFOPLIST_FILE = Platform/macOS/EditorInfo.plist;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
 				MARKETING_VERSION = 0.8;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = xyz.nalexandru.NekoEditor;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				VALIDATE_WORKSPACE_SKIPPED_SDK_FRAMEWORKS = OpenAL;
 			};
 			name = Debug;
 		};
@@ -2491,7 +2703,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 129;
+				CURRENT_PROJECT_VERSION = 184;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 9HAM5X8W52;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -2500,13 +2712,17 @@
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				INFOPLIST_FILE = Platform/macOS/EditorInfo.plist;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
 				MARKETING_VERSION = 0.8;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = xyz.nalexandru.NekoEditor;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				VALIDATE_WORKSPACE_SKIPPED_SDK_FRAMEWORKS = OpenAL;
 			};
 			name = Release;
 		};
@@ -2529,7 +2745,7 @@
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 129;
+				CURRENT_PROJECT_VERSION = 184;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 9HAM5X8W52;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -2542,7 +2758,10 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				INFOPLIST_FILE = Platform/iOS/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 14.3;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
 				MARKETING_VERSION = 0.8;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -2550,6 +2769,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_WORKSPACE_SKIPPED_SDK_FRAMEWORKS = OpenAL;
 			};
 			name = Debug;
 		};
@@ -2572,7 +2792,7 @@
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 129;
+				CURRENT_PROJECT_VERSION = 184;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 9HAM5X8W52;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -2585,7 +2805,10 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				INFOPLIST_FILE = Platform/iOS/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 14.3;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
 				MARKETING_VERSION = 0.8;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
@@ -2594,6 +2817,7 @@
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALIDATE_PRODUCT = YES;
+				VALIDATE_WORKSPACE_SKIPPED_SDK_FRAMEWORKS = OpenAL;
 			};
 			name = Release;
 		};
@@ -2614,6 +2838,15 @@
 			buildConfigurations = (
 				C01FCF4F08A954540054247B /* Debug */,
 				C01FCF5008A954540054247B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		FA2CBEDF274BE36F004638D2 /* Build configuration list for PBXNativeTarget "bin2c" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FA2CBEDD274BE36F004638D2 /* Debug */,
+				FA2CBEDE274BE36F004638D2 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

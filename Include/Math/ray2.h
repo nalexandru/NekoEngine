@@ -7,7 +7,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (c) 2015-2020, Alexandru Naiman
+ * Copyright (c) 2015-2021, Alexandru Naiman
  *
  * All rights reserved.
  *
@@ -69,11 +69,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <Math/vec2.h>
 
 static inline void
-__r2_calculate_line_normal(
-	struct vec2 p1,
-	struct vec2 p2,
-	struct vec2 other_point,
-	struct vec2 *normal_out)
+__r2_calculate_line_normal(struct vec2 p1, struct vec2 p2,
+	struct vec2 other_point, struct vec2 *normal_out)
 {
 	/*
 	 * A = (3,4)
@@ -114,12 +111,7 @@ __r2_calculate_line_normal(
 }
 
 static inline void
-r2(
-	struct ray2 *ray,
-	float px,
-	float py,
-	float vx,
-	float vy)
+r2(struct ray2 *ray, float px, float py, float vx, float vy)
 {
 	ray->start.x = px;
 	ray->start.y = py;
@@ -128,8 +120,7 @@ r2(
 }
 
 static inline void
-r2_endpoints(
-	struct ray2 *ray,
+r2_endpoints(struct ray2 *ray,
 	const struct vec2 *start,
 	const struct vec2 *end)
 {
@@ -144,31 +135,25 @@ r2_endpoints(
  *multiply factor that gives the intersection point
  */
 static inline bool
-r2_line_intersection(
-	const struct vec2 *pt_a,
-	const struct vec2 *vec_a,
-	const struct vec2 *pt_b,
-	const struct vec2 *vec_b,
-	float *out_ta,
-	float *out_tb,
-	struct vec2 *intersection)
+r2_line_intersection(const struct vec2 *pt_a, const struct vec2 *vec_a,
+	const struct vec2 *pt_b, const struct vec2 *vec_b,
+	float *out_ta, float *out_tb, struct vec2 *intersection)
 {
-	float x1 = pt_a->x;
-	float y1 = pt_a->y;
-	float x2 = x1 + vec_a->x;
-	float y2 = y1 + vec_a->y;
-	float x3 = pt_b->x;
-	float y3 = pt_b->y;
-	float x4 = x3 + vec_b->x;
-	float y4 = y3 + vec_b->y;
+	const float x1 = pt_a->x;
+	const float y1 = pt_a->y;
+	const float x2 = x1 + vec_a->x;
+	const float y2 = y1 + vec_a->y;
+	const float x3 = pt_b->x;
+	const float y3 = pt_b->y;
+	const float x4 = x3 + vec_b->x;
+	const float y4 = y3 + vec_b->y;
+
+	const float denom = (y4 -y3) * (x2 - x1) - (x4 - x3) * (y2 - y1);
 
 	float ua;
 	float ub;
-
 	float x;
 	float y;
-
-	float denom = (y4 -y3) * (x2 - x1) - (x4 - x3) * (y2 - y1);
 
 	// If denom is zero, the lines are parallel
 	if(denom > -FLT_EPSILON && denom < FLT_EPSILON)
@@ -195,10 +180,8 @@ r2_line_intersection(
 }
 
 static inline bool
-r2_segment_intersection(
-	const struct ray2 *seg_a,
-	const struct ray2 *seg_b,
-	struct vec2 *intersection)
+r2_segment_intersection(const struct ray2 *seg_a,
+	const struct ray2 *seg_b, struct vec2 *intersection)
 {
 	float ua;
 	float ub;
@@ -220,11 +203,8 @@ r2_segment_intersection(
 }
 
 static inline bool
-r2_line_segment_intersection(
-	const struct ray2 *ray,
-	const struct vec2 *p1,
-	const struct vec2 *p2,
-	struct vec2 *intersection)
+r2_line_segment_intersection(const struct ray2 *ray, const struct vec2 *p1,
+	const struct vec2 *p2, struct vec2 *intersection)
 {
 	float ua;
 	float ub;
@@ -249,14 +229,9 @@ r2_line_segment_intersection(
 }
 
 static inline bool
-r2_intersect_triangle(
-	const struct ray2 *ray,
-	const struct vec2 *p1,
-	const struct vec2 *p2,
-	const struct vec2 *p3,
-	struct vec2 *intersection,
-	struct vec2 *normal_out,
-	float *distance_out)
+r2_intersect_triangle(const struct ray2 *ray, const struct vec2 *p1,
+	const struct vec2 *p2, const struct vec2 *p3,
+	struct vec2 *intersection, struct vec2 *normal_out, float *distance_out)
 {
 	struct vec2 intersect;
 	struct vec2 final_intersect;
@@ -266,12 +241,11 @@ r2_intersect_triangle(
 
 	if (r2_line_segment_intersection(ray, p1, p2, &intersect)) {
 		struct vec2 tmp;
-		float this_distance = v2_len(v2_sub(&tmp, &intersect, &ray->start));
+		const float this_distance = v2_len(v2_sub(&tmp, &intersect, &ray->start));
 		struct vec2 this_normal;
 		__r2_calculate_line_normal(*p1, *p2, *p3, &this_normal);
 
-		if (this_distance < distance &&
-				v2_dot(&this_normal, &ray->dir) < 0.0f) {
+		if (this_distance < distance && v2_dot(&this_normal, &ray->dir) < 0.0f) {
 			final_intersect.x = intersect.x;
 			final_intersect.y = intersect.y;
 			distance = this_distance;
@@ -282,15 +256,12 @@ r2_intersect_triangle(
 
 	if (r2_line_segment_intersection(ray, p2, p3, &intersect)) {
 		struct vec2 tmp;
-		float this_distance =
-			v2_len(v2_sub(&tmp,
-						&intersect, &ray->start));
+		const float this_distance = v2_len(v2_sub(&tmp, &intersect, &ray->start));
 
 		struct vec2 this_normal;
 		__r2_calculate_line_normal(*p2, *p3, *p1, &this_normal);
 
-		if (this_distance < distance &&
-				v2_dot(&this_normal, &ray->dir) < 0.0f) {
+		if (this_distance < distance && v2_dot(&this_normal, &ray->dir) < 0.0f) {
 			final_intersect.x = intersect.x;
 			final_intersect.y = intersect.y;
 			distance = this_distance;
@@ -301,15 +272,12 @@ r2_intersect_triangle(
 
 	if (r2_line_segment_intersection(ray, p3, p1, &intersect)) {
 		struct vec2 tmp;
-		float this_distance =
-			v2_len(v2_sub(&tmp,
-						&intersect, &ray->start));
+		const float this_distance = v2_len(v2_sub(&tmp, &intersect, &ray->start));
 
 		struct vec2 this_normal;
 		__r2_calculate_line_normal(*p3, *p1, *p2, &this_normal);
 
-		if (this_distance < distance &&
-				v2_dot(&this_normal, &ray->dir) < 0.0f) {
+		if (this_distance < distance && v2_dot(&this_normal, &ray->dir) < 0.0f) {
 			final_intersect.x = intersect.x;
 			final_intersect.y = intersect.y;
 			distance = this_distance;
@@ -335,14 +303,9 @@ r2_intersect_triangle(
 }
 
 static inline bool
-r2_intersect_box(
-	const struct ray2 *ray,
-	const struct vec2 *p1,
-	const struct vec2 *p2,
-	const struct vec2 *p3,
-	const struct vec2 *p4,
-	struct vec2 *intersection,
-	struct vec2 *normal_out)
+r2_intersect_box(const struct ray2 *ray, const struct vec2 *p1,
+	const struct vec2 *p2, const struct vec2 *p3, const struct vec2 *p4,
+	struct vec2 *intersection, struct vec2 *normal_out)
 {
 	bool intersected = false;
 	struct vec2 intersect, final_intersect, normal;
@@ -363,15 +326,12 @@ r2_intersect_box(
 		if (r2_line_segment_intersection(ray, this_point,
 						next_point, &intersect)) {
 			struct vec2 tmp;
-			float this_distance =
-				v2_len(v2_sub(&tmp, &intersect, &ray->start));
-
+			const float this_distance = v2_len(v2_sub(&tmp, &intersect, &ray->start));
 			struct vec2 this_normal;
 
 			__r2_calculate_line_normal(*this_point, *next_point, *other_point, &this_normal);
 
-			if (this_distance < distance &&
-					v2_dot(&this_normal, &ray->dir) < 0.0f) {
+			if (this_distance < distance && v2_dot(&this_normal, &ray->dir) < 0.0f) {
 				v2_copy(&final_intersect, &intersect);
 				distance = this_distance;
 				intersected = true;
@@ -394,11 +354,8 @@ r2_intersect_box(
 }
 
 static inline bool
-r2_intersect_circle(
-	const struct ray2 *ray,
-	const struct vec2 center,
-	const float radius,
-	struct vec2 *intersection)
+r2_intersect_circle(const struct ray2 *ray, const struct vec2 center,
+	const float radius, struct vec2 *intersection)
 {
 	(void)ray; (void)center; (void)radius; (void)intersection;
 	// FIXME: Not implemented

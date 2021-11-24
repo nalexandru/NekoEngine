@@ -76,6 +76,11 @@ Vk_CreateContext(struct RenderDevice *dev)
 	ctx->neDev = dev;
 	ctx->descriptorSet = dev->descriptorSet;
 
+	if (!Rt_InitArray(&ctx->submitted.graphics, 10, sizeof(struct Vkd_SubmitInfo), MH_RenderDriver) ||
+		!Rt_InitArray(&ctx->submitted.compute, 10, sizeof(struct Vkd_SubmitInfo), MH_RenderDriver) ||
+		!Rt_InitArray(&ctx->submitted.xfer, 10, sizeof(struct Vkd_SubmitInfo), MH_RenderDriver))
+		goto error;
+
 	return ctx;
 
 error:
@@ -123,6 +128,10 @@ Vk_ResetContext(struct RenderDevice *dev, struct RenderContext *ctx)
 		Rt_ClearArray(&ctx->computeCmdBuffers[Re_frameId], false);
 	}
 	ctx->lastSubmittedCompute = 0;
+
+	Rt_ClearArray(&ctx->submitted.graphics, false);
+	Rt_ClearArray(&ctx->submitted.compute, false);
+	Rt_ClearArray(&ctx->submitted.xfer, false);
 }
 
 void
@@ -139,6 +148,10 @@ Vk_DestroyContext(struct RenderDevice *dev, struct RenderContext *ctx)
 		Rt_TermArray(&ctx->xferCmdBuffers[i]);
 		Rt_TermArray(&ctx->computeCmdBuffers[i]);
 	}
+
+	Rt_TermArray(&ctx->submitted.graphics);
+	Rt_TermArray(&ctx->submitted.compute);
+	Rt_TermArray(&ctx->submitted.xfer);
 
 	Sys_Free(ctx->graphicsCmdBuffers);
 	Sys_Free(ctx->graphicsPools);
@@ -591,6 +604,51 @@ _SubmitTransfer(struct RenderContext *ctx, VkFence f)
 	return true;
 }
 
+static bool
+_QueueGraphics(struct RenderContext *ctx, struct Semaphore *wait, struct Semaphore *signal)
+{
+	struct Vkd_SubmitInfo si =
+	{
+		.wait = wait ? wait->sem : VK_NULL_HANDLE,
+		.waitValue = wait ? wait->value : 0,
+		.signal = signal ? signal->sem : VK_NULL_HANDLE,
+		.signalValue = signal ? ++signal->value : 0,
+		.cmdBuffer = ctx->cmdBuffer
+	};
+	ctx->cmdBuffer = VK_NULL_HANDLE;
+	return Rt_ArrayAdd(&ctx->submitted.graphics, &si);
+}
+
+static bool
+_QueueCompute(struct RenderContext *ctx, struct Semaphore *wait, struct Semaphore *signal)
+{
+	struct Vkd_SubmitInfo si =
+	{
+		.wait = wait ? wait->sem : VK_NULL_HANDLE,
+		.waitValue = wait ? wait->value : 0,
+		.signal = signal ? signal->sem : VK_NULL_HANDLE,
+		.signalValue = signal ? ++signal->value : 0,
+		.cmdBuffer = ctx->cmdBuffer
+	};
+	ctx->cmdBuffer = VK_NULL_HANDLE;
+	return Rt_ArrayAdd(&ctx->submitted.compute, &si);
+}
+
+static bool
+_QueueTransfer(struct RenderContext *ctx, struct Semaphore *wait, struct Semaphore *signal)
+{
+	struct Vkd_SubmitInfo si =
+	{
+		.wait = wait ? wait->sem : VK_NULL_HANDLE,
+		.waitValue = wait ? wait->value : 0,
+		.signal = signal ? signal->sem : VK_NULL_HANDLE,
+		.signalValue = signal ? ++signal->value : 0,
+		.cmdBuffer = ctx->cmdBuffer
+	};
+	ctx->cmdBuffer = VK_NULL_HANDLE;
+	return Rt_ArrayAdd(&ctx->submitted.xfer, &si);
+}
+
 void
 Vk_InitContextProcs(struct RenderContextProcs *p)
 {
@@ -625,6 +683,9 @@ Vk_InitContextProcs(struct RenderContextProcs *p)
 	p->Blit = _Blit;
 	p->Submit = _Submit;
 	p->SubmitTransfer = (bool(*)(struct RenderContext *, struct Fence *))_SubmitTransfer;
+	p->QueueCompute = _QueueCompute;
+	p->QueueGraphics = _QueueGraphics;
+	p->QueueTransfer = _QueueTransfer;
 }
 
 static inline uint32_t

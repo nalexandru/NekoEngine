@@ -7,7 +7,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (c) 2015-2020, Alexandru Naiman
+ * Copyright (c) 2015-2021, Alexandru Naiman
  *
  * All rights reserved.
  *
@@ -53,14 +53,22 @@
 #			include <immintrin.h>
 #		endif
 #		define USE_SSE
+#		define MATH_SIMD
 #	elif defined(__ALTIVEC__)
 #		define USE_ALTIVEC
+#		define MATH_SIMD
+#	elif defined(_XBOX360)
+#		include <VectorIntrinsics.h>
+#		define USE_VMX128
+#		define MATH_SIMD
 #	elif defined(__ARM_NEON) || defined(_M_ARM)
 #		include <arm_neon.h>
 #		define USE_NEON
+#		define MATH_SIMD
 #	elif defined(_M_ARM64)
 #		include <arm64_neon.h>
 #		define USE_NEON
+#		define MATH_SIMD
 #	endif
 #endif
 
@@ -128,14 +136,14 @@ struct vec2
 {
 	float x;
 	float y;
-};
+} ALIGN(16);
 
 struct vec3
 {
 	float x;
 	float y;
 	float z;
-};
+} ALIGN(16);
 
 struct vec4
 {
@@ -149,9 +157,11 @@ struct vec4
 #if defined(USE_SSE)
 		__m128 sv;
 #elif defined(USE_ALTIVEC)
-		vector float sv;
-#elif defined (USE_NEON)
+		__vector float sv;
+#elif defined(USE_NEON)
 		float32x4_t sv;
+#elif defined(USE_VMX128)
+		__vector4 sv;
 #endif
 	};
 } ALIGN(16);
@@ -168,9 +178,11 @@ struct quat
 #if defined(USE_SSE)
 		__m128 sv;
 #elif defined(USE_ALTIVEC)
-		__attribute__((aligned(16))) __vector float sv;
+		__vector float sv;
 #elif defined(USE_NEON)
 		float32x4_t sv;
+#elif defined(USE_VMX128)
+		__vector4 sv;
 #endif
 	};
 } ALIGN(16);
@@ -178,7 +190,7 @@ struct quat
 struct mat3
 {
 	float mat[9];
-};
+} ALIGN(16);
 
 struct mat4
 {
@@ -191,6 +203,8 @@ struct mat4
 		vector float sm[4];
 #elif defined(USE_NEON)
 		float32x4_t sm[4];
+#elif defined(USE_VMX128)
+		__vector4 sm[4];
 #endif
 	};
 } ALIGN(16);
@@ -199,13 +213,13 @@ struct ray2
 {
 	struct vec2 start;
 	struct vec2 dir;
-};
+} ALIGN(16);
 
 struct ray3
 {
 	struct vec3 start;
 	struct vec3 dir;
-};
+} ALIGN(16);
 
 /*
  * A struture that represents an axis-aligned
@@ -215,7 +229,7 @@ struct aabb2
 {
 	struct vec2 min; /** The max corner of the box */
 	struct vec2 max; /** The min corner of the box */
-};
+} ALIGN(16);
 
 /*
  * A struture that represents an axis-aligned
@@ -225,12 +239,12 @@ struct aabb3
 {
 	struct vec3 min; /** The max corner of the box */
 	struct vec3 max; /** The min corner of the box */
-};
+} ALIGN(16);
 
 struct plane
 {
 	float a, b, c, d;
-};
+} ALIGN(16);
 
 #pragma pack(pop)
 

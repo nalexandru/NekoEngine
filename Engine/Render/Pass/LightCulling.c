@@ -63,7 +63,7 @@ _Execute(struct LightCulling *pass, const struct Array *resources)
 	uint32_t x = (*E_screenWidth + (*E_screenWidth % pass->tileSize)) / pass->tileSize;
 	uint32_t y = (*E_screenHeight + (*E_screenHeight % pass->tileSize)) / pass->tileSize;
 
-/*	struct BufferBarrier barrier1 =
+	struct BufferBarrier barrier1 =
 	{
 		.srcQueue = RE_QUEUE_GRAPHICS,
 		.dstQueue = RE_QUEUE_COMPUTE,
@@ -77,7 +77,7 @@ _Execute(struct LightCulling *pass, const struct Array *resources)
 
 	Re_CmdDispatch(x, ++y, 1);
 
-/*	struct BufferBarrier barrier2 =
+	struct BufferBarrier barrier2 =
 	{
 		.srcQueue = RE_QUEUE_COMPUTE,
 		.dstQueue = RE_QUEUE_GRAPHICS,

@@ -25,9 +25,10 @@ else ()
 endif ()
 
 target_compile_definitions(NekoEditor PRIVATE _ENGINE_INTERNAL_)
-target_link_libraries(NekoEditor Platform Engine OpenALDriver VulkanDriver objc)
+target_link_libraries(NekoEditor Platform Engine VulkanDriver)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+	target_link_libraries(NekoEditor objc)
 	target_link_libraries(NekoEditor "-framework Foundation -framework AppKit")
 else ()
 #	target_compile_options(NekoEditor PRIVATE -fobjc-runtime=gnustep-2.0 -fblocks)

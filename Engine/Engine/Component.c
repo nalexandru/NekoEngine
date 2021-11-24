@@ -16,6 +16,7 @@ bool E_LoadComponents(void);
 static int _CompType_cmp(const void *item, const void *data);
 static int _CompHandle_cmp(const void *item, const void *data);
 static inline struct CompHandleData *_HandlePtr(struct Scene *s, CompHandle comp);
+static void _ComponentRegistered(struct Scene *s, struct CompType *type);
 
 CompHandle
 E_CreateComponentS(struct Scene *s, const wchar_t *typeName, EntityHandle owner, const void **args)
@@ -297,6 +298,8 @@ E_InitSceneComponents(struct Scene *s)
 			return false;
 	}
 
+	E_RegisterHandler(EVT_COMPONENT_REGISTERED, (EventHandlerProc)_ComponentRegistered, s);
+
 	return true;
 }
 
@@ -343,4 +346,17 @@ static inline struct CompHandleData *
 _HandlePtr(struct Scene *s, CompHandle comp)
 {
 	return Rt_ArrayBSearch(&s->compHandle, &comp, _CompHandle_cmp);
+}
+
+void
+_ComponentRegistered(struct Scene *s, struct CompType *type)
+{
+	struct Array *a = Rt_ArrayAllocate(&s->compData);
+	if (!a) {
+		Sys_LogEntry(COMP_MOD, LOG_CRITICAL, L"Failed to allocate array for registered component in scene %ls", s->name);
+		return;
+	}
+
+	if (!Rt_InitAlignedArray(a, 10, type->size, type->alignment))
+		Sys_LogEntry(COMP_MOD, LOG_CRITICAL, L"Failed to initialize array for registered component in scene %ls", s->name);
 }

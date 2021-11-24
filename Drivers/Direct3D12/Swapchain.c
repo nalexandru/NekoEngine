@@ -101,7 +101,7 @@ D3D12_AcquireNextImage(struct RenderDevice *dev, struct Swapchain *sw)
 }
 
 bool
-D3D12_Present(struct RenderDevice *dev, struct RenderContext *ctx, struct Swapchain *sw, void *image)
+D3D12_Present(struct RenderDevice *dev, struct RenderContext *ctx, struct Swapchain *sw, void *image, struct Semaphore *wait)
 {
 	++dev->fenceValue[Re_frameId];
 

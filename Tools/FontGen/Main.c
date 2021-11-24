@@ -30,7 +30,8 @@ struct Glyph
 	uint32_t adv;
 };
 
-static inline void _downsize(const uint8_t *src, uint8_t *dst, uint32_t srcSize, uint32_t dstSize)
+static inline void
+_downsize(const uint8_t *src, uint8_t *dst, uint32_t srcSize, uint32_t dstSize)
 {
 	uint32_t i = 0, j = 0, si = 0, sj = 0, scale = srcSize / dstSize;
 	for (i = 0, si = 0; i < dstSize; ++i, si += scale)
@@ -38,10 +39,17 @@ static inline void _downsize(const uint8_t *src, uint8_t *dst, uint32_t srcSize,
 			dst[i * dstSize + j] = src[si * srcSize + sj];
 }
 
-static inline void _usage(const char *argv0)
+static inline void
+_usage(const char *argv0)
 {
 	wprintf(L"usage: %hs <font file> <texture size> <output file>\n", argv0);
 	exit(0);
+}
+
+static void
+_write_img(void *context, void *data, int size)
+{
+	fwrite(data, size, 1, (FILE *)context);
 }
 
 int
@@ -119,15 +127,18 @@ main(int argc, char *argv[])
 	fp = fopen(argv[3], "wb");
 	fwrite(&font, sizeof(font), 1, fp);
 	fwrite(glyphs, sizeof(*glyphs), font.glyphCount, fp);
-	fwrite(data, sizeof(uint8_t), (size_t)font.texSize * font.texSize, fp);
 
-	img = calloc(sizeof(*img), font.texSize * font.texSize);
+	stbi_write_tga_to_func(_write_img, fp, font.texSize, font.texSize, 1, data);
+
+//	fwrite(data, sizeof(uint8_t), (size_t)font.texSize * font.texSize, fp);
+
+/*	img = calloc(sizeof(*img), font.texSize * font.texSize);
 	size = font.texSize / 2;
 	while (size >= minSize) {
 		_downsize(data, img, font.texSize, size);
 		fwrite(img, sizeof(uint8_t), (size_t)size * size, fp);
 		size /= 2;
-	}
+	}*/
 
 	fclose(fp);
 

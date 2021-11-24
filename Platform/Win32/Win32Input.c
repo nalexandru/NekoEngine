@@ -27,6 +27,7 @@
 bool __InSys_rawMouseAxis = true;
 extern bool __InSys_enableMouseAxis;
 
+static bool _mouseButtons[5];
 static enum Button _keymap[256];
 static DWORD _lastPacket[IN_MAX_CONTROLLERS];
 
@@ -202,15 +203,25 @@ HandleInput(HWND wnd, LPARAM lParam, WPARAM wParam)
 	} else if (raw->header.dwType == RIM_TYPEMOUSE) {
 		uint16_t btn = raw->data.mouse.usButtonFlags;
 
-		In_buttonState[BTN_MOUSE_LMB] = btn & RI_MOUSE_BUTTON_1_DOWN;
-		In_buttonState[BTN_MOUSE_RMB] = btn & RI_MOUSE_BUTTON_2_DOWN;
-		In_buttonState[BTN_MOUSE_MMB] = btn & RI_MOUSE_BUTTON_3_DOWN;
-		In_buttonState[BTN_MOUSE_BTN4] = btn & RI_MOUSE_BUTTON_4_DOWN;
-		In_buttonState[BTN_MOUSE_BTN5] = btn & RI_MOUSE_BUTTON_5_DOWN;
+	#define MOUSE_BTN(x) \
+		if (btn & RI_MOUSE_BUTTON_ ## x ## _DOWN)		\
+			_mouseButtons[x - 1] = true;				\
+		else if (btn & RI_MOUSE_BUTTON_ ## x ## _UP)		\
+			_mouseButtons[x - 1] = false
+
+		MOUSE_BTN(1);
+		MOUSE_BTN(2);
+		MOUSE_BTN(3);
+		MOUSE_BTN(4);
+		MOUSE_BTN(5);
+
+	#undef MOUSE_BTN
+
+		memcpy(&In_buttonState[BTN_MOUSE_LMB], _mouseButtons, sizeof(_mouseButtons));
 
 		if (__InSys_enableMouseAxis) {
-			In_mouseAxis[0] = ((float)raw->data.mouse.lLastX / (float)(*E_screenWidth / 2)) * -1.f;
-			In_mouseAxis[1] = ((float)raw->data.mouse.lLastY / (float)(*E_screenHeight / 2));
+			In_mouseAxis[0] = ((float)raw->data.mouse.lLastX / (float)(*E_screenWidth / 2)) * -10.f;
+			In_mouseAxis[1] = ((float)raw->data.mouse.lLastY / (float)(*E_screenHeight / 2)) * -10.f;
 
 			if ((raw->data.mouse.usButtonFlags & RI_MOUSE_WHEEL) == RI_MOUSE_WHEEL)
 				In_mouseAxis[2] = (float)(short)raw->data.mouse.usButtonData / WHEEL_DELTA;

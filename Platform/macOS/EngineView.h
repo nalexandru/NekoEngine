@@ -5,4 +5,6 @@
 	NSPoint mousePosition;
 }
 
+- (void)handleMouseMoved: (NSEvent *)e;
+
 @end

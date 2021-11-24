@@ -36,13 +36,13 @@ function(add_vulkan_shader INPUT_FILE)
 		
 	if (GLSLC)
 		add_custom_target(${NAME}
-			COMMAND ${GLSLC} --target-env=vulkan1.2 -O Shaders/${INPUT_FILE} -o ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Data/Shaders/Vulkan/${NAME}.spv
+			COMMAND ${GLSLC} --target-env=vulkan1.2 -O Shaders/${INPUT_FILE} -o ${CMAKE_CURRENT_BINARY_DIR}/Shaders/Vulkan/${NAME}.spv
 			DEPENDS Shaders/${INPUT_FILE}
 			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 		)
 	elseif (GLSLV)
 		add_custom_target(${NAME}
-			COMMAND ${GLSLV} --target-env vulkan1.2 -o ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Data/Shaders/Vulkan/${NAME}.spv Shaders/${INPUT_FILE}
+			COMMAND ${GLSLV} --target-env vulkan1.2 -o ${CMAKE_CURRENT_BINARY_DIR}/Shaders/Vulkan/${NAME}.spv Shaders/${INPUT_FILE}
 			DEPENDS Shaders/${INPUT_FILE}
 			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 		)
@@ -50,7 +50,7 @@ function(add_vulkan_shader INPUT_FILE)
 		message(FATAL_ERROR "No shader compiler found")
 	endif ()
 	
-	add_dependencies(VulkanDriver ${NAME})
+	add_dependencies(build_shader_zip ${NAME})
 endfunction()
 
 add_library(VulkanDriver STATIC ${src})
@@ -61,12 +61,21 @@ else ()
 	target_compile_definitions(VulkanDriver PRIVATE _ENGINE_INTERNAL_)
 endif ()
 
+add_custom_target(create_shader_dir ALL COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/Shaders/Vulkan)
+
+add_custom_target(build_shader_zip ALL
+	COMMAND ${CMAKE_COMMAND} -E tar "cfv" "${CMAKE_CURRENT_BINARY_DIR}/Shaders.zip" --format=zip "Shaders/*"
+	WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+add_custom_target(build_shader_header ALL COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/bin2c -c ${CMAKE_CURRENT_BINARY_DIR}/Shaders.zip ${CMAKE_CURRENT_BINARY_DIR}/Shaders.h)
+
 foreach(Shader ${ShaderSrc})
 	get_filename_component(ShaderFile ${Shader} NAME)
 	add_vulkan_shader(${ShaderFile})
 endforeach(Shader)
 
-add_custom_target(create_shader_dir ALL COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Data/Shaders/Vulkan)
-add_dependencies(VulkanDriver create_shader_dir)
+add_dependencies(build_shader_zip create_shader_dir)
+add_dependencies(build_shader_header bin2c build_shader_zip)
+add_dependencies(VulkanDriver build_shader_header)
 
+target_include_directories(VulkanDriver PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 

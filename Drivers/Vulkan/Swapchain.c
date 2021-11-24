@@ -10,6 +10,7 @@
 #include "VulkanDriver.h"
 
 static inline bool _Create(VkDevice dev, VkPhysicalDevice physDev, struct Swapchain *sw);
+static inline void _SubmitCompute(VkQueue queue, struct RenderContext *ctx, VkSemaphore frameStart, uint64_t frameStartValue);
 
 struct Swapchain *
 Vk_CreateSwapchain(struct RenderDevice *dev, VkSurfaceKHR surface, bool verticalSync)
@@ -148,7 +149,7 @@ Vk_AcquireNextImage(struct RenderDevice *dev, struct Swapchain *sw)
 }
 
 bool
-Vk_Present(struct RenderDevice *dev, struct RenderContext *ctx, struct Swapchain *sw, void *image)
+Vk_Present(struct RenderDevice *dev, struct RenderContext *ctx, struct Swapchain *sw, void *image, struct Semaphore *waitSemaphore)
 {
 	dev->frameValues[Re_frameId] = ++dev->semaphoreValue;
 
@@ -181,6 +182,15 @@ Vk_Present(struct RenderDevice *dev, struct RenderContext *ctx, struct Swapchain
 
 	if (!Re_deviceInfo.features.coherentMemory)
 		wait[0] = Vkd_stagingSignal;
+
+	if (waitSemaphore) {
+		si.waitSemaphoreCount = 2;
+		wait[1] = waitSemaphore->sem;
+		waitValues[1] = waitSemaphore->value;
+		timelineInfo.waitSemaphoreValueCount = 2;
+	}
+
+	_SubmitCompute(dev->computeQueue, ctx, wait[0], waitValues[0]);
 
 	vkQueueSubmit(dev->graphicsQueue, 1, &si, VK_NULL_HANDLE);
 
@@ -328,4 +338,55 @@ _Create(VkDevice dev, VkPhysicalDevice physDev, struct Swapchain *sw)
 	}
 
 	return true;
+}
+
+static void
+_SubmitCompute(VkQueue queue, struct RenderContext *ctx, VkSemaphore frameStart, uint64_t frameStartValue)
+{
+	if (!ctx->submitted.compute.count)
+		return;
+
+	VkPipelineStageFlags waitFlags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+
+	struct Array info, timelineInfo;
+	Rt_InitArray(&info, ctx->submitted.compute.count, sizeof(VkSubmitInfo), MH_Transient);
+	Rt_InitArray(&timelineInfo, ctx->submitted.compute.count, sizeof(VkTimelineSemaphoreSubmitInfo), MH_Transient);
+
+	struct Vkd_SubmitInfo *si;
+	Rt_ArrayForEach(si, &ctx->submitted.compute) {
+		VkTimelineSemaphoreSubmitInfo *ti = Rt_ArrayAllocate(&timelineInfo);
+		VkSubmitInfo *i = Rt_ArrayAllocate(&info);
+
+		ti->sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
+		ti->waitSemaphoreValueCount = 1;
+
+		i->sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		i->pNext = ti;
+		i->pWaitDstStageMask = &waitFlags;
+		i->commandBufferCount = 1;
+		i->pCommandBuffers = &si->cmdBuffer;
+		i->waitSemaphoreCount = 1;
+
+		if (si->wait) {
+			i->pWaitSemaphores = &si->wait;
+			ti->pWaitSemaphoreValues = &si->waitValue;
+		} else {
+			i->pWaitSemaphores = &frameStart;
+			ti->pWaitSemaphoreValues = &frameStartValue;
+		}
+
+		if (si->signal) {
+			i->signalSemaphoreCount = 1;
+			i->pSignalSemaphores = &si->signal;
+			ti->signalSemaphoreValueCount = 1;
+			ti->pSignalSemaphoreValues = &si->signalValue;
+		} else {
+			i->signalSemaphoreCount = 0;
+			i->pSignalSemaphores = NULL;
+			ti->signalSemaphoreValueCount = 0;
+			ti->pSignalSemaphoreValues = NULL;
+		}
+	}
+
+	vkQueueSubmit(queue, (uint32_t)info.count, (const VkSubmitInfo *)info.data, VK_NULL_HANDLE);
 }

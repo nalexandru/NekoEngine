@@ -32,9 +32,8 @@
 	[btn setTitle: @"Import"];
 	[btn setTarget: self];
 	[btn setAction: @selector(importAsset:)];
-#ifdef __APPLE__
 	[btn setBezelStyle: NSBezelStyleRounded];
-#endif
+
 	[view addSubview: btn];
 
 	NSScrollView *scrollView = [[[NSScrollView alloc] initWithFrame: NSMakeRect(5, 5, contentRect.size.width - 10, contentRect.size.height - 40)] autorelease];
@@ -46,9 +45,8 @@
 	[_assetView setColumnAutoresizingStyle: NSTableViewSequentialColumnAutoresizingStyle];
 
 	NSTableColumn *tc = [[NSTableColumn alloc] initWithIdentifier: @"text"];
-#ifdef __APPLE__
 	[tc setTitle: @"/"];
-#endif
+
 
 	[_assetView addTableColumn: tc];
 

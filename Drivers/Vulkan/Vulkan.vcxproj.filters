@@ -163,6 +163,12 @@
     <CustomBuild Include="Shaders\LightCulling_CS.comp">
       <Filter>Shaders\Compute</Filter>
     </CustomBuild>
+    <CustomBuild Include="Shaders\Sky_VS.vert">
+      <Filter>Shaders\Vertex</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Shaders\Sky_FS.frag">
+      <Filter>Shaders\Fragment</Filter>
+    </CustomBuild>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\PBR.glsl">

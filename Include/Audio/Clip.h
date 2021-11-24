@@ -30,12 +30,10 @@ struct AudioClipCreateInfo
 	uint32_t sampleCount;
 };
 
-// Shared resource handling
 bool Au_CreateClip(const char *name, const struct AudioClipCreateInfo *ci, struct AudioClip *data, Handle h);
 bool Au_LoadClip(struct ResourceLoadInfo *li, const char *args, struct AudioClip *model, Handle h);
 void Au_UnloadClip(struct AudioClip *model, Handle h);
 
-// Implemented in the sound library
 bool Au_InitClip(struct AudioClip *clip);
 void Au_TermClip(struct AudioClip *clip);
 

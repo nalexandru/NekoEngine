@@ -30,7 +30,8 @@ bool E_LoadNMeshAsset(struct Stream *stm, struct Model *m);
 bool E_LoadNAnimAsset(struct Stream *stm, struct AnimationClip *ac);
 
 // Textures
-bool E_LoadImageAsset(struct Stream *stm, struct TextureCreateInfo *tex);
+bool E_LoadImageAssetComp(struct Stream *stm, struct TextureCreateInfo *tex, int rcomp);
+static inline bool E_LoadImageAsset(struct Stream *stm, struct TextureCreateInfo *tex) { return E_LoadImageAssetComp(stm, tex, 4); }
 bool E_LoadTGAAsset(struct Stream *stm, struct TextureCreateInfo *tex);
 bool E_LoadDDSAsset(struct Stream *stm, struct TextureCreateInfo *tex);
 

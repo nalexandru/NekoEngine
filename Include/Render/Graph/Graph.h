@@ -8,9 +8,11 @@ extern struct RenderGraph *Re_activeGraph;
 
 bool Re_AddGraphTexture(const char *name, const struct TextureDesc *desc, struct Array *resources);
 bool Re_AddGraphBuffer(const char *name, const struct BufferDesc *desc, struct Array *resources);
+bool Re_AddGraphData(const char *name, void *ptr, struct Array *resources);
 
 struct Texture *Re_GraphTexture(uint64_t hash, const struct Array *resources);
 uint64_t Re_GraphBuffer(uint64_t hash, const struct Array *resources, struct Buffer **buff);
+void *Re_GraphData(uint64_t hash, const struct Array *resources);
 
 struct RenderGraph *Re_CreateGraph(void);
 bool Re_AddPass(struct RenderGraph *g, struct RenderPass *pass);

@@ -20,10 +20,7 @@ struct FontHeader
 bool
 E_LoadFontAsset(struct Stream *stm, struct Font *fnt)
 {
-	void *texData = NULL;
-	uint32_t texDataSize;
 	struct FontHeader hdr;
-	uint32_t texSize;
 
 	if (E_ReadStream(stm, &hdr, sizeof(hdr)) != sizeof(hdr))
 		return false;
@@ -58,27 +55,8 @@ E_LoadFontAsset(struct Stream *stm, struct Font *fnt)
 		}
 	}
 	
-	texSize = Re_deviceInfo.limits.maxTextureSize;
-	if (texSize < hdr.texSize) {
-		uint64_t curSize = hdr.texSize;
-
-		while (curSize > texSize) {
-			E_StreamSeek(stm, curSize * curSize, IO_SEEK_CUR);
-			curSize /= 2;
-		}
-	} else {
-		texSize = hdr.texSize;
-	}
-
-	texDataSize = texSize * texSize;
-	texData = Sys_Alloc(texDataSize, 1, MH_Asset);
-	if (E_ReadStream(stm, texData, texDataSize) != texDataSize)
-		goto error;
-
 	struct TextureCreateInfo tci =
 	{
-		.desc.width = texSize,
-		.desc.height = texSize,
 		.desc.depth = 1,
 		.desc.type = TT_2D,
 		.desc.usage = TU_SAMPLED | TU_TRANSFER_DST,
@@ -87,10 +65,10 @@ E_LoadFontAsset(struct Stream *stm, struct Font *fnt)
 		.desc.mipLevels = 1,
 		.desc.gpuOptimalTiling = true,
 		.desc.memoryType = MT_GPU_LOCAL,
-		.data = texData,
-		.dataSize = texDataSize,
 		.keepData = false
 	};
+
+	E_LoadImageAssetComp(stm, &tci, 1);
 
 	fnt->texture = E_CreateResource("__SysFont_Texture", RES_TEXTURE, &tci);
 	if (fnt->texture == E_INVALID_HANDLE)
@@ -99,7 +77,6 @@ E_LoadFontAsset(struct Stream *stm, struct Font *fnt)
 	return true;
 
 error:
-	Sys_Free(texData);
 	Sys_Free(fnt->glyphs);
 
 	memset(fnt, 0x0, sizeof(*fnt));

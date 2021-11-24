@@ -83,7 +83,23 @@ _EnumerateDevices(uint32_t *count, struct RenderDeviceInfo *info)
 		info[i].features.astcTextureCompression = false;
 		info[i].features.secondaryCommandBuffers = false;
 		info[i].features.coherentMemory = true;
-		
+
+		if ([dev supportsFamily: MTLGPUFamilyApple5]) {
+			// Apple GPU
+			info->hardwareInfo.vendorId = 0x106B;
+
+			/*if ([dev supportsFamily: MTLGPUFamilyApple8])
+				info->hardwareInfo.deviceId = 0xA150;
+			else*/ if ([dev supportsFamily: MTLGPUFamilyApple7])
+				info->hardwareInfo.deviceId = 0xA140;
+			else if ([dev supportsFamily: MTLGPUFamilyApple6])
+				info->hardwareInfo.deviceId = 0xA130;
+			else
+				info->hardwareInfo.deviceId = 0xA120;
+		} else {
+			// TODO
+		}
+
 		info[i].private = (void *)devices[i];
 	}
 	
@@ -123,9 +139,18 @@ _EnumerateDevices(uint32_t *count, struct RenderDeviceInfo *info)
 	info->features.secondaryCommandBuffers = false;
 	info->limits.maxTextureSize = 16384;
 	info->features.coherentMemory = true;
-		
+
+	info->hardwareInfo.vendorId = 0x106B;
+
+	if ([dev supportsFamily: MTLGPUFamilyApple8])
+		info->hardwareInfo.deviceId = 0xA150;
+	else if ([dev supportsFamily: MTLGPUFamilyApple7])
+		info->hardwareInfo.deviceId = 0xA140;
+	else
+		info->hardwareInfo.deviceId = 0xA130;
+
 	info->private = dev;
-	
+
 	return true;
 }
 

@@ -6,10 +6,13 @@
 #include <Render/DestroyResource.h>
 #include <Render/Driver/TransientResources.h>
 
+#include "../Internal.h"
+
 enum GraphResourceType
 {
 	PRT_TEXTURE,
-	PRT_BUFFER
+	PRT_BUFFER,
+	PRT_DATA
 };
 
 struct GraphResource
@@ -27,6 +30,7 @@ struct GraphResource
 			BufferHandle buffer;
 			struct Buffer *ptr;
 		};
+		void *hostData;
 	} handle;
 };
 
@@ -34,13 +38,6 @@ struct PassData
 {
 	void *data;
 	struct RenderPass procs;
-};
-
-struct RenderGraph
-{
-	struct Array execPasses;
-	struct Array resources;
-	struct Array allPasses;
 };
 
 static struct GraphResource *_GetResource(uint64_t hash, const struct Array *resources);
@@ -59,6 +56,16 @@ bool
 Re_AddGraphBuffer(const char *name, const struct BufferDesc *desc, struct Array *resources)
 {
 	struct GraphResource res = { .hash = Rt_HashString(name), .info.type = PRT_BUFFER, .info.buffer = *desc };
+	if (_GetResource(res.hash, resources))
+		return false;
+
+	return Rt_ArrayAdd(resources, &res);
+}
+
+bool
+Re_AddGraphData(const char *name, void *ptr, struct Array *resources)
+{
+	struct GraphResource res = { .hash = Rt_HashString(name), .info.type = PRT_DATA };
 	if (_GetResource(res.hash, resources))
 		return false;
 
@@ -87,6 +94,15 @@ Re_GraphBuffer(uint64_t hash, const struct Array *resources, struct Buffer **buf
 	return res->info.type == PRT_BUFFER ? res->handle.bufferAddress : 0;
 }
 
+void *
+Re_GraphData(uint64_t hash, const struct Array *resources)
+{
+	struct GraphResource *res = _GetResource(hash, resources);
+	if (!res)
+		return 0;
+	return res->info.type == PRT_DATA ? res->handle.hostData : NULL;
+}
+
 struct RenderGraph *
 Re_CreateGraph(void)
 {
@@ -96,6 +112,8 @@ Re_CreateGraph(void)
 
 	Rt_InitArray(&g->allPasses, 10, sizeof(struct PassData), MH_Render);
 	Rt_InitArray(&g->resources, 10, sizeof(struct GraphResource), MH_Render);
+
+	g->semaphore = Re_CreateSemaphore();
 
 	return g;
 }
@@ -186,6 +204,8 @@ Re_DestroyGraph(struct RenderGraph *g)
 	Rt_ArrayForEach(pd, &g->allPasses)
 		pd->procs.Term(pd->data);
 	Rt_TermArray(&g->allPasses);
+
+	Re_DestroySemaphore(g->semaphore);
 
 	Sys_Free(g);
 }

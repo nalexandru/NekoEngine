@@ -24,5 +24,8 @@ extern struct RenderPass RP_depthPrePass;
 extern struct RenderPass RP_lightCulling;
 extern struct RenderPass RP_ui;
 extern struct RenderPass RP_forward;
+extern struct RenderPass RP_opaque;
+extern struct RenderPass RP_transparent;
+extern struct RenderPass RP_sky;
 
 #endif /* _NE_RENDER_GRAPH_PASS_H_ */

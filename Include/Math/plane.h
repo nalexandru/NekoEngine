@@ -7,7 +7,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (c) 2015-2020, Alexandru Naiman
+ * Copyright (c) 2015-2021, Alexandru Naiman
  *
  * All rights reserved.
  *
@@ -72,12 +72,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define	PT_INFRONT_OF_PLANE		 1
 
 static inline struct plane *
-plane(
-	struct plane *p,
-	float a,
-	float b,
-	float c,
-	float d)
+plane(struct plane *p, float a, float b, float c, float d)
 {
 	p->a = a;
 	p->b = b;
@@ -88,10 +83,7 @@ plane(
 }
 
 static inline struct plane *
-plane_normal_distance(
-	struct plane *p,
-	const struct vec3 *n,
-	const float d)
+plane_normal_distance(struct plane *p, const struct vec3 *n, const float d)
 {
 	p->a = n->x;
 	p->b = n->y;
@@ -102,10 +94,7 @@ plane_normal_distance(
 }
 
 static inline struct plane *
-plane_point_normal(
-	struct plane *p,
-	const struct vec3 *pt,
-	const struct vec3 *n)
+plane_point_normal(struct plane *p, const struct vec3 *pt, const struct vec3 *n)
 {
 	p->a = n->x;
 	p->b = n->y;
@@ -120,11 +109,8 @@ plane_point_normal(
  * pOut is returned.
  */
 static inline struct plane *
-plane_points(
-	struct plane *p,
-	const struct vec3 *p1,
-	const struct vec3 *p2,
-	const struct vec3 *p3)
+plane_points(struct plane *p, const struct vec3 *p1,
+	const struct vec3 *p2, const struct vec3 *p3)
 {
 	/*
 	 * v = (B − A) × (C − A)
@@ -152,20 +138,14 @@ plane_points(
 }
 
 static inline float
-plane_dot(
-	const struct plane *p,
-	const struct vec4 *v)
+plane_dot(const struct plane *p, const struct vec4 *v)
 {
-	return (p->a * v->x +
-		p->b * v->y +
-		p->c * v->z +
-		p->d * v->w);
+	return v4_dot((const struct vec4 *)p, v);
+
 }
 
 static inline float
-plane_dot_coord(
-	const struct plane *p,
-	const struct vec3 *v)
+plane_dot_coord(const struct plane *p, const struct vec3 *v)
 {
 	return (p->a * v->x +
 		p->b * v->y +
@@ -173,9 +153,7 @@ plane_dot_coord(
 }
 
 static inline float
-plane_dot_Normal(
-	const struct plane *p,
-	const struct vec3 *v)
+plane_dot_Normal(const struct plane *p, const struct vec3 *v)
 {
 	return (p->a * v->x +
 		p->b * v->y +
@@ -183,11 +161,8 @@ plane_dot_Normal(
 }
 
 static inline struct vec3 *
-plane_intersect_line(
-	struct vec3 *pt,
-	const struct plane *p,
-	const struct vec3 *v1,
-	const struct vec3 *v2)
+plane_intersect_line(struct vec3 *pt, const struct plane *p,
+	const struct vec3 *v1, const struct vec3 *v2)
 {
 	/*
 	 * n = (Planea, Planeb, Planec)
@@ -223,9 +198,7 @@ plane_intersect_line(
 }
 
 static inline struct plane *
-plane_norm(
-	struct plane *dst,
-	const struct plane *src)
+plane_norm(struct plane *dst, const struct plane *src)
 {
 	struct vec3 n;
 	float l = 0;
@@ -259,15 +232,13 @@ plane_norm(
  * POINT_BEHIND_PLANE if it is behind. Returns POINT_ON_PLANE otherwise
  */
 static inline int
-plane_pt_pos(
-	const struct plane *pIn,
-	const struct vec3 *pP)
+plane_pt_pos(const struct plane *pIn, const struct vec3 *pP)
 {
 	/*
 	 * This function will determine if a point is on, in front of, or behind
 	 * the plane.  First we store the dot product of the plane and the point.
 	 */
-	float distance = pIn->a * pP->x + pIn->b * pP->y + pIn->c * pP->z + pIn->d;
+	const float distance = pIn->a * pP->x + pIn->b * pP->y + pIn->c * pP->z + pIn->d;
 
 	/* Simply put if the dot product is greater than 0 then it is in
 	 * front of it.  If it is less than 0 then it is behind it.  And if
@@ -284,12 +255,9 @@ plane_pt_pos(
 }
 
 static inline struct plane *
-plane_from_mat4(
-	struct plane *p,
-	const struct mat4 *m,
-	int32_t r)
+plane_from_mat4(struct plane *p, const struct mat4 *m, int32_t r)
 {
-	int scale = (r < 0) ? -1 : 1;
+	const int scale = (r < 0) ? -1 : 1;
 	r = abs(r) - 1;
 
 	p->a = m->m[3] + scale * m->m[r];
@@ -301,15 +269,11 @@ plane_from_mat4(
 }
 
 static inline struct vec3 *
-plane_intersect(
-	struct vec3 *v,
-	const struct plane *p1,
-	const struct plane *p2,
-	const struct plane *p3)
+plane_intersect(struct vec3 *v, const struct plane *p1,
+	const struct plane *p2, const struct plane *p3)
 {
 	struct vec3 n1, n2, n3, cross;
 	struct vec3 r1, r2, r3;
-	float denom = 0.f;
 
 	v3(&n1, p1->a, p1->b, p1->c);
 	v3(&n2, p2->a, p2->b, p2->c);
@@ -317,7 +281,7 @@ plane_intersect(
 
 	v3_cross(&cross, &n2, &n3);
 
-	denom = v3_dot(&n1, &cross);
+	const float denom = v3_dot(&n1, &cross);
 
 	if (float_equal(denom, 0.f))
 		return NULL;

@@ -565,7 +565,7 @@ _CpuInfo(void)
 					ptr[strlen(ptr) - 1] = 0x0;
 					_cpuFreq = atoi(ptr);
 				}
-			} else if (strstr(buff, cpuCoreId)) {
+			} else if (cpuCoreId && strstr(buff, cpuCoreId)) {
 				char *ptr = strchr(buff, ':');
 				if (ptr) {
 					ptr += 2;

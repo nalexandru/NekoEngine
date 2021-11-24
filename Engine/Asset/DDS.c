@@ -161,7 +161,7 @@ E_LoadDDSAsset(struct Stream *stm, struct TextureCreateInfo *tci)
 	tci->desc.height = hdr.dwHeight;
 	tci->desc.depth = hdr.dwDepth ? hdr.dwDepth : 1;
 	tci->desc.mipLevels = hdr.dwMipMapCount;
-	tci->desc.arrayLayers = 1;
+	tci->desc.arrayLayers = hdr.dwCaps2 & DDSCAPS2_CUBEMAP ? 6 : 1;
 	tci->data = data;
 
 	return true;

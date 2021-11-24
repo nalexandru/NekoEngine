@@ -1,6 +1,8 @@
 #include "MotifGUI.h"
 #include "AboutDialog.h"
 
+#include <stdio.h>
+
 #include <Xm/Xm.h>
 #include <Xm/MessageB.h>
 

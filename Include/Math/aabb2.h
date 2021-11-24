@@ -7,7 +7,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (c) 2015-2020, Alexandru Naiman
+ * Copyright (c) 2015-2021, Alexandru Naiman
  *
  * All rights reserved.
  *
@@ -73,11 +73,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * then the origin is used. Returns pBox.
  */
 static inline struct aabb2 *
-aabb2(
-	struct aabb2 *aabb,
-	const struct vec2 *center,
-	const float width,
-	const float height)
+aabb2(struct aabb2 *aabb, const struct vec2 *center,
+	const float width, const float height)
 {
 	struct vec2 origin;
 	struct vec2 *point;
@@ -98,9 +95,7 @@ aabb2(
  * Assigns pIn to pOut, returns pOut.
  */
 static inline struct aabb2 *
-aabb2_copy(
-	struct aabb2 *dst,
-	const struct aabb2 *src)
+aabb2_copy(struct aabb2 *dst, const struct aabb2 *src)
 {
 	memcpy(dst, src, sizeof(*dst));
 
@@ -112,9 +107,7 @@ aabb2_copy(
  * the maximum
  */
 static inline struct aabb2 *
-aabb2_sanitize(
-	struct aabb2 *dst,
-	const struct aabb2 *src)
+aabb2_sanitize(struct aabb2 *dst, const struct aabb2 *src)
 {
 	if (src->min.x <= src->max.x) {
 		dst->min.x = src->min.x;
@@ -140,18 +133,14 @@ aabb2_sanitize(
  * otherwise.
  */
 static inline int
-aabb2_contains_pt(
-	const struct aabb2 *aabb,
-	const struct vec2 *pt)
+aabb2_contains_pt(const struct aabb2 *aabb, const struct vec2 *pt)
 {
 	return (pt->x >= aabb->min.x && pt->x <= aabb->max.x &&
 		pt->y >= aabb->min.y && pt->y <= aabb->max.y);
 }
 
 static inline uint8_t
-aabb2_contains_aabb2(
-	const struct aabb2 *aabb,
-	const struct aabb2 *chk)
+aabb2_contains_aabb2(const struct aabb2 *aabb, const struct aabb2 *chk)
 {
 	struct vec2 corners[4];
 	int contains;
@@ -161,10 +150,6 @@ aabb2_contains_aabb2(
 	v2(&corners[2], chk->max.x, chk->max.y);
 	v2(&corners[3], chk->min.x, chk->max.y);
 
-	/*
-	 * since true equals 1 , we can count the number of contained points
-	 * by actually adding the results:
-	 */
 	contains = aabb2_contains_pt(aabb, &corners[0]) +
 		aabb2_contains_pt(aabb, &corners[1]) +
 		aabb2_contains_pt(aabb, &corners[2]) +
@@ -179,16 +164,13 @@ aabb2_contains_aabb2(
 }
 
 /*
- * Scales pIn by s, stores the resulting AABB in pOut. Returns pOut.
+ * Scales src by s, stores the resulting AABB in dst. Returns dst.
  * It modifies both points, so position of the box will be
  * changed. Use aabb2_scale_pivot to specify the origin of the
  * scale.
  */
 static inline struct aabb2 *
-aabb2_translate(
-	struct aabb2 *dst,
-	const struct aabb2 *src,
-	const struct vec2 *translation)
+aabb2_translate(struct aabb2 *dst, const struct aabb2 *src, const struct vec2 *translation)
 {
 	v2_add(&(dst->min), &(src->min), translation);
 	v2_add(&(dst->max), &(src->max), translation);
@@ -197,10 +179,7 @@ aabb2_translate(
 }
 
 static inline struct aabb2 *
-aabb2_scale(
-	struct aabb2 *dst,
-	const struct aabb2 *src,
-	float s)
+aabb2_scale(struct aabb2 *dst, const struct aabb2 *src, float s)
 {
 	v2_scale(&(dst->max), &(src->max), s);
 	v2_scale(&(dst->min), &(src->min), s);
@@ -209,14 +188,10 @@ aabb2_scale(
 }
 
 /*
- * Scales pIn by s, using pivot as the origin for the scale.
+ * Scales src by s, using pivot as the origin for the scale.
  */
 static inline struct aabb2 *
-aabb2_scale_pivot(
-	struct aabb2 *dst,
-	const struct aabb2 *src,
-	const struct vec2 *pivot,
-	float s)
+aabb2_scale_pivot(struct aabb2 *dst, const struct aabb2 *src, const struct vec2 *pivot, float s)
 {
 	struct vec2 translate;
 
@@ -243,9 +218,7 @@ aabb2_size_y(const struct aabb2 *aabb)
 }
 
 static inline struct vec2 *
-aabb2_center(
-	const struct aabb2 *aabb,
-	struct vec2 *dst)
+aabb2_center(const struct aabb2 *aabb, struct vec2 *dst)
 {
 	v2_add(dst, &aabb->min, &aabb->max);
 	v2_scale(dst, dst, 0.5);
@@ -255,16 +228,13 @@ aabb2_center(
 
 /*
  * @brief aabb2_expand
- * @param pOut - The resulting AABB
- * @param pIn - The original AABB
- * @param other - Another AABB that you want pIn expanded to contain
+ * @param dst - The resulting AABB
+ * @param src - The original AABB
+ * @param other - Another AABB that you want src expanded to contain
  * @return
  */
 static inline struct aabb2 *
-aabb2_expand(
-	struct aabb2 *dst,
-	const struct aabb2 *src,
-	const struct aabb2 *other)
+aabb2_expand(struct aabb2 *dst, const struct aabb2 *src, const struct aabb2 *other)
 {
 	dst->min.x = (src->min.x < other->min.x) ? src->min.x : other->min.x;
 	dst->max.x = (src->max.x > other->max.x) ? src->max.x : other->max.x;

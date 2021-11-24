@@ -7,7 +7,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (c) 2015-2020, Alexandru Naiman
+ * Copyright (c) 2015-2021, Alexandru Naiman
  *
  * All rights reserved.
  *
@@ -42,18 +42,12 @@
 
 #include <Math/defs.h>
 
-/**
-  * Returns degrees as radians.
-  */
 static inline float
 deg_to_rad(float degrees)
 {
 	return degrees * M_PI_180;
 }
 
-/**
- * Returns radians as degrees
- */
 static inline float
 rad_to_deg(float radians)
 {
@@ -78,10 +72,28 @@ lerp(float x, float y, float t)
 	return x + t * (y - x);
 }
 
-static inline double
+static inline double 
 mod(double x, double y)
 {
-	return x = y * floor(x / y);
+	return x + y * floor(x / y);
+}
+
+static inline float
+m_max(float a, float b)
+{
+	return a > b ? a : b;
+}
+
+static inline float
+m_min(float a, float b)
+{
+	return a < b ? a : b;
+}
+
+static inline uint32_t
+clamp_ui(uint32_t x, uint32_t min, uint32_t max)
+{
+	return x < min ? min : (x > max ? max : x);
 }
 
 #endif /* _NE_MATH_FUNC_H_ */

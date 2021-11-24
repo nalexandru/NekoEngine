@@ -33,7 +33,7 @@ E_CreateEntityS(struct Scene *s, const wchar_t *typeName)
 		if (!ent)
 			return ES_INVALID_ENTITY;
 
-		swprintf(ent->name, MAX_ENTITY_NAME, L"%ls", L"unnamed");
+		E_RenameEntity(ent, L"unnamed");
 		if (!Rt_ArrayAddPtr(&s->entities, ent)) {
 			Sys_Free(ent);
 			return ES_INVALID_ENTITY;
@@ -65,7 +65,7 @@ E_CreateEntityWithArgsS(struct Scene *s, const CompTypeId *compTypes, const void
 		}
 	}
 
-	swprintf(ent->name, MAX_ENTITY_NAME, L"%ls", L"unnamed");
+	E_RenameEntity(ent, L"unnamed");
 	if (!Rt_ArrayAddPtr(&s->entities, ent)) {
 		Sys_Free(ent);
 		return ES_INVALID_ENTITY;
@@ -96,7 +96,7 @@ E_CreateEntityVS(struct Scene *s, int count, const struct EntityCompInfo *info)
 		}
 	}
 
-	swprintf(ent->name, MAX_ENTITY_NAME, L"%ls", L"unnamed");
+	E_RenameEntity(ent, L"unnamed");
 	if (!Rt_ArrayAddPtr(&s->entities, ent)) {
 		Sys_Free(ent);
 		return ES_INVALID_ENTITY;
@@ -132,7 +132,7 @@ E_CreateEntityWithComponentsS(struct Scene *s, int count, ...)
 		}
 	}
 
-	swprintf(ent->name, MAX_ENTITY_NAME, L"%ls", L"unnamed");
+	E_RenameEntity(ent, L"unnamed");
 	if (!Rt_ArrayAddPtr(&s->entities, ent)) {
 		Sys_Free(ent);
 		return ES_INVALID_ENTITY;
@@ -169,6 +169,14 @@ E_GetComponentS(struct Scene *s, EntityHandle handle, CompTypeId type)
 			return E_ComponentPtrS(s, ent->comp[i].handle);
 
 	return NULL;
+}
+
+void
+E_GetComponentsS(struct Scene *s, EntityHandle handle, struct Array *comp)
+{
+	struct Entity *ent = handle;
+	Rt_InitArray(comp, ent->comp_count, sizeof(struct EntityComp), MH_Frame);
+	memcpy(comp->data, ent->comp, Rt_ArrayByteSize(comp));
 }
 
 void
@@ -252,6 +260,20 @@ E_RenameEntity(EntityHandle handle, const wchar_t *name)
 {
 	struct Entity *ent = handle;
 	wcsncpy(ent->name, name, MAX_ENTITY_NAME);
+	ent->hash = Rt_HashStringW(ent->name);
+}
+
+EntityHandle
+E_FindEntityS(struct Scene *s, const wchar_t *name)
+{
+	struct Entity *ent = NULL;
+	uint64_t hash = Rt_HashStringW(name);
+
+	Rt_ArrayForEach(ent, &s->entities)
+		if (ent->hash == hash)
+			return ent;
+
+	return NULL;
 }
 
 bool

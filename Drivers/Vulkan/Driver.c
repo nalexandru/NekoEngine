@@ -227,6 +227,10 @@ _EnumerateDevices(uint32_t *count, struct RenderDeviceInfo *info)
 		// this might not be 100% correct
 		info[i].features.unifiedMemory = memProps->memoryHeapCount == 1;
 
+		info[i].hardwareInfo.deviceId = props->deviceID;
+		info[i].hardwareInfo.vendorId = props->vendorID;
+		info[i].hardwareInfo.driverVersion = props->driverVersion;
+
 		info[i].private = dev[i];
 	}
 

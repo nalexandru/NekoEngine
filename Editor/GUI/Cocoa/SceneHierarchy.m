@@ -57,33 +57,22 @@ static void _AddTransform(const struct Transform *xform, SceneHierarchy *sh, Tre
 	treeController = [[NSTreeController alloc] init];
 	entities = [[NSMutableArray alloc] init];
 
-#ifdef __APPLE__
 	[treeController setLeafKeyPath: @"leaf"];
-#else
-	[treeController setLeafPathKey: @"leaf"];
-#endif
-
 	[treeController setChildrenKeyPath: @"children"];
 
 	NSTableColumn *tc = [[NSTableColumn alloc] initWithIdentifier: @"text"];
-#ifdef __APPLE__
+
 	[tc setTitle: @"Entity"];
-#endif
 	[tc bind: NSValueBinding toObject: treeController withKeyPath: @"arrangedObjects.text" options: nil];
+
 	[_hierarchyView addTableColumn: tc];
 	[_hierarchyView sizeLastColumnToFit];
 
-	[treeController bind: NSContentArrayBinding toObject: self withKeyPath: @"entities" options: @{NSRaisesForNotApplicableKeysBindingOption: @YES, NSConditionallySetsEditableBindingOption: @YES}];
+	[treeController bind: NSContentArrayBinding toObject: self withKeyPath: @"entities" options: nil];
 
-#ifdef __APPLE__
-	[_hierarchyView bind: NSContentBinding toObject: treeController withKeyPath: @"arrangedObjects" options: @{NSAlwaysPresentsApplicationModalAlertsBindingOption: @YES}];
-	[_hierarchyView bind: NSSelectionIndexPathsBinding toObject: treeController withKeyPath: @"selectionIndexPaths" options: @{}];
-#else
-	[_hierarchyView bind: NSContentBinding toObject: treeController withKeyPath: @"arrangedObjects" options: @{}];
-	[_hierarchyView bind: NSSelectionIndexesBinding toObject: treeController withKeyPath: @"selectionIndexPaths" options: @{}];
-#endif
-
-	[_hierarchyView bind: NSSortDescriptorsBinding toObject: treeController withKeyPath: @"sortDescriptors" options: @{}];
+	[_hierarchyView bind: NSContentBinding toObject: treeController withKeyPath: @"arrangedObjects" options: nil];
+	[_hierarchyView bind: NSSelectionIndexPathsBinding toObject: treeController withKeyPath: @"selectionIndexPaths" options: nil];
+	[_hierarchyView bind: NSSortDescriptorsBinding toObject: treeController withKeyPath: @"sortDescriptors" options: nil];
 
 	_entityLock = [[NSLock alloc] init];
 

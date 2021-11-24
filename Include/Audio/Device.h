@@ -25,16 +25,6 @@ struct AudioDeviceInfo
 	void *private;
 };
 
-struct AudioDeviceProcs
-{
-	void *a;
-
-
-
-};
-
-extern struct AudioDevice *Au_device;
 extern struct AudioDeviceInfo Au_deviceInfo;
-extern struct AudioDeviceProcs Au_deviceProcs;
 
 #endif /* _NE_AUDIO_DEVICE_H_ */

@@ -6,6 +6,7 @@
 
 layout(set = 0, binding = 0) uniform sampler Re_samplers[];
 layout(set = 0, binding = 1) uniform texture2D Re_textures[];
+layout(set = 0, binding = 1) uniform textureCube Re_cubeTextures[];
 
 vec4
 Re_SampleSceneTexture(uint id, vec2 uv)
@@ -17,6 +18,12 @@ vec4
 Re_SampleUITexture(uint id, vec2 uv)
 {
 	return texture(sampler2D(Re_textures[id], Re_samplers[UI_SAMPLER]), uv);
+}
+
+vec4
+Re_SampleCubeTexture(uint id, vec3 uv)
+{
+	return texture(samplerCube(Re_cubeTextures[id], Re_samplers[SCENE_SAMPLER]), uv);
 }
 
 #endif /* _RE_TEXTURES_H_ */

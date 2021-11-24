@@ -226,8 +226,11 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 	devProcs->UnmapBuffer = Vk_UnmapBuffer;
 	devProcs->BufferAddress = Vk_BufferAddress;
 
-	devProcs->CreateSemaphore = (struct Semaphore *(*)(struct RenderDevice *))Vk_CreateSemaphore;
-	devProcs->DestroySemaphore = (void(*)(struct RenderDevice *, struct Semaphore *))Vk_DestroySemaphore;
+	devProcs->CreateSemaphore = Vk_CreateSemaphore;
+	devProcs->WaitSemaphore = Vk_WaitSemaphore;
+	devProcs->WaitSemaphores = Vk_WaitSemaphores;
+	devProcs->SignalSemaphore = Vk_SignalSemaphore;
+	devProcs->DestroySemaphore = Vk_DestroySemaphore;
 
 	devProcs->CreateFence = (struct Fence *(*)(struct RenderDevice *, bool))Vk_CreateFence;
 	devProcs->SignalFence = (void(*)(struct RenderDevice *, struct Fence *))Vk_SignalFence;

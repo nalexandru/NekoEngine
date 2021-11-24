@@ -155,7 +155,7 @@ extern struct Swapchain *Re_swapchain;
 
 static inline struct Swapchain *Re_CreateSwapchain(struct Surface *surface, bool vsync) { return Re_deviceProcs.CreateSwapchain(Re_device, surface, vsync); }
 static inline void *Re_AcquireNextImage(struct Swapchain *swapchain) { return Re_deviceProcs.AcquireNextImage(Re_device, swapchain); }
-static inline bool Re_Present(struct Swapchain *swapchain, void *image) { return Re_deviceProcs.Present(Re_device, Re_CurrentContext(), swapchain, image); }
+static inline bool Re_Present(struct Swapchain *swapchain, void *image, struct Semaphore *wait) { return Re_deviceProcs.Present(Re_device, Re_CurrentContext(), swapchain, image, wait); }
 static inline enum TextureFormat Re_SwapchainFormat(struct Swapchain *swapchain) { return Re_deviceProcs.SwapchainFormat(swapchain); }
 static inline struct Texture *Re_SwapchainTexture(struct Swapchain *swapchain, void *image) { return Re_deviceProcs.SwapchainTexture(swapchain, image); }
 static inline void Re_SwapchainDesc(struct Swapchain *swapchain, struct FramebufferAttachmentDesc *desc) { Re_deviceProcs.SwapchainDesc(swapchain, desc); }

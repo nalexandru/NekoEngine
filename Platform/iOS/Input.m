@@ -14,6 +14,7 @@
 #define IOSINMOD	L"iOSInput"
 
 enum Button iOS_keymap[256];
+bool __InSys_rawMouseAxis = false;
 
 static inline enum Button _mapKey(const int key);
 

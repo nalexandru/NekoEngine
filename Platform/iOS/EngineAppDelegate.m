@@ -12,6 +12,7 @@ bool Sys_InitDarwinPlatform(void);
 @interface EngineAppDelegate ()
 
 @property (atomic) BOOL downloadCompleted;
+@property (atomic) BOOL downloadRequestFinished;
 
 @end
 
@@ -21,6 +22,7 @@ extern NSURL *Darwin_appSupportURL;
 @implementation EngineAppDelegate
 
 @synthesize downloadCompleted;
+@synthesize downloadRequestFinished;
 
 - (void)downloadAssets
 {
@@ -35,33 +37,43 @@ extern NSURL *Darwin_appSupportURL;
 		return;
 	
 	NSDictionary *config = [[NSDictionary alloc] initWithContentsOfFile: plistFile];
-	
-	__weak typeof(self) weakSelf = self;
-	NSString *url = [config objectForKey: @"AssetURL"];
-	NSURLSessionDownloadTask *task = [[NSURLSession sharedSession] downloadTaskWithURL: [NSURL URLWithString: url]
-									completionHandler:^(NSURL * _Nullable location, NSURLResponse * _Nullable response, NSError * _Nullable error) {
-		
-		char buff[4096];
-		Sys_DirectoryPath(SD_APP_DATA, buff, sizeof(buff));
-		
-		[[NSFileManager defaultManager] moveItemAtURL: location toURL: dest error: nil];
-		
-		[weakSelf setDownloadCompleted: true];
-	}];
-	
-	[self setDownloadCompleted: false];
-	[task resume];
-	
-	UIAlertController *ctl =[UIAlertController alertControllerWithTitle: @"NekoEngine"
-																message: @"Downloading Assets"
-														 preferredStyle: UIAlertControllerStyleAlert];
-	
+
+	UIAlertController *ctl = [UIAlertController alertControllerWithTitle: @"NekoEngine"
+																 message: @"Downloading Assets"
+														  preferredStyle: UIAlertControllerStyleAlert];
+
 	dispatch_async(dispatch_get_main_queue(), ^(void){
 		[[(UIWindow *)E_screen rootViewController] presentViewController: ctl animated: true completion: nil];
 	});
+
+	[self setDownloadCompleted: false];
+	[self setDownloadRequestFinished: false];
+
+	__weak typeof(self) weakSelf = self;
+	NSString *url = [config objectForKey: @"AssetURL"];
+	while (![self downloadCompleted]) {
+		NSURLSessionDownloadTask *task = [[NSURLSession sharedSession] downloadTaskWithURL: [NSURL URLWithString: url]
+																		 completionHandler:^(NSURL * _Nullable location, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+			if (error) {
+			} else {
+				char buff[4096];
+				Sys_DirectoryPath(SD_APP_DATA, buff, sizeof(buff));
+
+				[[NSFileManager defaultManager] moveItemAtURL: location toURL: dest error: nil];
+
+				[weakSelf setDownloadCompleted: true];
+			}
+
+			[weakSelf setDownloadRequestFinished: true];
+		}];
 	
-	while (![self downloadCompleted])
-		sched_yield();
+		[self setDownloadCompleted: false];
+		[self setDownloadRequestFinished: false];
+		[task resume];
+
+		while (![self downloadRequestFinished])
+			sched_yield();
+	}
 	
 	dispatch_async(dispatch_get_main_queue(), ^(void){
 		[ctl dismissViewControllerAnimated: true completion: nil];

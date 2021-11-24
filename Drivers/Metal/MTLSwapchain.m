@@ -24,6 +24,17 @@ MTL_DestroySurface(id<MTLDevice> dev, NSView *view)
 	view.wantsLayer = false;
 }
 
+void *
+MTL_CreateSwapchain(id<MTLDevice> dev, VIEWTYPE *view, bool verticalSync)
+{
+	_semaphore = dispatch_semaphore_create(RE_NUM_FRAMES);
+
+	CAMetalLayer *layer = (CAMetalLayer *)[view layer];
+	[layer setDevice: dev];
+	[layer setDisplaySyncEnabled: verticalSync];
+	return [view layer];
+}
+
 #else
 
 void *
@@ -45,8 +56,6 @@ MTL_DestroySurface(id<MTLDevice> dev, UIView *view)
 	(void)view;
 }
 
-#endif
-
 void *
 MTL_CreateSwapchain(id<MTLDevice> dev, VIEWTYPE *view, bool verticalSync)
 {
@@ -54,9 +63,10 @@ MTL_CreateSwapchain(id<MTLDevice> dev, VIEWTYPE *view, bool verticalSync)
 
 	CAMetalLayer *layer = (CAMetalLayer *)[view layer];
 	[layer setDevice: dev];
-	[layer setDisplaySyncEnabled: verticalSync];
 	return [view layer];
 }
+
+#endif
 
 void
 MTL_DestroySwapchain(id<MTLDevice> dev, CAMetalLayer *layer)
@@ -75,7 +85,7 @@ MTL_AcquireNextImage(id<MTLDevice> dev, CAMetalLayer *layer)
 }
 
 bool
-MTL_Present(id<MTLDevice> dev, struct RenderContext *ctx, VIEWTYPE *v, id<CAMetalDrawable> image)
+MTL_Present(id<MTLDevice> dev, struct RenderContext *ctx, VIEWTYPE *v, id<CAMetalDrawable> image, id<MTLFence> f)
 {
 	ctx->cmdBuffer = [ctx->queue commandBuffer];
 

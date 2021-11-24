@@ -409,7 +409,7 @@ SIF_FUNC(Present)
 	if (!lua_islightuserdata(vm, 1))
 		luaL_argerror(vm, 1, "");
 
-	Re_Present(Re_swapchain, lua_touserdata(vm, 1));
+	Re_Present(Re_swapchain, lua_touserdata(vm, 1), lua_touserdata(vm, 2));
 	return 0;
 }
 

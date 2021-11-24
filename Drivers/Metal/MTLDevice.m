@@ -33,7 +33,7 @@ MTL_CreateDevice(struct RenderDeviceInfo *info,
 	devProcs->CreateSwapchain = (struct Swapchain *(*)(struct RenderDevice *, struct Surface *, bool))MTL_CreateSwapchain;
 	devProcs->DestroySwapchain = (void(*)(struct RenderDevice *, struct Swapchain *))MTL_DestroySwapchain;
 	devProcs->AcquireNextImage = (void *(*)(struct RenderDevice *, struct Swapchain *))MTL_AcquireNextImage;
-	devProcs->Present = (bool(*)(struct RenderDevice *, struct RenderContext *, struct Swapchain *, void *))MTL_Present;
+	devProcs->Present = (bool(*)(struct RenderDevice *, struct RenderContext *, struct Swapchain *, void *, struct Semaphore *))MTL_Present;
 	devProcs->SwapchainTexture = (struct Texture *(*)(struct Swapchain *, void *))MTL_SwapchainTexture;
 	devProcs->SwapchainFormat = (enum TextureFormat(*)(struct Swapchain *))MTL_SwapchainFormat;
 	devProcs->SwapchainDesc = (void(*)(struct Swapchain *, struct FramebufferAttachmentDesc *))MTL_SwapchainDesc;
@@ -72,6 +72,10 @@ MTL_CreateDevice(struct RenderDeviceInfo *info,
 	devProcs->SignalFence = (void(*)(struct RenderDevice *dev, struct Fence *))MTL_SignalFence;
 	devProcs->WaitForFence = (bool(*)(struct RenderDevice *dev, struct Fence *, uint64_t))MTL_WaitForFence;
 	devProcs->DestroyFence = (void(*)(struct RenderDevice *, struct Fence *))MTL_DestroyFence;
+
+	devProcs->WaitSemaphore = (bool(*)(struct RenderDevice *, struct Semaphore *, uint64_t, uint64_t))MTL_WaitSemaphore;
+	devProcs->WaitSemaphores = (bool(*)(struct RenderDevice *, uint32_t, struct Semaphore *, uint64_t *, uint64_t))MTL_WaitSemaphores;
+	devProcs->SignalSemaphore = (bool(*)(struct RenderDevice *, struct Semaphore *, uint64_t))MTL_SignalSemaphore;
 
 	devProcs->OffsetAddress = MTL_OffsetAddress;
 

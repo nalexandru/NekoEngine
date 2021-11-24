@@ -7,7 +7,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (c) 2015-2020, Alexandru Naiman
+ * Copyright (c) 2015-2021, Alexandru Naiman
  *
  * All rights reserved.
  *
@@ -68,108 +68,70 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <Math/defs.h>
 #include <Math/vec3.h>
 
+#ifndef _NE_MATH_MAT4_H_
+#	include <Math/vec4.h>
+#endif
+
 static inline struct quat *
 quat(struct quat *q, float x, float y, float z, float w)
 {
-	q->x = x;
-	q->y = y;
-	q->z = z;
-	q->w = w;
-
-	return q;
+	return (struct quat *)v4((struct vec4 *)q, x, y, z, w);
 }
 
 static inline struct quat *
 quat_copy(struct quat *dst, const struct quat *src)
 {
-	memcpy(dst, src, sizeof(float) * 4);
-	return dst;
+	return (struct quat *)v4_copy((struct vec4 *)dst, (struct vec4 *)src);
 }
 
 static inline struct quat *
 quat_ident(struct quat *q)
 {
-	q->x = 0.f;
-	q->y = 0.f;
-	q->z = 0.f;
-	q->w = 1.f;
-
-	return q;
+	return (struct quat *)v4((struct vec4 *)q, 0.f, 0.f, 0.f, 1.f);
 }
 
 static inline float
 quat_len_sq(const struct quat *q)
 {
-	return (q->x * q->x) + (q->y * q->y) + (q->z * q->z) + (q->w * q->w);
+	return v4_len_sq((const struct vec4 *)q);
 }
 
 static inline float
 quat_len(const struct quat *q)
 {
-	return sqrtf((q->x * q->x) + (q->y * q->y) + (q->z * q->z) + (q->w * q->w));
+	return v4_len((const struct vec4 *)q);
 }
 
 static inline struct quat *
 quat_norm(struct quat *dst, const struct quat *src)
 {
-	float length = quat_len(src);
-
-	if (fabsf(length) < FLT_EPSILON) {
-		dst->x = 0.f;
-		dst->y = 0.f;
-		dst->z = 0.f;
-		dst->w = 1.f;
-
-		return dst;
-	}
-
-	return quat(dst,
-		src->x / length,
-		src->y / length,
-		src->z / length,
-		src->w / length);
+	return (struct quat *)v4_norm((struct vec4 *)dst, (struct vec4 *)src);
 }
 
 static inline struct quat *
 quat_add(struct quat *dst, const struct quat *q1, const struct quat *q2)
 {
-	dst->x = q1->x + q2->x;
-	dst->y = q1->y + q2->y;
-	dst->z = q1->z + q2->z;
-	dst->w = q1->w + q2->w;
-
-	return dst;
+	return (struct quat *)v4_add((struct vec4 *)dst, (struct vec4 *)q1, (struct vec4 *)q2);
 }
 
 static inline struct quat *
 quat_sub(struct quat *dst, const struct quat *q1, const struct quat *q2)
 {
-	dst->x = q1->x - q2->x;
-	dst->y = q1->y - q2->y;
-	dst->z = q1->z - q2->z;
-	dst->w = q1->w - q2->w;
-
-	return dst;
+	return (struct quat *)v4_sub((struct vec4 *)dst, (struct vec4 *)q1, (struct vec4 *)q2);
 }
 
 static inline struct quat *
 quat_mul(struct quat *dst, const struct quat *qu1, const struct quat *qu2)
 {
-	struct quat *q1 = NULL;
-	struct quat *q2 = NULL;
-	struct quat tmp1, tmp2;
+	struct quat q1, q2;
 
-	quat_copy(&tmp1, qu1);
-	quat_copy(&tmp2, qu2);
+	quat_copy(&q1, qu1);
+	quat_copy(&q2, qu2);
 
-	// Just aliasing
-	q1 = &tmp1;
-	q2 = &tmp2;
-
-	dst->x = q1->w * q2->x + q1->x * q2->w + q1->y * q2->z - q1->z * q2->y;
-	dst->y = q1->w * q2->y + q1->y * q2->w + q1->z * q2->x - q1->x * q2->z;
-	dst->z = q1->w * q2->z + q1->z * q2->w + q1->x * q2->y - q1->y * q2->x;
-	dst->w = q1->w * q2->w - q1->x * q2->x - q1->y * q2->y - q1->z * q2->z;
+	dst->x = q1.w * q2.x + q1.x * q2.w + q1.y * q2.z - q1.z * q2.y;
+	dst->y = q1.w * q2.y + q1.y * q2.w + q1.z * q2.x - q1.x * q2.z;
+	dst->z = q1.w * q2.z + q1.z * q2.w + q1.x * q2.y - q1.y * q2.x;
+	dst->w = q1.w * q2.w - q1.x * q2.x - q1.y * q2.y - q1.z * q2.z;
 
 	return dst;
 }
@@ -177,21 +139,13 @@ quat_mul(struct quat *dst, const struct quat *qu1, const struct quat *qu2)
 static inline float
 quat_dot(const struct quat *q1, const struct quat *q2)
 {
-	/*
-	 * A dot B = B dot A = AtBt + AxBx + AyBy + AzBz
-	 */
-	return q1->w *q2->w + q1->x * q2->x + q1->y * q2->y + q1->z * q2->z;
+	return v4_dot((struct vec4 *)q1, (struct vec4 *)q2);
 }
 
 static inline struct quat *
 quat_scale(struct quat *dst, const struct quat *src, float s)
 {
-	dst->x = src->x * s;
-	dst->y = src->y * s;
-	dst->z = src->z * s;
-	dst->w = src->w * s;
-
-	return dst;
+	return (struct quat *)v4_muls((struct vec4 *)dst, (const struct vec4 *)src, s);
 }
 
 static inline struct quat *
@@ -244,34 +198,47 @@ quat_mul_vec3(struct vec3 *dst, const struct quat *q, const struct vec3 *v)
 	v3_scale(&uuv, &uuv, 2.f);
 
 	v3_add(dst, v, &uv);
+
 	return v3_add(dst, dst, &uuv);
 }
 
 static inline struct quat *
-quat_inverse(struct quat *dst, const struct quat *src)
+quat_conjugate(struct quat *dst, const struct quat *src)
 {
-	dst->x = -src->x;
-	dst->y = -src->y;
-	dst->z = -src->z;
-	dst->w = src->w;
+	struct vec4 inv = { -1.f, -1.f, -1.f, 1.f };
+	return (struct quat *)v4_mul((struct vec4 *)dst, (struct vec4 *)src, &inv);
+}
 
-	return dst;
+static inline struct quat *
+quat_from_axis_angle_r(struct quat *q, const struct vec3 *v, float rad)
+{
+	struct vec3 axis;
+
+	const float angle = rad * 0.5f;
+	const float scale = sinf(angle);
+
+	v3_norm(&axis, v);
+
+	q->x = axis.x * scale;
+	q->y = axis.y * scale;
+	q->z = axis.z * scale;
+	q->w = cosf(angle);
+
+	return q;
+}
+
+static inline struct quat *
+quat_from_axis_angle(struct quat *q, const struct vec3 *v, float deg)
+{
+	return quat_from_axis_angle_r(q, v, deg_to_rad(deg));
 }
 
 static inline struct quat *
 quat_rot_axis_angle_r(struct quat *q, const struct vec3 *v, float rad)
 {
 	struct quat tmp;
-	const float scale = sinf(rad * .5f);
-
-	tmp.x = v->x * scale;
-	tmp.y = v->y * scale;
-	tmp.z = v->z * scale;
-	tmp.w = cosf(rad * .5f);
-
-	quat_mul(q, q, &tmp);
-
-	return quat_norm(q, q);
+	quat_from_axis_angle_r(&tmp, v, rad);
+	return quat_norm(q, quat_mul(q, q, &tmp));
 }
 
 static inline struct quat *
@@ -281,23 +248,23 @@ quat_rot_axis_angle(struct quat *q, const struct vec3 *v, float deg)
 }
 
 static inline struct quat *
-quat_rot_pitch_yaw_roll(struct quat *q, float rolld, float pitchd, float yawd)
+quat_rot_pitch_yaw_roll(struct quat *q, float pitchd, float yawd, float rolld)
 {
-	const float pitch = deg_to_rad(pitchd);
-	const float yaw = deg_to_rad(yawd);
-	const float roll = deg_to_rad(rolld);
+	const float pitch = deg_to_rad(pitchd) * .5f;
+	const float yaw = deg_to_rad(yawd) * .5f;
+	const float roll = deg_to_rad(rolld) * .5f;
 
-	const float cy = cosf(yaw * .5f);
-	const float sy = sinf(yaw * .5f);
-	const float cp = cosf(pitch * .5f);
-	const float sp = sinf(pitch * .5f);
-	const float cr = cosf(roll * .5f);
-	const float sr = sinf(roll * .5f);
+	const float cx = cosf(pitch);
+	const float sx = sinf(pitch);
+	const float cy = cosf(yaw);
+	const float sy = sinf(yaw);
+	const float cz = cosf(roll);
+	const float sz = sinf(roll);
 
-	q->w = cr * cp * cy + sr * sp * sy;
-	q->x = sr * cp * cy - cr * sp * sy;
-	q->y = cr * sp * cy + sr * cp * sy;
-	q->z = cr * cp * sy - sr * sp * cy;
+	q->w = cx * cy * cz + sx * sy * sz;
+	q->x = sx * cy * cz - cx * sy * sz;
+	q->y = cx * sy * cz + sx * cy * sz;
+	q->z = cx * cy * sz - sx * sy * cz;
 
 	return q;
 }
@@ -429,51 +396,64 @@ quat_look_at(struct quat *q, const struct vec3 *direction, const struct vec3 *up
 static inline struct vec3 *
 quat_up(struct vec3 *v, const struct quat *q)
 {
-	 return quat_mul_vec3(v, q, &KM_VEC3_POS_Y);
+	 return quat_mul_vec3(v, q, &v3_pos_y);
 }
 
 static inline struct vec3 *
 quat_fwd_rh(struct vec3 *v, const struct quat *q)
 {
-	return quat_mul_vec3(v, q, &KM_VEC3_NEG_Z);
+	return quat_mul_vec3(v, q, &v3_neg_z);
 }
 
 static inline struct vec3 *
 quat_fwd_lh(struct vec3 *v, const struct quat *q)
 {
-	return quat_mul_vec3(v, q, &KM_VEC3_POS_Z);
+	return quat_mul_vec3(v, q, &v3_pos_z);
 }
 
 static inline struct vec3 *
 quat_right(struct vec3 *v, const struct quat *q)
 {
-	return quat_mul_vec3(v, q, &KM_VEC3_POS_X);
+	return quat_mul_vec3(v, q, &v3_pos_x);
 }
 
 static inline float
 quat_roll(const struct quat *q)
 {
-	const float srcp = 2.f * (q->w * q->x + q->y * q->z);
-	const float crcp = 1.f - 2.f * (q->x * q->x + q->y * q->y);
-	
-	return rad_to_deg(atan2f(srcp, crcp));
+	const struct vec2 v0 = { 0.f, 0.f };
+	const struct vec2 v =
+	{
+		2.f * (q->x * q->y + q->w * q->z),
+		q->w * q->w + q->x * q->x - q->y * q->y - q->z * q->z
+	};
+
+	if (v2_equal(&v, &v0))
+		return 0.f;
+
+	return rad_to_deg(atan2f(v.x, v.y));
 }
 
 static inline float
 quat_pitch(const struct quat *q)
 {
-	const float sp = 2.f * (q->w * q->y - q->z * q->x);
+	const struct vec2 v0 = { 0.f, 0.f };
+	const struct vec2 v =
+	{
+		2.f * (q->y * q->z + q->w * q->x),
+		q->w * q->w - q->x * q->x - q->y * q->y + q->z * q->z
+	};
 
-	return rad_to_deg(fabsf(sp) >= 1.f ? copysignf(PI / 2.f, sp) : asinf(sp));
+	if (v2_equal(&v, &v0))
+		return rad_to_deg(2.f * atan2f(q->x, q->w));
+
+	return rad_to_deg(atan2f(v.x, v.y));
 }
 
 static inline float
 quat_yaw(const struct quat *q)
 {
-	const float sycp = 2.f * (q->w * q->z + q->x * q->y);
-	const float cycp = 1.f - 2.f * (q->y * q->y + q->z * q->z);
-
-	return rad_to_deg(atan2f(sycp, cycp));
+	const float a = clamp(-2.f * (q->x * q->z - q->w * q->y), -1.f, 1.f);
+	return rad_to_deg(asinf(a));
 }
 
 /*
@@ -551,8 +531,8 @@ quat_between_v3(struct quat *dst, const struct vec3 *u, const struct vec3 *v)
 }
 
 /*
- *  Gets the shortest arc quaternion to rotate this vector to the
- *  destination vector.
+ * Gets the shortest arc quaternion to rotate this vector to the
+ * destination vector.
  *
  * If you call this with a dest vector that is close to the inverse of
  * this vector, we will rotate 180 degrees around the 'fallbackAxis'

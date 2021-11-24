@@ -98,7 +98,10 @@ struct RenderContextProcs
 
 	bool (*Submit)(struct RenderDevice *dev, struct RenderContext *ctx);
 	bool (*SubmitTransfer)(struct RenderContext *ctx, struct Fence *f);
-	bool (*SubmitCompute)(struct RenderContext *ctx);
+
+	bool (*QueueCompute)(struct RenderContext *ctx, struct Semaphore *wait, struct Semaphore *signal);
+	bool (*QueueGraphics)(struct RenderContext *ctx, struct Semaphore *wait, struct Semaphore *signal);
+	bool (*QueueTransfer)(struct RenderContext *ctx, struct Semaphore *wait, struct Semaphore *signal);
 };
 
 ENGINE_API extern struct RenderDevice *Re_device;
@@ -158,7 +161,11 @@ static inline void Re_CmdBlit(const struct Texture *src, struct Texture *dst, co
 { Re_contextProcs.Blit(Re_CurrentContext(), src, dst, regions, regionCount, filter); }
 
 static inline bool Re_SubmitTransfer(struct Fence *f) { return Re_contextProcs.SubmitTransfer(Re_CurrentContext(), f); }
-static inline bool Re_SubmitCompute(void) { return Re_contextProcs.SubmitCompute(Re_CurrentContext()); }
+//static inline bool Re_SubmitCompute(void) { return Re_contextProcs.SubmitCompute(Re_CurrentContext()); }
+
+static inline bool Re_QueueCompute(struct Semaphore *wait, struct Semaphore *signal) { return Re_contextProcs.QueueCompute(Re_CurrentContext(), wait, signal); }
+static inline bool Re_QueueGraphics(struct Semaphore *wait, struct Semaphore *signal) { return Re_contextProcs.QueueGraphics(Re_CurrentContext(), wait, signal); }
+static inline bool Re_QueueTransfer(struct Semaphore *wait, struct Semaphore *signal) { return Re_contextProcs.QueueTransfer(Re_CurrentContext(), wait, signal); }
 
 static inline void Re_Barrier(enum PipelineStage srcStage, enum PipelineStage dstStage, enum PipelineDependency dep,
 	uint32_t memBarrierCount, struct MemoryBarrier *memBarriers, uint32_t bufferBarrierCount, struct BufferBarrier *bufferBarriers,

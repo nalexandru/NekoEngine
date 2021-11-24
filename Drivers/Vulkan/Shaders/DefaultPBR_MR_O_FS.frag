@@ -24,5 +24,5 @@ void
 main()
 {
 	const vec4 color = PBR_MR(v_color, v_pos, subpassLoad(in_wsNormals).xyz, v_uv);
-	o_fragColor = vec4(tonemap(color.rgb), color.a);
+	o_fragColor = vec4(tonemap(color.rgb, DrawInfo.scene.exposure, DrawInfo.scene.invGamma), color.a);
 }

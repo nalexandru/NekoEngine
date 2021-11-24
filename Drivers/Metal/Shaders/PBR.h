@@ -111,7 +111,6 @@ PBRMain(constant struct ShaderArguments *sa, constant struct Scene *scn, constan
 	const float r90 = clamp(r0 * 25.0, 0.0, 1.0);
 	const float3 f90 = float3(r90);
 
-
 	const float3 v = normalize(scn->cameraPosition.xyz - viewPosition);
 
 	const float NdotV = clamp(abs(dot(n, v)), 0.001, 1.0);

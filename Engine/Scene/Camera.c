@@ -62,12 +62,16 @@ Scn_UpdateCamera(void **comp, void *args)
 	struct Camera *cam = comp[1];
 
 	struct mat4 m_rot, m_pos;
-	struct quat rot;
+	struct quat q1, q2, rot;
 	struct vec3 pos;
 
-	xform_rotation(xform, &rot);
-	rot.x = -rot.x;
-	rot.z = -rot.z;
+	quat_from_axis_angle(&q1, &v3_neg_x, cam->rotation.x);
+	quat_from_axis_angle(&q2, &v3_neg_y, cam->rotation.y);
+
+	quat_mul(&rot, &q1, &q2);
+	quat_from_axis_angle(&q1, &v3_neg_z, cam->rotation.z);
+
+	quat_mul(&rot, &rot, &q1);
 	m4_rot_quat(&m_rot, &rot);
 
 	xform_position(xform, &pos);

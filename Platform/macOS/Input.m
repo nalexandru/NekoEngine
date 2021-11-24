@@ -18,7 +18,7 @@
 
 enum Button macOS_keymap[256];
 
-bool __InSys_rawMouseAxis = false;
+bool __InSys_rawMouseAxis = true;
 
 static inline enum Button _mapKey(const int key);
 

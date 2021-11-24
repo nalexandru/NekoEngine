@@ -95,7 +95,7 @@ PBRMain(const Material mat, const vec4 color, const vec3 pos,
 	// Init PBR
 	vec4 albedo = /*Re_SampleSceneTexture(mat.diffuseMap, uv) */ mat.diffuseColor * color;
 	if (mat.diffuseMap != 0)
-		albedo *= sRGBtoLinear(Re_SampleSceneTexture(mat.diffuseMap, uv));
+		albedo *= sRGBtoLinear(Re_SampleSceneTexture(mat.diffuseMap, uv), DrawInfo.scene.gamma);
 
 	if (albedo.a < 0.01)
 		discard;

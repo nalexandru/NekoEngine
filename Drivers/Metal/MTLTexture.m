@@ -30,7 +30,7 @@ MTL_TextureDescriptor(id<MTLDevice> dev, const struct TextureDesc *tDesc)
 	desc.width = tDesc->width;
 	desc.height = tDesc->height;
 	desc.depth = tDesc->depth;
-	desc.arrayLength = tDesc->arrayLayers;
+	desc.arrayLength = desc.textureType == MTLTextureTypeCube ? 1 : tDesc->arrayLayers;
 	desc.mipmapLevelCount = tDesc->mipLevels;
 	
 	return desc;

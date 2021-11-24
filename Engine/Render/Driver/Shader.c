@@ -69,8 +69,10 @@ void
 Re_UnloadShaders(void)
 {
 	struct Shader *s;
-	Rt_ArrayForEach(s, &_shaders)
+	Rt_ArrayForEach(s, &_shaders) {
 		Sys_Free(s->stages);
+		Sys_Free(s->transparentStages.stages);
+	}
 
 	Rt_TermArray(&_modules);
 	Rt_TermArray(&_shaders);

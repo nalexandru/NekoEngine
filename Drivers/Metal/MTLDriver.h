@@ -139,7 +139,7 @@ void MTL_DestroySurface(id<MTLDevice> dev, VIEWTYPE *view);
 void *MTL_CreateSwapchain(id<MTLDevice> dev, VIEWTYPE *view, bool verticalSync);
 void MTL_DestroySwapchain(id<MTLDevice> dev, CAMetalLayer *layer);
 void *MTL_AcquireNextImage(id<MTLDevice> dev, CAMetalLayer *layer);
-bool MTL_Present(id<MTLDevice> dev, struct RenderContext *ctx, VIEWTYPE *v, id<CAMetalDrawable> image);
+bool MTL_Present(id<MTLDevice> dev, struct RenderContext *ctx, VIEWTYPE *v, id<CAMetalDrawable> image, id<MTLFence> f);
 struct Texture *MTL_SwapchainTexture(CAMetalLayer *layer, id<CAMetalDrawable> image);
 enum TextureFormat MTL_SwapchainFormat(CAMetalLayer *layer);
 void MTL_SwapchainDesc(CAMetalLayer *layer, struct FramebufferAttachmentDesc *desc);
@@ -213,8 +213,9 @@ void MTL_TermTransientHeap(id<MTLDevice> dev);
 
 // Synchronization
 id<MTLFence> MTL_CreateSemaphore(id<MTLDevice> dev);
-void MTL_SignalSemaphore(id<MTLDevice> dev, id<MTLFence> f);
-bool MTL_WaitSemaphore(id<MTLDevice> dev, id<MTLFence> f);
+bool MTL_WaitSemaphore(id<MTLDevice> dev, id<MTLFence> f, uint64_t value, uint64_t timeout);
+bool MTL_WaitSemaphores(id<MTLDevice> dev, uint32_t count, id<MTLFence> *f, uint64_t *values, uint64_t timeout);
+bool MTL_SignalSemaphore(id<MTLDevice> dev, id<MTLFence> f, uint64_t value);
 void MTL_DestroySemaphore(id<MTLDevice> dev, id<MTLFence> f);
 
 dispatch_semaphore_t MTL_CreateFence(id<MTLDevice> dev, bool createSignaled);

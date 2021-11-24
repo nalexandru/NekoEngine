@@ -21,13 +21,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -50,6 +50,7 @@
     <LibraryPath>$(VK_SDK_PATH)\Lib;$(SolutionDir)bin\$(Configuration);$(LibraryPath)</LibraryPath>
     <OutDir>$(SolutionDir)\bin\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\build\$(Configuration)\$(ProjectName)\</IntDir>
+    <CustomBuildBeforeTargets>PreBuildEvent</CustomBuildBeforeTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
@@ -58,6 +59,7 @@
     <LibraryPath>$(VK_SDK_PATH)\Lib;$(SolutionDir)bin\$(Configuration);$(LibraryPath)</LibraryPath>
     <OutDir>$(SolutionDir)\bin\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\build\$(Configuration)\$(ProjectName)\</IntDir>
+    <CustomBuildBeforeTargets>ClCompile</CustomBuildBeforeTargets>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -76,13 +78,27 @@
       <AdditionalDependencies>NekoEngine.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <CustomBuild>
-      <Command>glslc -g --target-env=vulkan1.2 %(FullPath) -o $(SolutionDir)/bin/Data/Shaders/Vulkan/%(Filename).spv</Command>
+      <Command>glslc -g --target-env=vulkan1.2 %(FullPath) -o $(IntDir)Shaders\Vulkan\%(Filename).spv</Command>
     </CustomBuild>
     <CustomBuild>
       <Message>glslc %(Filename)</Message>
-      <Outputs>$(SolutionDir)/bin/Data/Shaders/Vulkan/%(Filename).spv</Outputs>
+      <Outputs>$(IntDir)Shaders\Vulkan\%(Filename).spv</Outputs>
       <TreatOutputAsContent>true</TreatOutputAsContent>
     </CustomBuild>
+    <PreLinkEvent>
+      <Command>
+      </Command>
+    </PreLinkEvent>
+    <CustomBuildStep>
+      <Command>powershell "Compress-Archive -Force $(IntDir)Shaders $(IntDir)Shaders.zip"</Command>
+      <Message>Building shader archive</Message>
+      <Outputs>$(IntDir)Shaders.zip</Outputs>
+      <TreatOutputAsContent>true</TreatOutputAsContent>
+    </CustomBuildStep>
+    <PreBuildEvent>
+      <Message>Generate Shaders.h</Message>
+      <Command>$(OutDir)bin2c.exe -c $(IntDir)Shaders.zip $(IntDir)Shaders.h</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -115,6 +131,13 @@
       <TreatOutputAsContent>true</TreatOutputAsContent>
       <Outputs>$(SolutionDir)/bin/Data/Shaders/Vulkan/%(Filename).spv</Outputs>
     </CustomBuild>
+    <PreLinkEvent>
+      <Command>
+      </Command>
+    </PreLinkEvent>
+    <CustomBuildStep>
+      <Command>powershell "Compress-Archive -Force $(IntDir)Shaders $(IntDir)Shaders.zip"</Command>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="AccelerationStructure.c" />
@@ -129,7 +152,10 @@
     <ClCompile Include="Platform\Win32.c" />
     <ClCompile Include="RenderPass.c" />
     <ClCompile Include="Sampler.c" />
-    <ClCompile Include="Shader.c" />
+    <ClCompile Include="Shader.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)</AdditionalIncludeDirectories>
+    </ClCompile>
     <ClCompile Include="ShaderBindingTable.c" />
     <ClCompile Include="Staging.c" />
     <ClCompile Include="Swapchain.c" />
@@ -191,6 +217,12 @@
       <FileType>Document</FileType>
     </CustomBuild>
     <None Include="Shaders\PBR.glsl" />
+    <CustomBuild Include="Shaders\Sky_FS.frag">
+      <FileType>Document</FileType>
+    </CustomBuild>
+    <CustomBuild Include="Shaders\Sky_VS.vert">
+      <FileType>Document</FileType>
+    </CustomBuild>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

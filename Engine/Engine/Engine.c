@@ -41,6 +41,8 @@ double E_deltaTime = 0.0;
 
 static bool _shutdown;
 static double _startTime, _prevTime;
+static int32_t *_frameLimiter = NULL;
+
 #include <Math/sanity.h>
 
 struct EngineSubsystem
@@ -167,6 +169,7 @@ E_Init(int argc, char *argv[])
 #endif
 
 	_startTime = (double)Sys_Time();
+	_frameLimiter = &E_GetCVarI32(L"Engine_FrameLimiter", 0)->i32;
 
 	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Engine start up complete.");
 
@@ -208,6 +211,13 @@ void
 E_Frame(void)
 {
 	double now = E_Time();
+	static double nextFrame = 0;
+
+	if (nextFrame > now) {
+		Sys_Yield();
+		return;
+	}
+
 	E_deltaTime = now - _prevTime;
 	_prevTime = now;
 
@@ -229,6 +239,9 @@ E_Frame(void)
 	In_Update();
 
 	App_Frame();
+
+	if (*_frameLimiter)
+		nextFrame = now + (1.0 / *_frameLimiter);
 }
 
 double

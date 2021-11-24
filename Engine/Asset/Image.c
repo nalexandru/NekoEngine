@@ -21,15 +21,22 @@ static int _stbiEof(void *user);
 static stbi_io_callbacks _cb = { _stbiRead, _stbiSkip, _stbiEof };
 
 bool
-E_LoadImageAsset(struct Stream *stm, struct TextureCreateInfo *tci)
+E_LoadImageAssetComp(struct Stream *stm, struct TextureCreateInfo *tci, int rcomp)
 {
 	int x, y, comp;
-	stbi_uc *image = stbi_load_from_callbacks(&_cb, stm, &x, &y, &comp, 4);
+	stbi_uc *image = stbi_load_from_callbacks(&_cb, stm, &x, &y, &comp, rcomp);
 
 	if (!image)
 		return false;
 
-	tci->desc.format = TF_R8G8B8A8_UNORM;
+	tci->desc.type = TT_2D;
+
+	switch (comp) {
+	case 1: tci->desc.format = TF_R8_UNORM; break;
+	case 2: tci->desc.format = TF_R8G8_UNORM; break;
+	case 4: tci->desc.format = TF_R8G8B8A8_UNORM; break;
+	}
+
 	tci->desc.width = (uint16_t)x;
 	tci->desc.height = (uint16_t)y;
 	tci->desc.mipLevels = tci->desc.arrayLayers = 1;

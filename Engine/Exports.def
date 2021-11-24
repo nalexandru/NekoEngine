@@ -66,6 +66,8 @@ EXPORTS
 	E_FileExists
 	E_CloseFile
 	E_Mount
+	E_MountMemory
+	E_Unmount
 	E_ListFiles
 	E_IsDirectory
 	E_FreeFileList

@@ -18,6 +18,7 @@ struct Block
 };
 
 struct RenderPassDesc *Re_MaterialRenderPassDesc;
+struct RenderPassDesc *Re_TransparentMaterialRenderPassDesc;
 
 static struct Array _types, _freeList;
 static BufferHandle _materialBuffer;
@@ -290,36 +291,39 @@ Re_InitMaterialSystem(void)
 		.samples = ASC_1_SAMPLE,
 		.initialLayout = TL_UNKNOWN,
 		.layout = TL_COLOR_ATTACHMENT,
-		.finalLayout = TL_PRESENT_SRC,
+		.finalLayout = TL_COLOR_ATTACHMENT,
 		.clearColor = { .3f, .0f, .4f, 1.f }
 	};
 	struct AttachmentDesc depthDesc =
 	{
 		.mayAlias = true,
 		.format = TF_D32_SFLOAT,
-		.loadOp = ATL_CLEAR,
-		.storeOp = ATS_DONT_CARE,
+		.loadOp = ATL_LOAD,
+		.storeOp = ATS_STORE,
 		.samples = ASC_1_SAMPLE,
 		.initialLayout = TL_UNKNOWN,
 		.layout = TL_DEPTH_ATTACHMENT,
-		.finalLayout = TL_DEPTH_ATTACHMENT,
-		.clearDepth = 0.f
+		.finalLayout = TL_DEPTH_ATTACHMENT
 	};
 	struct AttachmentDesc normalDesc =
 	{
 		.mayAlias = false,
 		.format = TF_R16G16B16A16_SFLOAT,
 		.loadOp = ATL_LOAD,
-		.storeOp = ATS_DONT_CARE,
+		.storeOp = ATS_STORE,
 		.samples = ASC_1_SAMPLE,
 		.initialLayout = TL_SHADER_READ_ONLY,
 		.layout = TL_SHADER_READ_ONLY,
 		.finalLayout = TL_SHADER_READ_ONLY,
 		.clearColor = { .3f, .0f, .4f, 1.f }
 	};
-
 	Re_MaterialRenderPassDesc = Re_CreateRenderPassDesc(&atDesc, 1, &depthDesc, &normalDesc, 1);
 	
+	atDesc.loadOp = ATL_LOAD;
+	atDesc.initialLayout = TL_COLOR_ATTACHMENT;
+	atDesc.finalLayout = TL_PRESENT_SRC;
+	Re_TransparentMaterialRenderPassDesc = Re_CreateRenderPassDesc(&atDesc, 1, &depthDesc, &normalDesc, 1);
+
 	Rt_InitArray(&_freeList, 10, sizeof(struct Block), MH_Render);
 
 	return true;
@@ -336,6 +340,7 @@ Re_TransferMaterials(void)
 void
 Re_TermMaterialSystem(void)
 {
+	Re_DestroyRenderPassDesc(Re_TransparentMaterialRenderPassDesc);
 	Re_DestroyRenderPassDesc(Re_MaterialRenderPassDesc);
 
 	Sys_Free(_materialData);

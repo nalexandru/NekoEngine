@@ -7,7 +7,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (c) 2015-2020, Alexandru Naiman
+ * Copyright (c) 2015-2021, Alexandru Naiman
  *
  * All rights reserved.
  *
@@ -47,14 +47,8 @@
 #include <Math/plane.h>
 
 static inline struct ray3 *
-r3(
-	struct ray3 *ray,
-	float px,
-	float py,
-	float pz,
-	float vx,
-	float vy,
-	float vz)
+r3(struct ray3 *ray, float px, float py,
+	float pz, float vx, float vy, float vz)
 {
 	ray->start.x = px;
 	ray->start.y = py;
@@ -68,9 +62,7 @@ r3(
 }
 
 static inline struct ray3 *
-r3_point_dir(
-	struct ray3 *ray,
-	const struct vec3 *point,
+r3_point_dir(struct ray3 *ray, const struct vec3 *point,
 	const struct vec3 *direction)
 {
 	v3_copy(&ray->start, point);
@@ -80,17 +72,14 @@ r3_point_dir(
 }
 
 static inline bool
-r3_intersect_plane(
-	struct vec3 *dst,
-	const struct ray3 *ray,
-	const struct plane *plane)
+r3_intersect_plane(struct vec3 *dst,
+	const struct ray3 *ray, const struct plane *plane)
 {
 	// t = - (A*org.x + B*org.y + C*org.z + D) / (A*dir.x + B*dir.y + C*dir.z)
 
 	struct vec3 scaled_dir;
 	float t;
-
-	float d = (plane->a * ray->dir.x +
+	const float d = (plane->a * ray->dir.x +
 			plane->b * ray->dir.y +
 			plane->c * ray->dir.z);
 
@@ -111,14 +100,9 @@ r3_intersect_plane(
 }
 
 static inline bool
-r3_intersect_triangle(
-	const struct ray3 *ray,
-	const struct vec3 *v0,
-	const struct vec3 *v1,
-	const struct vec3 *v2,
-	struct vec3 *intersection,
-	struct vec3 *normal,
-	float *distance)
+r3_intersect_triangle(const struct ray3 *ray, const struct vec3 *v0,
+	const struct vec3 *v1, const struct vec3 *v2,
+	struct vec3 *intersection, struct vec3 *normal, float *distance)
 {
 	struct vec3 e1, e2, pvec, tvec, qvec, dir;
 	float det, inv_det, u, v, t;
@@ -171,11 +155,8 @@ r3_intersect_triangle(
 }
 
 static inline bool
-r3_intersect_aabb3(
-	const struct ray3 *ray,
-	const struct aabb3 *aabb,
-	struct vec3 *intersection,
-	float *distance)
+r3_intersect_aabb3(const struct ray3 *ray, const struct aabb3 *aabb,
+	struct vec3 *intersection, float *distance)
 {
 	// http://gamedev.stackexchange.com/a/18459/15125
 	struct vec3 rdir, dirfrac, diff;

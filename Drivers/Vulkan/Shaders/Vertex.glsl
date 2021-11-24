@@ -38,6 +38,8 @@ vec2 Re_TexCoord()
 	);
 }
 
+#ifndef VTX_NO_INSTANCE
+
 vec3 Re_I_Position()
 {
 	return vec3(
@@ -72,5 +74,7 @@ vec2 Re_I_TexCoord()
 		DrawInfo.instance.vertices.data[gl_VertexIndex].v
 	);
 }
+
+#endif
 
 #endif /* _RE_VERTEX_H_ */

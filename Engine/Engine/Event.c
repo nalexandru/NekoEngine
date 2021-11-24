@@ -1,18 +1,21 @@
 #include <Engine/Job.h>
 #include <Engine/Event.h>
 #include <Runtime/Array.h>
+#include <System/System.h>
 #include <System/Memory.h>
 #include <System/AtomicLock.h>
 
 struct Event
 {
 	uint64_t event;
+	uint64_t timestamp;
 	void *args;
 };
 
 struct EventHandler
 {
 	EventHandlerProc proc;
+	uint64_t timestamp;
 	void *user;
 };
 
@@ -45,6 +48,7 @@ E_Broadcast(const wchar_t *event, void *args)
 	struct Event evt;
 	evt.event = Rt_HashStringW(event);
 	evt.args = args;
+	evt.timestamp = Sys_Time();
 
 	Sys_AtomicLockWrite(&_queueLock);
 	Rt_ArrayAdd(_currentQueue, &evt);
@@ -74,6 +78,7 @@ E_RegisterHandler(const wchar_t *event, EventHandlerProc handlerProc, void *user
 	handler = Rt_ArrayAllocate(&info->handlers);
 	handler->proc = handlerProc;
 	handler->user = user;
+	handler->timestamp = Sys_Time();
 
 	idx = (uint32_t)info->handlers.count - 1;
 
@@ -166,8 +171,13 @@ E_ProcessEvents(void)
 			continue;
 
 		for (j = 0; j < info->handlers.count; ++j) {
+			struct EventHandler *handler = Rt_ArrayGet(&info->handlers, j);
+
+			if (handler->timestamp > evt->timestamp)
+				continue;
+
 			args = Sys_Alloc(sizeof(*args), 1, MH_Frame);
-			args->handler = *(struct EventHandler *)Rt_ArrayGet(&info->handlers, j);
+			args->handler = *handler;
 			args->args = evt->args;
 			E_ExecuteJob((JobProc)_ProcessEvent, args, NULL);
 		}

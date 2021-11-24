@@ -41,39 +41,38 @@
 #define _NE_MATH_SSE_VEC4_H_
 
 #include <Math/defs.h>
-#include <Math/mat4.h>
 
 #ifdef USE_SSE
 
 static inline struct vec4 *
-v4(struct vec4 *v, float x, float y, float z, float w)
+v4_simd(struct vec4 *v, float x, float y, float z, float w)
 {
 	v->sv = _mm_setr_ps(x, y, z, w);
 	return v;
 }
 
 static inline struct vec4 *
-v4_fill(struct vec4 *v, float f)
+v4_fill_simd(struct vec4 *v, float f)
 {
 	v->sv = _mm_set_ps1(f);
 	return v;
 }
 
 static inline struct vec4 *
-v4_copy(struct vec4 *dst, const struct vec4 *src)
+v4_copy_simd(struct vec4 *dst, const struct vec4 *src)
 {
 	dst->sv = _mm_loadu_ps(&src->x);
 	return dst;
 }
 
 static inline struct vec4 *
-v4_zero(struct vec4 *v)
+v4_zero_simd(struct vec4 *v)
 {
-	return v4_fill(v, 0.f);
+	return v4_fill_simd(v, 0.f);
 }
 
 static inline struct vec4 *
-v4_lerp(struct vec4 *dst, const struct vec4 *v1, const struct vec4 *v2, const float t)
+v4_lerp_simd(struct vec4 *dst, const struct vec4 *v1, const struct vec4 *v2, const float t)
 {
 	const __m128 t2 = _mm_set_ps1(t);
 	const __m128 t0 = _mm_sub_ps(v2->sv, v1->sv);
@@ -85,14 +84,14 @@ v4_lerp(struct vec4 *dst, const struct vec4 *v1, const struct vec4 *v2, const fl
 }
 
 static inline struct vec4 *
-v4_add(struct vec4 *dst, const struct vec4 *v1, const struct vec4 *v2)
+v4_add_simd(struct vec4 *dst, const struct vec4 *v1, const struct vec4 *v2)
 {
 	dst->sv = _mm_add_ps(v1->sv, v2->sv);
 	return dst;
 }
 
 static inline struct vec4 *
-v4_adds(struct vec4 *dst, const struct vec4 *v1, const float s)
+v4_adds_simd(struct vec4 *dst, const struct vec4 *v1, const float s)
 {
 	const __m128 tmp = _mm_set_ps1(s);
 	dst->sv = _mm_add_ps(v1->sv, tmp);
@@ -100,14 +99,14 @@ v4_adds(struct vec4 *dst, const struct vec4 *v1, const float s)
 }
 
 static inline struct vec4 *
-v4_sub(struct vec4 *dst, const struct vec4 *v1, const struct vec4 *v2)
+v4_sub_simd(struct vec4 *dst, const struct vec4 *v1, const struct vec4 *v2)
 {
 	dst->sv = _mm_sub_ps(v1->sv, v2->sv);
 	return dst;
 }
 
 static inline struct vec4 *
-v4_subs(struct vec4 *dst, const struct vec4 *v1, const float s)
+v4_subs_simd(struct vec4 *dst, const struct vec4 *v1, const float s)
 {
 	const __m128 tmp = _mm_set_ps1(s);
 	dst->sv = _mm_sub_ps(v1->sv, tmp);
@@ -115,14 +114,14 @@ v4_subs(struct vec4 *dst, const struct vec4 *v1, const float s)
 }
 
 static inline struct vec4 *
-v4_mul(struct vec4 *dst, const struct vec4 *v1, const struct vec4 *v2)
+v4_mul_simd(struct vec4 *dst, const struct vec4 *v1, const struct vec4 *v2)
 {
 	dst->sv = _mm_mul_ps(v1->sv, v2->sv);
 	return dst;
 }
 
 static inline struct vec4 *
-v4_muls(struct vec4 *dst, const struct vec4 *v1, const float s)
+v4_muls_simd(struct vec4 *dst, const struct vec4 *v1, const float s)
 {
 	const __m128 tmp = _mm_set_ps1(s);
 	dst->sv = _mm_mul_ps(v1->sv, tmp);
@@ -130,14 +129,14 @@ v4_muls(struct vec4 *dst, const struct vec4 *v1, const float s)
 }
 
 static inline struct vec4 *
-v4_div(struct vec4 *dst, const struct vec4 *v1, const struct vec4 *v2)
+v4_div_simd(struct vec4 *dst, const struct vec4 *v1, const struct vec4 *v2)
 {
 	dst->sv = _mm_div_ps(v1->sv, v2->sv);
 	return dst;
 }
 
 static inline struct vec4 *
-v4_divs(struct vec4 *dst, const struct vec4 *v1, const float s)
+v4_divs_simd(struct vec4 *dst, const struct vec4 *v1, const float s)
 {
 	const __m128 tmp = _mm_set_ps1(s);
 	dst->sv = _mm_div_ps(v1->sv, tmp);
@@ -145,7 +144,7 @@ v4_divs(struct vec4 *dst, const struct vec4 *v1, const float s)
 }
 
 static inline float
-v4_dot(const struct vec4 *v1, const struct vec4 *v2)
+v4_dot_simd(const struct vec4 *v1, const struct vec4 *v2)
 {
 #ifdef USE_AVX
 	return _mm_cvtss_f32(_mm_dp_ps(v1->sv, v2->sv, 0xFF));
@@ -168,48 +167,9 @@ v4_dot(const struct vec4 *v1, const struct vec4 *v2)
 }
 
 static inline float
-v4_len_sq(const struct vec4 *v)
-{
-	return v4_dot(v, v);
-}
-
-static inline float
-v4_len(const struct vec4 *v)
-{
-	return sqrtf(v4_len_sq(v));
-}
-
-static inline struct vec4 *
-v4_norm(struct vec4 *dst, const struct vec4 *src)
-{
-	const __m128 l = _mm_set1_ps(1.f / v4_len(src));
-	dst->sv = _mm_mul_ps(src->sv, l);
-	return dst;
-}
-
-static inline struct vec4 *
-v4_scale(struct vec4 *dst, const struct vec4 *src, const float s)
-{
-	const __m128 scalar = _mm_set1_ps(s);
-
-	v4_norm(dst, src);
-	dst->sv = _mm_mul_ps(dst->sv, scalar);
-
-	return dst;
-}
-
-static inline float
-v4_distance(const struct vec4 *v1, const struct vec4 *v2)
+v4_distance_simd(const struct vec4 *v1, const struct vec4 *v2)
 {
 	const __m128 tmp = _mm_sub_ps(v1->sv, v2->sv);
-
-	// TODO: SSSE3
-	// #include <tmmintrin.h>
-	// _mm_abs_epi32
-	// https://software.intel.com/sites/landingpage/IntrinsicsGuide
-	// Need some kind of configuration / runtime detection for this
-	// as it will break on older CPUS (pre C2D)
-
 
 #ifdef USE_AVX
 	return fabsf(sqrtf(_mm_cvtss_f32(_mm_dp_ps(tmp, tmp, 0xFF))));
@@ -231,7 +191,7 @@ v4_distance(const struct vec4 *v1, const struct vec4 *v2)
 }
 
 static inline void
-v4_swap(struct vec4 *a, struct vec4 *b)
+v4_swap_simd(struct vec4 *a, struct vec4 *b)
 {
 	const float x = a->x;
 	const float y = a->y;
@@ -245,7 +205,7 @@ v4_swap(struct vec4 *a, struct vec4 *b)
 }
 
 static inline int
-v4_equal(const struct vec4 *p1, const struct vec4 *p2)
+v4_equal_simd(const struct vec4 *p1, const struct vec4 *p2)
 {
 	union {
 		struct {
@@ -255,27 +215,6 @@ v4_equal(const struct vec4 *p1, const struct vec4 *p2)
 	} eq;
 	eq.v = _mm_cmpeq_ps(p1->sv, p2->sv);
 	return eq.a && eq.b && eq.c && eq.d;
-}
-
-static inline struct vec4 *
-v4_mul_m4(struct vec4 *dst, const struct vec4 *v, const struct mat4 *m)
-{
-	struct mat4 tr;
-	__m128 v0, v1, v2, v3;
-
-	m4_transpose(&tr, m);
-
-	v0 = _mm_shuffle_ps(v->sv, v->sv, _MM_SHUFFLE(0, 0, 0, 0));
-	v1 = _mm_shuffle_ps(v->sv, v->sv, _MM_SHUFFLE(1, 1, 1, 1));
-	v2 = _mm_shuffle_ps(v->sv, v->sv, _MM_SHUFFLE(2, 2, 2, 2));
-	v3 = _mm_shuffle_ps(v->sv, v->sv, _MM_SHUFFLE(3, 3, 3, 3));
-
-	dst->sv = _mm_add_ps(
-		_mm_add_ps(_mm_mul_ps(v0, tr.sm[0]), _mm_mul_ps(v1, tr.sm[1])),
-		_mm_add_ps(_mm_mul_ps(v2, tr.sm[2]), _mm_mul_ps(v3, tr.sm[3]))
-	);
-
-	return dst;
 }
 
 #endif
