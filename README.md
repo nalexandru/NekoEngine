@@ -11,10 +11,10 @@
 Cross-platform game engine.
 
 Supported platforms:
-* Windows 10 64-bit or newer
+* Windows 7 64-bit or newer
 * Linux x86_64
-* macOS 11.0+ arm64 (x86_64 with a Metal 2 (MSL 2.3) GPU should work too)
-* iOS 14.4+
+* macOS 11.0 or newer arm64 (x86_64 with a Metal 2 (MSL 2.3) GPU should work too)
+* iOS 14.0 or newer
 * FreeBSD 13.0 amd64
 * OpenBSD 6.9 amd64
 
@@ -47,11 +47,11 @@ This repository is a mirror which is not frequently updated.
 * shaderc or glslang
 * For Arch based systems run the following:
 ```
-pacman -S gcc libx11 vulkan-devel openal cmake shaderc
+pacman -S gcc libx11 vulkan-devel cmake shaderc
 ```
 * For FreeBSD:
 ```
-pkg install vulkan-headers vulkan-loader vulkan-tools vulkan-validation-layers cmake shaderc openal-soft
+pkg install vulkan-headers vulkan-loader vulkan-tools vulkan-validation-layers cmake shaderc
 ```
 
 #### Build
@@ -84,3 +84,4 @@ pkg install vulkan-headers vulkan-loader vulkan-tools vulkan-validation-layers c
 * volk - https://github.com/zeux/volk
 * simple-stdatomic-for-VS-Clang - https://github.com/zenny-chen/simple-stdatomic-for-VS-Clang
 * D3D12 Helper Library - https://github.com/Microsoft/DirectX-Graphics-Samples/tree/master/Libraries/D3DX12
+* OpenAL Soft - https://github.com/kcat/openal-soft
