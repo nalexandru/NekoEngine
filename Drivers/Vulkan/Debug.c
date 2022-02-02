@@ -5,7 +5,7 @@
 
 #include "VulkanDriver.h"
 
-#if (defined(SYS_PLATFORM_WINDOWS) || defined(SYS_PLATFORM_LINUX)) && defined(ENABLE_AFTERMATH)
+#if (defined(SYS_PLATFORM_WINDOWS) || defined(SYS_PLATFORM_LINUX)) && (ENABLE_AFTERMATH == 1)
 #	include <System/System.h>
 #	include <Engine/Version.h>
 #	include <Engine/Application.h>
