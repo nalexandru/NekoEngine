@@ -9,21 +9,21 @@
 
 #include "Internal.h"
 
-struct UIPass;
-static bool _Init(struct UIPass **pass);
-static void _Term(struct UIPass *pass);
-static bool _Setup(struct UIPass *pass, struct Array *resources);
-static void _Execute(struct UIPass *pass, const struct Array *resources);
+struct NeUIPass;
+static bool _Init(struct NeUIPass **pass);
+static void _Term(struct NeUIPass *pass);
+static bool _Setup(struct NeUIPass *pass, struct NeArray *resources);
+static void _Execute(struct NeUIPass *pass, const struct NeArray *resources);
 
-struct RenderPass RP_ui =
+struct NeRenderPass RP_ui =
 {
-	.Init = (PassInitProc)_Init,
-	.Term = (PassTermProc)_Term,
-	.Setup = (PassSetupProc)_Setup,
-	.Execute = (PassExecuteProc)_Execute
+	.Init = (NePassInitProc)_Init,
+	.Term = (NePassTermProc)_Term,
+	.Setup = (NePassSetupProc)_Setup,
+	.Execute = (NePassExecuteProc)_Execute
 };
 
-struct UIConstants
+struct NeUIConstants
 {
 	uint64_t vertexAddress;
 	uint32_t texture;
@@ -31,25 +31,25 @@ struct UIConstants
 	struct mat4 mvp;
 };
 
-struct UIPass
+struct NeUIPass
 {
-	struct Framebuffer *fb;
-	struct Pipeline *pipeline;
-	struct RenderPassDesc *rpd;
-	uint64_t outputHash;
+	struct NeFramebuffer *fb;
+	struct NePipeline *pipeline;
+	struct NeRenderPassDesc *rpd;
+	uint64_t outputHash, passSemaphoreHash;
 	volatile bool updated;
-	struct UIConstants constants;
+	struct NeUIConstants constants;
 };
 
-static void _UIUpdateJob(int i, struct UIPass *pass);
+static void _UIUpdateJob(int i, struct NeUIPass *pass);
 
 static bool
-_Setup(struct UIPass *pass, struct Array *resources)
+_Setup(struct NeUIPass *pass, struct NeArray *resources)
 {
-	struct FramebufferAttachmentDesc atDesc;
+	struct NeFramebufferAttachmentDesc atDesc;
 	Re_SwapchainDesc(Re_swapchain, &atDesc);
 
-	struct FramebufferDesc fbDesc =
+	struct NeFramebufferDesc fbDesc =
 	{
 		.attachmentCount = 1,
 		.attachments = &atDesc,
@@ -62,7 +62,7 @@ _Setup(struct UIPass *pass, struct Array *resources)
 	Re_Destroy(pass->fb);
 
 	pass->updated = false;
-	E_ExecuteJob((JobProc)_UIUpdateJob, pass, NULL);
+	E_ExecuteJob((NeJobProc)_UIUpdateJob, pass, NULL, NULL);
 
 	m4_ortho(&pass->constants.mvp, 0.f, (float)*E_screenWidth, (float)*E_screenHeight, 0.f, 0.f, 1.f);
 
@@ -70,11 +70,11 @@ _Setup(struct UIPass *pass, struct Array *resources)
 }
 
 static void
-_Execute(struct UIPass *pass, const struct Array *resources)
+_Execute(struct NeUIPass *pass, const struct NeArray *resources)
 {
 	Re_SetAttachment(pass->fb, 0, Re_GraphTexture(pass->outputHash, resources));
 
-	while (!pass->updated) ;
+	while (!pass->updated);
 
 	Re_BeginDrawCommandBuffer();
 	Re_CmdBeginRenderPass(pass->rpd, pass->fb, RENDER_COMMANDS_INLINE);
@@ -88,20 +88,26 @@ _Execute(struct UIPass *pass, const struct Array *resources)
 	pass->constants.texture = 0;
 	E_ExecuteSystemS(Scn_activeScene, UI_DRAW_CONTEXT, &pass->constants);
 
+	struct NeUIContext *ctx;
+	Rt_ArrayForEachPtr(ctx, &UI_standaloneContexts)
+		_UI_DrawContext((void **)&ctx, &pass->constants);
+
 	Re_CmdEndRenderPass();
-	Re_EndCommandBuffer();
+
+	struct NeSemaphore *passSemaphore = Re_GraphData(pass->passSemaphoreHash, resources);
+	Re_QueueGraphics(Re_EndCommandBuffer(), passSemaphore, NULL);
 }
 
 static bool
-_Init(struct UIPass **pass)
+_Init(struct NeUIPass **pass)
 {
-	*pass = Sys_Alloc(sizeof(struct UIPass), 1, MH_Render);
+	*pass = Sys_Alloc(sizeof(struct NeUIPass), 1, MH_Render);
 	if (!*pass)
 		return false;
 
-	struct Shader *shader = Re_GetShader("UI");
+	struct NeShader *shader = Re_GetShader("UI");
 
-	struct AttachmentDesc atDesc =
+	struct NeAttachmentDesc atDesc =
 	{
 		.mayAlias = false,
 		.format = Re_SwapchainFormat(Re_swapchain),
@@ -117,7 +123,7 @@ _Init(struct UIPass **pass)
 	if (!(*pass)->rpd)
 		goto error;
 
-	struct BlendAttachmentDesc blendAttachments[] =
+	struct NeBlendAttachmentDesc blendAttachments[] =
 	{
 		{
 			.enableBlend = true,
@@ -130,12 +136,12 @@ _Init(struct UIPass **pass)
 			.alphaOp = RE_BOP_ADD
 		}
 	};
-	struct GraphicsPipelineDesc pipeDesc =
+	struct NeGraphicsPipelineDesc pipeDesc =
 	{
 		.flags = RE_TOPOLOGY_TRIANGLES | RE_POLYGON_FILL | RE_CULL_NONE | RE_FRONT_FACE_CW,
 		.stageInfo = &shader->opaqueStages,
 		.renderPassDesc = (*pass)->rpd,
-		.pushConstantSize = sizeof(struct UIConstants),
+		.pushConstantSize = sizeof(struct NeUIConstants),
 		.attachmentCount = sizeof(blendAttachments) / sizeof(blendAttachments[0]),
 		.attachments = blendAttachments
 	};
@@ -144,6 +150,7 @@ _Init(struct UIPass **pass)
 		goto error;
 
 	(*pass)->outputHash = Rt_HashString("Re_output");
+	(*pass)->passSemaphoreHash = Rt_HashString("Re_passSemaphore");
 
 	return true;
 
@@ -157,13 +164,13 @@ error:
 }
 
 static void
-_Term(struct UIPass *pass)
+_Term(struct NeUIPass *pass)
 {
 	Re_DestroyRenderPassDesc(pass->rpd);
 	Sys_Free(pass);
 }
 
-static void _UIUpdateJob(int i, struct UIPass *pass)
+static void _UIUpdateJob(int i, struct NeUIPass *pass)
 {
 	UI_Update(Scn_activeScene);
 	pass->updated = true;

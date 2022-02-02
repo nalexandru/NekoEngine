@@ -1,9 +1,9 @@
 #include "MTLDriver.h"
 
-struct AccelerationStructure *
-MTL_CreateAccelerationStructure(id<MTLDevice> dev, const struct AccelerationStructureCreateInfo *asci)
+struct NeAccelerationStructure *
+MTL_CreateAccelerationStructure(id<MTLDevice> dev, const struct NeAccelerationStructureCreateInfo *asci)
 {
-	struct AccelerationStructure *as = Sys_Alloc(sizeof(*as), 1, MH_RenderDriver);
+	struct NeAccelerationStructure *as = Sys_Alloc(sizeof(*as), 1, MH_RenderDriver);
 	if (!as)
 		return NULL;
 	
@@ -16,13 +16,13 @@ MTL_CreateAccelerationStructure(id<MTLDevice> dev, const struct AccelerationStru
 }
 
 uint64_t
-MTL_AccelerationStructureHandle(id<MTLDevice> dev, const struct AccelerationStructure *as)
+MTL_AccelerationStructureHandle(id<MTLDevice> dev, const struct NeAccelerationStructure *as)
 {
 	return (uint64_t)as;
 }
 
 void
-MTL_DestroyAccelerationStructure(id<MTLDevice> dev, struct AccelerationStructure *as)
+MTL_DestroyAccelerationStructure(id<MTLDevice> dev, struct NeAccelerationStructure *as)
 {
 	[as->as release];
 	

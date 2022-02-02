@@ -2,75 +2,91 @@
 
 #include "MTLDriver.h"
 
-struct RenderContext *
+struct NeRenderContext *
 MTL_CreateContext(id<MTLDevice> dev)
 {
-	struct RenderContext *ctx = Sys_Alloc(sizeof(*ctx), 1, MH_RenderDriver);
+	struct NeRenderContext *ctx = Sys_Alloc(sizeof(*ctx), 1, MH_RenderDriver);
 	
 	ctx->queue = [dev newCommandQueue];
 	ctx->dev = dev;
+
+	if (!Rt_InitArray(&ctx->submitted.graphics, 10, sizeof(struct Mtld_SubmitInfo), MH_RenderDriver) ||
+			!Rt_InitArray(&ctx->submitted.compute, 10, sizeof(struct Mtld_SubmitInfo), MH_RenderDriver) ||
+			!Rt_InitArray(&ctx->submitted.xfer, 10, sizeof(struct Mtld_SubmitInfo), MH_RenderDriver))
+		return nil;
 	
 	return ctx;
 }
 
 void
-MTL_ResetContext(id<MTLDevice> dev, struct RenderContext *ctx)
+MTL_ResetContext(id<MTLDevice> dev, struct NeRenderContext *ctx)
 {
+	Rt_ClearArray(&ctx->submitted.graphics, false);
+	Rt_ClearArray(&ctx->submitted.compute, false);
+	Rt_ClearArray(&ctx->submitted.xfer, false);
 }
 
 void
-MTL_DestroyContext(id<MTLDevice> dev, struct RenderContext *ctx)
+MTL_DestroyContext(id<MTLDevice> dev, struct NeRenderContext *ctx)
 {
 	[ctx->queue release];
+
+	Rt_TermArray(&ctx->submitted.graphics);
+	Rt_TermArray(&ctx->submitted.compute);
+	Rt_TermArray(&ctx->submitted.xfer);
 	
 	Sys_Free(ctx);
 }
 
-static CommandBufferHandle
-_BeginSecondary(struct RenderContext *ctx, struct RenderPassDesc *passDesc)
+static NeCommandBufferHandle
+_BeginSecondary(struct NeRenderContext *ctx, struct NeRenderPassDesc *passDesc)
 {
 	return ctx->cmdBuffer;
 }
 
 static void
-_BeginDrawCommandBuffer(struct RenderContext *ctx)
+_BeginDrawCommandBuffer(struct NeRenderContext *ctx)
 {
 	ctx->type = RC_RENDER;
 	
-	ctx->cmdBuffer = [ctx->queue commandBuffer];
+	ctx->cmdBuffer = [ctx->queue commandBufferWithUnretainedReferences];
 }
 
 static void
-_BeginComputeCommandBuffer(struct RenderContext *ctx)
+_BeginComputeCommandBuffer(struct NeRenderContext *ctx)
 {
 	ctx->type = RC_COMPUTE;
 	
-	ctx->cmdBuffer = [ctx->queue commandBuffer];
+	ctx->cmdBuffer = [ctx->queue commandBufferWithUnretainedReferences];
 	ctx->encoders.compute = [ctx->cmdBuffer computeCommandEncoder];
 }
 
 static void
-_BeginTransferCommandBuffer(struct RenderContext *ctx)
+_BeginTransferCommandBuffer(struct NeRenderContext *ctx)
 {
 	ctx->type = RC_BLIT;
 	
-	ctx->cmdBuffer = [ctx->queue commandBuffer];
+	ctx->cmdBuffer = [ctx->queue commandBufferWithUnretainedReferences];
 	ctx->encoders.blit = [ctx->cmdBuffer blitCommandEncoder];
 }
 
-static void
-_EndCommandBuffer(struct RenderContext *ctx)
+static NeCommandBufferHandle
+_EndCommandBuffer(struct NeRenderContext *ctx)
 {
+	NeCommandBufferHandle cb = ctx->cmdBuffer;
+
 	if (ctx->type == RC_COMPUTE)
 		[ctx->encoders.compute endEncoding];
 	else if (ctx->type == RC_BLIT)
 		[ctx->encoders.blit endEncoding];
-	
+
 	ctx->boundPipeline = nil;
+
+	return cb;
 }
 
 static void
-_BindPipeline(struct RenderContext *ctx, struct Pipeline *pipeline)
+_BindPipeline(struct NeRenderContext *ctx, struct NePipeline *pipeline)
 {
 	if (ctx->boundPipeline == pipeline)
 		return;
@@ -94,7 +110,7 @@ _BindPipeline(struct RenderContext *ctx, struct Pipeline *pipeline)
 }
 
 static void
-_PushConstants(struct RenderContext *ctx, enum ShaderStage stage, uint32_t size, const void *data)
+_PushConstants(struct NeRenderContext *ctx, enum NeShaderStage stage, uint32_t size, const void *data)
 {
 	if (stage & SS_VERTEX || stage & SS_GEOMETRY || stage & SS_TESS_CTRL || stage & SS_TESS_EVAL)
 		[ctx->encoders.render setVertexBytes: data length: size atIndex: 1];
@@ -105,7 +121,7 @@ _PushConstants(struct RenderContext *ctx, enum ShaderStage stage, uint32_t size,
 }
 
 static void
-_BindIndexBuffer(struct RenderContext *ctx, struct Buffer *buff, uint64_t offset, enum IndexType type)
+_BindIndexBuffer(struct NeRenderContext *ctx, struct NeBuffer *buff, uint64_t offset, enum NeIndexType type)
 {
 	ctx->boundIndexBuffer.buffer = buff;
 	ctx->boundIndexBuffer.offset = offset;
@@ -117,12 +133,12 @@ _BindIndexBuffer(struct RenderContext *ctx, struct Buffer *buff, uint64_t offset
 }
 
 static void
-_ExecuteSecondary(struct RenderContext *ctx, CommandBufferHandle *cmdBuffers, uint32_t count)
+_ExecuteSecondary(struct NeRenderContext *ctx, NeCommandBufferHandle *cmdBuffers, uint32_t count)
 {
 }
 
 static void
-_BeginRenderPass(struct RenderContext *ctx, struct RenderPassDesc *passDesc, struct Framebuffer *fb, enum RenderCommandContents contents)
+_BeginRenderPass(struct NeRenderContext *ctx, struct NeRenderPassDesc *passDesc, struct NeFramebuffer *fb, enum NeRenderCommandContents contents)
 {
 	for (uint32_t i = 0; i < passDesc->colorAttachments; ++i)
 		passDesc->desc.colorAttachments[i].texture = fb->attachments[i];
@@ -137,28 +153,27 @@ _BeginRenderPass(struct RenderContext *ctx, struct RenderPassDesc *passDesc, str
 }
 
 static void
-_EndRenderPass(struct RenderContext *ctx)
+_EndRenderPass(struct NeRenderContext *ctx)
 {
 	[ctx->encoders.render endEncoding];
-	[ctx->cmdBuffer commit];
 }
 
 static void
-_SetViewport(struct RenderContext *ctx, float x, float y, float width, float height, float minDepth, float maxDepth)
+_SetViewport(struct NeRenderContext *ctx, float x, float y, float width, float height, float minDepth, float maxDepth)
 {
 	MTLViewport vp = { .originX = x, .originY = y, .width = width, .height = height, .znear = minDepth, .zfar = maxDepth };
 	[ctx->encoders.render setViewport: vp];
 }
 
 static void
-_SetScissor(struct RenderContext *ctx, int32_t x, int32_t y, int32_t width, int32_t height)
+_SetScissor(struct NeRenderContext *ctx, int32_t x, int32_t y, int32_t width, int32_t height)
 {
 	MTLScissorRect rc = { .x = x, .y = y, .width = width, .height = height };
 	[ctx->encoders.render setScissorRect: rc];
 }
 
 static void
-_Draw(struct RenderContext *ctx, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
+_Draw(struct NeRenderContext *ctx, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
 {
 	[ctx->encoders.render drawPrimitives: ctx->boundPipeline->render.primitiveType
 							 vertexStart: firstVertex
@@ -168,7 +183,7 @@ _Draw(struct RenderContext *ctx, uint32_t vertexCount, uint32_t instanceCount, u
 }
 
 static void
-_DrawIndexed(struct RenderContext *ctx, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t vertexOffset, uint32_t firstInstance)
+_DrawIndexed(struct NeRenderContext *ctx, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t vertexOffset, uint32_t firstInstance)
 {
 	NSUInteger indexOffset = ctx->boundIndexBuffer.offset;
 	
@@ -188,7 +203,7 @@ _DrawIndexed(struct RenderContext *ctx, uint32_t indexCount, uint32_t instanceCo
 }
 
 static void
-_DrawIndirect(struct RenderContext *ctx, struct Buffer *buff, uint64_t offset, uint32_t count, uint32_t stride)
+_DrawIndirect(struct NeRenderContext *ctx, struct NeBuffer *buff, uint64_t offset, uint32_t count, uint32_t stride)
 {
 	[ctx->encoders.render drawPrimitives: ctx->boundPipeline->render.primitiveType
 						  indirectBuffer: buff->buff
@@ -196,7 +211,7 @@ _DrawIndirect(struct RenderContext *ctx, struct Buffer *buff, uint64_t offset, u
 }
 
 static void
-_DrawIndexedIndirect(struct RenderContext *ctx, struct Buffer *buff, uint64_t offset, uint32_t count, uint32_t stride)
+_DrawIndexedIndirect(struct NeRenderContext *ctx, struct NeBuffer *buff, uint64_t offset, uint32_t count, uint32_t stride)
 {
 	[ctx->encoders.render drawIndexedPrimitives: ctx->boundPipeline->render.primitiveType
 									  indexType: ctx->boundIndexBuffer.type
@@ -207,14 +222,14 @@ _DrawIndexedIndirect(struct RenderContext *ctx, struct Buffer *buff, uint64_t of
 }
 
 static void
-_Dispatch(struct RenderContext *ctx, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
+_Dispatch(struct NeRenderContext *ctx, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
 {
 	[ctx->encoders.compute dispatchThreadgroups: MTLSizeMake(groupCountX, groupCountY, groupCountZ)
 						  threadsPerThreadgroup: ctx->threadsPerThreadgroup];
 }
 
 static void
-_DispatchIndirect(struct RenderContext *ctx, struct Buffer *buff, uint64_t offset)
+_DispatchIndirect(struct NeRenderContext *ctx, struct NeBuffer *buff, uint64_t offset)
 {
 	[ctx->encoders.compute dispatchThreadgroupsWithIndirectBuffer: buff->buff
 											 indirectBufferOffset: offset
@@ -222,19 +237,19 @@ _DispatchIndirect(struct RenderContext *ctx, struct Buffer *buff, uint64_t offse
 }
 
 static void
-_TraceRays(struct RenderContext *ctx, uint32_t width, uint32_t height, uint32_t depth)
+_TraceRays(struct NeRenderContext *ctx, uint32_t width, uint32_t height, uint32_t depth)
 {
 	_Dispatch(ctx, width, height, depth);
 }
 
 static void
-_TraceRaysIndirect(struct RenderContext *ctx, struct Buffer *buff, uint64_t offset)
+_TraceRaysIndirect(struct NeRenderContext *ctx, struct NeBuffer *buff, uint64_t offset)
 {
 	_DispatchIndirect(ctx, buff, offset);
 }
 
 static void
-_BuildAccelerationStructures(struct RenderContext *ctx, uint32_t count, struct AccelerationStructureBuildInfo *buildInfo, const struct AccelerationStructureRangeInfo **rangeInfo)
+_BuildAccelerationStructures(struct NeRenderContext *ctx, uint32_t count, struct NeAccelerationStructureBuildInfo *buildInfo, const struct NeAccelerationStructureRangeInfo **rangeInfo)
 {
 /*	[ctx->encoders.accelerationStructure buildAccelerationStructure: as->as
 														 descriptor: as->desc
@@ -243,21 +258,21 @@ _BuildAccelerationStructures(struct RenderContext *ctx, uint32_t count, struct A
 }
 
 static void
-_Barrier(struct RenderContext *ctx, enum PipelineStage srcStage, enum PipelineStage dstStage, enum PipelineDependency dep,
-		 uint32_t memBarrierCount, const struct MemoryBarrier *memBarriers, uint32_t bufferBarrierCount, const struct BufferBarrier *bufferBarriers,
-		 uint32_t imageBarrierCount, const struct ImageBarrier *imageBarriers)
+_Barrier(struct NeRenderContext *ctx, enum NePipelineStage srcStage, enum NePipelineStage dstStage, enum NePipelineDependency dep,
+		 uint32_t memBarrierCount, const struct NeMemoryBarrier *memBarriers, uint32_t bufferBarrierCount, const struct NeBufferBarrier *bufferBarriers,
+		 uint32_t imageBarrierCount, const struct NeImageBarrier *imageBarriers)
 {
 //	[ctx->encoders.render memoryBarrierWithResources:<#(id<MTLResource>  _Nonnull const * _Nonnull)#> count:<#(NSUInteger)#> afterStages:<#(MTLRenderStages)#> beforeStages:<#(MTLRenderStages)#>]
 }
 
 static void
-_Transition(struct RenderContext *ctx, struct Texture *tex, enum TextureLayout newLayout)
+_Transition(struct NeRenderContext *ctx, struct NeTexture *tex, enum NeTextureLayout newLayout)
 {
 	tex->layout = newLayout;
 }
 
 static void
-_CopyBuffer(struct RenderContext *ctx, const struct Buffer *src, uint64_t srcOffset, struct Buffer *dst, uint64_t dstOffset, uint64_t size)
+_CopyBuffer(struct NeRenderContext *ctx, const struct NeBuffer *src, uint64_t srcOffset, struct NeBuffer *dst, uint64_t dstOffset, uint64_t size)
 {
 	[ctx->encoders.blit copyFromBuffer: src->buff
 						  sourceOffset: srcOffset
@@ -267,13 +282,13 @@ _CopyBuffer(struct RenderContext *ctx, const struct Buffer *src, uint64_t srcOff
 }
 
 static void
-_CopyImage(struct RenderContext *ctx, const struct Texture *src, struct Texture *dst)
+_CopyImage(struct NeRenderContext *ctx, const struct NeTexture *src, struct NeTexture *dst)
 {
 	[ctx->encoders.blit copyFromTexture: src->tex toTexture: dst->tex];
 }
 
 static void
-_CopyBufferToTexture(struct RenderContext *ctx, const struct Buffer *src, struct Texture *dst, const struct BufferImageCopy *bic)
+_CopyBufferToTexture(struct NeRenderContext *ctx, const struct NeBuffer *src, struct NeTexture *dst, const struct NeBufferImageCopy *bic)
 {
 	[ctx->encoders.blit copyFromBuffer: src->buff
 						  sourceOffset: bic->bufferOffset
@@ -287,7 +302,7 @@ _CopyBufferToTexture(struct RenderContext *ctx, const struct Buffer *src, struct
 }
 
 static void
-_CopyTextureToBuffer(struct RenderContext *ctx, const struct Texture *src, struct Buffer *dst, const struct BufferImageCopy *bic)
+_CopyTextureToBuffer(struct NeRenderContext *ctx, const struct NeTexture *src, struct NeBuffer *dst, const struct NeBufferImageCopy *bic)
 {
 	[ctx->encoders.blit copyFromTexture: src->tex
 							sourceSlice: bic->subresource.baseArrayLayer
@@ -301,10 +316,10 @@ _CopyTextureToBuffer(struct RenderContext *ctx, const struct Texture *src, struc
 }
 
 static void
-_Blit(struct RenderContext *ctx, const struct Texture *src, struct Texture *dst, const struct BlitRegion *regions, uint32_t regionCount, enum ImageFilter filter)
+_Blit(struct NeRenderContext *ctx, const struct NeTexture *src, struct NeTexture *dst, const struct NeBlitRegion *regions, uint32_t regionCount, enum NeImageFilter filter)
 {
 	for (uint32_t i = 0; i < regionCount; ++i) {
-		const struct BlitRegion r = regions[i];
+		const struct NeBlitRegion r = regions[i];
 		[ctx->encoders.blit copyFromTexture: src->tex
 								sourceSlice: r.srcSubresource.baseArrayLayer
 								sourceLevel: r.srcSubresource.mipLevel
@@ -318,29 +333,63 @@ _Blit(struct RenderContext *ctx, const struct Texture *src, struct Texture *dst,
 }
 
 static bool
-_Submit(id<MTLDevice> dev, struct RenderContext *ctx)
+_QueueGraphics(struct NeRenderContext *ctx, id<MTLCommandBuffer> cmdBuffer, struct NeSemaphore *wait, struct NeSemaphore *signal)
 {
-	return false;
+	struct Mtld_SubmitInfo si =
+	{
+		.wait = wait ? wait->event : nil,
+		.waitValue = wait ? wait->value : 0,
+		.signal = signal ? signal->event : nil,
+		.signalValue = signal ? ++signal->value : 0,
+		.cmdBuffer = cmdBuffer
+	};
+	return Rt_ArrayAdd(&ctx->submitted.graphics, &si);
 }
 
 static bool
-_SubmitTransfer(struct RenderContext *ctx, dispatch_semaphore_t ds)
+_QueueCompute(struct NeRenderContext *ctx, id<MTLCommandBuffer> cmdBuffer, struct NeSemaphore *wait, struct NeSemaphore *signal)
+{
+	struct Mtld_SubmitInfo si =
+	{
+		.wait = wait ? wait->event : nil,
+		.waitValue = wait ? wait->value : 0,
+		.signal = signal ? signal->event : nil,
+		.signalValue = signal ? ++signal->value : 0,
+		.cmdBuffer = cmdBuffer
+	};
+	return Rt_ArrayAdd(&ctx->submitted.compute, &si);
+}
+
+static bool
+_QueueTransfer(struct NeRenderContext *ctx, id<MTLCommandBuffer> cmdBuffer, struct NeSemaphore *wait, struct NeSemaphore *signal)
+{
+	struct Mtld_SubmitInfo si =
+	{
+		.wait = wait ? wait->event : nil,
+		.waitValue = wait ? wait->value : 0,
+		.signal = signal ? signal->event : nil,
+		.signalValue = signal ? ++signal->value : 0,
+		.cmdBuffer = cmdBuffer
+	};
+	return Rt_ArrayAdd(&ctx->submitted.xfer, &si);
+}
+
+static bool
+_Execute(struct NeRenderContext *ctx, id<MTLCommandBuffer> cmdBuffer)
 {
 	assert(ctx->type == RC_BLIT);
-	
-	if (ds) {
-		__block dispatch_semaphore_t bds = ds;
-		[ctx->cmdBuffer addCompletedHandler:^(id<MTLCommandBuffer> _Nonnull cmdBuff) {
-			dispatch_semaphore_signal(bds);
-		}];
-	}
-	[ctx->cmdBuffer commit];
-	
-	return true;
+
+	__block dispatch_semaphore_t bds = dispatch_semaphore_create(0);
+	[cmdBuffer addCompletedHandler:^(id<MTLCommandBuffer> _Nonnull cmdBuff) {
+		dispatch_semaphore_signal(bds);
+	}];
+	[cmdBuffer commit];
+
+	return dispatch_semaphore_wait(bds, UINT64_MAX) == 0;
 }
 
 void
-MTL_InitContextProcs(struct RenderContextProcs *p)
+MTL_InitContextProcs(struct NeRenderContextProcs *p)
 {
 	p->BeginSecondary = _BeginSecondary;
 	p->BeginDrawCommandBuffer = _BeginDrawCommandBuffer;
@@ -371,6 +420,10 @@ MTL_InitContextProcs(struct RenderContextProcs *p)
 	p->CopyBufferToTexture = _CopyBufferToTexture;
 	p->CopyTextureToBuffer = _CopyTextureToBuffer;
 	p->Blit = _Blit;
-	p->Submit = (bool(*)(struct RenderDevice *, struct RenderContext *))_Submit;
-	p->SubmitTransfer = (bool(*)(struct RenderContext *, struct Fence *))_SubmitTransfer;
+	p->QueueCompute = (bool(*)(struct NeRenderContext *, NeCommandBufferHandle, struct NeSemaphore *, struct NeSemaphore *))_QueueCompute;
+	p->QueueGraphics = (bool(*)(struct NeRenderContext *, NeCommandBufferHandle, struct NeSemaphore *, struct NeSemaphore *))_QueueGraphics;
+	p->QueueTransfer = (bool(*)(struct NeRenderContext *, NeCommandBufferHandle, struct NeSemaphore *, struct NeSemaphore *))_QueueTransfer;
+	p->ExecuteCompute = (bool(*)(struct NeRenderContext *, NeCommandBufferHandle))_Execute;
+	p->ExecuteGraphics = (bool(*)(struct NeRenderContext *, NeCommandBufferHandle))_Execute;
+	p->ExecuteTransfer = (bool(*)(struct NeRenderContext *, NeCommandBufferHandle))_Execute;
 }

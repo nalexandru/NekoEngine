@@ -5,9 +5,9 @@
 
 #include "VulkanDriver.h"
 
-#define VKPMOD	L"VulkanPipeline"
+#define VKPMOD	"VulkanPipeline"
 
-static VkPipelineCache _cache;
+VkPipelineCache Vkd_pipelineCache;
 
 static inline VkCompareOp
 _NeToVkCompareOp(uint64_t flags)
@@ -25,22 +25,22 @@ _NeToVkCompareOp(uint64_t flags)
 	return VK_COMPARE_OP_GREATER_OR_EQUAL;
 }
 
-static inline VkPipelineLayout _CreateLayout(struct RenderDevice *dev, uint32_t size, bool inputAttachments);
+static inline VkPipelineLayout _CreateLayout(struct NeRenderDevice *dev, uint32_t size, VkShaderStageFlags pcFlags, bool inputAttachments);
 
-struct Pipeline *
-Vk_GraphicsPipeline(struct RenderDevice *dev, const struct GraphicsPipelineDesc *desc)
+struct NePipeline *
+Vk_GraphicsPipeline(struct NeRenderDevice *dev, const struct NeGraphicsPipelineDesc *desc)
 {
-	struct Pipeline *p = Sys_Alloc(1, sizeof(*p), MH_RenderDriver);
+	struct NePipeline *p = Sys_Alloc(1, sizeof(*p), MH_RenderDriver);
 	if (!p)
 		return NULL;
 
-	VkPipelineLayout layout = _CreateLayout(dev, desc->pushConstantSize, desc->renderPassDesc ? desc->renderPassDesc->inputAttachments > 0 : false);
+	VkPipelineLayout layout = _CreateLayout(dev, desc->pushConstantSize, VK_SHADER_STAGE_ALL, desc->renderPassDesc ? desc->renderPassDesc->inputAttachments > 0 : false);
 	if (!layout) {
 		Sys_Free(p);
 		return NULL;
 	}
 
-	uint64_t flags = desc->flags;
+	const uint64_t flags = desc->flags;
 
 	VkPipelineVertexInputStateCreateInfo vi =
 	{
@@ -199,7 +199,7 @@ Vk_GraphicsPipeline(struct RenderDevice *dev, const struct GraphicsPipelineDesc 
 		stages[i].pSpecializationInfo = NULL;
 	}
 
-	if (vkCreateGraphicsPipelines(dev->dev, _cache, 1, &info, Vkd_allocCb, &p->pipeline) != VK_SUCCESS) {
+	if (vkCreateGraphicsPipelines(dev->dev, Vkd_pipelineCache, 1, &info, Vkd_allocCb, &p->pipeline) != VK_SUCCESS) {
 		vkDestroyPipelineLayout(dev->dev, layout, Vkd_allocCb);
 		Sys_Free(p);
 		return NULL;
@@ -207,15 +207,28 @@ Vk_GraphicsPipeline(struct RenderDevice *dev, const struct GraphicsPipelineDesc 
 
 	p->layout = layout;
 
+#ifdef _DEBUG
+	if (desc->name) {
+		Vkd_SetObjectName(dev->dev, p->pipeline, VK_OBJECT_TYPE_PIPELINE, desc->name);
+		Vkd_SetObjectName(dev->dev, p->layout, VK_OBJECT_TYPE_PIPELINE_LAYOUT, desc->name);
+	}
+#endif
+
 	return p;
 }
 
-struct Pipeline *
-Vk_ComputePipeline(struct RenderDevice *dev, const struct ComputePipelineDesc *desc)
+struct NePipeline *
+Vk_ComputePipeline(struct NeRenderDevice *dev, const struct NeComputePipelineDesc *desc)
 {
-	struct Pipeline *p = Sys_Alloc(sizeof(*p), 1, MH_RenderDriver);
+	struct NePipeline *p = Sys_Alloc(sizeof(*p), 1, MH_RenderDriver);
 	if (!p)
 		return NULL;
+
+	VkPipelineLayout layout = _CreateLayout(dev, desc->pushConstantSize, VK_SHADER_STAGE_COMPUTE_BIT, false);
+	if (!layout) {
+		Sys_Free(p);
+		return NULL;
+	}
 
 	VkSpecializationMapEntry specMap[] =
 	{
@@ -237,10 +250,10 @@ Vk_ComputePipeline(struct RenderDevice *dev, const struct ComputePipelineDesc *d
 		.stage = {
 			.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
 			.stage = VK_SHADER_STAGE_COMPUTE_BIT,
-			.pName = "main",
-			.pSpecializationInfo = &si
+			.pSpecializationInfo = &si,
+			.pName = "main"
 		},
-		.layout = VK_NULL_HANDLE
+		.layout = layout
 	};
 
 	for (uint32_t i = 0; i < desc->stageInfo->stageCount; ++i) {
@@ -251,18 +264,28 @@ Vk_ComputePipeline(struct RenderDevice *dev, const struct ComputePipelineDesc *d
 		break;
 	}
 
-	if (!info.stage.module || (vkCreateComputePipelines(dev->dev, _cache, 1, &info, Vkd_allocCb, &p->pipeline) != VK_SUCCESS)) {
+	if (!info.stage.module || (vkCreateComputePipelines(dev->dev, Vkd_pipelineCache, 1, &info, Vkd_allocCb, &p->pipeline) != VK_SUCCESS)) {
 		Sys_Free(p);
 		return NULL;
 	}
 
+	p->bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
+	p->layout = layout;
+
+#ifdef _DEBUG
+	if (desc->name) {
+		Vkd_SetObjectName(dev->dev, p->pipeline, VK_OBJECT_TYPE_PIPELINE, desc->name);
+		Vkd_SetObjectName(dev->dev, p->layout, VK_OBJECT_TYPE_PIPELINE_LAYOUT, desc->name);
+	}
+#endif
+
 	return p;
 }
 
-struct Pipeline *
-Vk_RayTracingPipeline(struct RenderDevice *dev, struct ShaderBindingTable *sbt, uint32_t maxDepth)
+struct NePipeline *
+Vk_RayTracingPipeline(struct NeRenderDevice *dev, struct NeShaderBindingTable *sbt, uint32_t maxDepth)
 {
-	struct Pipeline *p = Sys_Alloc(1, sizeof(*p), MH_RenderDriver);
+	struct NePipeline *p = Sys_Alloc(1, sizeof(*p), MH_RenderDriver);
 	if (!p)
 		return NULL;
 
@@ -284,7 +307,7 @@ Vk_RayTracingPipeline(struct RenderDevice *dev, struct ShaderBindingTable *sbt, 
 	info.groupCount = 0;
 	info.pGroups = 0;
 
-	if (vkCreateRayTracingPipelinesKHR(dev->dev, VK_NULL_HANDLE, _cache, 1, &info, Vkd_allocCb, &p->pipeline) != VK_SUCCESS) {
+	if (vkCreateRayTracingPipelinesKHR(dev->dev, VK_NULL_HANDLE, Vkd_pipelineCache, 1, &info, Vkd_allocCb, &p->pipeline) != VK_SUCCESS) {
 		Sys_Free(p);
 		return NULL;
 	}
@@ -293,7 +316,7 @@ Vk_RayTracingPipeline(struct RenderDevice *dev, struct ShaderBindingTable *sbt, 
 }
 
 void
-Vk_LoadPipelineCache(struct RenderDevice *dev)
+Vk_LoadPipelineCache(struct NeRenderDevice *dev)
 {
 	int64_t dataSize = 0;
 	void *data = NULL;
@@ -301,7 +324,7 @@ Vk_LoadPipelineCache(struct RenderDevice *dev)
 	char *path = Sys_Alloc(sizeof(*path), 4096, MH_Transient);
 	snprintf(path, 4096, "/Config/VulkanPipelineCache/%d_%d_%d.bin", dev->physDevProps.vendorID, dev->physDevProps.deviceID, dev->physDevProps.driverVersion);
 
-	File f = E_OpenFile(path, IO_READ);
+	NeFile f = E_OpenFile(path, IO_READ);
 	if (f) {
 		data = E_ReadFileBlob(f, &dataSize, false);
 		E_CloseFile(f);
@@ -313,22 +336,22 @@ Vk_LoadPipelineCache(struct RenderDevice *dev)
 		.initialDataSize = (size_t)dataSize,
 		.pInitialData = data
 	};
-	VkResult rc = vkCreatePipelineCache(dev->dev, &info, Vkd_allocCb, &_cache);
+	VkResult rc = vkCreatePipelineCache(dev->dev, &info, Vkd_allocCb, &Vkd_pipelineCache);
 	if (rc != VK_SUCCESS)
-		Sys_LogEntry(VKPMOD, LOG_WARNING, L"Failed to create pipeline cache: 0x%x", rc);
+		Sys_LogEntry(VKPMOD, LOG_WARNING, "Failed to create pipeline cache: 0x%x", rc);
 
 	Sys_Free(data);
 }
 
 void
-Vk_SavePipelineCache(struct RenderDevice *dev)
+Vk_SavePipelineCache(struct NeRenderDevice *dev)
 {
 	size_t dataSize = 0;
 	void *data = NULL;
-	vkGetPipelineCacheData(dev->dev, _cache, &dataSize, data);
+	vkGetPipelineCacheData(dev->dev, Vkd_pipelineCache, &dataSize, data);
 
 	data = Sys_Alloc(1, dataSize, MH_RenderDriver);
-	vkGetPipelineCacheData(dev->dev, _cache, &dataSize, data);
+	vkGetPipelineCacheData(dev->dev, Vkd_pipelineCache, &dataSize, data);
 
 	E_EnableWrite(WD_Config);
 
@@ -337,19 +360,19 @@ Vk_SavePipelineCache(struct RenderDevice *dev)
 	char *path = Sys_Alloc(sizeof(*path), 4096, MH_Transient);
 	snprintf(path, 4096, "/VulkanPipelineCache/%d_%d_%d.bin", dev->physDevProps.vendorID, dev->physDevProps.deviceID, dev->physDevProps.driverVersion);
 
-	File f = E_OpenFile(path, IO_WRITE);
+	NeFile f = E_OpenFile(path, IO_WRITE);
 	E_WriteFile(f, data, dataSize);
 	E_CloseFile(f);
 
 	E_DisableWrite();
 
-	vkDestroyPipelineCache(dev->dev, _cache, Vkd_allocCb);
+	vkDestroyPipelineCache(dev->dev, Vkd_pipelineCache, Vkd_allocCb);
 
 	Sys_Free(data);
 }
 
 void
-Vk_DestroyPipeline(struct RenderDevice *dev, struct Pipeline *pipeline)
+Vk_DestroyPipeline(struct NeRenderDevice *dev, struct NePipeline *pipeline)
 {
 	vkDestroyPipeline(dev->dev, pipeline->pipeline, Vkd_allocCb);
 	vkDestroyPipelineLayout(dev->dev, pipeline->layout, Vkd_allocCb);
@@ -357,12 +380,12 @@ Vk_DestroyPipeline(struct RenderDevice *dev, struct Pipeline *pipeline)
 }
 
 static inline VkPipelineLayout
-_CreateLayout(struct RenderDevice *dev, uint32_t size, bool inputAttachments)
+_CreateLayout(struct NeRenderDevice *dev, uint32_t size, VkShaderStageFlags pcFlags, bool inputAttachments)
 {
 	VkDescriptorSetLayout layouts[] = { dev->setLayout, dev->iaSetLayout };
 	VkPushConstantRange range =
 	{
-		.stageFlags = VK_SHADER_STAGE_ALL,
+		.stageFlags = pcFlags,
 		.offset = 0,
 		.size = size
 	};

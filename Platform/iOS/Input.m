@@ -1,22 +1,18 @@
 #include <math.h>
 
-#define Handle __EngineHandle
-
 #include <System/Log.h>
 #include <Input/Input.h>
 #include <Engine/Engine.h>
-
-#undef Handle
 
 #import <UIKit/UIKit.h>
 #import <GameController/GameController.h>
 
 #define IOSINMOD	L"iOSInput"
 
-enum Button iOS_keymap[256];
+enum NeButton iOS_keymap[256];
 bool __InSys_rawMouseAxis = false;
 
-static inline enum Button _mapKey(const int key);
+static inline enum NeButton _mapKey(const int key);
 
 bool
 In_SysInit(void)
@@ -134,7 +130,7 @@ In_ShowPointer(bool show)
 		CGDisplayHideCursor(kCGNullDirectDisplay);*/
 }
 
-enum Button
+enum NeButton
 _mapKey(int key)
 {
 	switch (key) {
@@ -181,7 +177,7 @@ _mapKey(int key)
 	case UIKeyboardHIDUsageKeyboardLeftArrow: return BTN_KEY_LEFT;
 	case UIKeyboardHIDUsageKeyboardRightArrow: return BTN_KEY_RIGHT;
 	case UIKeyboardHIDUsageKeyboardSpacebar: return BTN_KEY_SPACE;
-	case UIKeyboardHIDUsageKeyboardEqualSign: return BTN_KEY_PLUS;
+	case UIKeyboardHIDUsageKeyboardEqualSign: return BTN_KEY_EQUAL;
 	case UIKeyboardHIDUsageKeyboardHyphen: return BTN_KEY_MINUS;
 	case UIKeyboardHIDUsageKeyboardComma: return BTN_KEY_COMMA;
 	case UIKeyboardHIDUsageKeyboardPeriod: return BTN_KEY_PERIOD;

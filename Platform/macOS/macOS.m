@@ -16,8 +16,6 @@
 #include <mach/host_info.h>
 #include <mach/processor_info.h>
 
-#define Handle __EngineHandle
-
 #include <Input/Input.h>
 #include <System/System.h>
 #include <System/Memory.h>
@@ -27,7 +25,6 @@
 
 #include "macOSPlatform.h"
 
-#undef Handle
 #import <Cocoa/Cocoa.h>
 
 #include "EngineAppDelegate.h"
@@ -38,7 +35,7 @@ extern natural_t Darwin_numCpus;
 extern int32_t Darwin_cpuFreq;
 extern struct utsname Darwin_uname;
 extern char Darwin_osName[INFO_STR_LEN];
-extern char Darwin_osVersion[INFO_STR_LEN];
+extern char Darwin_osVersionString[INFO_STR_LEN];
 extern char Darwin_cpuName[INFO_STR_LEN];
 extern NSURL *Darwin_appSupportURL;
 
@@ -47,21 +44,18 @@ static inline void _CpuInfo(void);
 bool Sys_InitDarwinPlatform(void);
 void Sys_TermDarwinPlatform(void);
 
-enum MachineType
+enum NeMachineType
 Sys_MachineType(void)
 {
 	return MT_PC;
 }
 
 void
-Sys_MessageBox(const wchar_t *title, const wchar_t *message, int icon)
+Sys_MessageBox(const char *title, const char *message, int icon)
 {
-	char *m = Sys_Alloc(wcslen(message), sizeof(*m) + 1, MH_Transient);
-	wcstombs(m, message, wcslen(message));
-	
 	NSAlert *a = [[NSAlert alloc] init];
 	[a addButtonWithTitle:@"OK"];
-	[a setMessageText:[NSString stringWithFormat:@"%s", m]];
+	[a setMessageText: [NSString stringWithUTF8String: message]];
 	
 	switch (icon) {
 	case MSG_ICON_NONE: break;
@@ -111,10 +105,7 @@ Sys_InitPlatform(void)
 
 	NSMenu *mainMenu = [[[NSMenu alloc] init] autorelease];
 	{
-		NSString *appName = [[NSString alloc] initWithBytes: App_applicationInfo.name
-													 length: wcslen(App_applicationInfo.name) * sizeof(wchar_t)
-												   encoding: NSUTF32LittleEndianStringEncoding];
-
+		NSString *appName = [NSString stringWithUTF8String: App_applicationInfo.name];
 		NSMenu *appMenu = [[[NSMenu alloc] init] autorelease];
 
 		NSMenuItem *menuItem = [[[NSMenuItem alloc] init] autorelease];
@@ -143,11 +134,11 @@ Sys_InitPlatform(void)
 	_CpuInfo();
 	
 	snprintf(Darwin_osName, sizeof(Darwin_osName), "%s (macOS)", Darwin_uname.sysname);
-	snprintf(Darwin_osVersion, sizeof(Darwin_osVersion), "%s (%s)", Darwin_uname.release,
+	snprintf(Darwin_osVersionString, sizeof(Darwin_osVersionString), "%s (%s)", Darwin_uname.release,
 				[[[NSProcessInfo processInfo] operatingSystemVersionString] UTF8String]);
 
 	if (!Sys_DirectoryExists("Data"))
-		E_SetCVarStr(L"Engine_DataDir", [[[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent: @"Data"] UTF8String]);
+		E_SetCVarStr("Engine_DataDir", [[[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent: @"Data"] UTF8String]);
 	
 	[pool drain];
 	

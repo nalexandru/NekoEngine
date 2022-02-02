@@ -71,7 +71,7 @@ _reciprocal_sqr(__vector4 v)
 static inline struct vec4 *
 v4_simd(struct vec4 *v, float x, float y, float z, float w)
 {
-	ALIGN(16) const float data[4] = { x, y, z, w };
+	NE_ALIGN(16) const float data[4] = { x, y, z, w };
 	v->sv = __lvx(data, 0);
 	return v;
 }
@@ -79,7 +79,7 @@ v4_simd(struct vec4 *v, float x, float y, float z, float w)
 static inline struct vec4 *
 v4_fill_simd(struct vec4 *v, float f)
 {
-	ALIGN(16) const float data[4] = { f, f, f, f };
+	NE_ALIGN(16) const float data[4] = { f, f, f, f };
 	v->sv = __lvx(data, 0);
 	return v;
 }
@@ -101,7 +101,7 @@ static inline struct vec4 *
 v4_lerp_simd(struct vec4 *dst, const struct vec4 *v1, const struct vec4 *v2, float t)
 {
 	__vector4 t0, t1, t2, v0;
-	ALIGN(16) const float data[4] = { t, t, t, t };
+	NE_ALIGN(16) const float data[4] = { t, t, t, t };
 
 	t2 = __lvx(data, 0);
 	t0 = __vsubfp(v2->sv, v1->sv);
@@ -180,7 +180,7 @@ v4_divs_simd(struct vec4 *dst, const struct vec4 *v1, const float s)
 static inline float
 v4_dot_simd(const struct vec4 *v1, const struct vec4 *v2)
 {
-	ALIGN(16) float tmp[4];
+	NE_ALIGN(16) float tmp[4];
 	__stvx(__vmsum4fp(v1->sv, v2->sv), tmp, 0);
 	return tmp[0];
 }
@@ -188,7 +188,7 @@ v4_dot_simd(const struct vec4 *v1, const struct vec4 *v2)
 static inline int
 v4_equal_simd(const struct vec4 *p1, const struct vec4 *p2)
 {
-	ALIGN(16) int tmp[4];
+	NE_ALIGN(16) int tmp[4];
 	__stvx(__vcmpeqfp(p1->sv, p2->sv), tmp, 0);
 	return tmp[0] == tmp[1] == tmp[2] == tmp[3] == 1;
 }

@@ -20,7 +20,7 @@
 static Widget _wnd, _list;
 static char _currentPath[4096] = { '/', 0x0 };
 static const char **_fileList;
-static struct Array _items;
+static struct NeArray _items;
 
 static void _updateList(void);
 

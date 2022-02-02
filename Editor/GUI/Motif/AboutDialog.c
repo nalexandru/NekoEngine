@@ -12,7 +12,7 @@ void
 GUI_AboutDialog(void)
 {
 	char messageText[2048];
-	snprintf(messageText, sizeof(messageText), "NekoEditor\nVersion: %s \"%ls\"\nCopyright (c) %ls\nLicensed under BSD 3-clause.", E_VER_STR_A, E_CODENAME, E_CPY_STR);
+	snprintf(messageText, sizeof(messageText), "NekoEditor\nVersion: %s \"%s\"\nCopyright (c) %s\nLicensed under BSD 3-clause.", E_VER_STR, E_CODENAME, E_CPY_STR);
 	XmString message = XmStringCreateLocalized(messageText);
 
 	Widget dialog = XmCreateInformationDialog(Ed_appShell, "aboutDialog", NULL, 0);

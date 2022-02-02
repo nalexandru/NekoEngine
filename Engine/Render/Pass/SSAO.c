@@ -6,29 +6,29 @@
 #include <Render/Graph/Pass.h>
 #include <Render/Graph/Graph.h>
 
-struct SSAO
+struct NeSSAOPass
 {
-	struct Pipeline *pipeline;
-	BufferHandle visibleIndices;
+	struct NePipeline *pipeline;
+	NeBufferHandle visibleIndices;
 };
 
-static bool _Init(struct SSAO **pass);
-static void _Term(struct SSAO *pass);
-static bool _Setup(struct SSAO *pass, struct Array *resources);
-static void _Execute(struct SSAO *pass, const struct Array *resources);
+static bool _Init(struct NeSSAOPass **pass);
+static void _Term(struct NeSSAOPass *pass);
+static bool _Setup(struct NeSSAOPass *pass, struct NeArray *resources);
+static void _Execute(struct NeSSAOPass *pass, const struct NeArray *resources);
 
-struct RenderPass RP_SSAO =
+struct NeRenderPass RP_SSAO =
 {
-	.Init = (PassInitProc)_Init,
-	.Term = (PassTermProc)_Term,
-	.Setup = (PassSetupProc)_Setup,
-	.Execute = (PassExecuteProc)_Execute
+	.Init = (NePassInitProc)_Init,
+	.Term = (NePassTermProc)_Term,
+	.Setup = (NePassSetupProc)_Setup,
+	.Execute = (NePassExecuteProc)_Execute
 };
 
 static bool
-_Setup(struct SSAO *pass, struct Array *resources)
+_Setup(struct NeSSAOPass *pass, struct NeArray *resources)
 {
-	struct TextureDesc aoDesc =
+	struct NeTextureDesc aoDesc =
 	{
 		.width = *E_screenWidth,
 		.height = *E_screenHeight,
@@ -48,7 +48,7 @@ _Setup(struct SSAO *pass, struct Array *resources)
 }
 
 static void
-_Execute(struct SSAO *pass, const struct Array *resources)
+_Execute(struct NeSSAOPass *pass, const struct NeArray *resources)
 {
 	Re_BeginComputeCommandBuffer();
 
@@ -57,9 +57,7 @@ _Execute(struct SSAO *pass, const struct Array *resources)
 
 	Re_CmdDispatch(0, 0, 0);
 
-	Re_EndCommandBuffer();
-
-	Re_QueueCompute(NULL, NULL);
+	Re_QueueCompute(Re_EndCommandBuffer(), NULL, NULL);
 
 	//Re_CreateTransientBuffer(&bci, 0, 0);
 	/*struct {
@@ -79,12 +77,12 @@ _Execute(struct SSAO *pass, const struct Array *resources)
 }
 
 static bool
-_Init(struct SSAO **pass)
+_Init(struct NeSSAOPass **pass)
 {
 	/*if (!Re_ReserveBufferId(&pass->visibleIndices))
 		return false;
 
-	struct ComputePipelineDesc desc = {
+	struct NeComputePipelineDesc desc = {
 		.shader = Re_GetShader("LightCulling"),
 		.threadsPerThreadgroup = { 16, 16, 1 }
 	};
@@ -95,7 +93,7 @@ _Init(struct SSAO **pass)
 }
 
 static void
-_Term(struct SSAO *pass)
+_Term(struct NeSSAOPass *pass)
 {
 	//Re_ReleaseBufferId(pass->visibleIndices);
 }

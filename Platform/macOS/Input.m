@@ -1,14 +1,10 @@
 #include <math.h>
 
-#define Handle __EngineHandle
-
 #include "macOSPlatform.h"
 
 #include <System/Log.h>
 #include <Input/Input.h>
 #include <Engine/Engine.h>
-
-#undef Handle
 
 #import <Cocoa/Cocoa.h>
 #import <Carbon/Carbon.h>
@@ -16,11 +12,11 @@
 
 #define MACXINMOD	L"macOSInput"
 
-enum Button macOS_keymap[256];
+enum NeButton macOS_keymap[256];
 
 bool __InSys_rawMouseAxis = true;
 
-static inline enum Button _mapKey(const int key);
+static inline enum NeButton _mapKey(const int key);
 
 bool
 In_SysInit(void)
@@ -54,13 +50,13 @@ In_SysPollControllers(void)
 		In_controllerState[i].buttons = 0;
 		
 		GCControllerDirectionPad *dpad = [gpad leftThumbstick];
-		In_controllerState[i].axis[AXIS_LSTICK_X] = [[dpad xAxis] value];
+		In_controllerState[i].axis[AXIS_LSTICK_X] = -[[dpad xAxis] value];
 		In_controllerState[i].axis[AXIS_LSTICK_Y] = [[dpad yAxis] value];
 		if ([[dpad down] isPressed])
 			In_controllerState[i].buttons |= 0x0040;
 
 		dpad = [gpad rightThumbstick];
-		In_controllerState[i].axis[AXIS_RSTICK_X] = [[dpad xAxis] value];
+		In_controllerState[i].axis[AXIS_RSTICK_X] = -[[dpad xAxis] value];
 		In_controllerState[i].axis[AXIS_RSTICK_Y] = [[dpad yAxis] value];
 		if ([[dpad down] isPressed])
 			In_controllerState[i].buttons |= 0x0080;
@@ -139,7 +135,7 @@ In_ShowPointer(bool show)
 	In_pointerVisible = show;
 }
 
-enum Button
+enum NeButton
 _mapKey(int key)
 {
 	switch (key) {
@@ -186,7 +182,7 @@ _mapKey(int key)
 	case kVK_LeftArrow: return BTN_KEY_LEFT;
 	case kVK_RightArrow: return BTN_KEY_RIGHT;
 	case kVK_Space: return BTN_KEY_SPACE;
-	case kVK_ANSI_Equal: return BTN_KEY_PLUS;
+	case kVK_ANSI_Equal: return BTN_KEY_EQUAL;
 	case kVK_ANSI_Minus: return BTN_KEY_MINUS;
 	case kVK_ANSI_Comma: return BTN_KEY_COMMA;
 	case kVK_ANSI_Period: return BTN_KEY_PERIOD;

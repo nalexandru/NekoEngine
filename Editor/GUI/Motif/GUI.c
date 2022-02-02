@@ -7,6 +7,7 @@
 
 #include <Editor/GUI.h>
 #include <Editor/Editor.h>
+#include <Editor/Project.h>
 #include <Engine/Engine.h>
 #include <System/Window.h>
 
@@ -14,6 +15,12 @@ XtAppContext Ed_appContext;
 Widget Ed_appShell;
 
 static Widget _workingDialog;
+
+void
+Ed_ShowProjectDialog(void)
+{
+	Ed_activeProject = (struct NeProject *)1;
+}
 
 bool
 Ed_CreateGUI(void)

@@ -16,22 +16,23 @@
 #	define _countof(array) (sizeof(array) / sizeof(array[0]))
 #endif
 
-struct ApplicationInfo App_applicationInfo =
+struct NeApplicationInfo App_applicationInfo =
 {
-	L"NekoEngine Test Application",
+	"NekoEngine Test Application",
 	E_CPY_STR,
 	{ E_VER_MAJOR, E_VER_MINOR, E_VER_BUILD, E_VER_REVISION }
 };
 
 static uint64_t _sceneLoadedEvt;
 
-struct FPSController
+struct FlyController
 {
 	COMPONENT_BASE;
 
 	float movementSpeed, hRotationSpeed, vRotationSpeed;
 	uint32_t moveForward, moveRight, moveUp, rotateHorizontal, rotateVertical;
 };
+#define FLY_CONTROLLER_COMP "FlyController"
 
 struct Statistics
 {
@@ -39,12 +40,13 @@ struct Statistics
 
 	uint32_t frames;
 	double time;
-	wchar_t fpsBuff[20];
-	wchar_t ftBuff[30];
+	char fpsBuff[20];
+	char ftBuff[30];
 };
+#define STATISTICS_COMP "Statistics"
 
-static bool App_InitFlyController(struct FPSController *comp, const void **args);
-static void App_TermFlyController(struct FPSController *comp) { }
+static bool App_InitFlyController(struct FlyController *comp, const void **args);
+static void App_TermFlyController(struct FlyController *comp) { }
 static void App_FlyController(void **comp, void *args);
 static void App_SceneLoaded(void *user, void *args);
 
@@ -54,30 +56,31 @@ static void App_DrawStatistics(void **comp, void *args);
 
 static volatile uint64_t _jobStart;
 
+E_REGISTER_COMPONENT(FLY_CONTROLLER_COMP, struct FlyController, 1, App_InitFlyController, App_TermFlyController);
+E_REGISTER_COMPONENT(STATISTICS_COMP, struct Statistics, 1, App_InitStatistics, App_TermStatistics);
+
 static void
 _SleepJob(int worker, void *args)
 {
 	Sys_Sleep(1);
-	Sys_LogEntry(L"JOB", LOG_DEBUG, L"Worker %d completed", worker);
+	Sys_LogEntry("JOB", LOG_DEBUG, "Worker %d completed", worker);
 }
 
 static void
-_SleepCompleted(uint64_t id)
+_SleepCompleted(uint64_t id, volatile bool *done)
 {
-	Sys_LogEntry(L"JOB", LOG_DEBUG, L"Time: %f", ((double)Sys_Time() - (double)_jobStart) * 0.000000001);
+	Sys_LogEntry("JOB", LOG_DEBUG, "Time: %f", ((double)Sys_Time() - (double)_jobStart) * 0.000000001);
+	*done = true;
 }
 
 bool
 App_InitApplication(int argc, char *argv[])
 {
-	const wchar_t *comp[] = { TRANSFORM_COMP, CAMERA_COMP, L"FlyController" };
+	const char *comp[] = { TRANSFORM_COMP, CAMERA_COMP, FLY_CONTROLLER_COMP };
+	E_RegisterSystem("App_FlyController", ECSYS_GROUP_LOGIC, comp, _countof(comp), (NeECSysExecProc)App_FlyController, 0, true);
 
-	E_RegisterComponent(L"FlyController", sizeof(struct FPSController), 1, (CompInitProc)App_InitFlyController, (CompTermProc)App_TermFlyController);
-	E_RegisterSystem(L"App_FlyController", ECSYS_GROUP_LOGIC, comp, _countof(comp), (ECSysExecProc)App_FlyController, 0);
-
-	comp[0] = UI_CONTEXT_COMP; comp[1] = L"Statistics";
-	E_RegisterComponent(L"Statistics", sizeof(struct Statistics), 1, (CompInitProc)App_InitStatistics, (CompTermProc)App_TermStatistics);
-	E_RegisterSystem(L"App_DrawStatistics", ECSYS_GROUP_LOGIC, comp, 2, (ECSysExecProc)App_DrawStatistics, 0);
+	comp[0] = UI_CONTEXT_COMP; comp[1] = STATISTICS_COMP;
+	E_RegisterSystem("App_DrawStatistics", ECSYS_GROUP_LOGIC, comp, 2, (NeECSysExecProc)App_DrawStatistics, 0, true);
 
 	_sceneLoadedEvt = E_RegisterHandler(EVT_SCENE_LOADED, App_SceneLoaded, NULL);
 
@@ -86,11 +89,16 @@ App_InitApplication(int argc, char *argv[])
 //	Scn_StartSceneLoad("/Scenes/Sphere.scn");
 //	Scn_StartSceneLoad("/Scenes/Main.scn");
 	Scn_StartSceneLoad("/Scenes/Terrain.scn");
+//	Scn_StartSceneLoad("/Scenes/IBL.scn");
+
+	volatile bool jobCompleted = false;
 
 	_jobStart = Sys_Time();
-	E_DispatchJobs(E_JobWorkerThreads(), _SleepJob, NULL, _SleepCompleted);
+	E_DispatchJobs(E_JobWorkerThreads(), _SleepJob, NULL, (NeJobCompletedProc)_SleepCompleted, (void *)&jobCompleted);
 	
-	Sys_LogEntry(L"JOB", LOG_DEBUG, L"Dispatched %d workers", E_JobWorkerThreads());
+	Sys_LogEntry("JOB", LOG_DEBUG, "Dispatched %d workers", E_JobWorkerThreads());
+
+	while (!jobCompleted) ;
 
 	return true;
 }
@@ -106,7 +114,7 @@ App_TermApplication(void)
 }
 
 bool
-App_InitFlyController(struct FPSController *comp, const void **args)
+App_InitFlyController(struct FlyController *comp, const void **args)
 {
 	comp->movementSpeed = 100.f;
 	comp->hRotationSpeed = 250.f;
@@ -124,11 +132,11 @@ App_InitFlyController(struct FPSController *comp, const void **args)
 			comp->vRotationSpeed = strtof(*(++args), NULL);
 	}
 
-	comp->moveForward = In_CreateMap(L"forward");
-	comp->moveRight = In_CreateMap(L"lateral");
-	comp->moveUp = In_CreateMap(L"vertical");
-	comp->rotateHorizontal = In_CreateMap(L"rotlMap");
-	comp->rotateVertical = In_CreateMap(L"rotvMap");
+	comp->moveForward = In_CreateMap("forward");
+	comp->moveRight = In_CreateMap("lateral");
+	comp->moveUp = In_CreateMap("vertical");
+	comp->rotateHorizontal = In_CreateMap("rotlMap");
+	comp->rotateVertical = In_CreateMap("rotvMap");
 
 	return true;
 }
@@ -136,9 +144,9 @@ App_InitFlyController(struct FPSController *comp, const void **args)
 void
 App_FlyController(void **comp, void *args)
 {
-	struct Transform *xform = comp[0];
-	struct Camera *cam = comp[1];
-	struct FPSController *ctrl = comp[2];
+	struct NeTransform *xform = comp[0];
+	struct NeCamera *cam = comp[1];
+	struct FlyController *ctrl = comp[2];
 
 	if (In_UnmappedButtonDown(BTN_KEY_ESCAPE, 0))
 		E_Shutdown();
@@ -169,13 +177,13 @@ App_FlyController(void **comp, void *args)
 void
 App_SceneLoaded(void *user, void *args)
 {
-	Scn_ActivateScene((struct Scene *)args);
+	Scn_ActivateScene((struct NeScene *)args);
 }
 
 void
 App_DrawStatistics(void **comp, void *args)
 {
-	struct UIContext *ctx = comp[0];
+	struct NeUIContext *ctx = comp[0];
 	struct Statistics *stats = comp[1];
 	double delta = E_Time() - stats->time;
 
@@ -184,8 +192,8 @@ App_DrawStatistics(void **comp, void *args)
 	if (delta > 1.0) {
 		double ft = (delta / (double)stats->frames) * 1000;
 
-		swprintf(stats->fpsBuff, sizeof(stats->fpsBuff) / 2, L"FPS: %d", stats->frames);
-		swprintf(stats->ftBuff, sizeof(stats->ftBuff) / 2, L"Frame Time: %.02f ms", ft);
+		snprintf(stats->fpsBuff, sizeof(stats->fpsBuff), "FPS: %d", stats->frames);
+		snprintf(stats->ftBuff, sizeof(stats->ftBuff), "Frame Time: %.02f ms", ft);
 
 		stats->time += delta;
 		stats->frames = 0;
@@ -193,4 +201,8 @@ App_DrawStatistics(void **comp, void *args)
 
 	UI_DrawText(ctx, stats->fpsBuff, 0.f, 0.f, 20.f, NULL);
 	UI_DrawText(ctx, stats->ftBuff, 0.f, 20.f, 20.f, NULL);
+
+	char buff[256];
+	snprintf(buff, 256, "Time: %f", E_Time());
+	UI_DrawText(ctx, buff, 0.f, 40.f, 20.f, NULL);
 }

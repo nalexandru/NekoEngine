@@ -6,137 +6,141 @@
 #include <Render/Driver/Context.h>
 
 // Buffer
-struct BufferDesc
+struct NeBufferDesc
 {
 	uint64_t size;
-	enum BufferUsage usage;
-	enum GPUMemoryType memoryType;
+	enum NeBufferUsage usage;
+	enum NeGPUMemoryType memoryType;
+	const char *name;
 };
 
-struct BufferCreateInfo
+struct NeBufferCreateInfo
 {
-	struct BufferDesc desc;
+	struct NeBufferDesc desc;
 	void *data;
 	uint64_t dataSize;
 	bool keepData, dedicatedAllocation;
 };
 
-bool Re_CreateBuffer(const struct BufferCreateInfo *bci, BufferHandle *handle);
-void Re_UpdateBuffer(BufferHandle handle, uint64_t offset, uint8_t *data, uint64_t size);
-void Re_CmdCopyBuffer(BufferHandle src, uint64_t srcOffset, BufferHandle dst, uint64_t dstOffset, uint64_t size);
-void *Re_MapBuffer(BufferHandle handle);
-void Re_FlushBuffer(BufferHandle handle, uint64_t offset, uint64_t size);
-void Re_UnmapBuffer(BufferHandle handle);
-uint64_t Re_BufferAddress(BufferHandle handle, uint64_t offset);
-const struct BufferDesc *Re_BufferDesc(BufferHandle handle);
-void Re_DestroyBuffer(BufferHandle handle);
+bool Re_CreateBuffer(const struct NeBufferCreateInfo *bci, NeBufferHandle *handle);
+void Re_UpdateBuffer(NeBufferHandle handle, uint64_t offset, uint8_t *data, uint64_t size);
+void Re_CmdCopyBuffer(NeBufferHandle src, uint64_t srcOffset, NeBufferHandle dst, uint64_t dstOffset, uint64_t size);
+void *Re_MapBuffer(NeBufferHandle handle);
+void Re_FlushBuffer(NeBufferHandle handle, uint64_t offset, uint64_t size);
+void Re_UnmapBuffer(NeBufferHandle handle);
+uint64_t Re_BufferAddress(NeBufferHandle handle, uint64_t offset);
+const struct NeBufferDesc *Re_BufferDesc(NeBufferHandle handle);
+void Re_DestroyBuffer(NeBufferHandle handle);
 
-bool Re_ReserveBufferId(BufferHandle *handle);
-void Re_ReleaseBufferId(BufferHandle handle);
+bool Re_ReserveBufferId(NeBufferHandle *handle);
+void Re_ReleaseBufferId(NeBufferHandle handle);
 
 bool Re_InitBufferSystem(void);
 void Re_TermBufferSystem(void);
 
 // Texture
-struct TextureDesc
+struct NeTextureDesc
 {
 	uint32_t width, height, depth;
-	enum TextureType type;
-	enum TextureUsage usage;
-	enum TextureFormat format;
+	enum NeTextureType type;
+	enum NeTextureUsage usage;
+	enum NeTextureFormat format;
 	uint32_t arrayLayers, mipLevels;
 	bool gpuOptimalTiling;
-	enum GPUMemoryType memoryType;
+	enum NeGPUMemoryType memoryType;
+	const char *name;
 };
 
-struct TextureCreateInfo
+struct NeTextureCreateInfo
 {
-	struct TextureDesc desc;
+	struct NeTextureDesc desc;
 	void *data;
 	uint64_t dataSize;
 	bool keepData;
 };
 
-struct TextureResource
+struct NeTextureResource
 {
 	uint16_t id;
-	struct Texture *texture;
-	struct TextureDesc desc;
+	struct NeTexture *texture;
+	struct NeTextureDesc desc;
 };
 
-const struct TextureDesc *Re_TextureDesc(TextureHandle tex);
-enum TextureLayout Re_TextureLayout(TextureHandle tex);
+const struct NeTextureDesc *Re_TextureDesc(NeTextureHandle tex);
+enum NeTextureLayout Re_TextureLayout(NeTextureHandle tex);
 
-void Re_CmdCopyBufferToTexture(BufferHandle src, struct Texture *dst, const struct BufferImageCopy *bic);
-void Re_CmdCopyTextureToBuffer(struct Texture *src, BufferHandle dst, const struct BufferImageCopy *bic);
+void Re_CmdCopyBufferToTexture(NeBufferHandle src, struct NeTexture *dst, const struct NeBufferImageCopy *bic);
+void Re_CmdCopyTextureToBuffer(struct NeTexture *src, NeBufferHandle dst, const struct NeBufferImageCopy *bic);
 
 bool Re_InitTextureSystem(void);
 void Re_TermTextureSystem(void);
 
 // Sampler
-struct SamplerDesc
+struct NeSamplerDesc
 {
-	enum ImageFilter minFilter, magFilter;
-	enum SamplerMipmapMode mipmapMode;
-	enum SamplerAddressMode addressModeU, addressModeV, addressModeW;
+	enum NeImageFilter minFilter, magFilter;
+	enum NeSamplerMipmapMode mipmapMode;
+	enum NeSamplerAddressMode addressModeU, addressModeV, addressModeW;
 	bool enableAnisotropy;
 	float maxAnisotropy;
 	float minLod, maxLod, lodBias;
 	bool unnormalizedCoordinates;
 	bool enableCompare;
-	enum CompareOperation compareOp;
+	enum NeCompareOperation compareOp;
 	uint32_t borderColor;
+	const char *name;
 };
 
 #define RE_SAMPLER_LOD_CLAMP_NONE	1000.f
 
-static inline struct Sampler *Re_CreateSampler(const struct SamplerDesc *desc) { return Re_deviceProcs.CreateSampler(Re_device, desc); }
-static inline void Re_DestroySampler(struct Sampler *s) { Re_deviceProcs.DestroySampler(Re_device, s); }
+static inline struct NeSampler *Re_CreateSampler(const struct NeSamplerDesc *desc) { return Re_deviceProcs.CreateSampler(Re_device, desc); }
+static inline void Re_DestroySampler(struct NeSampler *s) { Re_deviceProcs.DestroySampler(Re_device, s); }
 
 // Framebuffer
-struct FramebufferAttachmentDesc
+struct NeFramebufferAttachmentDesc
 {
-	enum TextureFormat format;
-	enum TextureUsage usage;
+	enum NeTextureFormat format;
+	enum NeTextureUsage usage;
 };
 
-struct FramebufferDesc
+struct NeFramebufferDesc
 {
 	uint32_t width, height, layers;
-	struct FramebufferAttachmentDesc *attachments;
+	struct NeFramebufferAttachmentDesc *attachments;
 	uint32_t attachmentCount;
-	struct RenderPassDesc *renderPassDesc;
+	struct NeRenderPassDesc *renderPassDesc;
+	const char *name;
 };
 
-static inline struct Framebuffer *Re_CreateFramebuffer(const struct FramebufferDesc *desc) { return Re_deviceProcs.CreateFramebuffer(Re_device, desc); }
-static inline void Re_SetAttachment(struct Framebuffer *fb, uint32_t pos, struct Texture *tex) { Re_deviceProcs.SetAttachment(fb, pos, tex); }
-static inline void Re_DestroyFramebuffer(struct Framebuffer *fb) { Re_deviceProcs.DestroyFramebuffer(Re_device, fb); }
+static inline struct NeFramebuffer *Re_CreateFramebuffer(const struct NeFramebufferDesc *desc) { return Re_deviceProcs.CreateFramebuffer(Re_device, desc); }
+static inline void Re_SetAttachment(struct NeFramebuffer *fb, uint32_t pos, struct NeTexture *tex) { Re_deviceProcs.SetAttachment(fb, pos, tex); }
+static inline void Re_DestroyFramebuffer(struct NeFramebuffer *fb) { Re_deviceProcs.DestroyFramebuffer(Re_device, fb); }
 
 // Shader
-struct ShaderStageDesc
+struct NeShaderStageDesc
 {
-	enum ShaderStage stage;
+	enum NeShaderStage stage;
 	void *module;
 };
 
-struct ShaderStageInfo
+struct NeShaderStageInfo
 {
 	uint32_t stageCount;
-	struct ShaderStageDesc *stages;
+	struct NeShaderStageDesc *stages;
 };
 
-struct Shader
+struct NeShader
 {
 	uint64_t hash;
-	enum ShaderType type;
+	enum NeShaderType type;
 
 	union {
 		struct {
-			struct ShaderStageInfo opaqueStages, transparentStages;
+			struct NeShaderStageInfo opaqueStages, transparentStages;
 		};
 		struct {
 			uint32_t stageCount;
-			struct ShaderStageDesc *stages;
+			struct NeShaderStageDesc *stages;
 		};
 	};
 
@@ -146,20 +150,20 @@ struct Shader
 bool Re_LoadShaders(void);
 void Re_UnloadShaders(void);
 
-struct Shader *Re_GetShader(const char *name);
+struct NeShader *Re_GetShader(const char *name);
 
 // Swapchain
-extern struct Swapchain *Re_swapchain;
+extern struct NeSwapchain *Re_swapchain;
 
 #define RE_INVALID_IMAGE	(void *)UINT64_MAX
 
-static inline struct Swapchain *Re_CreateSwapchain(struct Surface *surface, bool vsync) { return Re_deviceProcs.CreateSwapchain(Re_device, surface, vsync); }
-static inline void *Re_AcquireNextImage(struct Swapchain *swapchain) { return Re_deviceProcs.AcquireNextImage(Re_device, swapchain); }
-static inline bool Re_Present(struct Swapchain *swapchain, void *image, struct Semaphore *wait) { return Re_deviceProcs.Present(Re_device, Re_CurrentContext(), swapchain, image, wait); }
-static inline enum TextureFormat Re_SwapchainFormat(struct Swapchain *swapchain) { return Re_deviceProcs.SwapchainFormat(swapchain); }
-static inline struct Texture *Re_SwapchainTexture(struct Swapchain *swapchain, void *image) { return Re_deviceProcs.SwapchainTexture(swapchain, image); }
-static inline void Re_SwapchainDesc(struct Swapchain *swapchain, struct FramebufferAttachmentDesc *desc) { Re_deviceProcs.SwapchainDesc(swapchain, desc); }
-static inline void Re_DestroySwapchain(struct Swapchain *swapchain) { Re_deviceProcs.DestroySwapchain(Re_device, swapchain); }
+static inline struct NeSwapchain *Re_CreateSwapchain(struct NeSurface *surface, bool vsync) { return Re_deviceProcs.CreateSwapchain(Re_device, surface, vsync); }
+static inline void *Re_AcquireNextImage(struct NeSwapchain *swapchain) { return Re_deviceProcs.AcquireNextImage(Re_device, swapchain); }
+static inline bool Re_Present(struct NeSwapchain *swapchain, void *image, struct NeSemaphore *wait) { return Re_deviceProcs.Present(Re_device, Re_CurrentContext(), swapchain, image, wait); }
+static inline enum NeTextureFormat Re_SwapchainFormat(struct NeSwapchain *swapchain) { return Re_deviceProcs.SwapchainFormat(swapchain); }
+static inline struct NeTexture *Re_SwapchainTexture(struct NeSwapchain *swapchain, void *image) { return Re_deviceProcs.SwapchainTexture(swapchain, image); }
+static inline void Re_SwapchainDesc(struct NeSwapchain *swapchain, struct NeFramebufferAttachmentDesc *desc) { Re_deviceProcs.SwapchainDesc(swapchain, desc); }
+static inline void Re_DestroySwapchain(struct NeSwapchain *swapchain) { Re_deviceProcs.DestroySwapchain(Re_device, swapchain); }
 
 // Pipeline
 #define RE_TOPOLOGY_POINTS			((uint64_t)  0 <<  0)
@@ -222,82 +226,85 @@ static inline void Re_DestroySwapchain(struct Swapchain *swapchain) { Re_deviceP
 #define RE_WRITE_MASK_RGB			RE_WRITE_MASK_R | RE_WRITE_MASK_G | RE_WRITE_MASK_B
 #define RE_WRITE_MASK_RGBA			RE_WRITE_MASK_RGB | RE_WRITE_MASK_A
 
-struct BlendAttachmentDesc
+struct NeBlendAttachmentDesc
 {
 	bool enableBlend;
-	enum BlendFactor srcColor;
-	enum BlendFactor dstColor;
-	enum BlendOperation colorOp;
-	enum BlendFactor srcAlpha;
-	enum BlendFactor dstAlpha;
-	enum BlendOperation alphaOp;
+	enum NeBlendFactor srcColor;
+	enum NeBlendFactor dstColor;
+	enum NeBlendOperation colorOp;
+	enum NeBlendFactor srcAlpha;
+	enum NeBlendFactor dstAlpha;
+	enum NeBlendOperation alphaOp;
 	int32_t writeMask;
 };
 // TODO: is independent blend supported in Metal/D3D12 ?
 
-struct GraphicsPipelineDesc
+struct NeGraphicsPipelineDesc
 {
 	uint64_t flags;
-	struct ShaderStageInfo *stageInfo;
-	struct RenderPassDesc *renderPassDesc;
+	struct NeShaderStageInfo *stageInfo;
+	struct NeRenderPassDesc *renderPassDesc;
 	uint32_t pushConstantSize;
 	uint32_t attachmentCount;
-	const struct BlendAttachmentDesc *attachments;
-	enum TextureFormat depthFormat;
+	const struct NeBlendAttachmentDesc *attachments;
+	enum NeTextureFormat depthFormat;
+	const char *name;
 };
 
-struct ComputePipelineDesc
+struct NeComputePipelineDesc
 {
-	struct ShaderStageInfo *stageInfo;
+	struct NeShaderStageInfo *stageInfo;
 	struct {
 		uint32_t x;
 		uint32_t y;
 		uint32_t z;
 	} threadsPerThreadgroup;
+	uint32_t pushConstantSize;
+	const char *name;
 };
 
-struct Pipeline *Re_GraphicsPipeline(const struct GraphicsPipelineDesc *desc);
-struct Pipeline *Re_ComputePipeline(const struct ComputePipelineDesc *desc);
-struct Pipeline *Re_RayTracingPipeline(struct ShaderBindingTable *sbt, uint32_t maxDepth);
+struct NePipeline *Re_GraphicsPipeline(const struct NeGraphicsPipelineDesc *desc);
+struct NePipeline *Re_ComputePipeline(const struct NeComputePipelineDesc *desc);
+struct NePipeline *Re_RayTracingPipeline(struct NeShaderBindingTable *sbt, uint32_t maxDepth);
 
 bool Re_InitPipelines(void);
 void Re_TermPipelines(void);
 
 // Synchronization
 
-struct MemoryBarrier
+struct NeMemoryBarrier
 {
-    enum PipelineAccess srcAccess;
-    enum PipelineAccess dstAccess;
+    enum NePipelineAccess srcAccess;
+    enum NePipelineAccess dstAccess;
 };
 
-struct BufferBarrier
+struct NeBufferBarrier
 {
-    enum PipelineAccess srcAccess;
-    enum PipelineAccess dstAccess;
-	enum RenderQueue srcQueue;
-	enum RenderQueue dstQueue;
-	struct Buffer *buffer;
+    enum NePipelineAccess srcAccess;
+    enum NePipelineAccess dstAccess;
+	enum NeRenderQueue srcQueue;
+	enum NeRenderQueue dstQueue;
+	struct NeBuffer *buffer;
 	uint64_t offset;
 	uint64_t size;
 };
 
-struct ImageBarrier
+struct NeImageBarrier
 {
-    enum PipelineAccess srcAccess;
-    enum PipelineAccess dstAccess;
-	enum TextureLayout oldLayout;
-	enum TextureLayout newLayout;
-	enum RenderQueue srcQueue;
-	enum RenderQueue dstQueue;
-	struct Texture *texture;
-	struct ImageSubresource subresource;
+    enum NePipelineAccess srcAccess;
+    enum NePipelineAccess dstAccess;
+	enum NeTextureLayout oldLayout;
+	enum NeTextureLayout newLayout;
+	enum NeRenderQueue srcQueue;
+	enum NeRenderQueue dstQueue;
+	struct NeTexture *texture;
+	struct NeImageSubresource subresource;
 };
 
-static inline struct Semaphore *Re_CreateSemaphore(void) { return Re_deviceProcs.CreateSemaphore(Re_device); }
-static inline void Re_DestroySemaphore(struct Semaphore *s) { Re_deviceProcs.DestroySemaphore(Re_device, s); }
-static inline struct Fence *Re_CreateFence(bool createSignaled) { return Re_deviceProcs.CreateFence(Re_device, createSignaled); }
-static inline bool Re_WaitForFence(struct Fence *f, uint64_t timeout) { return Re_deviceProcs.WaitForFence(Re_device, f, timeout); }
-static inline void Re_DestroyFence(struct Fence *f) { Re_deviceProcs.DestroyFence(Re_device, f); }
+static inline struct NeSemaphore *Re_CreateSemaphore(void) { return Re_deviceProcs.CreateSemaphore(Re_device); }
+static inline void Re_DestroySemaphore(struct NeSemaphore *s) { Re_deviceProcs.DestroySemaphore(Re_device, s); }
+static inline struct NeFence *Re_CreateFence(bool createSignaled) { return Re_deviceProcs.CreateFence(Re_device, createSignaled); }
+static inline bool Re_WaitForFence(struct NeFence *f, uint64_t timeout) { return Re_deviceProcs.WaitForFence(Re_device, f, timeout); }
+static inline void Re_DestroyFence(struct NeFence *f) { Re_deviceProcs.DestroyFence(Re_device, f); }
 
 #endif /* _NE_RENDER_DRIVER_CORE_H_ */

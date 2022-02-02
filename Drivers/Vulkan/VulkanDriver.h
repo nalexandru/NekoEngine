@@ -1,17 +1,32 @@
 #ifndef _VULKAN_DRIVER_H_
 #define _VULKAN_DRIVER_H_
 
-#include <Render/Types.h>
-#include <Render/Render.h>
-#include <Render/Driver/RayTracing.h>
-#include <Runtime/Array.h>
+// Build configuration
+
+/* Enable NVIDIA Aftermath support.
+ * The Aftermath SDK must be extracted in Deps/Aftermath
+ * Aftermath is supported only on Linux or Windows 10 and newer.
+ * This option has no effect when compiling for systems other than Windows or Linux
+ */
+#ifndef ENABLE_AFTERMATH
+#	define ENABLE_AFTERMATH 1
+#endif
+
+// End build configuration
 
 #define VK_ENABLE_BETA_EXTENSIONS
 #include "volk.h"
 
-#define VKDRV_MOD	L"VulkanDriver"
+#define RE_NATIVE_VULKAN
+#include <Render/Types.h>
+#include <Render/Render.h>
+#include <Render/Driver/Driver.h>
+#include <Render/Driver/RayTracing.h>
+#include <Runtime/Array.h>
 
-struct RenderDevice
+#define VKDRV_MOD	"VulkanDriver"
+
+struct NeRenderDevice
 {
 	VkDevice dev;
 	VkDeviceMemory transientHeap;
@@ -35,21 +50,21 @@ struct RenderDevice
 	VkDescriptorPool iaDescriptorPool[RE_NUM_FRAMES];
 };
 
-struct RenderContext
+struct NeRenderContext
 {
 	VkCommandBuffer cmdBuffer;
-	struct Pipeline *boundPipeline;
+	struct NePipeline *boundPipeline;
 	VkCommandPool *graphicsPools, *xferPools, *computePools;
-	struct Array *graphicsCmdBuffers, *secondaryCmdBuffers, *xferCmdBuffers, *computeCmdBuffers;
+	struct NeArray *graphicsCmdBuffers, *secondaryCmdBuffers, *xferCmdBuffers, *computeCmdBuffers;
 	VkFence executeFence;
 	VkDevice vkDev;
 	VkDescriptorSet descriptorSet, iaSet;
-	struct RenderDevice *neDev;
+	struct NeRenderDevice *neDev;
 	uint32_t lastSubmittedXfer, lastSubmittedCompute;
 	struct
 	{
-		struct Array graphics, compute, xfer;
-	} submitted;
+		struct NeArray graphics, compute, xfer;
+	} queued;
 };
 
 struct VulkanDeviceInfo
@@ -58,7 +73,7 @@ struct VulkanDeviceInfo
 	uint32_t graphicsFamily, computeFamily, transferFamily;
 };
 
-struct Swapchain
+struct NeSwapchain
 {
 	VkSwapchainKHR sw;
 	VkSemaphore frameStart[RE_NUM_FRAMES], frameEnd[RE_NUM_FRAMES];
@@ -72,7 +87,7 @@ struct Swapchain
 	VkImageUsageFlags imageUsage;
 };
 
-struct Buffer
+struct NeBuffer
 {
 	VkBuffer buff;
 	VkDeviceMemory memory;
@@ -80,7 +95,7 @@ struct Buffer
 	bool transient;
 };
 
-struct Texture
+struct NeTexture
 {
 	VkImageView imageView;
 	VkImage image;
@@ -89,14 +104,14 @@ struct Texture
 	bool transient;
 };
 
-struct Framebuffer
+struct NeFramebuffer
 {
 	VkFramebuffer fb;
 	VkImageView *attachments;
 	uint32_t width, height, layers, attachmentCount;
 };
 
-struct RenderPassDesc
+struct NeRenderPassDesc
 {
 	VkRenderPass rp;
 	uint32_t clearValueCount;
@@ -104,7 +119,7 @@ struct RenderPassDesc
 	uint32_t inputAttachments;
 };
 
-struct Pipeline
+struct NePipeline
 {
 	VkPipeline pipeline;
 	VkPipelineLayout layout;
@@ -113,13 +128,13 @@ struct Pipeline
 
 #define VKST_BINARY		0
 #define VKST_TIMELINE	1
-struct Semaphore
+struct NeSemaphore
 {
 	VkSemaphore sem;
 	uint64_t value;
 };
 
-struct AccelerationStructure
+struct NeAccelerationStructure
 {
 	VkAccelerationStructureKHR as;
 };
@@ -135,122 +150,127 @@ extern VkInstance Vkd_inst;
 extern VkAllocationCallbacks *Vkd_allocCb, *Vkd_transientAllocCb;
 extern VkCommandPool Vkd_transferPool;
 extern VkSemaphore Vkd_stagingSignal;
+extern VkPipelineCache Vkd_pipelineCache;
+
+// Debug
+bool Vkd_InitDebug(void);
+bool Vkd_SetObjectName(VkDevice dev, void *handle, VkObjectType type, const char *name);
+void Vkd_TermDebug(void);
 
 // Device
-struct RenderDevice *Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProcs, struct RenderContextProcs *ctxProcs);
-bool Vk_Execute(struct RenderDevice *dev, struct RenderContext *ctx, bool wait);
-void Vk_WaitIdle(struct RenderDevice *dev);
-void Vk_DestroyDevice(struct RenderDevice *dev);
+struct NeRenderDevice *Vk_CreateDevice(struct NeRenderDeviceInfo *info, struct NeRenderDeviceProcs *devProcs, struct NeRenderContextProcs *ctxProcs);
+bool Vk_Execute(struct NeRenderDevice *dev, struct NeRenderContext *ctx, bool wait);
+void Vk_WaitIdle(struct NeRenderDevice *dev);
+void Vk_DestroyDevice(struct NeRenderDevice *dev);
 
 // Pipeline
-struct Pipeline *Vk_GraphicsPipeline(struct RenderDevice *dev, const struct GraphicsPipelineDesc *desc);
-struct Pipeline *Vk_ComputePipeline(struct RenderDevice *dev, const struct ComputePipelineDesc *desc);
-struct Pipeline *Vk_RayTracingPipeline(struct RenderDevice *dev, struct ShaderBindingTable *sbt, uint32_t maxDepth);
-void Vk_LoadPipelineCache(struct RenderDevice *dev);
-void Vk_SavePipelineCache(struct RenderDevice *dev);
-void Vk_DestroyPipeline(struct RenderDevice *dev, struct Pipeline *pipeline);
+struct NePipeline *Vk_GraphicsPipeline(struct NeRenderDevice *dev, const struct NeGraphicsPipelineDesc *desc);
+struct NePipeline *Vk_ComputePipeline(struct NeRenderDevice *dev, const struct NeComputePipelineDesc *desc);
+struct NePipeline *Vk_RayTracingPipeline(struct NeRenderDevice *dev, struct NeShaderBindingTable *sbt, uint32_t maxDepth);
+void Vk_LoadPipelineCache(struct NeRenderDevice *dev);
+void Vk_SavePipelineCache(struct NeRenderDevice *dev);
+void Vk_DestroyPipeline(struct NeRenderDevice *dev, struct NePipeline *pipeline);
 
 // Swapchain
-struct Swapchain *Vk_CreateSwapchain(struct RenderDevice *dev, VkSurfaceKHR surface, bool verticalSync);
-void Vk_DestroySwapchain(struct RenderDevice *dev, struct Swapchain *sw);
-void *Vk_AcquireNextImage(struct RenderDevice *, struct Swapchain *sw);
-bool Vk_Present(struct RenderDevice *dev, struct RenderContext *ctx, struct Swapchain *sw, void *image, struct Semaphore *wait);
-enum TextureFormat Vk_SwapchainFormat(struct Swapchain *sw);
-struct Texture *Vk_SwapchainTexture(struct Swapchain *sw, void *image);
-void Vk_SwapchainDesc(struct Swapchain *sw, struct FramebufferAttachmentDesc *desc);
-void Vk_ScreenResized(struct RenderDevice *dev, struct Swapchain *sw);
+struct NeSwapchain *Vk_CreateSwapchain(struct NeRenderDevice *dev, VkSurfaceKHR surface, bool verticalSync);
+void Vk_DestroySwapchain(struct NeRenderDevice *dev, struct NeSwapchain *sw);
+void *Vk_AcquireNextImage(struct NeRenderDevice *, struct NeSwapchain *sw);
+bool Vk_Present(struct NeRenderDevice *dev, struct NeRenderContext *ctx, struct NeSwapchain *sw, void *image, struct NeSemaphore *wait);
+enum NeTextureFormat Vk_SwapchainFormat(struct NeSwapchain *sw);
+struct NeTexture *Vk_SwapchainTexture(struct NeSwapchain *sw, void *image);
+void Vk_SwapchainDesc(struct NeSwapchain *sw, struct NeFramebufferAttachmentDesc *desc);
+void Vk_ScreenResized(struct NeRenderDevice *dev, struct NeSwapchain *sw);
 
 // Surface (Platform.c, Driver.c)
 bool Vk_CheckPresentSupport(VkPhysicalDevice dev, uint32_t family);
-VkSurfaceKHR Vk_CreateSurface(struct RenderDevice *dev, void *window);
-void Vk_DestroySurface(struct RenderDevice *dev, VkSurfaceKHR surface);
+VkSurfaceKHR Vk_CreateSurface(struct NeRenderDevice *dev, void *window);
+void Vk_DestroySurface(struct NeRenderDevice *dev, VkSurfaceKHR surface);
 
 // Context
-struct RenderContext *Vk_CreateContext(struct RenderDevice *dev);
-void Vk_ResetContext(struct RenderDevice *dev, struct RenderContext *ctx);
-void Vk_DestroyContext(struct RenderDevice *dev, struct RenderContext *ctx);
+struct NeRenderContext *Vk_CreateContext(struct NeRenderDevice *dev);
+void Vk_ResetContext(struct NeRenderDevice *dev, struct NeRenderContext *ctx);
+void Vk_DestroyContext(struct NeRenderDevice *dev, struct NeRenderContext *ctx);
 
 // Texture
-bool Vk_CreateImage(struct RenderDevice *dev, const struct TextureDesc *desc, struct Texture *tex, bool alias);
-bool Vk_CreateImageView(struct RenderDevice *dev, const struct TextureDesc *desc, struct Texture *tex);
-struct Texture *Vk_CreateTexture(struct RenderDevice *dev, const struct TextureDesc *desc, uint16_t location);
-enum TextureLayout Vk_TextureLayout(const struct Texture *tex);
-void Vk_DestroyTexture(struct RenderDevice *dev, struct Texture *tex);
+bool Vk_CreateImage(struct NeRenderDevice *dev, const struct NeTextureDesc *desc, struct NeTexture *tex, bool alias);
+bool Vk_CreateImageView(struct NeRenderDevice *dev, const struct NeTextureDesc *desc, struct NeTexture *tex);
+struct NeTexture *Vk_CreateTexture(struct NeRenderDevice *dev, const struct NeTextureDesc *desc, uint16_t location);
+enum NeTextureLayout Vk_TextureLayout(const struct NeTexture *tex);
+void Vk_DestroyTexture(struct NeRenderDevice *dev, struct NeTexture *tex);
 
 // Buffer
-struct Buffer *Vk_CreateBuffer(struct RenderDevice *dev, const struct BufferDesc *desc, uint16_t location);
-void Vk_UpdateBuffer(struct RenderDevice *dev, struct Buffer *buff, uint64_t offset, void *data, uint64_t size);
-void *Vk_MapBuffer(struct RenderDevice *dev, struct Buffer *buff);
-void Vk_FlushBuffer(struct RenderDevice *dev, struct Buffer *buff, uint64_t offset, uint64_t size);
-void Vk_UnmapBuffer(struct RenderDevice *dev, struct Buffer *buff);
-uint64_t Vk_BufferAddress(struct RenderDevice *dev, const struct Buffer *buff, uint64_t offset);
+struct NeBuffer *Vk_CreateBuffer(struct NeRenderDevice *dev, const struct NeBufferDesc *desc, uint16_t location);
+void Vk_UpdateBuffer(struct NeRenderDevice *dev, struct NeBuffer *buff, uint64_t offset, void *data, uint64_t size);
+void *Vk_MapBuffer(struct NeRenderDevice *dev, struct NeBuffer *buff);
+void Vk_FlushBuffer(struct NeRenderDevice *dev, struct NeBuffer *buff, uint64_t offset, uint64_t size);
+void Vk_UnmapBuffer(struct NeRenderDevice *dev, struct NeBuffer *buff);
+uint64_t Vk_BufferAddress(struct NeRenderDevice *dev, const struct NeBuffer *buff, uint64_t offset);
 uint64_t Vk_OffsetAddress(uint64_t addr, uint64_t offset);
-void Vk_DestroyBuffer(struct RenderDevice *dev, struct Buffer *buff);
+void Vk_DestroyBuffer(struct NeRenderDevice *dev, struct NeBuffer *buff);
 
 // Acceleration Structure
-struct AccelerationStructure *Vk_CreateAccelerationStructure(struct RenderDevice *dev, const struct AccelerationStructureCreateInfo *asci);
-uint64_t Vk_AccelerationStructureHandle(struct RenderDevice *dev, const struct AccelerationStructure *as);
-void Vk_DestroyAccelerationStructure(struct RenderDevice *dev, struct AccelerationStructure *as);
+struct NeAccelerationStructure *Vk_CreateAccelerationStructure(struct NeRenderDevice *dev, const struct NeAccelerationStructureCreateInfo *asci);
+uint64_t Vk_AccelerationStructureHandle(struct NeRenderDevice *dev, const struct NeAccelerationStructure *as);
+void Vk_DestroyAccelerationStructure(struct NeRenderDevice *dev, struct NeAccelerationStructure *as);
 
 // Framebuffer
-struct Framebuffer *Vk_CreateFramebuffer(struct RenderDevice *dev, const struct FramebufferDesc *desc);
-void Vk_SetAttachment(struct Framebuffer *fb, uint32_t pos, struct Texture *tex);
-void Vk_DestroyFramebuffer(struct RenderDevice *dev, struct Framebuffer *fb);
+struct NeFramebuffer *Vk_CreateFramebuffer(struct NeRenderDevice *dev, const struct NeFramebufferDesc *desc);
+void Vk_SetAttachment(struct NeFramebuffer *fb, uint32_t pos, struct NeTexture *tex);
+void Vk_DestroyFramebuffer(struct NeRenderDevice *dev, struct NeFramebuffer *fb);
 
 // Render Pass
-struct RenderPassDesc *Vk_CreateRenderPassDesc(struct RenderDevice *dev, const struct AttachmentDesc *attachments, uint32_t count,
-												const struct AttachmentDesc *depthAttachment, const struct AttachmentDesc *inputAttachments, uint32_t inputCount);
-void Vk_DestroyRenderPassDesc(struct RenderDevice *dev, struct RenderPassDesc *fb);
+struct NeRenderPassDesc *Vk_CreateRenderPassDesc(struct NeRenderDevice *dev, const struct NeAttachmentDesc *attachments, uint32_t count,
+												const struct NeAttachmentDesc *depthAttachment, const struct NeAttachmentDesc *inputAttachments, uint32_t inputCount);
+void Vk_DestroyRenderPassDesc(struct NeRenderDevice *dev, struct NeRenderPassDesc *fb);
 
 // Descriptor Set
-bool Vk_CreateDescriptorSet(struct RenderDevice *dev);
-VkDescriptorSet Vk_AllocateIADescriptorSet(struct RenderDevice *dev);
-void Vk_SetSampler(struct RenderDevice *dev, uint16_t location, VkSampler sampler);
-void Vk_SetBuffer(struct RenderDevice *dev, uint16_t location, VkBuffer buffer);
-void Vk_SetTexture(struct RenderDevice *dev, uint16_t location, VkImageView imageView);
-void Vk_SetInputAttachment(struct RenderDevice *dev, VkDescriptorSet set, uint16_t location, VkImageView imageView);
-void Vk_TermDescriptorSet(struct RenderDevice *dev);
+bool Vk_CreateDescriptorSet(struct NeRenderDevice *dev);
+VkDescriptorSet Vk_AllocateIADescriptorSet(struct NeRenderDevice *dev);
+void Vk_SetSampler(struct NeRenderDevice *dev, uint16_t location, VkSampler sampler);
+void Vk_SetTexture(struct NeRenderDevice *dev, uint16_t location, VkImageView imageView);
+void Vk_SetInputAttachment(struct NeRenderDevice *dev, VkDescriptorSet set, uint16_t location, VkImageView imageView);
+void Vk_TermDescriptorSet(struct NeRenderDevice *dev);
 
 // Shader
-void *Vk_ShaderModule(struct RenderDevice *dev, const char *name);
+void *Vk_ShaderModule(struct NeRenderDevice *dev, const char *name);
 bool Vk_LoadShaders(VkDevice dev);
 void Vk_UnloadShaders(VkDevice dev);
 
 // Sampler
-VkSampler Vk_CreateSampler(struct RenderDevice *dev, const struct SamplerDesc *desc);
-void Vk_DestroySampler(struct RenderDevice *dev, VkSampler s);
+VkSampler Vk_CreateSampler(struct NeRenderDevice *dev, const struct NeSamplerDesc *desc);
+void Vk_DestroySampler(struct NeRenderDevice *dev, VkSampler s);
 
 // TransientResources
-struct Texture *Vk_CreateTransientTexture(struct RenderDevice *dev, const struct TextureDesc *desc, uint16_t location, uint64_t offset, uint64_t *size);
-struct Buffer *Vk_CreateTransientBuffer(struct RenderDevice *dev, const struct BufferDesc *desc, uint16_t location, uint64_t offset, uint64_t *size);
-bool Vk_InitTransientHeap(struct RenderDevice *dev, uint64_t size);
-bool Vk_ResizeTransientHeap(struct RenderDevice *dev, uint64_t size);
-void Vk_TermTransientHeap(struct RenderDevice *dev);
+struct NeTexture *Vk_CreateTransientTexture(struct NeRenderDevice *dev, const struct NeTextureDesc *desc, uint16_t location, uint64_t offset, uint64_t *size);
+struct NeBuffer *Vk_CreateTransientBuffer(struct NeRenderDevice *dev, const struct NeBufferDesc *desc, uint16_t location, uint64_t offset, uint64_t *size);
+bool Vk_InitTransientHeap(struct NeRenderDevice *dev, uint64_t size);
+bool Vk_ResizeTransientHeap(struct NeRenderDevice *dev, uint64_t size);
+void Vk_TermTransientHeap(struct NeRenderDevice *dev);
 
 // Synchronization
-struct Semaphore *Vk_CreateSemaphore(struct RenderDevice *dev);
-bool Vk_WaitSemaphore(struct RenderDevice *dev, struct Semaphore *s, uint64_t value, uint64_t timeout);
-bool Vk_WaitSemaphores(struct RenderDevice *dev, uint32_t count, struct Semaphore *s, uint64_t *values, uint64_t timeout);
-bool Vk_SignalSemaphore(struct RenderDevice *dev, struct Semaphore *s, uint64_t value);
-void Vk_DestroySemaphore(struct RenderDevice *dev, struct Semaphore *s);
+struct NeSemaphore *Vk_CreateSemaphore(struct NeRenderDevice *dev);
+bool Vk_WaitSemaphore(struct NeRenderDevice *dev, struct NeSemaphore *s, uint64_t value, uint64_t timeout);
+bool Vk_WaitSemaphores(struct NeRenderDevice *dev, uint32_t count, struct NeSemaphore *s, uint64_t *values, uint64_t timeout);
+bool Vk_SignalSemaphore(struct NeRenderDevice *dev, struct NeSemaphore *s, uint64_t value);
+void Vk_DestroySemaphore(struct NeRenderDevice *dev, struct NeSemaphore *s);
 
-VkFence Vk_CreateFence(struct RenderDevice *dev, bool createSignaled);
-void Vk_SignalFence(struct RenderDevice *dev, VkFence f);
-bool Vk_WaitForFence(struct RenderDevice *dev, VkFence f, uint64_t timeout);
-void Vk_DestroyFence(struct RenderDevice *dev, VkFence f);
+VkFence Vk_CreateFence(struct NeRenderDevice *dev, bool createSignaled);
+void Vk_SignalFence(struct NeRenderDevice *dev, VkFence f);
+bool Vk_WaitForFence(struct NeRenderDevice *dev, VkFence f, uint64_t timeout);
+void Vk_DestroyFence(struct NeRenderDevice *dev, VkFence f);
 
 // Staging; support for systems without CPU visible device local memory (eg. Windows 7)
-bool Vkd_InitStagingArea(struct RenderDevice *dev);
+bool Vkd_InitStagingArea(struct NeRenderDevice *dev);
 void *Vkd_AllocateStagingMemory(VkDevice dev, VkBuffer buff, VkMemoryRequirements *mr);
-void Vkd_CommitStagingArea(struct RenderDevice *dev, VkSemaphore wait);
-void Vkd_TermStagingArea(struct RenderDevice *dev);
+void Vkd_CommitStagingArea(struct NeRenderDevice *dev, VkSemaphore wait);
+void Vkd_TermStagingArea(struct NeRenderDevice *dev);
 void Vkd_StagingBarrier(VkCommandBuffer cmdBuffer);
 
 // Utility functions
-void Vk_InitContextProcs(struct RenderContextProcs *p);
+void Vk_InitContextProcs(struct NeRenderContextProcs *p);
 
 static inline VkImageAspectFlags
-NeFormatAspect(enum TextureFormat fmt)
+NeFormatAspect(enum NeTextureFormat fmt)
 {
 	switch (fmt) {
 	case TF_D32_SFLOAT: return VK_IMAGE_ASPECT_DEPTH_BIT;
@@ -260,7 +280,7 @@ NeFormatAspect(enum TextureFormat fmt)
 }
 
 static inline VkFormat
-NeToVkTextureFormat(enum TextureFormat fmt)
+NeToVkTextureFormat(enum NeTextureFormat fmt)
 {
 	switch (fmt) {
 	case TF_R8G8B8A8_UNORM: return VK_FORMAT_R8G8B8A8_UNORM;
@@ -292,7 +312,7 @@ NeToVkTextureFormat(enum TextureFormat fmt)
 	}
 }
 
-static inline enum TextureFormat
+static inline enum NeTextureFormat
 VkToNeTextureFormat(VkFormat fmt)
 {
 	switch (fmt) {
@@ -326,7 +346,7 @@ VkToNeTextureFormat(VkFormat fmt)
 }
 
 static inline VkMemoryPropertyFlags
-NeToVkMemoryProperties(enum GPUMemoryType type)
+NeToVkMemoryProperties(enum NeGPUMemoryType type)
 {
 	switch (type) {
 	case MT_CPU_READ: return VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
@@ -338,7 +358,7 @@ NeToVkMemoryProperties(enum GPUMemoryType type)
 }
 
 static inline VkCommandBuffer
-Vkd_AllocateCmdBuffer(VkDevice dev, VkCommandBufferLevel level, VkCommandPool pool, struct Array *freeList)
+Vkd_AllocateCmdBuffer(VkDevice dev, VkCommandBufferLevel level, VkCommandPool pool)
 {
 	VkCommandBuffer cmdBuff;
 	VkCommandBufferAllocateInfo ai =
@@ -351,13 +371,11 @@ Vkd_AllocateCmdBuffer(VkDevice dev, VkCommandBufferLevel level, VkCommandPool po
 	if (vkAllocateCommandBuffers(dev, &ai, &cmdBuff) != VK_SUCCESS)
 		return VK_NULL_HANDLE;
 
-	Rt_ArrayAddPtr(freeList, cmdBuff);
-
 	return cmdBuff;
 }
 
 static inline uint32_t
-Vkd_MemoryTypeIndex(const struct RenderDevice *dev, uint32_t filter, VkMemoryPropertyFlags flags)
+Vkd_MemoryTypeIndex(const struct NeRenderDevice *dev, uint32_t filter, VkMemoryPropertyFlags flags)
 {
 	for (uint32_t i = 0; i < dev->physDevMemProps.memoryTypeCount; ++i)
 		if (/*(filter & (1 << i)) &&*/ ((dev->physDevMemProps.memoryTypes[i].propertyFlags & flags) == flags))
@@ -366,7 +384,7 @@ Vkd_MemoryTypeIndex(const struct RenderDevice *dev, uint32_t filter, VkMemoryPro
 }
 
 static inline VkCommandBuffer
-Vkd_TransferCmdBuffer(struct RenderDevice *dev)
+Vkd_TransferCmdBuffer(struct NeRenderDevice *dev)
 {
 	VkCommandBuffer cb;
 
@@ -390,7 +408,7 @@ Vkd_TransferCmdBuffer(struct RenderDevice *dev)
 }
 
 static inline void
-Vkd_ExecuteCmdBuffer(struct RenderDevice *dev, VkCommandBuffer cb)
+Vkd_ExecuteCmdBuffer(struct NeRenderDevice *dev, VkCommandBuffer cb)
 {
 	vkEndCommandBuffer(cb);
 
@@ -502,7 +520,7 @@ Vkd_TransitionImageLayout(VkCommandBuffer cmdBuffer, VkImage image, VkImageLayou
 }
 
 static inline VkImageLayout
-NeToVkImageLayout(enum TextureLayout tl)
+NeToVkImageLayout(enum NeTextureLayout tl)
 {
 	switch (tl) {
 		case TL_COLOR_ATTACHMENT: return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -520,7 +538,7 @@ NeToVkImageLayout(enum TextureLayout tl)
 	}
 }
 
-static inline enum TextureLayout
+static inline enum NeTextureLayout
 VkToNeImageLayout(VkImageLayout il)
 {
 	switch (il) {

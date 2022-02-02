@@ -9,7 +9,7 @@
 
 #include "Win32Platform.h"
 
-#define W32INMOD	L"Win32Input"
+#define W32INMOD	"Win32Input"
 
 #ifndef MAPVK_VSC_TO_VK_EX
 #define MAPVK_VSC_TO_VK_EX	3
@@ -28,11 +28,11 @@ bool __InSys_rawMouseAxis = true;
 extern bool __InSys_enableMouseAxis;
 
 static bool _mouseButtons[5];
-static enum Button _keymap[256];
+static enum NeButton _keymap[256];
 static DWORD _lastPacket[IN_MAX_CONTROLLERS];
 
 static inline void _deadzone(float *x, float *y, const float max, const float deadzone);
-static inline enum Button _mapKey(const int key);
+static inline enum NeButton _mapKey(const int key);
 
 bool
 In_SysInit(void)
@@ -54,7 +54,7 @@ In_SysInit(void)
 	rid[1].hwndTarget = (HWND)E_screen;
 
 	if (!RegisterRawInputDevices(rid, 2, sizeof(rid[0]))) {
-		Sys_LogEntry(W32INMOD, LOG_CRITICAL, L"Failed to register raw input devices");
+		Sys_LogEntry(W32INMOD, LOG_CRITICAL, "Failed to register raw input devices");
 		return false;
 	}
 
@@ -74,7 +74,7 @@ In_SysPollControllers(void)
 	if (XInputGetState) {
 		uint8_t i;
 		XINPUT_STATE xi;
-		struct ControllerState *cs;
+		struct NeControllerState *cs;
 
 		for (i = 0; i < In_connectedControllers; ++i) {
 			XInputGetState(i, &xi);
@@ -154,7 +154,7 @@ HandleInput(HWND wnd, LPARAM lParam, WPARAM wParam)
 {
 	LPBYTE lpb[sizeof(RAWINPUT)];
 	UINT lpb_size = sizeof(RAWINPUT);
-	uint8_t key_code;
+	uint8_t keyCode;
 	UINT scan;
 	int ext;
 	RAWINPUT *raw;
@@ -179,27 +179,27 @@ HandleInput(HWND wnd, LPARAM lParam, WPARAM wParam)
 			return;
 
 		switch (raw->data.keyboard.VKey) {
-		case VK_SHIFT: key_code = MapVirtualKey(raw->data.keyboard.MakeCode, MAPVK_VSC_TO_VK_EX) == VK_LSHIFT ? BTN_KEY_LSHIFT : BTN_KEY_RSHIFT; break;
-		case VK_CONTROL: key_code = raw->data.keyboard.Flags & RI_KEY_E0 ? BTN_KEY_RCTRL : BTN_KEY_LCTRL; break;
-		case VK_MENU: key_code = raw->data.keyboard.Flags & RI_KEY_E0 ? BTN_KEY_RALT : BTN_KEY_LALT; break;
-		case VK_RETURN: key_code = raw->data.keyboard.Flags & RI_KEY_E0 ? BTN_KEY_NUM_RETURN : BTN_KEY_RETURN; break;
-		case VK_INSERT: key_code = raw->data.keyboard.Flags & RI_KEY_E0 ? BTN_KEY_INSERT : BTN_KEY_NUM_0; break;
-		case VK_DELETE: key_code = raw->data.keyboard.Flags & RI_KEY_E0 ? BTN_KEY_DELETE : BTN_KEY_NUM_DECIMAL; break;
-		case VK_HOME: key_code = raw->data.keyboard.Flags & RI_KEY_E0 ? BTN_KEY_HOME : BTN_KEY_NUM_7; break;
-		case VK_END: key_code = raw->data.keyboard.Flags & RI_KEY_E0 ? BTN_KEY_END : BTN_KEY_NUM_1; break;
-		case VK_PRIOR: key_code = raw->data.keyboard.Flags & RI_KEY_E0 ? BTN_KEY_PGUP : BTN_KEY_NUM_9; break;
-		case VK_NEXT: key_code = raw->data.keyboard.Flags & RI_KEY_E0 ? BTN_KEY_PGDN : BTN_KEY_NUM_3; break;
-		case VK_LEFT: key_code = raw->data.keyboard.Flags & RI_KEY_E0 ? BTN_KEY_LEFT : BTN_KEY_NUM_4; break;
-		case VK_RIGHT: key_code = raw->data.keyboard.Flags & RI_KEY_E0 ? BTN_KEY_RIGHT : BTN_KEY_NUM_6; break;
-		case VK_UP: key_code = raw->data.keyboard.Flags & RI_KEY_E0 ? BTN_KEY_UP : BTN_KEY_NUM_8; break;
-		case VK_DOWN: key_code = raw->data.keyboard.Flags & RI_KEY_E0 ? BTN_KEY_DOWN : BTN_KEY_NUM_2; break;
-		case VK_CLEAR: key_code = raw->data.keyboard.Flags & RI_KEY_E0 ? BTN_KEY_CLEAR : BTN_KEY_NUM_5;
+		case VK_SHIFT: keyCode = MapVirtualKey(raw->data.keyboard.MakeCode, MAPVK_VSC_TO_VK_EX) == VK_LSHIFT ? BTN_KEY_LSHIFT : BTN_KEY_RSHIFT; break;
+		case VK_CONTROL: keyCode = raw->data.keyboard.Flags & RI_KEY_E0 ? BTN_KEY_RCTRL : BTN_KEY_LCTRL; break;
+		case VK_MENU: keyCode = raw->data.keyboard.Flags & RI_KEY_E0 ? BTN_KEY_RALT : BTN_KEY_LALT; break;
+		case VK_RETURN: keyCode = raw->data.keyboard.Flags & RI_KEY_E0 ? BTN_KEY_NUM_RETURN : BTN_KEY_RETURN; break;
+		case VK_INSERT: keyCode = raw->data.keyboard.Flags & RI_KEY_E0 ? BTN_KEY_INSERT : BTN_KEY_NUM_0; break;
+		case VK_DELETE: keyCode = raw->data.keyboard.Flags & RI_KEY_E0 ? BTN_KEY_DELETE : BTN_KEY_NUM_DECIMAL; break;
+		case VK_HOME: keyCode = raw->data.keyboard.Flags & RI_KEY_E0 ? BTN_KEY_HOME : BTN_KEY_NUM_7; break;
+		case VK_END: keyCode = raw->data.keyboard.Flags & RI_KEY_E0 ? BTN_KEY_END : BTN_KEY_NUM_1; break;
+		case VK_PRIOR: keyCode = raw->data.keyboard.Flags & RI_KEY_E0 ? BTN_KEY_PGUP : BTN_KEY_NUM_9; break;
+		case VK_NEXT: keyCode = raw->data.keyboard.Flags & RI_KEY_E0 ? BTN_KEY_PGDN : BTN_KEY_NUM_3; break;
+		case VK_LEFT: keyCode = raw->data.keyboard.Flags & RI_KEY_E0 ? BTN_KEY_LEFT : BTN_KEY_NUM_4; break;
+		case VK_RIGHT: keyCode = raw->data.keyboard.Flags & RI_KEY_E0 ? BTN_KEY_RIGHT : BTN_KEY_NUM_6; break;
+		case VK_UP: keyCode = raw->data.keyboard.Flags & RI_KEY_E0 ? BTN_KEY_UP : BTN_KEY_NUM_8; break;
+		case VK_DOWN: keyCode = raw->data.keyboard.Flags & RI_KEY_E0 ? BTN_KEY_DOWN : BTN_KEY_NUM_2; break;
+		case VK_CLEAR: keyCode = raw->data.keyboard.Flags & RI_KEY_E0 ? BTN_KEY_CLEAR : BTN_KEY_NUM_5;
 		break;
-		case VK_NUMLOCK: key_code = MapVirtualKey(raw->data.keyboard.MakeCode, MAPVK_VSC_TO_VK_EX) == VK_NUMLOCK ? BTN_KEY_NUMLOCK : BTN_KEY_PAUSE; break;
-		default: key_code = _keymap[raw->data.keyboard.VKey]; break;
+		case VK_NUMLOCK: keyCode = MapVirtualKey(raw->data.keyboard.MakeCode, MAPVK_VSC_TO_VK_EX) == VK_NUMLOCK ? BTN_KEY_NUMLOCK : BTN_KEY_PAUSE; break;
+		default: keyCode = _keymap[raw->data.keyboard.VKey]; break;
 		}
 
-		In_buttonState[key_code] = !(raw->data.keyboard.Flags & RI_KEY_BREAK);
+		In_Key(keyCode, !(raw->data.keyboard.Flags & RI_KEY_BREAK));
 	} else if (raw->header.dwType == RIM_TYPEMOUSE) {
 		uint16_t btn = raw->data.mouse.usButtonFlags;
 
@@ -255,7 +255,7 @@ _deadzone(float *x, float *y, const float max, const float deadzone)
 	}
 }
 
-enum Button
+enum NeButton
 _mapKey(const int key)
 {
 	switch (key) {
@@ -302,7 +302,7 @@ _mapKey(const int key)
 	case VK_LEFT: return BTN_KEY_LEFT;
 	case VK_RIGHT: return BTN_KEY_RIGHT;
 	case VK_SPACE: return BTN_KEY_SPACE;
-	case VK_OEM_PLUS: return BTN_KEY_PLUS;
+	case VK_OEM_PLUS: return BTN_KEY_EQUAL;
 	case VK_OEM_MINUS: return BTN_KEY_MINUS;
 	case VK_OEM_PERIOD: return BTN_KEY_PERIOD;
 	case VK_SCROLL: return BTN_KEY_SCROLL;
@@ -328,13 +328,15 @@ _mapKey(const int key)
 	case VK_SNAPSHOT: return BTN_KEY_PRTSCRN;
 	case VK_PAUSE: return BTN_KEY_PAUSE;
 	case VK_CLEAR: return BTN_KEY_CLEAR;
-		// semicolon
-		// slash
-		// tilde
-		// lbracket
-		// rbracket
 		// backslash
-		// quotedbl
+
+	case 0xBF: return BTN_KEY_SLASH;
+	case 0xBA: return BTN_KEY_SEMICOLON;
+	case 0xC0: return BTN_KEY_TILDE;
+	case 0xDB: return BTN_KEY_LBRACKET;
+	case 0xDD: return BTN_KEY_RBRACKET;
+	case 0xDE: return BTN_KEY_QUOTE;
+	case 0xBC: return BTN_KEY_COMMA;
 
 	case VK_NUMLOCK: return BTN_KEY_NUMLOCK;
 	case VK_NUMPAD0: return BTN_KEY_NUM_0;

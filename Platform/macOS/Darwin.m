@@ -15,17 +15,15 @@
 #include <mach/mach_time.h>
 #include <mach/host_info.h>
 #include <mach/processor_info.h>
-
-#define Handle __EngineHandle
+#include <mach-o/dyld.h>
 
 #include <Input/Input.h>
 #include <System/System.h>
 #include <System/Memory.h>
+#include <Engine/IO.h>
 #include <Engine/Engine.h>
 #include <Engine/Config.h>
 #include <Engine/Application.h>
-
-#undef Handle
 
 #import <Foundation/Foundation.h>
 
@@ -35,7 +33,7 @@ natural_t Darwin_numCpus = 0;
 uint32_t Darwin_cpuFreq;
 struct utsname Darwin_uname;
 char Darwin_osName[INFO_STR_LEN];
-char Darwin_osVersion[INFO_STR_LEN];
+char Darwin_osVersionString[INFO_STR_LEN];
 char Darwin_cpuName[INFO_STR_LEN];
 NSURL *Darwin_appSupportURL = nil;
 bool Darwin_screenVisible = true;
@@ -49,14 +47,10 @@ Sys_InitDbgOut(void)
 }
 
 void
-Sys_DbgOut(int color, const wchar_t *module, const wchar_t *severity, const wchar_t *text)
+Sys_DbgOut(int color, const char *module, const char *severity, const char *text)
 {
 	@autoreleasepool {
-		NSLog(@"[%@][%@]: %@\n",
-			  [[NSString alloc] initWithBytes: module length: wcslen(module) * sizeof(wchar_t) encoding: NSUTF32LittleEndianStringEncoding],
-			  [[NSString alloc] initWithBytes: severity length: wcslen(severity) * sizeof(wchar_t) encoding: NSUTF32LittleEndianStringEncoding],
-			  [[NSString alloc] initWithBytes: text length: wcslen(text) * sizeof(wchar_t) encoding: NSUTF32LittleEndianStringEncoding]
-		);
+		NSLog(@"[%s][%s]: %s\n", module, severity, text);
 	}
 }
 
@@ -155,15 +149,28 @@ Sys_OperatingSystem(void)
 }
 
 const char *
+Sys_OperatingSystemVersionString(void)
+{
+	return Darwin_osVersionString;
+}
+
+struct NeSysVersion
 Sys_OperatingSystemVersion(void)
 {
-	return Darwin_osVersion;
+	NSOperatingSystemVersion osVer = [[NSProcessInfo processInfo] operatingSystemVersion];
+	struct NeSysVersion sv =
+	{
+		.major = (uint32_t)osVer.majorVersion,
+		.minor = (uint32_t)osVer.minorVersion,
+		.revision = (uint32_t)osVer.patchVersion
+	};
+	return sv;
 }
 
 uint32_t
 Sys_Capabilities(void)
 {
-	return SC_MMIO;
+	return 0;//     SC_MMIO;
 }
 
 bool
@@ -236,7 +243,7 @@ Sys_USleep(uint32_t usec)
 }
 
 void
-Sys_DirectoryPath(enum SystemDirectory sd, char *out, size_t len)
+Sys_DirectoryPath(enum NeSystemDirectory sd, char *out, size_t len)
 {
 	@autoreleasepool {
 		switch (sd) {
@@ -244,9 +251,7 @@ Sys_DirectoryPath(enum SystemDirectory sd, char *out, size_t len)
 			NSArray<NSURL *> *urls = [[NSFileManager defaultManager] URLsForDirectory: NSDocumentDirectory
 																			inDomains: NSUserDomainMask];
 
-			NSURL *path = [[urls firstObject] URLByAppendingPathComponent: [[NSString alloc] initWithBytes: App_applicationInfo.name
-																									length: wcslen(App_applicationInfo.name) * sizeof(wchar_t)
-																								  encoding: NSUTF32LittleEndianStringEncoding]];
+			NSURL *path = [[urls firstObject] URLByAppendingPathComponent: [NSString stringWithUTF8String: App_applicationInfo.name]];
 
 			snprintf(out, len, "%s", [[path path] UTF8String]);
 		} break;
@@ -293,9 +298,29 @@ Sys_CreateDirectory(const char *path)
 }
 
 void
+Sys_ExecutableLocation(char *out, uint32_t len)
+{
+	_NSGetExecutablePath(out, &len);
+}
+
+void
 Sys_ZeroMemory(void *mem, size_t len)
 {
 	memset(mem, 0x0, len);
+}
+
+bool
+Sys_MountPlatformResources(void)
+{
+	NSString *path = [[NSBundle mainBundle] resourcePath];
+	return E_Mount([path UTF8String], "/");
+}
+
+void
+Sys_UnmountPlatformResources(void)
+{
+	NSString *path = [[NSBundle mainBundle] resourcePath];
+	E_Unmount([path UTF8String]);
 }
 
 bool
@@ -316,14 +341,12 @@ Sys_InitDarwinPlatform(void)
 	
 	strncat(dataDir, "/Data", 5);
 	
-	E_SetCVarStr(L"Engine_DataDir", dataDir);
+	E_SetCVarStr("Engine_DataDir", dataDir);
 	
 	NSArray<NSURL *> *urls = [[NSFileManager defaultManager] URLsForDirectory: NSApplicationSupportDirectory
 																	inDomains: NSUserDomainMask];
 	
-	Darwin_appSupportURL = [[urls firstObject] URLByAppendingPathComponent: [[NSString alloc] initWithBytes: App_applicationInfo.name
-																									 length: wcslen(App_applicationInfo.name) * sizeof(wchar_t)
-																								   encoding: NSUTF32LittleEndianStringEncoding]];
+	Darwin_appSupportURL = [[urls firstObject] URLByAppendingPathComponent: [NSString stringWithUTF8String: App_applicationInfo.name]];
 	[Darwin_appSupportURL retain];
 	
 	if (![[NSFileManager defaultManager] fileExistsAtPath: [Darwin_appSupportURL path]])
@@ -333,7 +356,7 @@ Sys_InitDarwinPlatform(void)
 														error: nil];
 	
 	NSString *appSupportPath = [[Darwin_appSupportURL path] stringByAppendingPathComponent: @"Engine.log"];
-	E_SetCVarStr(L"Engine_LogFile", [appSupportPath UTF8String]);
+	E_SetCVarStr("Engine_LogFile", [appSupportPath UTF8String]);
 	
 	uname(&Darwin_uname);
 	

@@ -6,48 +6,53 @@
 #include <Runtime/Array.h>
 #include <Render/Types.h>
 #include <Render/Systems.h>
+#include <System/AtomicLock.h>
 
 #define RES_SCENE	"Scene"
 
-struct Scene
+struct NeScene
 {
-	struct Array entities, compData, compHandle;
-	struct CollectDrawablesArgs collect;
-	BufferHandle sceneData;
+	struct NeArray entities, compData, compHandle;
+	struct NeCollectDrawablesArgs collect;
+	NeBufferHandle sceneData;
 	uint32_t maxLights, maxInstances;
 	size_t sceneDataSize, lightDataSize, instanceDataSize;
+	struct NeAtomicLock compLock;
 
 	uint8_t *dataPtr;
 	bool dataTransfered;
 
-	Handle environmentMap;
+	NeHandle environmentMap;
 	bool loaded;
 
-	wchar_t name[64];
+	char name[64];
 	char path[256];
+	uint8_t id;
 };
 
-struct TerrainCreateInfo
+struct NeTerrainCreateInfo
 {
 	uint16_t tileSize;
 	uint16_t tileCount;
 	float maxHeight;
-	Handle material;
+	NeHandle material;
 	char *mapFile;
 };
 
-ENGINE_API extern struct Scene *Scn_activeScene;
+ENGINE_API extern struct NeScene *Scn_activeScene;
 
-struct Scene *Scn_CreateScene(const wchar_t *name);
-struct Scene *Scn_StartSceneLoad(const char *path);
-void Scn_UnloadScene(struct Scene *scn);
+struct NeScene *Scn_GetScene(uint8_t id);
 
-bool Scn_ActivateScene(struct Scene *scn);
-void Scn_DataAddress(const struct Scene *s, uint64_t *sceneAddress, uint64_t *instanceAddress);
+struct NeScene *Scn_CreateScene(const char *name);
+struct NeScene *Scn_StartSceneLoad(const char *path);
+void Scn_UnloadScene(struct NeScene *scn);
 
-void Scn_StartDrawableCollection(struct Scene *s, const struct Camera *c);
-void Scn_StartDataUpdate(struct Scene *s, const struct Camera *c);
+bool Scn_ActivateScene(struct NeScene *scn);
+void Scn_DataAddress(const struct NeScene *s, uint64_t *sceneAddress, uint64_t *instanceAddress);
 
-bool Scn_CreateTerrain(struct Scene *scn, const struct TerrainCreateInfo *tci);
+void Scn_StartDrawableCollection(struct NeScene *s, const struct NeCamera *c);
+void Scn_StartDataUpdate(struct NeScene *s, const struct NeCamera *c);
+
+bool Scn_CreateTerrain(struct NeScene *scn, const struct NeTerrainCreateInfo *tci);
 
 #endif /* _NE_SCENE_SCENE_H_ */

@@ -149,7 +149,7 @@ v4_dot_simd(const struct vec4 *v1, const struct vec4 *v2)
 #ifdef USE_AVX
 	return _mm_cvtss_f32(_mm_dp_ps(v1->sv, v2->sv, 0xFF));
 #else
-	ALIGN(16) float out[4];
+	NE_ALIGN(16) float out[4];
 	__m128 t2 = v2->sv;
 	__m128 t1 = _mm_mul_ps(v1->sv, t2);
 	
@@ -174,7 +174,7 @@ v4_distance_simd(const struct vec4 *v1, const struct vec4 *v2)
 #ifdef USE_AVX
 	return fabsf(sqrtf(_mm_cvtss_f32(_mm_dp_ps(tmp, tmp, 0xFF))));
 #else
-	ALIGN(16) float out[4];
+	NE_ALIGN(16) float out[4];
 	__m128 t2 = tmp;
 	__m128 t1 = _mm_mul_ps(tmp, t2);
 	

@@ -15,38 +15,36 @@
 #include <Engine/Resource.h>
 
 bool
-Au_InitSource(struct AudioSource *src)
+Au_InitSource(struct NeAudioSource *src)
 {
 	return false;
 }
 
 void
-Au_TermSource(struct AudioSource *src)
+Au_TermSource(struct NeAudioSource *src)
 {
 }
 
-void Au_SetClip(struct AudioSource *src, Handle clip)
-{
-}
-
-void
-Au_Play(struct AudioSource *src)
+void Au_SetClip(struct NeAudioSource *src, NeHandle clip)
 {
 }
 
 void
-Au_Gain(struct AudioSource *src, float gain)
+Au_Play(struct NeAudioSource *src)
+{
+}
+
+void
+Au_Gain(struct NeAudioSource *src, float gain)
 {
 }
 
 bool
-Au_InitSourceComponent(struct AudioSource *src, const void **args)
+Au_InitSourceComponent(struct NeAudioSource *src, const void **args)
 {
 /*	const char *clip = NULL;
 
 	for (; *args; ++args) {
-		const char *fuckCpp = (const char *)*args; // in sane languages this cast is NOT NEEDED
-		size_t len = strlen(fuckCpp);
 
 		if (!strncmp(fuckCpp, "clip", len))
 			clip = (const char *)*(++args);
@@ -56,13 +54,13 @@ Au_InitSourceComponent(struct AudioSource *src, const void **args)
 		return false;
 
 	if (clip)
-		Au_SetClip(src, E_LoadResource(clip, "AudioClip"));*/
+		Au_SetClip(src, E_LoadResource(clip, "NeAudioClip"));*/
 
 	return true;
 }
 
 void
-Au_TermSourceComponent(struct AudioSource *src)
+Au_TermSourceComponent(struct NeAudioSource *src)
 {
 	//Au_TermSource(src);
 }

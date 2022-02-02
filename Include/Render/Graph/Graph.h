@@ -4,20 +4,20 @@
 #include <Render/Types.h>
 #include <Render/Driver/Core.h>
 
-extern struct RenderGraph *Re_activeGraph;
+extern struct NeRenderGraph *Re_activeGraph;
 
-bool Re_AddGraphTexture(const char *name, const struct TextureDesc *desc, struct Array *resources);
-bool Re_AddGraphBuffer(const char *name, const struct BufferDesc *desc, struct Array *resources);
-bool Re_AddGraphData(const char *name, void *ptr, struct Array *resources);
+bool Re_AddGraphTexture(const char *name, const struct NeTextureDesc *desc, struct NeArray *resources);
+bool Re_AddGraphBuffer(const char *name, const struct NeBufferDesc *desc, struct NeArray *resources);
+bool Re_AddGraphData(const char *name, void *ptr, struct NeArray *resources);
 
-struct Texture *Re_GraphTexture(uint64_t hash, const struct Array *resources);
-uint64_t Re_GraphBuffer(uint64_t hash, const struct Array *resources, struct Buffer **buff);
-void *Re_GraphData(uint64_t hash, const struct Array *resources);
+struct NeTexture *Re_GraphTexture(uint64_t hash, const struct NeArray *resources);
+uint64_t Re_GraphBuffer(uint64_t hash, const struct NeArray *resources, struct NeBuffer **buff);
+void *Re_GraphData(uint64_t hash, const struct NeArray *resources);
 
-struct RenderGraph *Re_CreateGraph(void);
-bool Re_AddPass(struct RenderGraph *g, struct RenderPass *pass);
-void Re_BuildGraph(struct RenderGraph *g, struct Texture *output);
-void Re_ExecuteGraph(struct RenderGraph *g);
-void Re_DestroyGraph(struct RenderGraph *g);
+struct NeRenderGraph *Re_CreateGraph(void);
+bool Re_AddPass(struct NeRenderGraph *g, struct NeRenderPass *pass);
+void Re_BuildGraph(struct NeRenderGraph *g, struct NeTexture *output);
+void Re_ExecuteGraph(struct NeRenderGraph *g);
+void Re_DestroyGraph(struct NeRenderGraph *g);
 
 #endif /* _NE_RENDER_GRAPH_GRAPH_H_ */

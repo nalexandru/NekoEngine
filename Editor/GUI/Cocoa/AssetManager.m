@@ -1,13 +1,9 @@
-#define Handle __EngineHandle
-
 #include <Engine/Engine.h>
 #include <Engine/IO.h>
 
 #include <Editor/GUI.h>
 #include <Editor/Asset/Asset.h>
 #include <Editor/Asset/Import.h>
-
-#undef Handle
 
 #import "AssetManager.h"
 

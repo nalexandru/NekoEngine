@@ -6,7 +6,7 @@
 #define CONF_PATH_SIZE	256
 #define CVAR_MAX_NAME	64
 
-enum CVarType
+enum NeCVarType
 {
 	CV_String,
 	CV_Int32,
@@ -16,7 +16,7 @@ enum CVarType
 	CV_Bool
 };
 
-struct CVar
+struct NeCVar
 {
 	union {
 		const char *str;
@@ -27,13 +27,15 @@ struct CVar
 		bool bln;
 	};
 	uint64_t hash;
-	enum CVarType type;
-	wchar_t name[CVAR_MAX_NAME];
-	struct CVar *next;
+	enum NeCVarType type;
+	char name[CVAR_MAX_NAME];
+	struct NeCVar *next;
 };
 
 void E_InitConfig(const char *file);
 void E_TermConfig(void);
+
+struct NeCVar *E_GetCVar(const char *name);
 
 #define CVAR_STRING(x) E_GetCVarStr(x, NULL)->str
 #define CVAR_INT32(x) E_GetCVarI32(x, 0)->i32
@@ -42,18 +44,18 @@ void E_TermConfig(void);
 #define CVAR_FLOAT(x) E_GetCVarFlt(x, 0.f)->flt
 #define CVAR_BOOL(x) E_GetCVarBln(x, false)->bln
 
-struct CVar *E_GetCVarStr(const wchar_t *name, const char *def);
-struct CVar *E_GetCVarI32(const wchar_t *name, int32_t def);
-struct CVar *E_GetCVarU32(const wchar_t *name, uint32_t def);
-struct CVar *E_GetCVarU64(const wchar_t *name, uint64_t def);
-struct CVar *E_GetCVarFlt(const wchar_t *name, float def);
-struct CVar *E_GetCVarBln(const wchar_t *name, bool def);
+struct NeCVar *E_GetCVarStr(const char *name, const char *def);
+struct NeCVar *E_GetCVarI32(const char *name, int32_t def);
+struct NeCVar *E_GetCVarU32(const char *name, uint32_t def);
+struct NeCVar *E_GetCVarU64(const char *name, uint64_t def);
+struct NeCVar *E_GetCVarFlt(const char *name, float def);
+struct NeCVar *E_GetCVarBln(const char *name, bool def);
 
-void E_SetCVarStr(const wchar_t *name, const char *str);
-void E_SetCVarI32(const wchar_t *name, int32_t i32);
-void E_SetCVarU32(const wchar_t *name, uint32_t u32);
-void E_SetCVarU64(const wchar_t *name, uint64_t u64);
-void E_SetCVarFlt(const wchar_t *name, float flt);
-void E_SetCVarBln(const wchar_t *name, bool bln);
+void E_SetCVarStr(const char *name, const char *str);
+void E_SetCVarI32(const char *name, int32_t i32);
+void E_SetCVarU32(const char *name, uint32_t u32);
+void E_SetCVarU64(const char *name, uint64_t u64);
+void E_SetCVarFlt(const char *name, float flt);
+void E_SetCVarBln(const char *name, bool bln);
 
 #endif /* _NE_ENGINE_CONFIG_H_ */

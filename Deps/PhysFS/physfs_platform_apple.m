@@ -165,12 +165,15 @@ void __PHYSFS_platformDetectAvailableCDs(PHYSFS_StringCallback cb, void *data)
     struct statfs *mntbufp;
     int i, mounts;
 
-#if defined(MAC_OS_VERSION_12_0) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_VERSION_12_0
-	if (IOMainPort(MACH_PORT_NULL, &masterPort) != KERN_SUCCESS)
-#else
-	if (IOMasterPort(MACH_PORT_NULL, &masterPort) != KERN_SUCCESS)
-#endif
-        BAIL(PHYSFS_ERR_OS_ERROR, ) /*return void*/;
+	if (@available(macOS 12.0, iOS 15, *)) {
+		if (IOMainPort(MACH_PORT_NULL, &masterPort) != KERN_SUCCESS) {
+			BAIL(PHYSFS_ERR_OS_ERROR, ) /*return void*/;
+		}
+	} else {
+		if (IOMasterPort(MACH_PORT_NULL, &masterPort) != KERN_SUCCESS) {
+			BAIL(PHYSFS_ERR_OS_ERROR, ) /*return void*/;
+		}
+	}
 
     mounts = getmntinfo(&mntbufp, MNT_WAIT);  /* NOT THREAD SAFE! */
     for (i = 0; i < mounts; i++)

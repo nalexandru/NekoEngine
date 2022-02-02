@@ -74,7 +74,7 @@
 #define DXGI_FORMAT_BC7_UNORM			98
 #define DXGI_FORMAT_BC7_UNORM_SRGB		99
 
-typedef struct
+struct NeDDS_PIXELFORMAT
 {
 	uint32_t dwSize;
 	uint32_t dwFlags;
@@ -84,9 +84,9 @@ typedef struct
 	uint32_t dwGBitMask;
 	uint32_t dwBBitMask;
 	uint32_t dwABitMask;
-} DDS_PIXELFORMAT;
+};
  
-struct DDS_HEADER
+struct NeDDS_HEADER
 {
 	uint32_t dwSize;
 	uint32_t dwFlags;
@@ -96,7 +96,7 @@ struct DDS_HEADER
 	uint32_t dwDepth;
 	uint32_t dwMipMapCount;
 	uint32_t dwReserved1[11];
-	DDS_PIXELFORMAT ddspf;
+	struct NeDDS_PIXELFORMAT ddspf;
 	uint32_t dwCaps;
 	uint32_t dwCaps2;
 	uint32_t dwCaps3;
@@ -104,7 +104,7 @@ struct DDS_HEADER
 	uint32_t dwReserved2;
 };
  
-struct DDS_HEADER_DXT10
+struct NeDDS_HEADER_DXT10
 {
 	uint32_t dxgiFormat;
 	uint32_t resourceDimension;
@@ -114,15 +114,15 @@ struct DDS_HEADER_DXT10
 };
 
 static inline void _swap(uint32_t *p, uint32_t count);
-static inline void _readCompressedFormat(const struct DDS_HEADER *hdr, const struct DDS_HEADER_DXT10 *hdrDXT10, struct TextureCreateInfo *tci);
+static inline void _readCompressedFormat(const struct NeDDS_HEADER *hdr, const struct NeDDS_HEADER_DXT10 *hdrDXT10, struct NeTextureCreateInfo *tci);
 
 bool
-E_LoadDDSAsset(struct Stream *stm, struct TextureCreateInfo *tci)
+E_LoadDDSAsset(struct NeStream *stm, struct NeTextureCreateInfo *tci)
 {
 	void *data = NULL;
 	uint32_t magic = 0;
-	struct DDS_HEADER hdr = { 0 };
-	struct DDS_HEADER_DXT10 hdrDXT10 = { 0 };
+	struct NeDDS_HEADER hdr = { 0 };
+	struct NeDDS_HEADER_DXT10 hdrDXT10 = { 0 };
 	
 	E_ReadStream(stm, &magic, sizeof(magic));
 	if (Sys_BigEndian())
@@ -176,8 +176,8 @@ _swap(uint32_t *p, uint32_t count)
 }
 
 static inline void
-_readCompressedFormat(const struct DDS_HEADER *hdr,
-	const struct DDS_HEADER_DXT10 *hdrDXT10, struct TextureCreateInfo *tci)
+_readCompressedFormat(const struct NeDDS_HEADER *hdr,
+	const struct NeDDS_HEADER_DXT10 *hdrDXT10, struct NeTextureCreateInfo *tci)
 {
 	switch (hdr->ddspf.dwFourCC) {
 	/*case FOURCC_DXT1: tci->desc.format = TF_BC; break;

@@ -50,7 +50,7 @@ Sys_Yield(void)
 }
 
 bool
-Sys_InitThread(Thread *t, const wchar_t *name, void (*proc)(void *), void *args)
+Sys_InitThread(NeThread *t, const char *name, void (*proc)(void *), void *args)
 {
 	HANDLE thread;
 	THREADNAME_INFO info = { 0x1000, NULL, 0, 0 };
@@ -60,10 +60,9 @@ Sys_InitThread(Thread *t, const wchar_t *name, void (*proc)(void *), void *args)
 		return false;
 
 	if (k32_SetThreadDescription)
-		k32_SetThreadDescription(thread, name);
+		k32_SetThreadDescription(thread, NeWin32_UTF8toUCS2(name));
 
-	info.szName = Sys_Alloc(sizeof(char), wcslen(name) + 1, MH_Transient);
-	wcstombs((char *)info.szName, name, wcslen(name));
+	info.szName = name;
 	
 	__try {
 		RaiseException(0x406D1388, 0, sizeof(info) / sizeof(ULONG_PTR), (const ULONG_PTR *)&info);
@@ -77,17 +76,17 @@ Sys_InitThread(Thread *t, const wchar_t *name, void (*proc)(void *), void *args)
 }
 
 void
-Sys_SetThreadAffinity(Thread t, int cpu)
+Sys_SetThreadAffinity(NeThread t, int cpu)
 {
 	SetThreadAffinityMask((HANDLE)t, (DWORD_PTR)1 << ((DWORD_PTR)cpu));
 }
 
-void Sys_JoinThread(Thread t)
+void Sys_JoinThread(NeThread t)
 {
 	WaitForSingleObject((HANDLE)t, INFINITE);
 }
 
-void Sys_TermThread(Thread t)
+void Sys_TermThread(NeThread t)
 {
 	TerminateThread((HANDLE)t, 0);
 }
@@ -95,7 +94,7 @@ void Sys_TermThread(Thread t)
 // Mutex
 
 bool
-Sys_InitMutex(Mutex *mtx)
+Sys_InitMutex(NeMutex *mtx)
 {
 	CRITICAL_SECTION *cs = HeapAlloc(GetProcessHeap(), 0, sizeof(*cs));
 	if (!cs)
@@ -109,21 +108,21 @@ Sys_InitMutex(Mutex *mtx)
 }
 
 bool
-Sys_LockMutex(Mutex mtx)
+Sys_LockMutex(NeMutex mtx)
 {
 	EnterCriticalSection((LPCRITICAL_SECTION)mtx);
 	return true;
 }
 
 bool
-Sys_UnlockMutex(Mutex mtx)
+Sys_UnlockMutex(NeMutex mtx)
 {
 	LeaveCriticalSection((LPCRITICAL_SECTION)mtx);
 	return true;
 }
 
 void
-Sys_TermMutex(Mutex mtx)
+Sys_TermMutex(NeMutex mtx)
 {
 	DeleteCriticalSection((LPCRITICAL_SECTION)mtx);
 	HeapFree(GetProcessHeap(), 0, mtx);
@@ -132,7 +131,7 @@ Sys_TermMutex(Mutex mtx)
 // Futex
 
 bool
-Sys_InitFutex(Futex *ftx)
+Sys_InitFutex(NeFutex *ftx)
 {
 	SRWLOCK *srw = HeapAlloc(GetProcessHeap(), 0, sizeof(*srw));
 	if (!srw)
@@ -146,21 +145,21 @@ Sys_InitFutex(Futex *ftx)
 }
 
 bool
-Sys_LockFutex(Futex ftx)
+Sys_LockFutex(NeFutex ftx)
 {
 	AcquireSRWLockExclusive((PSRWLOCK)ftx);
 	return true;
 }
 
 bool
-Sys_UnlockFutex(Futex ftx)
+Sys_UnlockFutex(NeFutex ftx)
 {
 	ReleaseSRWLockExclusive((PSRWLOCK)ftx);
 	return true;
 }
 
 void
-Sys_TermFutex(Futex ftx)
+Sys_TermFutex(NeFutex ftx)
 {
 	HeapFree(GetProcessHeap(), 0, ftx);
 }
@@ -168,7 +167,7 @@ Sys_TermFutex(Futex ftx)
 // Condition variable
 
 bool
-Sys_InitConditionVariable(ConditionVariable *cv)
+Sys_InitConditionVariable(NeConditionVariable *cv)
 {
 	CONDITION_VARIABLE *v = HeapAlloc(GetProcessHeap(), 0, sizeof(*v));
 	if (!v)
@@ -182,31 +181,31 @@ Sys_InitConditionVariable(ConditionVariable *cv)
 }
 
 void
-Sys_Signal(ConditionVariable cv)
+Sys_Signal(NeConditionVariable cv)
 {
 	WakeConditionVariable((PCONDITION_VARIABLE)cv);
 }
 
 void
-Sys_Broadcast(ConditionVariable cv)
+Sys_Broadcast(NeConditionVariable cv)
 {
 	WakeAllConditionVariable((PCONDITION_VARIABLE)cv);
 }
 
 bool
-Sys_WaitMutex(ConditionVariable cv, Mutex mtx)
+Sys_WaitMutex(NeConditionVariable cv, NeMutex mtx)
 {
 	return SleepConditionVariableCS((PCONDITION_VARIABLE)cv, (PCRITICAL_SECTION)mtx, INFINITE);
 }
 
 bool
-Sys_WaitFutex(ConditionVariable cv, Futex ftx)
+Sys_WaitFutex(NeConditionVariable cv, NeFutex ftx)
 {
 	return SleepConditionVariableSRW((PCONDITION_VARIABLE)cv, (PSRWLOCK)ftx, INFINITE, 0);
 }
 
 void
-Sys_TermConditionVariable(ConditionVariable cv)
+Sys_TermConditionVariable(NeConditionVariable cv)
 {
 	HeapFree(GetProcessHeap(), 0, cv);
 }

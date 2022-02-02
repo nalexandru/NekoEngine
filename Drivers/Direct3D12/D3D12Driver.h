@@ -11,15 +11,22 @@
 
 #include "D3D12Downlevel.h"
 
-#define D3DDRV_MOD L"D3D12Drv"
+#define D3DDRV_MOD "D3D12Drv"
 
-struct RenderDevice
+struct NeRenderDevice
 {
 	ID3D12Device5 *dev;
 	ID3D12CommandQueue *graphicsQueue, *copyQueue, *computeQueue;
 	ID3D12Fence *renderFence[RE_NUM_FRAMES];
 	UINT64 fenceValue[RE_NUM_FRAMES];
 	HANDLE fenceEvent;
+
+	ID3D12Heap *transientHeap;
+	ID3D12CommandAllocator *driverCopyAllocator;
+
+	ID3D12DescriptorHeap *cpuDescriptorHeap, *cpuSamplerDescriptorHeap, *rtvHeap;
+	ID3D12DescriptorHeap *descriptorHeap[RE_NUM_FRAMES], *samplerDescriptorHeap[RE_NUM_FRAMES];
+	uint64_t heapIncrement, samplerHeapIncrement, rtvHeapIncrement;
 
 	ID3D12Debug3 *debug;
 	IDXGIAdapter1 *adapter;
@@ -46,23 +53,41 @@ struct RenderDevice
 	VkDescriptorPool descriptorPool;*/
 };
 
-struct RenderContext
+struct NeFence
 {
-	ID3D12GraphicsCommandList *graphicsList;
-	ID3D12GraphicsCommandList4 *rtGraphicsList;
-	ID3D12CommandAllocator *graphicsAllocators;
+	uint64_t value;
+	ID3D12Fence *fence;
+	HANDLE event;
+};
 
-	ID3D12GraphicsCommandList *copyList;
-	ID3D12CommandAllocator *copyAllocators;
+struct NeRenderContext
+{
+	ID3D12GraphicsCommandList4 *cmdList;
 
-	ID3D12GraphicsCommandList *computeList;
-	ID3D12GraphicsCommandList4 *rtComputeList;
-	ID3D12CommandAllocator *computeAllocators;
+	ID3D12CommandAllocator **graphicsAllocators;
+	ID3D12CommandAllocator **copyAllocators;
+	ID3D12CommandAllocator **computeAllocators;
+
+	struct NeFence executeFence;
+
+	struct {
+		struct NeArray *graphics, *copy, *compute;
+	} closedList;
+
+	struct {
+		struct NeArray *graphics, *copy, *compute;
+	} freeList;
+
+	ID3D12Device5 *dev;
+	struct NeRenderDevice *neDev;
+
+	struct NeRenderPassDesc *boundRenderPass;
+	struct NeFramebuffer *boundFramebuffer;
 
 	/*VkCommandBuffer cmdBuffer;
-	struct Pipeline *boundPipeline;
+	struct NePipeline *boundPipeline;
 	VkCommandPool *graphicsPools, *transferPools, *computePools;
-	struct Array *graphicsCmdBuffers, *secondaryCmdBuffers, *transferCmdBuffers, *computeCmdBuffers;
+	struct NeArray *graphicsCmdBuffers, *secondaryCmdBuffers, *transferCmdBuffers, *computeCmdBuffers;
 	VkFence executeFence;
 	VkDevice dev;
 	VkDescriptorSet descriptorSet;*/
@@ -75,170 +100,195 @@ struct VulkanDeviceInfo
 	void *a;
 };
 
-struct Swapchain
+struct NeSwapchain
 {
 	IDXGISwapChain3 *sw;
 	ID3D12Resource *buffers[RE_NUM_FRAMES];
-	struct Surface *surface;
+	struct NeSurface *surface;
 	UINT presentInterval;
 	DXGI_SWAP_CHAIN_DESC1 desc;
 };
 
-struct Buffer
+struct NeBuffer
 {
 	ID3D12Resource *res;
-	D3D12_INDEX_BUFFER_VIEW idxView;
+	uint64_t size;
 };
 
-struct Texture
+struct NeTexture
 {
 	ID3D12Resource *res;
 };
 
-struct Framebuffer
+struct NeFramebuffer
 {
-/*	VkFramebuffer fb;
-	VkImageView *attachments;*/
+	ID3D12Resource *attachments[8];
+	ID3D12Resource *depthAttachment;
 	uint32_t width, height, layers, attachmentCount;
 };
 
-struct RenderPassDesc
+struct NeRenderPassDesc
 {
-//	VkRenderPass rp;
-	uint32_t clearValueCount;
-//	VkClearValue *clearValues;
+	uint32_t attachmentCount, depthAttachmentId;
+	DXGI_FORMAT rtvFormats[8];
+	struct vec4 clearValues[8];
+	enum NeAttachmentLoadOp loadOp[8];
+	enum D3D12_RESOURCE_STATES rtvInitialState[8], rtvState[8], rtvFinalState[8];
+
+	DXGI_FORMAT depthFormat;
+	enum NeAttachmentLoadOp depthLoadOp;
+	float depthClearValue;
+	enum D3D12_RESOURCE_STATES depthInitialState, depthState, depthFinalState;
 };
 
-struct Pipeline
+struct NePipeline
 {
 	ID3D12PipelineState *ps;
 	ID3D12RootSignature *rs;
+	D3D12_PRIMITIVE_TOPOLOGY topology;
 };
 
 #define VKST_BINARY		0
 #define VKST_TIMELINE	1
-struct Semaphore
+struct NeSemaphore
 {
 //	VkSemaphore sem;
 	uint64_t value;
 };
 
-struct AccelerationStructure
+struct NeAccelerationStructure
 {
 	ID3D12Resource *buffer;
 };
 
-struct Surface
+struct NeSurface
 {
 	IUnknown *coreWindow;
 	HWND hWnd;
 };
 
+struct D3D12DSubmitInfo
+{
+//	VkSemaphore wait, signal;
+	uint64_t waitValue, signalValue;
+//	VkCommandBuffer cmdBuffer;
+	ID3D12CommandList *cmdList;
+};
+
+struct D3D12DShaderModule
+{
+	void *bytecode;
+	size_t len;
+};
+
 extern IDXGIFactory1 *D3D12_dxgiFactory;
 
 // Device
-struct RenderDevice *D3D12_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProcs, struct RenderContextProcs *ctxProcs);
-bool D3D12_Execute(struct RenderDevice *dev, struct RenderContext *ctx, bool wait);
-void D3D12_WaitIdle(struct RenderDevice *dev);
-void D3D12_DestroyDevice(struct RenderDevice *dev);
+struct NeRenderDevice *D3D12_CreateDevice(struct NeRenderDeviceInfo *info, struct NeRenderDeviceProcs *devProcs, struct NeRenderContextProcs *ctxProcs);
+bool D3D12_Execute(struct NeRenderDevice *dev, struct NeRenderContext *ctx, bool wait);
+void D3D12_WaitIdle(struct NeRenderDevice *dev);
+void D3D12_DestroyDevice(struct NeRenderDevice *dev);
 
 // Pipeline
-struct Pipeline *D3D12_GraphicsPipeline(struct RenderDevice *dev, const struct GraphicsPipelineDesc *desc);
-struct Pipeline *D3D12_ComputePipeline(struct RenderDevice *dev, const struct ComputePipelineDesc *desc);
-struct Pipeline *D3D12_RayTracingPipeline(struct RenderDevice *dev, struct ShaderBindingTable *sbt, uint32_t maxDepth);
-void D3D12_LoadPipelineCache(struct RenderDevice *dev);
-void D3D12_SavePipelineCache(struct RenderDevice *dev);
-void D3D12_DestroyPipeline(struct RenderDevice *dev, struct Pipeline *pipeline);
+struct NePipeline *D3D12_GraphicsPipeline(struct NeRenderDevice *dev, const struct NeGraphicsPipelineDesc *desc);
+struct NePipeline *D3D12_ComputePipeline(struct NeRenderDevice *dev, const struct NeComputePipelineDesc *desc);
+struct NePipeline *D3D12_RayTracingPipeline(struct NeRenderDevice *dev, struct NeShaderBindingTable *sbt, uint32_t maxDepth);
+void D3D12_LoadPipelineCache(struct NeRenderDevice *dev);
+void D3D12_SavePipelineCache(struct NeRenderDevice *dev);
+void D3D12_DestroyPipeline(struct NeRenderDevice *dev, struct NePipeline *pipeline);
 
 // Swapchain
-struct Swapchain *D3D12_CreateSwapchain(struct RenderDevice *dev, void *surface, bool verticalSync);
-void D3D12_DestroySwapchain(struct RenderDevice *dev, struct Swapchain *sw);
-void *D3D12_AcquireNextImage(struct RenderDevice *, struct Swapchain *sw);
-bool D3D12_Present(struct RenderDevice *dev, struct RenderContext *ctx, struct Swapchain *sw, void *image, struct Semaphore *sem);
-enum TextureFormat D3D12_SwapchainFormat(struct Swapchain *sw);
-struct Texture *D3D12_SwapchainTexture(struct Swapchain *sw, void *image);
-void D3D12_ScreenResized(struct RenderDevice *dev, struct Swapchain *sw);
+struct NeSwapchain *D3D12_CreateSwapchain(struct NeRenderDevice *dev, void *surface, bool verticalSync);
+void D3D12_DestroySwapchain(struct NeRenderDevice *dev, struct NeSwapchain *sw);
+void *D3D12_AcquireNextImage(struct NeRenderDevice *, struct NeSwapchain *sw);
+bool D3D12_Present(struct NeRenderDevice *dev, struct NeRenderContext *ctx, struct NeSwapchain *sw, void *image, struct NeSemaphore *sem);
+enum NeTextureFormat D3D12_SwapchainFormat(struct NeSwapchain *sw);
+struct NeTexture *D3D12_SwapchainTexture(struct NeSwapchain *sw, void *image);
+void D3D12_ScreenResized(struct NeRenderDevice *dev, struct NeSwapchain *sw);
 
 // Surface (Platform)
-struct Surface *D3D12_CreateWin32Surface(struct RenderDevice *dev, void *window);
-void D3D12_DestroyWin32Surface(struct RenderDevice *dev, struct Surface *surface);
-struct Surface *D3D12_CreateUWPSurface(struct RenderDevice *dev, void *window);
-void D3D12_DestroyUWPSurface(struct RenderDevice *dev, struct Surface *surface);
+struct NeSurface *D3D12_CreateWin32Surface(struct NeRenderDevice *dev, void *window);
+void D3D12_DestroyWin32Surface(struct NeRenderDevice *dev, struct NeSurface *surface);
+struct NeSurface *D3D12_CreateUWPSurface(struct NeRenderDevice *dev, void *window);
+void D3D12_DestroyUWPSurface(struct NeRenderDevice *dev, struct NeSurface *surface);
 
 // Context
-struct RenderContext *D3D12_CreateContext(struct RenderDevice *dev);
-void D3D12_ResetContext(struct RenderDevice *dev, struct RenderContext *ctx);
-void D3D12_DestroyContext(struct RenderDevice *dev, struct RenderContext *ctx);
+struct NeRenderContext *D3D12_CreateContext(struct NeRenderDevice *dev);
+void D3D12_ResetContext(struct NeRenderDevice *dev, struct NeRenderContext *ctx);
+void D3D12_DestroyContext(struct NeRenderDevice *dev, struct NeRenderContext *ctx);
 
 // Texture
-bool D3D12_CreateImage(struct RenderDevice *dev, const struct TextureDesc *desc, struct Texture *tex, bool alias);
-bool D3D12_CreateImageView(struct RenderDevice *dev, const struct TextureDesc *desc, struct Texture *tex);
-struct Texture *D3D12_CreateTexture(struct RenderDevice *dev, const struct TextureDesc *desc, uint16_t location);
-enum TextureLayout D3D12_TextureLayout(const struct Texture *tex);
-void D3D12_DestroyTexture(struct RenderDevice *dev, struct Texture *tex);
+void D3D12D_InitTextureDesc(const struct NeTextureDesc *desc, D3D12_HEAP_PROPERTIES *heapProperties, D3D12_RESOURCE_DESC *resDesc);
+struct NeTexture *D3D12_CreateTexture(struct NeRenderDevice *dev, const struct NeTextureDesc *desc, uint16_t location);
+enum NeTextureLayout D3D12_TextureLayout(const struct NeTexture *tex);
+void D3D12_DestroyTexture(struct NeRenderDevice *dev, struct NeTexture *tex);
 
 // Buffer
-struct Buffer *D3D12_CreateBuffer(struct RenderDevice *dev, const struct BufferDesc *desc, uint16_t location);
-void D3D12_UpdateBuffer(struct RenderDevice *dev, struct Buffer *buff, uint64_t offset, void *data, uint64_t size);
-void *D3D12_MapBuffer(struct RenderDevice *dev, struct Buffer *buff);
-void D3D12_FlushBuffer(struct RenderDevice *dev, struct Buffer *buff, uint64_t offset, uint64_t size);
-void D3D12_UnmapBuffer(struct RenderDevice *dev, struct Buffer *buff);
-uint64_t D3D12_BufferAddress(struct RenderDevice *dev, const struct Buffer *buff, uint64_t offset);
+void D3D12D_InitBufferDesc(const struct NeBufferDesc *desc, D3D12_HEAP_PROPERTIES *heapProperties, D3D12_RESOURCE_DESC *resDesc);
+struct NeBuffer *D3D12_CreateBuffer(struct NeRenderDevice *dev, const struct NeBufferDesc *desc, uint16_t location);
+void D3D12_UpdateBuffer(struct NeRenderDevice *dev, struct NeBuffer *buff, uint64_t offset, void *data, uint64_t size);
+void *D3D12_MapBuffer(struct NeRenderDevice *dev, struct NeBuffer *buff);
+void D3D12_FlushBuffer(struct NeRenderDevice *dev, struct NeBuffer *buff, uint64_t offset, uint64_t size);
+void D3D12_UnmapBuffer(struct NeRenderDevice *dev, struct NeBuffer *buff);
+uint64_t D3D12_BufferAddress(struct NeRenderDevice *dev, const struct NeBuffer *buff, uint64_t offset);
 uint64_t D3D12_OffsetAddress(uint64_t addr, uint64_t offset);
-void D3D12_DestroyBuffer(struct RenderDevice *dev, struct Buffer *buff);
+void D3D12_DestroyBuffer(struct NeRenderDevice *dev, struct NeBuffer *buff);
 
 // Acceleration Structure
-struct AccelerationStructure *D3D12_CreateAccelerationStructure(struct RenderDevice *dev, const struct AccelerationStructureCreateInfo *asci);
-uint64_t D3D12_AccelerationStructureHandle(struct RenderDevice *dev, const struct AccelerationStructure *as);
-void D3D12_DestroyAccelerationStructure(struct RenderDevice *dev, struct AccelerationStructure *as);
+struct NeAccelerationStructure *D3D12_CreateAccelerationStructure(struct NeRenderDevice *dev, const struct NeAccelerationStructureCreateInfo *asci);
+uint64_t D3D12_AccelerationStructureHandle(struct NeRenderDevice *dev, const struct NeAccelerationStructure *as);
+void D3D12_DestroyAccelerationStructure(struct NeRenderDevice *dev, struct NeAccelerationStructure *as);
 
 // Framebuffer
-struct Framebuffer *D3D12_CreateFramebuffer(struct RenderDevice *dev, const struct FramebufferDesc *desc);
-void D3D12_SetAttachment(struct Framebuffer *fb, uint32_t pos, struct Texture *tex);
-void D3D12_DestroyFramebuffer(struct RenderDevice *dev, struct Framebuffer *fb);
+struct NeFramebuffer *D3D12_CreateFramebuffer(struct NeRenderDevice *dev, const struct NeFramebufferDesc *desc);
+void D3D12_SetAttachment(struct NeFramebuffer *fb, uint32_t pos, struct NeTexture *tex);
+void D3D12_DestroyFramebuffer(struct NeRenderDevice *dev, struct NeFramebuffer *fb);
 
 // Render Pass
-struct RenderPassDesc *D3D12_CreateRenderPassDesc(struct RenderDevice *dev, const struct AttachmentDesc *attachments, uint32_t count,
-													const struct AttachmentDesc *depthAttachment, const struct AttachmentDesc *inputAttachments, uint32_t inputCount);
-void D3D12_DestroyRenderPassDesc(struct RenderDevice *dev, struct RenderPassDesc *fb);
+struct NeRenderPassDesc *D3D12_CreateRenderPassDesc(struct NeRenderDevice *dev, const struct NeAttachmentDesc *attachments, uint32_t count,
+													const struct NeAttachmentDesc *depthAttachment, const struct NeAttachmentDesc *inputAttachments, uint32_t inputCount);
+void D3D12_DestroyRenderPassDesc(struct NeRenderDevice *dev, struct NeRenderPassDesc *fb);
 
-// Descriptor Set
-bool D3D12_CreateDescriptorSet(struct RenderDevice *dev);
-/*void D3D12_SetSampler(struct RenderDevice *dev, uint16_t location, VkSampler sampler);
-void D3D12_SetBuffer(struct RenderDevice *dev, uint16_t location, VkBuffer buffer);
-void D3D12_SetTexture(struct RenderDevice *dev, uint16_t location, VkImageView imageView);*/
-void D3D12_TermDescriptorSet(struct RenderDevice *dev);
+// Descriptor Heap
+bool D3D12_InitDescriptorHeap(struct NeRenderDevice *dev);
+/*void D3D12_SetSampler(struct NeRenderDevice *dev, uint16_t location, VkSampler sampler);
+void D3D12_SetBuffer(struct NeRenderDevice *dev, uint16_t location, VkBuffer buffer);
+void D3D12_SetTexture(struct NeRenderDevice *dev, uint16_t location, VkImageView imageView);*/
+void D3D12_SetTexture(struct NeRenderDevice *dev, uint16_t location, ID3D12Resource *res);
+void D3D12_TermDescriptorHeap(struct NeRenderDevice *dev);
 
 // Shader
-void *D3D12_ShaderModule(struct RenderDevice *dev, const char *name);
+void *D3D12_ShaderModule(struct NeRenderDevice *dev, const char *name);
 //bool D3D12_LoadShaders(VkDevice dev);
 //void D3D12_UnloadShaders(VkDevice dev);
 
 // Sampler
-D3D12_SAMPLER_DESC *D3D12_CreateSampler(struct RenderDevice *dev, const struct SamplerDesc *desc);
-void D3D12_DestroySampler(struct RenderDevice *dev, D3D12_SAMPLER_DESC *s);
+D3D12_SAMPLER_DESC *D3D12_CreateSampler(struct NeRenderDevice *dev, const struct NeSamplerDesc *desc);
+void D3D12_DestroySampler(struct NeRenderDevice *dev, D3D12_SAMPLER_DESC *s);
 
 // TransientResources
-struct Texture *D3D12_CreateTransientTexture(struct RenderDevice *dev, const struct TextureDesc *desc, uint16_t location, uint64_t offset, uint64_t *size);
-struct Buffer *D3D12_CreateTransientBuffer(struct RenderDevice *dev, const struct BufferDesc *desc, uint16_t location, uint64_t offset, uint64_t *size);
-bool D3D12_InitTransientHeap(struct RenderDevice *dev, uint64_t size);
-bool D3D12_ResizeTransientHeap(struct RenderDevice *dev, uint64_t size);
-void D3D12_TermTransientHeap(struct RenderDevice *dev);
+struct NeTexture *D3D12_CreateTransientTexture(struct NeRenderDevice *dev, const struct NeTextureDesc *desc, uint16_t location, uint64_t offset, uint64_t *size);
+struct NeBuffer *D3D12_CreateTransientBuffer(struct NeRenderDevice *dev, const struct NeBufferDesc *desc, uint16_t location, uint64_t offset, uint64_t *size);
+bool D3D12_InitTransientHeap(struct NeRenderDevice *dev, uint64_t size);
+bool D3D12_ResizeTransientHeap(struct NeRenderDevice *dev, uint64_t size);
+void D3D12_TermTransientHeap(struct NeRenderDevice *dev);
 
 // Synchronization
-struct Semaphore *D3D12_CreateSemaphore(struct RenderDevice *dev);
-void D3D12_DestroySemaphore(struct RenderDevice *dev, struct Semaphore *s);
+struct NeSemaphore *D3D12_CreateSemaphore(struct NeRenderDevice *dev);
+void D3D12_DestroySemaphore(struct NeRenderDevice *dev, struct NeSemaphore *s);
 
-struct Fence *D3D12_CreateFence(struct RenderDevice *dev, bool createSignaled);
-void D3D12_SignalFence(struct RenderDevice *dev, struct Fence *f);
-bool D3D12_WaitForFence(struct RenderDevice *dev, struct Fence *f, uint64_t timeout);
-void D3D12_DestroyFence(struct RenderDevice *dev, struct Fence *f);
+struct NeFence *D3D12_CreateFence(struct NeRenderDevice *dev, bool createSignaled);
+bool D3D12Drv_InitFence(ID3D12Device5 *dev, struct NeFence *f, bool signaled);
+void D3D12_SignalFence(struct NeRenderDevice *dev, struct NeFence *f);
+bool D3D12_WaitForFence(struct NeRenderDevice *dev, struct NeFence *f, uint64_t timeout);
+void D3D12Drv_TermFence(struct NeFence *f);
+void D3D12_DestroyFence(struct NeRenderDevice *dev, struct NeFence *f);
 
 // Utility functions
-void D3D12_InitContextProcs(struct RenderContextProcs *p);
+void D3D12_InitContextProcs(struct NeRenderContextProcs *p);
 
 /*static inline VkImageAspectFlags
-NeFormatAspect(enum TextureFormat fmt)
+NeFormatAspect(enum NeTextureFormat fmt)
 {
 	switch (fmt) {
 	case TF_D32_SFLOAT: return VK_IMAGE_ASPECT_DEPTH_BIT;
@@ -247,8 +297,33 @@ NeFormatAspect(enum TextureFormat fmt)
 	}
 }*/
 
+static inline ID3D12GraphicsCommandList4 *
+D3D12D_TransferCmdList(struct NeRenderDevice *dev)
+{
+	/*VkCommandBuffer cb;
+
+	VkCommandBufferAllocateInfo cbai =
+	{
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+		.commandPool = dev->driverTransferPool,
+		.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+		.commandBufferCount = 1
+	};
+	vkAllocateCommandBuffers(dev->dev, &cbai, &cb);
+
+	VkCommandBufferBeginInfo cbbi =
+	{
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+	};
+	vkBeginCommandBuffer(cb, &cbbi);
+
+	return cb;*/
+	return NULL;
+}
+
 static inline DXGI_FORMAT
-NeToDXGITextureFormat(enum TextureFormat fmt)
+NeToDXGITextureFormat(enum NeTextureFormat fmt)
 {
 	switch (fmt) {
 	case TF_R8G8B8A8_UNORM: return DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -272,7 +347,7 @@ NeToDXGITextureFormat(enum TextureFormat fmt)
 	}
 }
 
-static inline enum TextureFormat
+static inline enum NeTextureFormat
 DXGIToNeTextureFormat(DXGI_FORMAT fmt)
 {
 	switch (fmt) {
@@ -297,8 +372,27 @@ DXGIToNeTextureFormat(DXGI_FORMAT fmt)
 	}
 }
 
+static inline D3D12_RESOURCE_STATES
+NeTextureLayoutToD3D12ResourceState(enum NeTextureLayout lyt)
+{
+	switch (lyt) {
+	case TL_COLOR_ATTACHMENT: return D3D12_RESOURCE_STATE_RENDER_TARGET;
+	case TL_DEPTH_STENCIL_ATTACHMENT: return D3D12_RESOURCE_STATE_DEPTH_WRITE;
+	case TL_DEPTH_STENCIL_READ_ONLY_ATTACHMENT: return D3D12_RESOURCE_STATE_DEPTH_READ;
+	case TL_DEPTH_ATTACHMENT: return D3D12_RESOURCE_STATE_DEPTH_WRITE;
+	case TL_STENCIL_ATTACHMENT: return D3D12_RESOURCE_STATE_DEPTH_WRITE;
+	case TL_DEPTH_READ_ONLY_ATTACHMENT: return D3D12_RESOURCE_STATE_DEPTH_READ;
+	case TL_TRANSFER_SRC: return D3D12_RESOURCE_STATE_COPY_SOURCE;
+	case TL_TRANSFER_DST: return D3D12_RESOURCE_STATE_COPY_DEST;
+	case TL_SHADER_READ_ONLY: return D3D12_RESOURCE_STATE_GENERIC_READ;
+	case TL_PRESENT_SRC: return D3D12_RESOURCE_STATE_PRESENT;
+	}
+
+	return D3D12_RESOURCE_STATE_COMMON;
+}
+
 /*static inline VkMemoryPropertyFlags
-NeToVkMemoryProperties(enum GPUMemoryType type)
+NeToVkMemoryProperties(enum NeGPUMemoryType type)
 {
 	switch (type) {
 	case MT_CPU_READ: return VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
@@ -310,7 +404,7 @@ NeToVkMemoryProperties(enum GPUMemoryType type)
 }
 
 static inline VkCommandBuffer
-Vkd_AllocateCmdBuffer(VkDevice dev, VkCommandBufferLevel level, VkCommandPool pool, struct Array *freeList)
+Vkd_AllocateCmdBuffer(VkDevice dev, VkCommandBufferLevel level, VkCommandPool pool, struct NeArray *freeList)
 {
 	VkCommandBuffer cmdBuff;
 	VkCommandBufferAllocateInfo ai =
@@ -328,32 +422,9 @@ Vkd_AllocateCmdBuffer(VkDevice dev, VkCommandBufferLevel level, VkCommandPool po
 	return cmdBuff;
 }
 
-static inline VkCommandBuffer
-Vkd_TransferCmdBuffer(struct RenderDevice *dev)
-{
-	VkCommandBuffer cb;
-
-	VkCommandBufferAllocateInfo cbai =
-	{
-		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-		.commandPool = dev->driverTransferPool,
-		.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-		.commandBufferCount = 1
-	};
-	vkAllocateCommandBuffers(dev->dev, &cbai, &cb);
-
-	VkCommandBufferBeginInfo cbbi =
-	{
-		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-		.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-	};
-	vkBeginCommandBuffer(cb, &cbbi);
-
-	return cb;
-}
 
 static inline void
-Vkd_ExecuteCmdBuffer(struct RenderDevice *dev, VkCommandBuffer cb)
+Vkd_ExecuteCmdBuffer(struct NeRenderDevice *dev, VkCommandBuffer cb)
 {
 	vkEndCommandBuffer(cb);
 
@@ -458,7 +529,7 @@ Vkd_TransitionImageLayout(VkCommandBuffer cmdBuffer, VkImage image, VkImageLayou
 }*/
 
 /*static inline VkImageLayout
-NeToVkImageLayout(enum TextureLayout tl)
+NeToVkImageLayout(enum NeTextureLayout tl)
 {
 	switch (tl) {
 		case TL_COLOR_ATTACHMENT: return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -475,7 +546,7 @@ NeToVkImageLayout(enum TextureLayout tl)
 	}
 }
 
-static inline enum TextureLayout
+static inline enum NeTextureLayout
 VkToNeImageLayout(VkImageLayout il)
 {
 	switch (il) {

@@ -1,11 +1,11 @@
 #include <assert.h>
 
 #include <Engine/IO.h>
-
 #include <Editor/GUI.h>
 #include <Editor/Editor.h>
 #include <Editor/Asset/NMesh.h>
 #include <Editor/Asset/Import.h>
+#include <System/PlatformDetect.h>
 
 #define CGLTF_IMPLEMENTATION
 #include <cgltf.h>
@@ -26,7 +26,7 @@ static inline void _SaveMaterial(const cgltf_material *mat, const char *name, co
 //static inline void _SaveAnimation(const cgltf_animation *anim, const char *path);
 static inline void _SaveImage(const cgltf_image *img, const char *path);
 
-struct AssetImportHandler Ed_glTFImporter =
+struct NeAssetImportHandler Ed_glTFImporter =
 {
 	.name = "glTF Importer",
 	.Match = _MatchAsset,
@@ -48,7 +48,7 @@ _ImportAsset(const char *path)
 	size_t vertexCount = 0, indexCount = 0, meshCount = 0;
 
 	char *baseDir = strdup(path);
-	char *name = strrchr(baseDir, '/');
+	char *name = strrchr(baseDir, ED_DIR_SEPARATOR);
 	*name++ = 0x0;
 
 	char *ptr = strrchr(name, '.');
@@ -106,7 +106,9 @@ _ImportAsset(const char *path)
 	for (uint32_t i = 0; i < gltf->meshes_count; ++i)
 		_ConvertMesh(&gltf->meshes[i], name, &nm);
 
-	snprintf(pathBuff, sizeof(pathBuff), "%s/Models/%s.nmesh", Ed_dataDir, name);
+	snprintf(pathBuff, sizeof(pathBuff), "%s%cModels%c%s.nmesh", Ed_dataDir, ED_DIR_SEPARATOR, ED_DIR_SEPARATOR, name);
+
+	Asset_OptimizeNMesh(&nm);
 	Asset_SaveNMesh(&nm, pathBuff);
 
 	EdGUI_UpdateProgressDialog("Converting materials...");
@@ -120,13 +122,14 @@ _ImportAsset(const char *path)
 	}
 
 	if (gltf->materials_count) {
-		snprintf(pathBuff, sizeof(pathBuff), "%s/Materials/%s", Ed_dataDir, name);
+		snprintf(pathBuff, sizeof(pathBuff), "%s%cMaterials%c%s", Ed_dataDir, ED_DIR_SEPARATOR, ED_DIR_SEPARATOR, name);
 		if (!Sys_DirectoryExists(pathBuff))
 			Sys_CreateDirectory(pathBuff);
 	}
 
 	for (uint32_t i = 0; i < gltf->materials_count; ++i) {
-		snprintf(pathBuff, sizeof(pathBuff), "%s/Materials/%s/%s.mat", Ed_dataDir, name, gltf->materials[i].name);
+		snprintf(pathBuff, sizeof(pathBuff), "%s%cMaterials%c%s%c%s.mat", Ed_dataDir, ED_DIR_SEPARATOR, ED_DIR_SEPARATOR,
+																			name, ED_DIR_SEPARATOR, gltf->materials[i].name);
 		_SaveMaterial(&gltf->materials[i], name, pathBuff);
 	}
 
@@ -138,17 +141,20 @@ _ImportAsset(const char *path)
 	EdGUI_UpdateProgressDialog("Converting textures...");
 
 	if (gltf->images_count) {
-		snprintf(pathBuff, sizeof(pathBuff), "%s/Textures/%s", Ed_dataDir, name);
+		snprintf(pathBuff, sizeof(pathBuff), "%s%cTextures%c%s", Ed_dataDir, ED_DIR_SEPARATOR, ED_DIR_SEPARATOR, name);
 		if (!Sys_DirectoryExists(pathBuff))
 			Sys_CreateDirectory(pathBuff);
 	}
 
 	for (uint32_t i = 0; i < gltf->images_count; ++i) {
-		snprintf(pathBuff, sizeof(pathBuff), "%s/Textures/%s/%s.png", Ed_dataDir, name, gltf->images[i].name);
+		snprintf(pathBuff, sizeof(pathBuff), "%s%cTextures%c%s%c%s.png", Ed_dataDir, ED_DIR_SEPARATOR, ED_DIR_SEPARATOR,
+																			name, ED_DIR_SEPARATOR, gltf->images[i].name);
 		_SaveImage(&gltf->images[i], pathBuff);
 	}
 
 	EdGUI_HideProgressDialog();
+
+	cgltf_free(gltf);
 
 	return true;
 }
@@ -159,10 +165,16 @@ _ConvertMesh(const cgltf_mesh *mesh, const char *name, struct NMesh *nm)
 	for (uint32_t i = 0; i < mesh->primitives_count; ++i) {
 		const cgltf_primitive *prim = &mesh->primitives[i];
 
-		if (prim->type != cgltf_primitive_type_triangles)
-			continue;
+		enum NePrimitiveType pt = PT_TRIANGLES;
+		switch (prim->type) {
+		case cgltf_primitive_type_triangles: pt = PT_TRIANGLES; break;
+		case cgltf_primitive_type_points: pt = PT_POINTS; break;
+		case cgltf_primitive_type_lines: pt = PT_LINES; break;
+		default: continue;
+		}
 
 		struct NMeshSubmesh *dstMesh = &nm->meshes[nm->meshCount++];
+		dstMesh->type = pt;
 
 		if (prim->material)
 			snprintf(dstMesh->material, sizeof(dstMesh->material), "/Materials/%s/%s.mat", name, prim->material->name);
@@ -200,6 +212,7 @@ _ConvertMesh(const cgltf_mesh *mesh, const char *name, struct NMesh *nm)
 		}
 
 		const float *pos = NULL, *norm = NULL, *tgt = NULL, *tc = NULL;
+		const float *color = NULL, *joints = NULL, *weights = NULL;
 		for (uint32_t j = 0; j < prim->attributes_count; ++j) {
 			const cgltf_attribute *attr = &prim->attributes[j];
 
@@ -211,15 +224,15 @@ _ConvertMesh(const cgltf_mesh *mesh, const char *name, struct NMesh *nm)
 			case cgltf_attribute_type_normal: norm = (const float *)BUFFER_PTR(attr->data); break;
 			case cgltf_attribute_type_tangent: tgt = (const float *)BUFFER_PTR(attr->data); break;
 			case cgltf_attribute_type_texcoord: tc = (const float *)BUFFER_PTR(attr->data); break;
-			case cgltf_attribute_type_color: break;
-			case cgltf_attribute_type_joints: break;
-			case cgltf_attribute_type_weights: break;
+			case cgltf_attribute_type_color: color = (const float *)BUFFER_PTR(attr->data); break;
+			case cgltf_attribute_type_joints: joints = (const float *)BUFFER_PTR(attr->data); break;
+			case cgltf_attribute_type_weights: weights = (const float *)BUFFER_PTR(attr->data); break;
 			case cgltf_attribute_type_invalid: break;
 			}
 		}
 
 		for (uint32_t j = 0; j < dstMesh->vertexCount; ++j) {
-			struct Vertex *v = &nm->vertices[nm->vertexCount++];
+			struct NeVertex *v = &nm->vertices[nm->vertexCount++];
 
 			if (pos) {
 				v->x = *pos++;
@@ -242,6 +255,15 @@ _ConvertMesh(const cgltf_mesh *mesh, const char *name, struct NMesh *nm)
 			if (tc) {
 				v->u = *tc++;
 				v->v = *tc++;
+			}
+
+			if (color) {
+				v->r = *color++;
+				v->g = *color++;
+				v->b = *color++;
+				v->a = *color++;
+			} else {
+				v->r = 1.f; v->g = 1.f; v->b = 1.f; v->a = 1.f;
 			}
 		}
 	}

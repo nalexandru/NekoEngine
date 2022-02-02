@@ -4,17 +4,16 @@
 #include <Render/Types.h>
 #include <Engine/Component.h>
 
-struct ModelRender
+struct NeModelRender
 {
 	COMPONENT_BASE;
 
-	Handle model;
-	struct Material *materials;
+	NeHandle model;
+	NeBufferHandle vertexBuffer;
+	struct NeMaterial *materials;
 	uint32_t *bounds, **meshBounds;
 };
 
-bool Re_InitModelRender(struct ModelRender *mr, const void **args);
-void Re_SetModel(struct ModelRender *mr, Handle model);
-void Re_TermModelRender(struct ModelRender *mr);
+void Re_SetModel(struct NeModelRender *mr, NeHandle model);
 
 #endif /* _NE_RENDER_COMPONENTS_MODEL_RENDER_H_ */

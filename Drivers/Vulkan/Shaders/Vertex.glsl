@@ -38,6 +38,16 @@ vec2 Re_TexCoord()
 	);
 }
 
+vec4 Re_Color()
+{
+	return vec4(
+		DrawInfo.vertices.data[gl_VertexIndex].r,
+		DrawInfo.vertices.data[gl_VertexIndex].g,
+		DrawInfo.vertices.data[gl_VertexIndex].b,
+		DrawInfo.vertices.data[gl_VertexIndex].a
+	);
+}
+
 #ifndef VTX_NO_INSTANCE
 
 vec3 Re_I_Position()
@@ -72,6 +82,16 @@ vec2 Re_I_TexCoord()
 	return vec2(
 		DrawInfo.instance.vertices.data[gl_VertexIndex].u,
 		DrawInfo.instance.vertices.data[gl_VertexIndex].v
+	);
+}
+
+vec4 Re_I_Color()
+{
+	return vec4(
+		DrawInfo.instance.vertices.data[gl_VertexIndex].r,
+		DrawInfo.instance.vertices.data[gl_VertexIndex].g,
+		DrawInfo.instance.vertices.data[gl_VertexIndex].b,
+		DrawInfo.instance.vertices.data[gl_VertexIndex].a
 	);
 }
 

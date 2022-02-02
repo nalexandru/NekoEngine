@@ -12,7 +12,7 @@
 #include "Internal.h"
 
 uint32_t Re_frameId = 0;
-struct RenderGraph *Re_activeGraph = NULL;
+struct NeRenderGraph *Re_activeGraph = NULL;
 
 void
 Re_RenderFrame(void)
@@ -22,8 +22,7 @@ Re_RenderFrame(void)
 		Re_activeGraph = Re_CreateGraph();
 
 		Re_AddPass(Re_activeGraph, &RP_depthPrePass);
-	//	Re_AddPass(Re_activeGraph, &RP_lightCulling);
-	//	Re_AddPass(Re_activeGraph, &RP_forward);
+		Re_AddPass(Re_activeGraph, &RP_lightCulling);
 		Re_AddPass(Re_activeGraph, &RP_opaque);
 		Re_AddPass(Re_activeGraph, &RP_sky);
 		Re_AddPass(Re_activeGraph, &RP_transparent);
@@ -48,7 +47,7 @@ Re_RenderFrame(void)
 	Re_BuildGraph(Re_activeGraph, Re_SwapchainTexture(Re_swapchain, image));
 	Re_ExecuteGraph(Re_activeGraph);
 
-	Re_Present(Re_swapchain, image, Re_activeGraph->semaphore);
+	Re_Present(Re_swapchain, image, NULL);
 
 	Re_frameId = (Re_frameId + 1) % RE_NUM_FRAMES;
 }

@@ -12,21 +12,21 @@
 #include <Runtime/RtDefs.h>
 
 /**
- * struct Array - basic array
+ * struct NeArray - basic array
  * @data:
  * @count:
  * @size:
  * @elemSize
  * @heap
  */
-struct Array
+struct NeArray
 {
 	uint8_t *data;
 	size_t count;
 	size_t size;
 	size_t elemSize;
 	size_t align;
-	enum MemoryHeap heap;
+	enum NeMemoryHeap heap;
 };
 
 /**
@@ -36,7 +36,7 @@ struct Array
  * @elemSize: size of one array element
  */
 static inline bool
-Rt_InitArray(struct Array *a, size_t size, size_t elemSize, enum MemoryHeap heap)
+Rt_InitArray(struct NeArray *a, size_t size, size_t elemSize, enum NeMemoryHeap heap)
 {
 	if (!a || !size || !elemSize)
 		return false;
@@ -65,7 +65,7 @@ Rt_InitArray(struct Array *a, size_t size, size_t elemSize, enum MemoryHeap heap
  * @elemSize: size of one array element
  */
 static inline bool
-Rt_InitAlignedArray(struct Array *a, size_t size, size_t elemSize, size_t alignment)
+Rt_InitAlignedArray(struct NeArray *a, size_t size, size_t elemSize, size_t alignment)
 {
 	if (!a || !size || !elemSize)
 		return false;
@@ -103,7 +103,7 @@ Rt_InitAlignedArray(struct Array *a, size_t size, size_t elemSize, size_t alignm
  * Return: 0 on success
  */
 static inline bool
-Rt_CloneArray(struct Array *dst, const struct Array *src, enum MemoryHeap heap)
+Rt_CloneArray(struct NeArray *dst, const struct NeArray *src, enum NeMemoryHeap heap)
 {
 	if (!dst || !src)
 		return false;
@@ -178,7 +178,7 @@ Rt_CloneArray(struct Array *dst, const struct Array *src, enum MemoryHeap heap)
 #define Rt_ArrayDataPtr(a) (a)->data
 
 static inline int
-Rt_ResizeArray(struct Array *a, size_t size)
+Rt_ResizeArray(struct NeArray *a, size_t size)
 {
 	uint8_t *ptr = a->data;
 
@@ -220,7 +220,7 @@ Rt_ResizeArray(struct Array *a, size_t size)
  * Returns: OK on success
  */
 static inline bool
-Rt_ArrayAdd(struct Array *a, const void *data)
+Rt_ArrayAdd(struct NeArray *a, const void *data)
 {
 	if (a->count == a->size)
 		if (!Rt_ResizeArray(a, _Rt_CalcGrowSize(a->size, a->elemSize, a->size + RT_DEF_INC)))
@@ -242,7 +242,7 @@ Rt_ArrayAdd(struct Array *a, const void *data)
  * Returns: OK on success
  */
 static inline bool
-Rt_ArrayAddPtr(struct Array *a, const void *data)
+Rt_ArrayAddPtr(struct NeArray *a, const void *data)
 {
 	return Rt_ArrayAdd(a, &data);
 }
@@ -259,7 +259,7 @@ Rt_ArrayAddPtr(struct Array *a, const void *data)
  * Returns: OK on success
  */
 static inline bool
-Rt_ArrayAddArray(struct Array *a, const struct Array *src)
+Rt_ArrayAddArray(struct NeArray *a, const struct NeArray *src)
 {
 	if (a->count + src->count >= a->size)
 		if (!Rt_ResizeArray(a, _Rt_CalcGrowSize(a->size, a->elemSize, (a->size + src->count) + RT_DEF_INC)))
@@ -278,7 +278,7 @@ Rt_ArrayAddArray(struct Array *a, const struct Array *src)
  * Returns: Pointer to item
  */
 static inline void *
-Rt_ArrayAllocate(struct Array *a)
+Rt_ArrayAllocate(struct NeArray *a)
 {
 	void *ptr = NULL;
 
@@ -293,7 +293,7 @@ Rt_ArrayAllocate(struct Array *a)
 }
 
 // Actual insert function
-static inline bool __miwa_array_insert(struct Array *, const void *, size_t, bool);
+static inline bool __miwa_array_insert(struct NeArray *, const void *, size_t, bool);
 
 /**
  * Rt_ArrayInsert - insert an item in the array
@@ -308,7 +308,7 @@ static inline bool __miwa_array_insert(struct Array *, const void *, size_t, boo
  * Returns: OK on success
  */
 static inline bool
-Rt_ArrayInsert(struct Array *a, const void *item, size_t pos)
+Rt_ArrayInsert(struct NeArray *a, const void *item, size_t pos)
 {
 	return __miwa_array_insert(a, item, pos, true);
 }
@@ -325,7 +325,7 @@ Rt_ArrayInsert(struct Array *a, const void *item, size_t pos)
  * Returns: OK on success
  */
 static inline bool
-Rt_ArrayInsertPtr(struct Array *a, const void *item, size_t pos)
+Rt_ArrayInsertPtr(struct NeArray *a, const void *item, size_t pos)
 {
 	return __miwa_array_insert(a, &item, pos, true);
 }
@@ -344,7 +344,7 @@ Rt_ArrayInsertPtr(struct Array *a, const void *item, size_t pos)
  * Returns: OK on success
  */
 static inline bool
-Rt_ArrayFastInsert(struct Array *a, const void *item, size_t pos)
+Rt_ArrayFastInsert(struct NeArray *a, const void *item, size_t pos)
 {
 	return __miwa_array_insert(a, item, pos, false);
 }
@@ -361,13 +361,13 @@ Rt_ArrayFastInsert(struct Array *a, const void *item, size_t pos)
  * Returns: OK on success
  */
 static inline bool
-Rt_ArrayFastInsertPtr(struct Array *a, const void *item, size_t pos)
+Rt_ArrayFastInsertPtr(struct NeArray *a, const void *item, size_t pos)
 {
 	return __miwa_array_insert(a, &item, pos, false);
 }
 
 static inline bool
-Rt_ArrayRemove(struct Array *a, size_t index)
+Rt_ArrayRemove(struct NeArray *a, size_t index)
 {
 	size_t i = 0;
 
@@ -383,7 +383,7 @@ Rt_ArrayRemove(struct Array *a, size_t index)
 }
 
 static inline void *
-Rt_ArrayGet(const struct Array *a, size_t id)
+Rt_ArrayGet(const struct NeArray *a, size_t id)
 {
 	if (id > a->size)
 		return NULL;
@@ -392,7 +392,7 @@ Rt_ArrayGet(const struct Array *a, size_t id)
 }
 
 static inline void *
-Rt_ArrayGetPtr(const struct Array *a, size_t id)
+Rt_ArrayGetPtr(const struct NeArray *a, size_t id)
 {
 	if (id > a->size)
 		return NULL;
@@ -401,7 +401,7 @@ Rt_ArrayGetPtr(const struct Array *a, size_t id)
 }
 
 static inline void *
-Rt_ArrayFind(const struct Array *a, const void *data, RtCmpFunc cmpFunc)
+Rt_ArrayFind(const struct NeArray *a, const void *data, RtCmpFunc cmpFunc)
 {
 	size_t i;
 
@@ -413,7 +413,7 @@ Rt_ArrayFind(const struct Array *a, const void *data, RtCmpFunc cmpFunc)
 }
 
 static inline size_t
-Rt_ArrayFindId(const struct Array *a, const void *data, RtCmpFunc cmpFunc)
+Rt_ArrayFindId(const struct NeArray *a, const void *data, RtCmpFunc cmpFunc)
 {
 	size_t i;
 
@@ -424,8 +424,20 @@ Rt_ArrayFindId(const struct Array *a, const void *data, RtCmpFunc cmpFunc)
 	return RT_NOT_FOUND;
 }
 
+static inline size_t
+Rt_PtrArrayFindId(const struct NeArray *a, const void *ptr)
+{
+	size_t i;
+
+	for (i = 0; i < a->count; ++i)
+		if (Rt_ArrayGetPtr(a, i) == ptr)
+			return i;
+
+	return RT_NOT_FOUND;
+}
+
 static inline void *
-Rt_ArrayBSearch(const struct Array *a, const void *data, RtCmpFunc cmpFunc)
+Rt_ArrayBSearch(const struct NeArray *a, const void *data, RtCmpFunc cmpFunc)
 {
 	size_t start = 0, end = a->count - 1, mid;
 	int32_t c;
@@ -452,7 +464,7 @@ Rt_ArrayBSearch(const struct Array *a, const void *data, RtCmpFunc cmpFunc)
 }
 
 static inline size_t
-Rt_ArrayBSearchId(const struct Array *a, const void *data, RtCmpFunc cmpFunc)
+Rt_ArrayBSearchId(const struct NeArray *a, const void *data, RtCmpFunc cmpFunc)
 {
 	size_t start = 0, end = a->count - 1, mid;
 	int32_t c;
@@ -479,13 +491,13 @@ Rt_ArrayBSearchId(const struct Array *a, const void *data, RtCmpFunc cmpFunc)
 }
 
 static inline void
-Rt_ArraySort(struct Array *a, RtSortFunc sortFunc)
+Rt_ArraySort(struct NeArray *a, RtSortFunc sortFunc)
 {
 	qsort(a->data, a->count, a->elemSize, sortFunc);
 }
 
 static inline bool
-Rt_ArrayReverse(struct Array *a)
+Rt_ArrayReverse(struct NeArray *a)
 {
 	uint8_t *tmp = NULL;
 	uint64_t s = 0, e = 0;
@@ -514,7 +526,7 @@ Rt_ArrayReverse(struct Array *a)
 }
 
 static inline size_t
-Rt_ArrayUpperBound(const struct Array *a, const void *data, RtCmpFunc cmpFunc)
+Rt_ArrayUpperBound(const struct NeArray *a, const void *data, RtCmpFunc cmpFunc)
 {
 	size_t low = 0, mid = 0;
 	size_t high = a->count;
@@ -532,7 +544,7 @@ Rt_ArrayUpperBound(const struct Array *a, const void *data, RtCmpFunc cmpFunc)
 }
 
 static inline size_t
-Rt_ArrayLowerBound(const struct Array *a, const void *data, RtCmpFunc cmpFunc)
+Rt_ArrayLowerBound(const struct NeArray *a, const void *data, RtCmpFunc cmpFunc)
 {
 	size_t low = 0, mid = 0;
 	size_t high = a->count;
@@ -553,11 +565,11 @@ Rt_ArrayLowerBound(const struct Array *a, const void *data, RtCmpFunc cmpFunc)
 #define Rt_ZeroArray(a) memset((a)->data, 0x0, (a)->elemSize * (a)->count); a->count = 0
 
 static inline void
-Rt_ClearArray(struct Array *a, bool free_memory)
+Rt_ClearArray(struct NeArray *a, bool free_memory)
 {
 	a->count = 0;
 
-	if (!free_memory)
+	if (!free_memory || !a->data)
 		return;
 
 	a->size = 0;
@@ -575,7 +587,7 @@ Rt_ClearArray(struct Array *a, bool free_memory)
 }
 
 static inline void
-Rt_TermArray(struct Array *a)
+Rt_TermArray(struct NeArray *a)
 {
 	if (!a)
 		return;
@@ -598,7 +610,7 @@ Rt_TermArray(struct Array *a)
 // You are not supposed to call this function directly;
 // Use the wrappers defined above instead.
 static inline bool
-__miwa_array_insert(struct Array *a, const void *data, size_t pos, bool ordered)
+__miwa_array_insert(struct NeArray *a, const void *data, size_t pos, bool ordered)
 {
 	size_t i = 0;
 

@@ -90,6 +90,12 @@ m_min(float a, float b)
 	return a < b ? a : b;
 }
 
+static inline int32_t
+clamp_i(int32_t x, int32_t min, int32_t max)
+{
+	return x < min ? min : (x > max ? max : x);
+}
+
 static inline uint32_t
 clamp_ui(uint32_t x, uint32_t min, uint32_t max)
 {

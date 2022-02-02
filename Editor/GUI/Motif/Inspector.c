@@ -16,12 +16,12 @@
 static Widget _titleLabel, _wnd;
 
 void
-GUI_InspectEntity(EntityHandle handle)
+GUI_InspectEntity(NeEntityHandle handle)
 {
 	XmString str = NULL;
 
 	if (handle != ES_INVALID_ENTITY) {
-		str = XmStringCreateLocalized(Rt_WcsToMbs(E_EntityName(handle)));
+		str = XmStringCreateLocalized((char *)E_EntityName(handle));
 	} else {
 		str = XmStringCreateLocalized("No selection");
 	}
@@ -33,7 +33,7 @@ GUI_InspectEntity(EntityHandle handle)
 void
 GUI_InspectScene(void)
 {
-	XmString str = XmStringCreateLocalized(Rt_WcsToMbs(Scn_activeScene->name));
+	XmString str = XmStringCreateLocalized(Scn_activeScene->name);
 	XtVaSetValues(_titleLabel, XmNlabelString, str, NULL);
 	XmStringFree(str);
 }

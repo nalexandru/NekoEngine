@@ -1,11 +1,18 @@
 #include <Render/Render.h>
 #include <Render/Components/ModelRender.h>
 #include <Engine/Engine.h>
+#include <Engine/ECSystem.h>
 #include <Engine/Resource.h>
 #include <Animation/Animation.h>
+#include <Scene/Components.h>
 
-bool
-Anim_InitAnimator(struct Animator *a, const void **args)
+static bool _InitAnimator(struct NeAnimator *a, const void **args);
+static void _TermAnimator(struct NeAnimator *a);
+
+E_REGISTER_COMPONENT(ANIMATOR_COMP, struct NeAnimator, 16, _InitAnimator, _TermAnimator)
+
+static bool
+_InitAnimator(struct NeAnimator *a, const void **args)
 {
 	a->clip = E_INVALID_HANDLE;
 
@@ -29,34 +36,21 @@ Anim_InitAnimator(struct Animator *a, const void **args)
 	return true;
 }
 
-void
-Anim_TermAnimator(struct Animator *a)
+E_SYSTEM(ANIM_BUILD_SKELETON, ECSYS_GROUP_MANUAL, 0, false, void, 2, ANIMATOR_COMP, MODEL_RENDER_COMP)
 {
-	E_UnloadResource(a->clip);
+	struct NeAnimator *a = comp[0];
+	struct NeModelRender *mr = comp[1];
 
-	if (!a->skel)
-		return;
-
-	Anim_TermSkeleton(a->skel);
-	Re_Destroy(a->skelBuffer);
-}
-
-void
-Anim_BuildSkeleton(void **comp, void *args)
-{
-	struct Animator *a = comp[0];
-	struct ModelRender *mr = comp[1];
-
-	const struct Model *m = E_ResourcePtr(mr->model);
+	const struct NeModel *m = E_ResourcePtr(mr->model);
 	if (!m)
 		return;
 
-	Anim_InitSkeleton(a->skel, m->cpu.bones, NULL, NULL);
+	Anim_InitSkeleton(a->skel, &m->skeleton.bones, &m->skeleton.nodes, &m->skeleton.globalInverseTransform);
 
-	struct BufferCreateInfo bci = 
+	struct NeBufferCreateInfo bci = 
 	{
 		.desc = {
-			.size = sizeof(struct mat4) * m->cpu.boneSize / sizeof(struct Bone),
+			.size = sizeof(struct mat4) * m->skeleton.bones.count,
 			.usage = BU_TRANSFER_DST | BU_STORAGE_BUFFER,
 			.memoryType = MT_GPU_LOCAL
 		}
@@ -64,12 +58,10 @@ Anim_BuildSkeleton(void **comp, void *args)
 	Re_CreateBuffer(&bci, &a->skelBuffer);
 }
 
-void
-Anim_UpdateAnimator(void **comp, void *args)
+E_SYSTEM(ANIM_UPDATE_ANIMATOR, ECSYS_GROUP_PRE_RENDER, 0, false, void, 1, ANIMATOR_COMP)
 {
-	struct Animator *a = comp[0];
-	//struct ModelRender *mr = comp[1];
-	const struct AnimationClip *ac = E_ResourcePtr(a->clip);
+	struct NeAnimator *a = comp[0];
+	const struct NeAnimationClip *ac = E_ResourcePtr(a->clip);
 
 	if (!a->playing || !ac)
 		return;
@@ -91,5 +83,48 @@ Anim_UpdateAnimator(void **comp, void *args)
 
 	Anim_UpdateSkeleton(a->skel, a->time, ac);
 
-	// dispatch compute
+	a->dirty = true;
+}
+
+E_SYSTEM(ANIM_COMPUTE_SKINNING, ECSYS_GROUP_RENDER, ECSYS_PRI_SKINNING, false, void, 2, ANIMATOR_COMP, MODEL_RENDER_COMP)
+{
+	struct NeAnimator *a = comp[0];
+	struct NeModelRender *mr = comp[1];
+
+	struct {
+		uint64_t bones;
+		uint64_t source;
+		uint64_t destination;
+	} constants;
+
+	if (!a->dirty)
+		return;
+
+	Re_BeginComputeCommandBuffer();
+
+	Re_CmdBindPipeline(Anim_pipeline);
+
+	struct NeModel *mdl = E_ResourcePtr(mr->model);
+	constants.bones = Re_BufferAddress(a->skelBuffer, 0);
+	constants.source = Re_BufferAddress(mdl->gpu.vertexBuffer, 0);
+	constants.destination = Re_BufferAddress(mr->vertexBuffer, 0);
+	Re_CmdPushConstants(SS_COMPUTE, sizeof(constants), &constants);
+
+	Re_CmdDispatch((uint32_t)a->skel->bones.count, 1, 1);
+
+	Re_QueueCompute(Re_EndCommandBuffer(), NULL, NULL);
+
+	a->dirty = false;
+}
+
+static void
+_TermAnimator(struct NeAnimator *a)
+{
+	E_UnloadResource(a->clip);
+
+	if (!a->skel)
+		return;
+
+	Anim_TermSkeleton(a->skel);
+	Re_Destroy(a->skelBuffer);
 }

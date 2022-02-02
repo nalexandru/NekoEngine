@@ -1,36 +1,29 @@
-#define Handle __EngineHandle
+#import <Foundation/Foundation.h>
+#import <Metal/Metal.h>
 
 #include <Render/Render.h>
 #include <Render/Driver/Driver.h>
-
-#undef Handle
-
-#import <Foundation/Foundation.h>
-#import <Metal/Metal.h>
 
 #include "MTLDriver.h"
 
 static bool _Init(void);
 static void _Term(void);
-static bool _EnumerateDevices(uint32_t *, struct RenderDeviceInfo *);
+static bool _EnumerateDevices(uint32_t *, struct NeRenderDeviceInfo *);
 
-static struct RenderDriver _drv =
+static struct NeRenderDriver _drv =
 {
-	NE_RENDER_DRIVER_ID,
-	NE_RENDER_DRIVER_API,
-	L"Metal",
-	_Init,
-	_Term,
-	_EnumerateDevices,
-	MTL_CreateDevice,
-	(void(*)(struct RenderDevice *))MTL_DestroyDevice
+	.identifier = NE_RENDER_DRIVER_ID,
+	.apiVersion = NE_RENDER_DRIVER_API,
+	.driverName = "Metal",
+	.graphicsApiId = RE_API_METAL,
+	.Init = _Init,
+	.Term = _Term,
+	.EnumerateDevices = _EnumerateDevices,
+	.CreateDevice = MTL_CreateDevice,
+	.DestroyDevice = (void(*)(struct NeRenderDevice *))MTL_DestroyDevice
 };
 
-#ifdef RENDER_DRIVER_BUILTIN
-const struct RenderDriver *Re_LoadBuiltinDriver() { return &_drv; }
-#else
-const struct RenderDriver *Re_LoadDriver() { return &_drv; }
-#endif
+const struct NeRenderDriver *Re_LoadMetalDriver(void) { return &_drv; }
 
 static bool
 _Init(void)
@@ -47,7 +40,7 @@ _Term(void)
 #if TARGET_OS_OSX
 
 static bool
-_EnumerateDevices(uint32_t *count, struct RenderDeviceInfo *info)
+_EnumerateDevices(uint32_t *count, struct NeRenderDeviceInfo *info)
 {
 	if (!count)
 		return false;
@@ -111,7 +104,7 @@ _EnumerateDevices(uint32_t *count, struct RenderDeviceInfo *info)
 #else
 
 static bool
-_EnumerateDevices(uint32_t *count, struct RenderDeviceInfo *info)
+_EnumerateDevices(uint32_t *count, struct NeRenderDeviceInfo *info)
 {
 	if (!count)
 		return false;

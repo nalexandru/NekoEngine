@@ -9,17 +9,17 @@
 
 #include "D3D12Driver.h"
 
-static inline bool _Create(struct RenderDevice *dev, struct Swapchain *sw);
+static inline bool _Create(struct NeRenderDevice *dev, struct NeSwapchain *sw);
 
 static IDXGIFactory2 *_factory = NULL;
 
-struct Swapchain *
-D3D12_CreateSwapchain(struct RenderDevice *dev, void *surface, bool verticalSync)
+struct NeSwapchain *
+D3D12_CreateSwapchain(struct NeRenderDevice *dev, void *surface, bool verticalSync)
 {
 	if (FAILED(IDXGIFactory1_QueryInterface(D3D12_dxgiFactory, &IID_IDXGIFactory2, &_factory)))
 		return NULL;
 
-	struct Swapchain *sw = Sys_Alloc(1, sizeof(*sw), MH_RenderDriver);
+	struct NeSwapchain *sw = Sys_Alloc(1, sizeof(*sw), MH_RenderDriver);
 
 	sw->surface = surface;
 
@@ -80,7 +80,7 @@ error:
 }
 
 void
-D3D12_DestroySwapchain(struct RenderDevice *dev, struct Swapchain *sw)
+D3D12_DestroySwapchain(struct NeRenderDevice *dev, struct NeSwapchain *sw)
 {
 	for (uint32_t i = 0; i < RE_NUM_FRAMES; ++i)
 		ID3D12Resource_Release(sw->buffers[i]);
@@ -90,7 +90,7 @@ D3D12_DestroySwapchain(struct RenderDevice *dev, struct Swapchain *sw)
 }
 
 void *
-D3D12_AcquireNextImage(struct RenderDevice *dev, struct Swapchain *sw)
+D3D12_AcquireNextImage(struct NeRenderDevice *dev, struct NeSwapchain *sw)
 {
 	if (ID3D12Fence_GetCompletedValue(dev->renderFence[Re_frameId]) < dev->fenceValue[Re_frameId]) {
 		ID3D12Fence_SetEventOnCompletion(dev->renderFence[Re_frameId], dev->fenceValue[Re_frameId], dev->fenceEvent);
@@ -101,7 +101,7 @@ D3D12_AcquireNextImage(struct RenderDevice *dev, struct Swapchain *sw)
 }
 
 bool
-D3D12_Present(struct RenderDevice *dev, struct RenderContext *ctx, struct Swapchain *sw, void *image, struct Semaphore *wait)
+D3D12_Present(struct NeRenderDevice *dev, struct NeRenderContext *ctx, struct NeSwapchain *sw, void *image, struct NeSemaphore *wait)
 {
 	++dev->fenceValue[Re_frameId];
 
@@ -165,31 +165,31 @@ D3D12_Present(struct RenderDevice *dev, struct RenderContext *ctx, struct Swapch
 	return false;
 }
 
-enum TextureFormat
-D3D12_SwapchainFormat(struct Swapchain *sw)
+enum NeTextureFormat
+D3D12_SwapchainFormat(struct NeSwapchain *sw)
 {
 	return DXGIToNeTextureFormat(sw->desc.Format);
 }
 
-struct Texture *
-D3D12_SwapchainTexture(struct Swapchain *sw, void *image)
+struct NeTexture *
+D3D12_SwapchainTexture(struct NeSwapchain *sw, void *image)
 {
-	struct Texture *t = Sys_Alloc(sizeof(*t), 1, MH_Transient);
+	struct NeTexture *t = Sys_Alloc(sizeof(*t), 1, MH_Transient);
 	t->res = image;
 	return t;
 }
 
 void
-D3D12_ScreenResized(struct RenderDevice *dev, struct Swapchain *sw)
+D3D12_ScreenResized(struct NeRenderDevice *dev, struct NeSwapchain *sw)
 {
 	if (!_Create(dev, sw)) {
-		Sys_LogEntry(D3DDRV_MOD, LOG_CRITICAL, L"Failed to resize swapchain");
+		Sys_LogEntry(D3DDRV_MOD, LOG_CRITICAL, "Failed to resize swapchain");
 		E_Shutdown();
 	}
 }
 
 static inline bool
-_Create(struct RenderDevice *dev, struct Swapchain *sw)
+_Create(struct NeRenderDevice *dev, struct NeSwapchain *sw)
 {
 	D3D12_WaitIdle(dev);
 

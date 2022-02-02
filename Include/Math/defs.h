@@ -136,14 +136,14 @@ struct vec2
 {
 	float x;
 	float y;
-} ALIGN(16);
+} NE_ALIGN(16);
 
 struct vec3
 {
 	float x;
 	float y;
 	float z;
-} ALIGN(16);
+} NE_ALIGN(16);
 
 struct vec4
 {
@@ -164,7 +164,7 @@ struct vec4
 		__vector4 sv;
 #endif
 	};
-} ALIGN(16);
+} NE_ALIGN(16);
 
 struct quat
 {
@@ -185,12 +185,12 @@ struct quat
 		__vector4 sv;
 #endif
 	};
-} ALIGN(16);
+} NE_ALIGN(16);
 
 struct mat3
 {
 	float mat[9];
-} ALIGN(16);
+} NE_ALIGN(16);
 
 struct mat4
 {
@@ -207,19 +207,19 @@ struct mat4
 		__vector4 sm[4];
 #endif
 	};
-} ALIGN(16);
+} NE_ALIGN(16);
 
 struct ray2
 {
 	struct vec2 start;
 	struct vec2 dir;
-} ALIGN(16);
+} NE_ALIGN(16);
 
 struct ray3
 {
 	struct vec3 start;
 	struct vec3 dir;
-} ALIGN(16);
+} NE_ALIGN(16);
 
 /*
  * A struture that represents an axis-aligned
@@ -229,7 +229,7 @@ struct aabb2
 {
 	struct vec2 min; /** The max corner of the box */
 	struct vec2 max; /** The min corner of the box */
-} ALIGN(16);
+} NE_ALIGN(16);
 
 /*
  * A struture that represents an axis-aligned
@@ -239,12 +239,12 @@ struct aabb3
 {
 	struct vec3 min; /** The max corner of the box */
 	struct vec3 max; /** The min corner of the box */
-} ALIGN(16);
+} NE_ALIGN(16);
 
 struct plane
 {
 	float a, b, c, d;
-} ALIGN(16);
+} NE_ALIGN(16);
 
 #pragma pack(pop)
 

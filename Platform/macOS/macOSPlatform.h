@@ -7,7 +7,7 @@
 
 #include <Input/Input.h>
 
-extern enum Button macOS_keymap[256];
+extern enum NeButton macOS_keymap[256];
 
 #if !defined(MAC_OS_X_VERSION_10_5) || MAC_OS_X_VERSION_MAX_ALLOWED <= MAC_OS_X_VERSION_10_4
 	#define kVK_ANSI_A                    0x00

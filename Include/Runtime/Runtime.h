@@ -12,28 +12,6 @@
 
 #include <System/System.h>
 
-static inline wchar_t *
-Rt_MbsToWcs(const char *str)
-{
-	size_t len = strlen(str);
-
-	wchar_t *ret = Sys_Alloc(sizeof(*ret), len + 1, MH_Transient);
-	(void)mbstowcs(ret, str, len);
-
-	return ret;
-}
-
-static inline char *
-Rt_WcsToMbs(const wchar_t *str)
-{
-	size_t len = wcslen(str);
-
-	char *ret = Sys_Alloc(sizeof(*ret), len + 1, MH_Transient);
-	(void)wcstombs(ret, str, len);
-
-	return ret;
-}
-
 static inline char *
 Rt_SkipWhitespace(char *str)
 {
@@ -47,7 +25,7 @@ Rt_SkipWhitespace(char *str)
 }
 
 static inline char *
-Rt_StrDup(const char *str, enum MemoryHeap mh)
+Rt_StrDup(const char *str, enum NeMemoryHeap mh)
 {
 	size_t len = strlen(str);
 	char *ret = Sys_Alloc(sizeof(*ret), len + 1, mh);

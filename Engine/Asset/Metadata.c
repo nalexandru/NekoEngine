@@ -8,13 +8,13 @@
 #include <System/Memory.h>
 #include <Runtime/Json.h>
 
-static inline bool _ParseMetadata(struct Metadata *meta);
+static inline bool _ParseMetadata(struct NeMetadata *meta);
 
 bool
-E_LoadMetadata(struct Metadata *meta, const char *file)
+E_LoadMetadata(struct NeMetadata *meta, const char *file)
 {
 	bool rc;
-	File f = E_OpenFile(file, IO_READ);
+	NeFile f = E_OpenFile(file, IO_READ);
 	if (!f)
 		return false;
 	
@@ -26,14 +26,14 @@ E_LoadMetadata(struct Metadata *meta, const char *file)
 }
 
 bool
-E_LoadMetadataFromFile(struct Metadata *meta, File f)
+E_LoadMetadataFromFile(struct NeMetadata *meta, NeFile f)
 {
 	meta->json = E_ReadFileText(f, &meta->jsonSize, true);
 	return _ParseMetadata(meta);
 }
 
 bool
-E_LoadMetadataFromStream(struct Metadata *meta, struct Stream *stm)
+E_LoadMetadataFromStream(struct NeMetadata *meta, struct NeStream *stm)
 {
 	meta->jsonSize = E_StreamLength(stm);
 	meta->json = Sys_Alloc(sizeof(*meta->json), (size_t)meta->jsonSize + 1, MH_Transient);
@@ -44,7 +44,7 @@ E_LoadMetadataFromStream(struct Metadata *meta, struct Stream *stm)
 }
 
 void
-E_LoadMetadataFloatVector(struct Metadata *meta, struct jsmntok *tok, float *out, uint32_t count)
+E_LoadMetadataFloatVector(struct NeMetadata *meta, struct jsmntok *tok, float *out, uint32_t count)
 {
 	uint32_t i;
 	char *ptr = meta->json + tok->start;
@@ -53,7 +53,7 @@ E_LoadMetadataFloatVector(struct Metadata *meta, struct jsmntok *tok, float *out
 }
 
 static inline bool
-_ParseMetadata(struct Metadata *meta)
+_ParseMetadata(struct NeMetadata *meta)
 {
 	jsmn_parser p;
 	jsmn_init(&p);

@@ -1,8 +1,4 @@
-#define Handle __EngineHandle
-
 #include <Engine/Engine.h>
-
-#undef Handle
 
 #import "EditorController.h"
 

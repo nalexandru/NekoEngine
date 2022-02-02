@@ -7,6 +7,7 @@
 #include <Input/Input.h>
 #include <Engine/Engine.h>
 #include <Engine/Config.h>
+#include <Engine/Plugin.h>
 #include <System/Log.h>
 #include <System/Thread.h>
 #include <System/Endian.h>
@@ -20,6 +21,7 @@
 #include <Engine/Event.h>
 #include <Engine/Events.h>
 #include <Engine/Entity.h>
+#include <Engine/Console.h>
 #include <Engine/Version.h>
 #include <Engine/Resource.h>
 #include <Engine/ECSystem.h>
@@ -30,7 +32,7 @@
 
 #include "ECS.h"
 
-#define EMOD	L"Engine"
+#define EMOD	"Engine"
 
 #define E_CONFIG_FILE	"Data/Config/Engine.ini"
 
@@ -45,29 +47,31 @@ static int32_t *_frameLimiter = NULL;
 
 #include <Math/sanity.h>
 
-struct EngineSubsystem
+struct NeEngineSubsystem
 {
 	char name[256];
 	bool (*init)(void);
 	void (*term)(void);
+	enum NePluginLoadOrder loadPlugins;
 };
 
-static struct EngineSubsystem _subsystems[] =
+static struct NeEngineSubsystem _subsystems[] =
 {
-	{ "Window", Sys_CreateWindow, Sys_DestroyWindow },
-	{ "Job System", E_InitJobSystem, E_TermJobSystem },
-	{ "I/O System", E_InitIOSystem, E_TermIOSystem },
-	{ "Event System", E_InitEventSystem, E_TermEventSystem },
-	{ "Components", E_InitComponents, E_TermComponents },
-	{ "Entities", E_InitEntities, E_TermEntities },
-	{ "ECSystems", E_InitECSystems, E_TermECSystems },
-	{ "Resource System", E_InitResourceSystem, E_TermResourceSystem },
-	{ "Render System", Re_InitRender, Re_TermRender },
-	{ "Audio System", Au_Init, Au_Term },
-	{ "Resource Purge", NULL, E_PurgeResources },
-	{ "Input", In_InitInput, In_TermInput },
-	{ "UI", UI_InitUI, UI_TermUI },
-	{ "Scripting", Sc_InitScriptSystem, Sc_TermScriptSystem }
+	{ "Window", Sys_CreateWindow, Sys_DestroyWindow, -1 },
+	{ "Job System", E_InitJobSystem, E_TermJobSystem, -1 },
+	{ "I/O System", E_InitIOSystem, E_TermIOSystem, NEP_LOAD_PRE_IO },
+	{ "Event System", E_InitEventSystem, E_TermEventSystem, -1 },
+	{ "Scripting", Sc_InitScriptSystem, Sc_TermScriptSystem, NEP_LOAD_PRE_SCRIPTING },
+	{ "Components", E_InitComponents, E_TermComponents, NEP_LOAD_PRE_ECS },
+	{ "Entities", E_InitEntities, E_TermEntities, -1},
+	{ "ECSystems", E_InitECSystems, E_TermECSystems, -1 },
+	{ "Resource System", E_InitResourceSystem, E_TermResourceSystem, NEP_LOAD_PRE_RESOURCES },
+	{ "Render System", Re_InitRender, Re_TermRender, NEP_LOAD_PRE_RENDER },
+	{ "Audio System", Au_Init, Au_Term, NEP_LOAD_PRE_AUDIO },
+	{ "Resource Purge", NULL, E_PurgeResources, -1 },
+	{ "Input", In_InitInput, In_TermInput, NEP_LOAD_PRE_INPUT },
+	{ "UI", UI_InitUI, UI_TermUI, -1 },
+	{ "Console", E_InitConsole, E_TermConsole, -1 }
 };
 static const int32_t _subsystemCount = sizeof(_subsystems) / sizeof(_subsystems[0]);
 
@@ -97,71 +101,79 @@ E_Init(int argc, char *argv[])
 
 	Sys_Init();
 	Sys_InitMemory();
-
-	if (logFile)
-		E_SetCVarStr(L"Engine_LogFile", logFile);
+	Sys_InitLog(logFile);
 
 	if (dataDir)
-		E_SetCVarStr(L"Engine_DataDir", dataDir);
+		E_SetCVarStr("Engine_DataDir", dataDir);
 
 	//__MathDbg_SanityTest();
 
-	E_screenWidth = &E_GetCVarU32(L"Engine_ScreenWidth", 1280)->u32;
-	E_screenHeight = &E_GetCVarU32(L"Engine_ScreenHeight", 853)->u32;
+	E_screenWidth = &E_GetCVarU32("Engine_ScreenWidth", 1280)->u32;
+	E_screenHeight = &E_GetCVarU32("Engine_ScreenHeight", 853)->u32;
 
 	if (App_applicationInfo.version.revision)
-		Sys_LogEntry(EMOD, LOG_INFORMATION, L"%ls v%d.%d.%d.%d", App_applicationInfo.name, App_applicationInfo.version.major,
+		Sys_LogEntry(EMOD, LOG_INFORMATION, "%s v%d.%d.%d.%d", App_applicationInfo.name, App_applicationInfo.version.major,
 			App_applicationInfo.version.minor, App_applicationInfo.version.build, App_applicationInfo.version.revision);
 	else
-		Sys_LogEntry(EMOD, LOG_INFORMATION, L"%ls v%d.%d.%d", App_applicationInfo.name, App_applicationInfo.version.major,
+		Sys_LogEntry(EMOD, LOG_INFORMATION, "%s v%d.%d.%d", App_applicationInfo.name, App_applicationInfo.version.major,
 			App_applicationInfo.version.minor, App_applicationInfo.version.build);
-	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Copyright (C) %ls", App_applicationInfo.copyright);
+	Sys_LogEntry(EMOD, LOG_INFORMATION, "Copyright (C) %s", App_applicationInfo.copyright);
 
-	Sys_LogEntry(EMOD, LOG_INFORMATION, L"%ls \"%ls\" v%ls", E_PGM_NAME, E_CODENAME, E_VER_STR);
-	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Copyright (C) %ls", E_CPY_STR);
-	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Starting up...");
+	Sys_LogEntry(EMOD, LOG_INFORMATION, "%s \"%s\" v%s", E_PGM_NAME, E_CODENAME, E_VER_STR);
+	Sys_LogEntry(EMOD, LOG_INFORMATION, "Copyright (C) %s", E_CPY_STR);
+	Sys_LogEntry(EMOD, LOG_INFORMATION, "Starting up...");
 
-	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Host: %hs", Sys_Hostname());
-	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Platform: %hs %hs", Sys_OperatingSystem(), Sys_OperatingSystemVersion());
-	Sys_LogEntry(EMOD, LOG_INFORMATION, L"CPU: %hs", Sys_CpuName());
-	Sys_LogEntry(EMOD, LOG_INFORMATION, L"\tFrequency: %d MHz", Sys_CpuFreq());
-	Sys_LogEntry(EMOD, LOG_INFORMATION, L"\tCount: %d / %d", Sys_CpuCount(), Sys_CpuThreadCount());
-	Sys_LogEntry(EMOD, LOG_INFORMATION, L"\tArchitecture: %hs", Sys_Machine());
-	Sys_LogEntry(EMOD, LOG_INFORMATION, L"\tBig Endian: %hs", Sys_BigEndian() ? "yes" : "no");
+	Sys_LogEntry(EMOD, LOG_INFORMATION, "Host: %s", Sys_Hostname());
+	Sys_LogEntry(EMOD, LOG_INFORMATION, "Platform: %s %s", Sys_OperatingSystem(), Sys_OperatingSystemVersionString());
+	Sys_LogEntry(EMOD, LOG_INFORMATION, "CPU: %s", Sys_CpuName());
+	Sys_LogEntry(EMOD, LOG_INFORMATION, "\tFrequency: %d MHz", Sys_CpuFreq());
+	Sys_LogEntry(EMOD, LOG_INFORMATION, "\tCount: %d / %d", Sys_CpuCount(), Sys_CpuThreadCount());
+	Sys_LogEntry(EMOD, LOG_INFORMATION, "\tArchitecture: %s", Sys_Machine());
+	Sys_LogEntry(EMOD, LOG_INFORMATION, "\tBig Endian: %s", Sys_BigEndian() ? "yes" : "no");
+
+	if (!E_InitPluginList()) {
+		Sys_LogEntry(EMOD, LOG_CRITICAL, "Failed to load plugin list");
+		return false;
+	}
+
+	E_LoadPlugins(NEP_LOAD_EARLY_INIT);
 
 	for (int32_t i = 0; i < _subsystemCount; ++i) {
+		if (_subsystems[i].loadPlugins != -1)
+			E_LoadPlugins(_subsystems[i].loadPlugins);
+
 		if (!_subsystems[i].init)
 			continue;
 
 		if (!_subsystems[i].init()) {
-			wchar_t *msg = Sys_Alloc(sizeof(*msg), 256, MH_Transient);
-			swprintf(msg, 256, L"Failed to initialize %hs. The program will now exit.", _subsystems[i].name);
-			Sys_MessageBox(L"Fatal Error", msg, MSG_ICON_ERROR);
+			char *msg = Sys_Alloc(sizeof(*msg), 256, MH_Transient);
+			snprintf(msg, 256, "Failed to initialize %s. The program will now exit.", _subsystems[i].name);
+			Sys_MessageBox("Fatal Error", msg, MSG_ICON_ERROR);
 
-			Sys_LogEntry(EMOD, LOG_CRITICAL, L"Failed to initialize %hs", _subsystems[i].name);
+			Sys_LogEntry(EMOD, LOG_CRITICAL, "Failed to initialize %s", _subsystems[i].name);
 			return false;
 		}
 	}
 
 #ifdef _DEBUG
-	wchar_t titleBuff[256];
+	char titleBuff[256];
 
-	swprintf(titleBuff, sizeof(titleBuff) / sizeof(wchar_t), L"%ls v%u.%u.%u", App_applicationInfo.name,
+	snprintf(titleBuff, sizeof(titleBuff), "%s v%u.%u.%u", App_applicationInfo.name,
 		App_applicationInfo.version.major, App_applicationInfo.version.minor, App_applicationInfo.version.build);
 
 	if (App_applicationInfo.version.revision)
-		swprintf(titleBuff + wcslen(titleBuff), sizeof(titleBuff) / sizeof(wchar_t) - wcslen(titleBuff),
-			L".%u", App_applicationInfo.version.revision);
+		snprintf(titleBuff + strnlen(titleBuff, sizeof(titleBuff)), sizeof(titleBuff) - strnlen(titleBuff, sizeof(titleBuff)),
+			".%u", App_applicationInfo.version.revision);
 
-	swprintf(titleBuff + wcslen(titleBuff), sizeof(titleBuff) / sizeof(wchar_t) - wcslen(titleBuff),
-		L" - NekoEngine v%u.%u.%u", E_VER_MAJOR, E_VER_MINOR, E_VER_BUILD);
+	snprintf(titleBuff + strnlen(titleBuff, sizeof(titleBuff)), sizeof(titleBuff) - strnlen(titleBuff, sizeof(titleBuff)),
+		" - NekoEngine v%u.%u.%u", E_VER_MAJOR, E_VER_MINOR, E_VER_BUILD);
 
 	if (E_VER_REVISION)
-		swprintf(titleBuff + wcslen(titleBuff), sizeof(titleBuff) / sizeof(wchar_t) - wcslen(titleBuff),
-			L".%u", E_VER_REVISION);
+		snprintf(titleBuff + strnlen(titleBuff, sizeof(titleBuff)), sizeof(titleBuff) / strnlen(titleBuff, sizeof(titleBuff)),
+			".%u", E_VER_REVISION);
 
-	swprintf(titleBuff + wcslen(titleBuff), sizeof(titleBuff) / sizeof(wchar_t) - wcslen(titleBuff),
-		L" - GPU: %hs (%ls)", Re_deviceInfo.deviceName, Re_driver->driverName);
+	snprintf(titleBuff + strnlen(titleBuff, sizeof(titleBuff)), sizeof(titleBuff) - strnlen(titleBuff, sizeof(titleBuff)),
+		" - GPU: %s (%s)", Re_deviceInfo.deviceName, Re_driver->driverName);
 
 	Sys_SetWindowTitle(titleBuff);
 #else
@@ -169,18 +181,22 @@ E_Init(int argc, char *argv[])
 #endif
 
 	_startTime = (double)Sys_Time();
-	_frameLimiter = &E_GetCVarI32(L"Engine_FrameLimiter", 0)->i32;
+	_frameLimiter = &E_GetCVarI32("Engine_FrameLimiter", 0)->i32;
 
-	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Engine start up complete.");
+	Sys_LogEntry(EMOD, LOG_INFORMATION, "Engine start up complete.");
+
+	E_LoadPlugins(NEP_LOAD_POST_INIT);
 
 	if (!App_InitApplication(argc, argv))
 		return false;
 
-	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Application started.");
+	Sys_LogEntry(EMOD, LOG_INFORMATION, "Application started.");
+
+	E_LoadPlugins(NEP_LOAD_POST_APP_INIT);
 
 	Sys_ResetHeap(MH_Transient);
 
-	lua_State *vm = Sc_CreateVM(true);
+	lua_State *vm = Sc_CreateVM();
 	Sc_LoadScriptFile(vm, "/Scripts/test.lua");
 	Sc_DestroyVM(vm);
 
@@ -232,6 +248,8 @@ E_Frame(void)
 	E_ProcessEvents();
 	E_ExecuteSystemGroupS(Scn_activeScene, ECSYS_GROUP_POST_LOGIC);
 
+	E_DrawConsole();
+
 	E_ExecuteSystemGroupS(Scn_activeScene, ECSYS_GROUP_PRE_RENDER);
 	Re_RenderFrame();
 	E_ExecuteSystemGroupS(Scn_activeScene, ECSYS_GROUP_POST_RENDER);
@@ -271,7 +289,7 @@ E_ScreenResized(uint32_t width, uint32_t height)
 void
 E_Term(void)
 {
-	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Shutting down...");
+	Sys_LogEntry(EMOD, LOG_INFORMATION, "Shutting down...");
 
 	Re_WaitIdle();
 
@@ -283,13 +301,21 @@ E_Term(void)
 	for (int32_t i = _subsystemCount - 1; i >= 0; --i) {
 		if (!_subsystems[i].term)
 			continue;
+
 		_subsystems[i].term();
+
+		if (_subsystems[i].loadPlugins != -1)
+			E_UnloadPlugins(_subsystems[i].loadPlugins);
 	}
 
+	E_TermPluginList();
+
 	Sys_LogMemoryStatistics();
-	Sys_LogEntry(EMOD, LOG_INFORMATION, L"Shut down complete.");
+	Sys_LogEntry(EMOD, LOG_INFORMATION, "Shut down complete.");
 
 	E_TermConfig();
+
+	Sys_TermLog();
 	Sys_TermMemory();
 	Sys_Term();
 }

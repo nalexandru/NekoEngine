@@ -2,10 +2,10 @@
 
 #include "VulkanDriver.h"
 
-struct Buffer *
-Vk_CreateBuffer(struct RenderDevice *dev, const struct BufferDesc *desc, uint16_t location)
+struct NeBuffer *
+Vk_CreateBuffer(struct NeRenderDevice *dev, const struct NeBufferDesc *desc, uint16_t location)
 {
-	struct Buffer *buff = Sys_Alloc(1, sizeof(*buff), MH_RenderDriver);
+	struct NeBuffer *buff = Sys_Alloc(1, sizeof(*buff), MH_RenderDriver);
 	if (!buff)
 		return NULL;
 
@@ -46,13 +46,25 @@ Vk_CreateBuffer(struct RenderDevice *dev, const struct BufferDesc *desc, uint16_
 		vkBindBufferMemory(dev->dev, buff->buff, buff->memory, 0);
 	}
 
-	Vk_SetBuffer(dev, location, buff->buff);
+#ifdef _DEBUG
+	if (desc->name) {
+		Vkd_SetObjectName(dev->dev, buff->buff, VK_OBJECT_TYPE_BUFFER, desc->name);
+	
+		if (buff->memory) {
+			size_t tmpLen = strlen(desc->name) + 8;
+			char *tmp = Sys_Alloc(sizeof(*tmp), tmpLen, MH_Transient);
+			snprintf(tmp, tmpLen, "%s memory", desc->name);
+
+			Vkd_SetObjectName(dev->dev, buff->memory, VK_OBJECT_TYPE_DEVICE_MEMORY, tmp);
+		}
+	}
+#endif
 
 	return buff;
 }
 
 void
-Vk_UpdateBuffer(struct RenderDevice *dev, struct Buffer *buff, uint64_t offset, void *data, uint64_t size)
+Vk_UpdateBuffer(struct NeRenderDevice *dev, struct NeBuffer *buff, uint64_t offset, void *data, uint64_t size)
 {
 	if (size < 65535) {
 		VkCommandBuffer cb = Vkd_TransferCmdBuffer(dev);
@@ -108,7 +120,7 @@ Vk_UpdateBuffer(struct RenderDevice *dev, struct Buffer *buff, uint64_t offset, 
 }
 
 void *
-Vk_MapBuffer(struct RenderDevice *dev, struct Buffer *buff)
+Vk_MapBuffer(struct NeRenderDevice *dev, struct NeBuffer *buff)
 {
 	if (buff->staging)
 		return buff->staging;
@@ -121,7 +133,7 @@ Vk_MapBuffer(struct RenderDevice *dev, struct Buffer *buff)
 }
 
 void
-Vk_FlushBuffer(struct RenderDevice *dev, struct Buffer *buff, uint64_t offset, uint64_t size)
+Vk_FlushBuffer(struct NeRenderDevice *dev, struct NeBuffer *buff, uint64_t offset, uint64_t size)
 {
 	if (!buff->memory)
 		return;
@@ -137,14 +149,14 @@ Vk_FlushBuffer(struct RenderDevice *dev, struct Buffer *buff, uint64_t offset, u
 }
 
 void
-Vk_UnmapBuffer(struct RenderDevice *dev, struct Buffer *buff)
+Vk_UnmapBuffer(struct NeRenderDevice *dev, struct NeBuffer *buff)
 {
 	if (buff->memory)
 		vkUnmapMemory(dev->dev, buff->memory);
 }
 
 uint64_t
-Vk_BufferAddress(struct RenderDevice *dev, const struct Buffer *buff, uint64_t offset)
+Vk_BufferAddress(struct NeRenderDevice *dev, const struct NeBuffer *buff, uint64_t offset)
 {
 	VkBufferDeviceAddressInfo bdai =
 	{
@@ -162,7 +174,7 @@ Vk_OffsetAddress(uint64_t addr, uint64_t offset)
 }
 
 void
-Vk_DestroyBuffer(struct RenderDevice *dev, struct Buffer *buff)
+Vk_DestroyBuffer(struct NeRenderDevice *dev, struct NeBuffer *buff)
 {
 	if (!buff->transient) {
 		vkDestroyBuffer(dev->dev, buff->buff, Vkd_allocCb);

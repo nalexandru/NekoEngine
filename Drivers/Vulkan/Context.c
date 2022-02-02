@@ -11,12 +11,12 @@ struct SubmitInfo
 	VkQueue queue;
 };
 
-static inline uint32_t _queueFamilyIndex(struct RenderDevice *dev, enum RenderQueue queue);
+static inline uint32_t _queueFamilyIndex(struct NeRenderDevice *dev, enum NeRenderQueue queue);
 
-struct RenderContext *
-Vk_CreateContext(struct RenderDevice *dev)
+struct NeRenderContext *
+Vk_CreateContext(struct NeRenderDevice *dev)
 {
-	struct RenderContext *ctx = Sys_Alloc(1, sizeof(*ctx), MH_RenderDriver);
+	struct NeRenderContext *ctx = Sys_Alloc(1, sizeof(*ctx), MH_RenderDriver);
 	if (!ctx)
 		return NULL;
 
@@ -26,7 +26,7 @@ Vk_CreateContext(struct RenderDevice *dev)
 		.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,
 	};
 
-	struct Array *arrays = Sys_Alloc(RE_NUM_FRAMES * 4, sizeof(*arrays), MH_RenderDriver);
+	struct NeArray *arrays = Sys_Alloc(RE_NUM_FRAMES * 4, sizeof(*arrays), MH_RenderDriver);
 	if (!arrays)
 		return NULL;
 
@@ -67,6 +67,18 @@ Vk_CreateContext(struct RenderDevice *dev)
 
 		if (!Rt_InitPtrArray(&ctx->secondaryCmdBuffers[i], 10, MH_RenderDriver))
 			goto error;
+
+	#ifdef _DEBUG
+		char name[64];
+		snprintf(name, sizeof(name), "Graphics Pool %d", Re_frameId);
+		Vkd_SetObjectName(dev->dev, ctx->graphicsPools[i], VK_OBJECT_TYPE_COMMAND_POOL, name);
+
+		snprintf(name, sizeof(name), "Compute Pool %d", Re_frameId);
+		Vkd_SetObjectName(dev->dev, ctx->computePools[i], VK_OBJECT_TYPE_COMMAND_POOL, name);
+
+		snprintf(name, sizeof(name), "Transfer Pool %d", Re_frameId);
+		Vkd_SetObjectName(dev->dev, ctx->xferPools[i], VK_OBJECT_TYPE_COMMAND_POOL, name);
+	#endif
 	}
 
 	VkFenceCreateInfo fci = { .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
@@ -76,9 +88,9 @@ Vk_CreateContext(struct RenderDevice *dev)
 	ctx->neDev = dev;
 	ctx->descriptorSet = dev->descriptorSet;
 
-	if (!Rt_InitArray(&ctx->submitted.graphics, 10, sizeof(struct Vkd_SubmitInfo), MH_RenderDriver) ||
-		!Rt_InitArray(&ctx->submitted.compute, 10, sizeof(struct Vkd_SubmitInfo), MH_RenderDriver) ||
-		!Rt_InitArray(&ctx->submitted.xfer, 10, sizeof(struct Vkd_SubmitInfo), MH_RenderDriver))
+	if (!Rt_InitArray(&ctx->queued.graphics, 10, sizeof(struct Vkd_SubmitInfo), MH_RenderDriver) ||
+		!Rt_InitArray(&ctx->queued.compute, 10, sizeof(struct Vkd_SubmitInfo), MH_RenderDriver) ||
+		!Rt_InitArray(&ctx->queued.xfer, 10, sizeof(struct Vkd_SubmitInfo), MH_RenderDriver))
 		goto error;
 
 	return ctx;
@@ -98,7 +110,7 @@ error:
 }
 
 void
-Vk_ResetContext(struct RenderDevice *dev, struct RenderContext *ctx)
+Vk_ResetContext(struct NeRenderDevice *dev, struct NeRenderContext *ctx)
 {
 	if (ctx->secondaryCmdBuffers[Re_frameId].count) {
 		vkFreeCommandBuffers(dev->dev, ctx->graphicsPools[Re_frameId],
@@ -129,13 +141,13 @@ Vk_ResetContext(struct RenderDevice *dev, struct RenderContext *ctx)
 	}
 	ctx->lastSubmittedCompute = 0;
 
-	Rt_ClearArray(&ctx->submitted.graphics, false);
-	Rt_ClearArray(&ctx->submitted.compute, false);
-	Rt_ClearArray(&ctx->submitted.xfer, false);
+	Rt_ClearArray(&ctx->queued.graphics, false);
+	Rt_ClearArray(&ctx->queued.compute, false);
+	Rt_ClearArray(&ctx->queued.xfer, false);
 }
 
 void
-Vk_DestroyContext(struct RenderDevice *dev, struct RenderContext *ctx)
+Vk_DestroyContext(struct NeRenderDevice *dev, struct NeRenderContext *ctx)
 {
 	vkDestroyFence(dev->dev, ctx->executeFence, Vkd_allocCb);
 
@@ -149,21 +161,27 @@ Vk_DestroyContext(struct RenderDevice *dev, struct RenderContext *ctx)
 		Rt_TermArray(&ctx->computeCmdBuffers[i]);
 	}
 
-	Rt_TermArray(&ctx->submitted.graphics);
-	Rt_TermArray(&ctx->submitted.compute);
-	Rt_TermArray(&ctx->submitted.xfer);
+	Rt_TermArray(&ctx->queued.graphics);
+	Rt_TermArray(&ctx->queued.compute);
+	Rt_TermArray(&ctx->queued.xfer);
 
 	Sys_Free(ctx->graphicsCmdBuffers);
 	Sys_Free(ctx->graphicsPools);
 	Sys_Free(ctx);
 }
 
-static CommandBufferHandle
-_BeginSecondary(struct RenderContext *ctx, struct RenderPassDesc *passDesc)
+static NeCommandBufferHandle
+_BeginSecondary(struct NeRenderContext *ctx, struct NeRenderPassDesc *passDesc)
 {
 	ctx->cmdBuffer = Vkd_AllocateCmdBuffer(ctx->vkDev, VK_COMMAND_BUFFER_LEVEL_SECONDARY,
-														ctx->graphicsPools[Re_frameId], &ctx->secondaryCmdBuffers[Re_frameId]);
+														ctx->graphicsPools[Re_frameId]);
 	assert(ctx->cmdBuffer);
+
+#ifdef _DEBUG
+	char name[64];
+	snprintf(name, sizeof(name), "Secondary CmdBuffer %d", Re_frameId);
+	Vkd_SetObjectName(ctx->vkDev, ctx->cmdBuffer, VK_OBJECT_TYPE_COMMAND_BUFFER, name);
+#endif
 
 	VkCommandBufferInheritanceInfo inheritanceInfo =
 	{
@@ -182,10 +200,16 @@ _BeginSecondary(struct RenderContext *ctx, struct RenderPassDesc *passDesc)
 }
 
 static void
-_BeginDrawCommandBuffer(struct RenderContext *ctx)
+_BeginDrawCommandBuffer(struct NeRenderContext *ctx)
 {
-	ctx->cmdBuffer = Vkd_AllocateCmdBuffer(ctx->vkDev, VK_COMMAND_BUFFER_LEVEL_PRIMARY, ctx->graphicsPools[Re_frameId], &ctx->graphicsCmdBuffers[Re_frameId]);
+	ctx->cmdBuffer = Vkd_AllocateCmdBuffer(ctx->vkDev, VK_COMMAND_BUFFER_LEVEL_PRIMARY, ctx->graphicsPools[Re_frameId]);
 	assert(ctx->cmdBuffer);
+
+#ifdef _DEBUG
+	char name[64];
+	snprintf(name, sizeof(name), "Draw CmdBuffer %d", Re_frameId);
+	Vkd_SetObjectName(ctx->vkDev, ctx->cmdBuffer, VK_OBJECT_TYPE_COMMAND_BUFFER, name);
+#endif
 
 	VkCommandBufferBeginInfo beginInfo =
 	{
@@ -196,10 +220,16 @@ _BeginDrawCommandBuffer(struct RenderContext *ctx)
 }
 
 static void
-_BeginComputeCommandBuffer(struct RenderContext *ctx)
+_BeginComputeCommandBuffer(struct NeRenderContext *ctx)
 {
-	ctx->cmdBuffer = Vkd_AllocateCmdBuffer(ctx->vkDev, VK_COMMAND_BUFFER_LEVEL_PRIMARY, ctx->computePools[Re_frameId], &ctx->computeCmdBuffers[Re_frameId]);
+	ctx->cmdBuffer = Vkd_AllocateCmdBuffer(ctx->vkDev, VK_COMMAND_BUFFER_LEVEL_PRIMARY, ctx->computePools[Re_frameId]);
 	assert(ctx->cmdBuffer);
+
+#ifdef _DEBUG
+	char name[64];
+	snprintf(name, sizeof(name), "Compute CmdBuffer %d", Re_frameId);
+	Vkd_SetObjectName(ctx->vkDev, ctx->cmdBuffer, VK_OBJECT_TYPE_COMMAND_BUFFER, name);
+#endif
 
 	VkCommandBufferBeginInfo beginInfo =
 	{
@@ -210,10 +240,16 @@ _BeginComputeCommandBuffer(struct RenderContext *ctx)
 }
 
 static void
-_BeginTransferCommandBuffer(struct RenderContext *ctx)
+_BeginTransferCommandBuffer(struct NeRenderContext *ctx)
 {
-	ctx->cmdBuffer = Vkd_AllocateCmdBuffer(ctx->vkDev, VK_COMMAND_BUFFER_LEVEL_PRIMARY, ctx->xferPools[Re_frameId], &ctx->xferCmdBuffers[Re_frameId]);
+	ctx->cmdBuffer = Vkd_AllocateCmdBuffer(ctx->vkDev, VK_COMMAND_BUFFER_LEVEL_PRIMARY, ctx->xferPools[Re_frameId]);
 	assert(ctx->cmdBuffer);
+
+#ifdef _DEBUG
+	char name[64];
+	snprintf(name, sizeof(name), "Xfer CmdBuffer %d", Re_frameId);
+	Vkd_SetObjectName(ctx->vkDev, ctx->cmdBuffer, VK_OBJECT_TYPE_COMMAND_BUFFER, name);
+#endif
 
 	VkCommandBufferBeginInfo beginInfo =
 	{
@@ -223,15 +259,19 @@ _BeginTransferCommandBuffer(struct RenderContext *ctx)
 	vkBeginCommandBuffer(ctx->cmdBuffer, &beginInfo);
 }
 
-static void
-_EndCommandBuffer(struct RenderContext *ctx)
+static NeCommandBufferHandle
+_EndCommandBuffer(struct NeRenderContext *ctx)
 {
+	VkCommandBuffer cb = ctx->cmdBuffer;
+
 	vkEndCommandBuffer(ctx->cmdBuffer);
 	ctx->cmdBuffer = VK_NULL_HANDLE;
+
+	return cb;
 }
 
 static void
-_BindPipeline(struct RenderContext *ctx, struct Pipeline *pipeline)
+_BindPipeline(struct NeRenderContext *ctx, struct NePipeline *pipeline)
 {
 	VkDescriptorSet sets[] = { ctx->descriptorSet, ctx->iaSet };
 
@@ -242,25 +282,25 @@ _BindPipeline(struct RenderContext *ctx, struct Pipeline *pipeline)
 }
 
 static void
-_PushConstants(struct RenderContext *ctx, enum ShaderStage stage, uint32_t size, const void *data)
+_PushConstants(struct NeRenderContext *ctx, enum NeShaderStage stage, uint32_t size, const void *data)
 {
 	vkCmdPushConstants(ctx->cmdBuffer, ctx->boundPipeline->layout, stage, 0, size, data);
 }
 
 static void
-_BindIndexBuffer(struct RenderContext *ctx, struct Buffer *buff, uint64_t offset, enum IndexType type)
+_BindIndexBuffer(struct NeRenderContext *ctx, struct NeBuffer *buff, uint64_t offset, enum NeIndexType type)
 {
 	vkCmdBindIndexBuffer(ctx->cmdBuffer, buff->buff, offset, type);
 }
 
 static void
-_ExecuteSecondary(struct RenderContext *ctx, CommandBufferHandle *cmdBuffers, uint32_t count)
+_ExecuteSecondary(struct NeRenderContext *ctx, NeCommandBufferHandle *cmdBuffers, uint32_t count)
 {
 	vkCmdExecuteCommands(ctx->cmdBuffer, count, (VkCommandBuffer *)cmdBuffers);
 }
 
 static void
-_BeginRenderPass(struct RenderContext *ctx, struct RenderPassDesc *passDesc, struct Framebuffer *fb, enum RenderCommandContents contents)
+_BeginRenderPass(struct NeRenderContext *ctx, struct NeRenderPassDesc *passDesc, struct NeFramebuffer *fb, enum NeRenderCommandContents contents)
 {
 	//if (!Re_deviceInfo.features.coherentMemory)
 	//	Vkd_StagingBarrier(ctx->cmdBuffer);
@@ -291,81 +331,81 @@ _BeginRenderPass(struct RenderContext *ctx, struct RenderPassDesc *passDesc, str
 }
 
 static void
-_EndRenderPass(struct RenderContext *ctx)
+_EndRenderPass(struct NeRenderContext *ctx)
 {
 	vkCmdEndRenderPass(ctx->cmdBuffer);
 	ctx->iaSet = VK_NULL_HANDLE;
 }
 
 static void
-_SetViewport(struct RenderContext *ctx, float x, float y, float width, float height, float minDepth, float maxDepth)
+_SetViewport(struct NeRenderContext *ctx, float x, float y, float width, float height, float minDepth, float maxDepth)
 {
 	VkViewport vp = { x, height + y, width, -height, minDepth, maxDepth };
 	vkCmdSetViewport(ctx->cmdBuffer, 0, 1, &vp);
 }
 
 static void
-_SetScissor(struct RenderContext *ctx, int32_t x, int32_t y, int32_t width, int32_t height)
+_SetScissor(struct NeRenderContext *ctx, int32_t x, int32_t y, int32_t width, int32_t height)
 {
 	VkRect2D scissor = { { x, y }, { width, height } };
 	vkCmdSetScissor(ctx->cmdBuffer, 0, 1, &scissor);
 }
 
 static void
-_Draw(struct RenderContext *ctx, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
+_Draw(struct NeRenderContext *ctx, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
 {
 	vkCmdDraw(ctx->cmdBuffer, vertexCount, instanceCount, firstVertex, firstInstance);
 }
 
 static void
-_DrawIndexed(struct RenderContext *ctx, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t vertexOffset, uint32_t firstInstance)
+_DrawIndexed(struct NeRenderContext *ctx, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t vertexOffset, uint32_t firstInstance)
 {
 	vkCmdDrawIndexed(ctx->cmdBuffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 }
 
 static void
-_DrawIndirect(struct RenderContext *ctx, struct Buffer *buff, uint64_t offset, uint32_t count, uint32_t stride)
+_DrawIndirect(struct NeRenderContext *ctx, struct NeBuffer *buff, uint64_t offset, uint32_t count, uint32_t stride)
 {
 	vkCmdDrawIndirect(ctx->cmdBuffer, buff->buff, offset, count, stride);
 }
 
 static void
-_DrawIndexedIndirect(struct RenderContext *ctx, struct Buffer *buff, uint64_t offset, uint32_t count, uint32_t stride)
+_DrawIndexedIndirect(struct NeRenderContext *ctx, struct NeBuffer *buff, uint64_t offset, uint32_t count, uint32_t stride)
 {
 	vkCmdDrawIndexedIndirect(ctx->cmdBuffer, buff->buff, offset, count, stride);
 }
 
 static void
-_Dispatch(struct RenderContext *ctx, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
+_Dispatch(struct NeRenderContext *ctx, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
 {
 	vkCmdDispatch(ctx->cmdBuffer, groupCountX, groupCountY, groupCountZ);
 }
 
 static void
-_DispatchIndirect(struct RenderContext *ctx, struct Buffer *buff, uint64_t offset)
+_DispatchIndirect(struct NeRenderContext *ctx, struct NeBuffer *buff, uint64_t offset)
 {
 	vkCmdDispatchIndirect(ctx->cmdBuffer, buff->buff, offset);
 }
 
 static void
-_TraceRays(struct RenderContext *ctx, uint32_t width, uint32_t height, uint32_t depth)
+_TraceRays(struct NeRenderContext *ctx, uint32_t width, uint32_t height, uint32_t depth)
 {
 //	vkCmdTraceRaysKHR(ctx->cmdBuffer, )
 }
 
 static void
-_TraceRaysIndirect(struct RenderContext *ctx, struct Buffer *buff, uint64_t offset)
+_TraceRaysIndirect(struct NeRenderContext *ctx, struct NeBuffer *buff, uint64_t offset)
 {
 //	vkCmdTraceRaysIndirectKHR
 }
 
 static void
-_BuildAccelerationStructures(struct RenderContext *ctx, uint32_t count, struct AccelerationStructureBuildInfo *buildInfo, const struct AccelerationStructureRangeInfo **rangeInfo)
+_BuildAccelerationStructures(struct NeRenderContext *ctx, uint32_t count, struct NeAccelerationStructureBuildInfo *buildInfo, const struct NeAccelerationStructureRangeInfo **rangeInfo)
 {
 	VkAccelerationStructureBuildGeometryInfoKHR *geomInfo = Sys_Alloc(count, sizeof(*geomInfo), MH_Transient);
 
 	for (uint32_t i = 0; i < count; ++i) {
-		const struct AccelerationStructureBuildInfo *src = &buildInfo[i];
+		const struct NeAccelerationStructureBuildInfo *src = &buildInfo[i];
 		VkAccelerationStructureBuildGeometryInfoKHR *dst = &geomInfo[i];
 
 		dst->sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
@@ -381,7 +421,7 @@ _BuildAccelerationStructures(struct RenderContext *ctx, uint32_t count, struct A
 		dst->pGeometries = geom;
 
 		for (uint32_t j = 0; j < src->geometryCount; ++j) {
-			const struct AccelerationStructureGeometryDesc *srcGeom = &src->geometries[j];
+			const struct NeAccelerationStructureGeometryDesc *srcGeom = &src->geometries[j];
 			VkAccelerationStructureGeometryKHR *dstGeom = &geom[j];
 
 			dstGeom->sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
@@ -412,9 +452,9 @@ _BuildAccelerationStructures(struct RenderContext *ctx, uint32_t count, struct A
 }
 
 static void
-_Barrier(struct RenderContext *ctx, enum PipelineStage srcStage, enum PipelineStage dstStage, enum PipelineDependency dep,
-	uint32_t memBarrierCount, const struct MemoryBarrier *memBarriers, uint32_t bufferBarrierCount, const struct BufferBarrier *bufferBarriers,
-	uint32_t imageBarrierCount, const struct ImageBarrier *imageBarriers)
+_Barrier(struct NeRenderContext *ctx, enum NePipelineStage srcStage, enum NePipelineStage dstStage, enum NePipelineDependency dep,
+	uint32_t memBarrierCount, const struct NeMemoryBarrier *memBarriers, uint32_t bufferBarrierCount, const struct NeBufferBarrier *bufferBarriers,
+	uint32_t imageBarrierCount, const struct NeImageBarrier *imageBarriers)
 {
 	VkMemoryBarrier *vkMemBarriers = NULL;
 	VkBufferMemoryBarrier *vkBufferBarriers = NULL;
@@ -473,14 +513,14 @@ _Barrier(struct RenderContext *ctx, enum PipelineStage srcStage, enum PipelineSt
 }
 
 static void
-_Transition(struct RenderContext *ctx, struct Texture *tex, enum TextureLayout newLayout)
+_Transition(struct NeRenderContext *ctx, struct NeTexture *tex, enum NeTextureLayout newLayout)
 {
 	Vkd_TransitionImageLayout(ctx->cmdBuffer, tex->image, tex->layout, NeToVkImageLayout(newLayout));
 	tex->layout = NeToVkImageLayout(newLayout);
 }
 
 static void
-_CopyBuffer(struct RenderContext *ctx, const struct Buffer *src, uint64_t srcOffset, struct Buffer *dst, uint64_t dstOffset, uint64_t size)
+_CopyBuffer(struct NeRenderContext *ctx, const struct NeBuffer *src, uint64_t srcOffset, struct NeBuffer *dst, uint64_t dstOffset, uint64_t size)
 {
 	VkBufferCopy r =
 	{
@@ -492,13 +532,13 @@ _CopyBuffer(struct RenderContext *ctx, const struct Buffer *src, uint64_t srcOff
 }
 
 static void
-_CopyImage(struct RenderContext *ctx, const struct Texture *src, struct Texture *dst)
+_CopyImage(struct NeRenderContext *ctx, const struct NeTexture *src, struct NeTexture *dst)
 {
 	vkCmdCopyImage(ctx->cmdBuffer, src->image, src->layout, dst->image, dst->layout, 1, NULL);
 }
 
 static void
-_CopyBufferToTexture(struct RenderContext *ctx, const struct Buffer *src, struct Texture *dst, const struct BufferImageCopy *bic)
+_CopyBufferToTexture(struct NeRenderContext *ctx, const struct NeBuffer *src, struct NeTexture *dst, const struct NeBufferImageCopy *bic)
 {
 	VkBufferImageCopy b =
 	{
@@ -530,7 +570,7 @@ _CopyBufferToTexture(struct RenderContext *ctx, const struct Buffer *src, struct
 }
 
 static void
-_CopyTextureToBuffer(struct RenderContext *ctx, const struct Texture *src, struct Buffer *dst, const struct BufferImageCopy *bic)
+_CopyTextureToBuffer(struct NeRenderContext *ctx, const struct NeTexture *src, struct NeBuffer *dst, const struct NeBufferImageCopy *bic)
 {
 	VkBufferImageCopy b =
 	{
@@ -551,7 +591,7 @@ _CopyTextureToBuffer(struct RenderContext *ctx, const struct Texture *src, struc
 }
 
 static void
-_Blit(struct RenderContext *ctx, const struct Texture *src, struct Texture *dst, const struct BlitRegion *regions, uint32_t regionCount, enum ImageFilter filter)
+_Blit(struct NeRenderContext *ctx, const struct NeTexture *src, struct NeTexture *dst, const struct NeBlitRegion *regions, uint32_t regionCount, enum NeImageFilter filter)
 {
 	VkFilter f = VK_FILTER_NEAREST;
 
@@ -582,75 +622,130 @@ _Blit(struct RenderContext *ctx, const struct Texture *src, struct Texture *dst,
 }
 
 static bool
-_Submit(struct RenderDevice *dev, struct RenderContext *ctx)
+_QueueGraphics(struct NeRenderContext *ctx, VkCommandBuffer cmdBuffer, struct NeSemaphore *wait, struct NeSemaphore *signal)
 {
-//	vkQueueSubmit(dev->graphicsQueue, 1, NULL, )
-	return false;
+	struct Vkd_SubmitInfo si =
+	{
+		.wait = wait ? wait->sem : VK_NULL_HANDLE,
+		.waitValue = wait ? wait->value : 0,
+		.signal = signal ? signal->sem : VK_NULL_HANDLE,
+		.signalValue = signal ? ++signal->value : 0,
+		.cmdBuffer = cmdBuffer
+	};
+	Rt_ArrayAddPtr(&ctx->graphicsCmdBuffers[Re_frameId], cmdBuffer);
+	return Rt_ArrayAdd(&ctx->queued.graphics, &si);
 }
 
 static bool
-_SubmitTransfer(struct RenderContext *ctx, VkFence f)
+_QueueCompute(struct NeRenderContext *ctx, VkCommandBuffer cmdBuffer, struct NeSemaphore *wait, struct NeSemaphore *signal)
 {
+	struct Vkd_SubmitInfo si =
+	{
+		.wait = wait ? wait->sem : VK_NULL_HANDLE,
+		.waitValue = wait ? wait->value : 0,
+		.signal = signal ? signal->sem : VK_NULL_HANDLE,
+		.signalValue = signal ? ++signal->value : 0,
+		.cmdBuffer = cmdBuffer
+	};
+	Rt_ArrayAddPtr(&ctx->computeCmdBuffers[Re_frameId], cmdBuffer);
+	return Rt_ArrayAdd(&ctx->queued.compute, &si);
+}
+
+static bool
+_QueueTransfer(struct NeRenderContext *ctx, VkCommandBuffer cmdBuffer, struct NeSemaphore *wait, struct NeSemaphore *signal)
+{
+	struct Vkd_SubmitInfo si =
+	{
+		.wait = wait ? wait->sem : VK_NULL_HANDLE,
+		.waitValue = wait ? wait->value : 0,
+		.signal = signal ? signal->sem : VK_NULL_HANDLE,
+		.signalValue = signal ? ++signal->value : 0,
+		.cmdBuffer = cmdBuffer
+	};
+	Rt_ArrayAddPtr(&ctx->xferCmdBuffers[Re_frameId], cmdBuffer);
+	return Rt_ArrayAdd(&ctx->queued.xfer, &si);
+}
+
+static bool
+_ExecuteGraphics(struct NeRenderContext *ctx, VkCommandBuffer cmdBuffer)
+{
+	bool rc = false;
+	VkFence f;
+	VkFenceCreateInfo fci = { .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
+	vkCreateFence(ctx->vkDev, &fci, Vkd_allocCb, &f);
+
 	VkSubmitInfo si =
 	{
 		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-		.commandBufferCount = (uint32_t)ctx->xferCmdBuffers[Re_frameId].count - ctx->lastSubmittedXfer,
-		.pCommandBuffers = &((VkCommandBuffer *)ctx->xferCmdBuffers[Re_frameId].data)[ctx->lastSubmittedXfer]
+		.commandBufferCount = 1,
+		.pCommandBuffers = &cmdBuffer
+	};
+	if (vkQueueSubmit(ctx->neDev->graphicsQueue, 1, &si, f) != VK_SUCCESS)
+		goto exit;
+
+	rc = vkWaitForFences(ctx->vkDev, 1, &f, VK_TRUE, UINT64_MAX) == VK_SUCCESS;
+	vkFreeCommandBuffers(ctx->vkDev, ctx->graphicsPools[Re_frameId], 1, &cmdBuffer);
+
+exit:
+	vkDestroyFence(ctx->vkDev, f, Vkd_allocCb);
+
+	return rc;
+}
+
+static bool
+_ExecuteCompute(struct NeRenderContext *ctx, VkCommandBuffer cmdBuffer)
+{
+	bool rc = false;
+	VkFence f;
+	VkFenceCreateInfo fci = { .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
+	vkCreateFence(ctx->vkDev, &fci, Vkd_allocCb, &f);
+
+	VkSubmitInfo si =
+	{
+		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+		.commandBufferCount = 1,
+		.pCommandBuffers = &cmdBuffer
+	};
+	if (vkQueueSubmit(ctx->neDev->computeQueue, 1, &si, f) != VK_SUCCESS)
+		goto exit;
+
+	rc = vkWaitForFences(ctx->vkDev, 1, &f, VK_TRUE, UINT64_MAX) == VK_SUCCESS;
+	vkFreeCommandBuffers(ctx->vkDev, ctx->computePools[Re_frameId], 1, &cmdBuffer);
+
+exit:
+	vkDestroyFence(ctx->vkDev, f, Vkd_allocCb);
+
+	return rc;
+}
+
+static bool
+_ExecuteTransfer(struct NeRenderContext *ctx, VkCommandBuffer cmdBuffer)
+{
+	bool rc = false;
+	VkFence f;
+	VkFenceCreateInfo fci = { .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
+	vkCreateFence(ctx->vkDev, &fci, Vkd_allocCb, &f);
+
+	VkSubmitInfo si =
+	{
+		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+		.commandBufferCount = 1,
+		.pCommandBuffers = &cmdBuffer
 	};
 	if (vkQueueSubmit(ctx->neDev->transferQueue, 1, &si, f) != VK_SUCCESS)
-		return false;
+		goto exit;
 
-	ctx->lastSubmittedXfer = (uint32_t)ctx->xferCmdBuffers[Re_frameId].count;
-	return true;
-}
+	rc = vkWaitForFences(ctx->vkDev, 1, &f, VK_TRUE, UINT64_MAX) == VK_SUCCESS;
+	vkFreeCommandBuffers(ctx->vkDev, ctx->xferPools[Re_frameId], 1, &cmdBuffer);
 
-static bool
-_QueueGraphics(struct RenderContext *ctx, struct Semaphore *wait, struct Semaphore *signal)
-{
-	struct Vkd_SubmitInfo si =
-	{
-		.wait = wait ? wait->sem : VK_NULL_HANDLE,
-		.waitValue = wait ? wait->value : 0,
-		.signal = signal ? signal->sem : VK_NULL_HANDLE,
-		.signalValue = signal ? ++signal->value : 0,
-		.cmdBuffer = ctx->cmdBuffer
-	};
-	ctx->cmdBuffer = VK_NULL_HANDLE;
-	return Rt_ArrayAdd(&ctx->submitted.graphics, &si);
-}
+exit:
+	vkDestroyFence(ctx->vkDev, f, Vkd_allocCb);
 
-static bool
-_QueueCompute(struct RenderContext *ctx, struct Semaphore *wait, struct Semaphore *signal)
-{
-	struct Vkd_SubmitInfo si =
-	{
-		.wait = wait ? wait->sem : VK_NULL_HANDLE,
-		.waitValue = wait ? wait->value : 0,
-		.signal = signal ? signal->sem : VK_NULL_HANDLE,
-		.signalValue = signal ? ++signal->value : 0,
-		.cmdBuffer = ctx->cmdBuffer
-	};
-	ctx->cmdBuffer = VK_NULL_HANDLE;
-	return Rt_ArrayAdd(&ctx->submitted.compute, &si);
-}
-
-static bool
-_QueueTransfer(struct RenderContext *ctx, struct Semaphore *wait, struct Semaphore *signal)
-{
-	struct Vkd_SubmitInfo si =
-	{
-		.wait = wait ? wait->sem : VK_NULL_HANDLE,
-		.waitValue = wait ? wait->value : 0,
-		.signal = signal ? signal->sem : VK_NULL_HANDLE,
-		.signalValue = signal ? ++signal->value : 0,
-		.cmdBuffer = ctx->cmdBuffer
-	};
-	ctx->cmdBuffer = VK_NULL_HANDLE;
-	return Rt_ArrayAdd(&ctx->submitted.xfer, &si);
+	return rc;
 }
 
 void
-Vk_InitContextProcs(struct RenderContextProcs *p)
+Vk_InitContextProcs(struct NeRenderContextProcs *p)
 {
 	p->BeginSecondary = _BeginSecondary;
 	p->BeginDrawCommandBuffer = _BeginDrawCommandBuffer;
@@ -681,15 +776,16 @@ Vk_InitContextProcs(struct RenderContextProcs *p)
 	p->CopyBufferToTexture = _CopyBufferToTexture;
 	p->CopyTextureToBuffer = _CopyTextureToBuffer;
 	p->Blit = _Blit;
-	p->Submit = _Submit;
-	p->SubmitTransfer = (bool(*)(struct RenderContext *, struct Fence *))_SubmitTransfer;
-	p->QueueCompute = _QueueCompute;
-	p->QueueGraphics = _QueueGraphics;
-	p->QueueTransfer = _QueueTransfer;
+	p->QueueCompute = (bool(*)(struct NeRenderContext *, NeCommandBufferHandle, struct NeSemaphore *, struct NeSemaphore *))_QueueCompute;
+	p->QueueGraphics = (bool(*)(struct NeRenderContext *, NeCommandBufferHandle, struct NeSemaphore *, struct NeSemaphore *))_QueueGraphics;
+	p->QueueTransfer = (bool(*)(struct NeRenderContext *, NeCommandBufferHandle, struct NeSemaphore *, struct NeSemaphore *))_QueueTransfer;
+	p->ExecuteCompute = (bool(*)(struct NeRenderContext *, NeCommandBufferHandle))_ExecuteCompute;
+	p->ExecuteGraphics = (bool(*)(struct NeRenderContext *, NeCommandBufferHandle))_ExecuteGraphics;
+	p->ExecuteTransfer = (bool(*)(struct NeRenderContext *, NeCommandBufferHandle))_ExecuteTransfer;
 }
 
 static inline uint32_t
-_queueFamilyIndex(struct RenderDevice *dev, enum RenderQueue queue)
+_queueFamilyIndex(struct NeRenderDevice *dev, enum NeRenderQueue queue)
 {
 	switch (queue) {
 	case RE_QUEUE_GRAPHICS: return dev->graphicsFamily;

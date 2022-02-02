@@ -16,8 +16,6 @@
 #include <mach/host_info.h>
 #include <mach/processor_info.h>
 
-#define Handle __EngineHandle
-
 #include <Input/Input.h>
 #include <System/System.h>
 #include <System/Memory.h>
@@ -27,7 +25,6 @@
 
 //#include "MacXPlatform.h"
 
-#undef Handle
 #import <UIKit/UIKit.h>
 
 #include "EngineAppDelegate.h"
@@ -38,31 +35,25 @@ extern natural_t Darwin_numCpus;
 extern int32_t Darwin_cpuFreq;
 extern struct utsname Darwin_uname;
 extern char Darwin_osName[INFO_STR_LEN];
-extern char Darwin_osVersion[INFO_STR_LEN];
+extern char Darwin_osVersionString[INFO_STR_LEN];
 extern char Darwin_cpuName[INFO_STR_LEN];
 extern NSURL *Darwin_appSupportURL;
 
 bool Sys_InitDarwinPlatform(void);
 void Sys_TermDarwinPlatform(void);
 
-enum MachineType
+enum NeMachineType
 Sys_MachineType(void)
 {
 	return MT_MOBILE;
 }
 
 void
-Sys_MessageBox(const wchar_t *title, const wchar_t *message, int icon)
+Sys_MessageBox(const char *title, const char *message, int icon)
 {
-	char *t = Sys_Alloc(wcslen(title), sizeof(*t) + 1, MH_Transient);
-	wcstombs(t, title, wcslen(title));
-	
-	char *m = Sys_Alloc(wcslen(message), sizeof(*m) + 1, MH_Transient);
-	wcstombs(m, message, wcslen(message));
-	
 	@autoreleasepool {
-		UIAlertController *ctl = [UIAlertController alertControllerWithTitle: [NSString stringWithFormat: @"%s", t]
-																	 message: [NSString stringWithFormat: @"%s", m]
+		UIAlertController *ctl = [UIAlertController alertControllerWithTitle: [NSString stringWithUTF8String: title]
+																	 message: [NSString stringWithUTF8String: message]
 															  preferredStyle: UIAlertControllerStyleAlert];
 
 		//__block bool dismissed = false;
@@ -90,8 +81,7 @@ Sys_InitPlatform(void)
 	@autoreleasepool {
 		processor_basic_info_t cpuInfo;
 		mach_msg_type_number_t msgCount;
-		host_processor_info(mach_host_self(), PROCESSOR_BASIC_INFO, &Darwin_numCpus,
-							(processor_info_array_t *)&cpuInfo, &msgCount);
+		host_processor_info(mach_host_self(), PROCESSOR_BASIC_INFO, &Darwin_numCpus, (processor_info_array_t *)&cpuInfo, &msgCount);
 	
 		if (!Sys_InitDarwinPlatform())
 			return false;
@@ -99,7 +89,7 @@ Sys_InitPlatform(void)
 		UIDevice *dev = [UIDevice currentDevice];
 
 		snprintf(Darwin_osName, sizeof(Darwin_osName), "%s (%s)", Darwin_uname.sysname, [[dev systemName] UTF8String]);
-		snprintf(Darwin_osVersion, sizeof(Darwin_osVersion), "%s (%s)", Darwin_uname.release, [[dev systemVersion] UTF8String]);
+		snprintf(Darwin_osVersionString, sizeof(Darwin_osVersionString), "%s (%s)", Darwin_uname.release, [[dev systemVersion] UTF8String]);
 		
 		int mib[2] = { CTL_HW, HW_MODEL };
 		char cpu[INFO_STR_LEN / 2], model[INFO_STR_LEN / 2];

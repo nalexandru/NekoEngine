@@ -4,10 +4,13 @@
 #define _WIN32_WINNT	0x0600
 
 #include <Windows.h>
+#include <Engine/Types.h>
 
-extern HINSTANCE Win32_instance;
-extern UINT WM_SHOWCURSOR;
-extern UINT WM_HIDECURSOR;
+ENGINE_API extern HINSTANCE Win32_instance;
+ENGINE_API extern UINT WM_SHOWCURSOR;
+ENGINE_API extern UINT WM_HIDECURSOR;
+
+wchar_t *NeWin32_UTF8toUCS2(const char *text);
 
 void UpdateControllers(void);
 void HandleInput(HWND wnd, LPARAM lParam, WPARAM wParam);

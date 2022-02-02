@@ -1,12 +1,12 @@
 #ifndef _NE_SCENE_COMPONENTS_H_
 #define _NE_SCENE_COMPONENTS_H_
 
-#define CAMERA_COMP			L"Camera"
-#define TRANSFORM_COMP		L"Transform"
-#define MODEL_RENDER_COMP	L"ModelRender"
-#define AUDIO_SOURCE_COMP	L"AudioSource"
-#define UI_CONTEXT_COMP		L"UIContext"
-#define ANIMATOR_COMP		L"Animator"
-#define LIGHT_COMP			L"Light"
+#define CAMERA_COMP			"Camera"
+#define TRANSFORM_COMP		"Transform"
+#define MODEL_RENDER_COMP	"ModelRender"
+#define AUDIO_SOURCE_COMP	"AudioSource"
+#define UI_CONTEXT_COMP		"UIContext"
+#define ANIMATOR_COMP		"Animator"
+#define LIGHT_COMP			"Light"
 
 #endif /* _NE_SCENE_COMPONENTS_H_ */

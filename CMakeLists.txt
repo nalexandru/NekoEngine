@@ -16,9 +16,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
 
 if (NOT MSVC)
-	set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g2 -march=native -mtune=native -D_DEBUG -Wall -Wno-switch -Wno-int-in-bool-context -Wno-missing-braces -O0 -DRE_BUILTIN")
-	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DNDEBUG -g0 -Ofast -fomit-frame-pointer -march=native -mtune=native -Werror -DRE_BUILTIN")
-	set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} -g2 -Ofast -march=native -mtune=native -Wall -O0 -DRE_BUILTIN")
+	set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g2 -march=native -mtune=native -D_DEBUG -Wall -Wno-switch -Wno-int-in-bool-context -Wno-missing-braces -O0")
+	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DNDEBUG -g0 -Ofast -fomit-frame-pointer -march=native -mtune=native -Werror -Wno-switch -Wno-int-in-bool-context -Wno-missing-braces")
+	set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} -g2 -Ofast -march=native -mtune=native -Wall -O0")
 
 	if (NOT CMAKE_BUILD_TYPE EQUAL Release)
 		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -g2")
@@ -46,8 +46,6 @@ else ()
 	add_compile_definitions(NOMINMAX)
 	add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 endif ()
-
-add_compile_definitions(RENDER_DRIVER_BUILTIN)
 
 include_directories(Include)
 include_directories(Deps)
@@ -86,5 +84,7 @@ add_subdirectory(Drivers/Vulkan)
 add_subdirectory(Application)
 
 if (NOT WIN32 AND ENABLE_EDITOR)
+	add_subdirectory(Deps/meshoptimizer)
+	
 	add_subdirectory(Editor)
 endif ()

@@ -1,13 +1,9 @@
-#define Handle __EngineHandle
-
 #include <System/Memory.h>
-
-#undef Handle
 
 #include "MTLDriver.h"
 
 static NSAutoreleasePool *_pool;
-static dispatch_semaphore_t _semaphore;
+dispatch_semaphore_t MTL_frameSemaphore;
 
 #if TARGET_OS_OSX
 
@@ -24,15 +20,23 @@ MTL_DestroySurface(id<MTLDevice> dev, NSView *view)
 	view.wantsLayer = false;
 }
 
-void *
+struct NeSwapchain *
 MTL_CreateSwapchain(id<MTLDevice> dev, VIEWTYPE *view, bool verticalSync)
 {
-	_semaphore = dispatch_semaphore_create(RE_NUM_FRAMES);
+	struct NeSwapchain *sw = Sys_Alloc(1, sizeof(*sw), MH_RenderDriver);
+	if (!sw)
+		return NULL;
+
+	MTL_frameSemaphore = dispatch_semaphore_create(RE_NUM_FRAMES);
+	sw->event = [dev newEvent];
+	sw->value = 0;
 
 	CAMetalLayer *layer = (CAMetalLayer *)[view layer];
 	[layer setDevice: dev];
 	[layer setDisplaySyncEnabled: verticalSync];
-	return [view layer];
+	sw->layer = (CAMetalLayer *)[view layer];
+
+	return sw;
 }
 
 #else
@@ -56,44 +60,65 @@ MTL_DestroySurface(id<MTLDevice> dev, UIView *view)
 	(void)view;
 }
 
-void *
+struct NeSwapchain *
 MTL_CreateSwapchain(id<MTLDevice> dev, VIEWTYPE *view, bool verticalSync)
 {
-	_semaphore = dispatch_semaphore_create(RE_NUM_FRAMES);
+	struct NeSwapchain *sw = Sys_Alloc(1, sizeof(*sw), MH_RenderDriver);
+	if (!sw)
+		return NULL;
+
+	MTL_frameSemaphore = dispatch_semaphore_create(RE_NUM_FRAMES);
+	sw->event = [dev newEvent];
+	sw->value = 0;
 
 	CAMetalLayer *layer = (CAMetalLayer *)[view layer];
 	[layer setDevice: dev];
-	return [view layer];
+	sw->layer = (CAMetalLayer *)[view layer];
+
+	return sw;
 }
 
 #endif
 
 void
-MTL_DestroySwapchain(id<MTLDevice> dev, CAMetalLayer *layer)
+MTL_DestroySwapchain(id<MTLDevice> dev, struct NeSwapchain *sw)
 {
 	(void)dev;
-	(void)layer;
+
+	[sw->event release];
+	Sys_Free(sw);
 }
 
 void *
-MTL_AcquireNextImage(id<MTLDevice> dev, CAMetalLayer *layer)
+MTL_AcquireNextImage(id<MTLDevice> dev, struct NeSwapchain *sw)
 {
-	dispatch_semaphore_wait(_semaphore, DISPATCH_TIME_FOREVER);
+	dispatch_semaphore_wait(MTL_frameSemaphore, DISPATCH_TIME_FOREVER);
 
 	_pool = [[NSAutoreleasePool alloc] init];
-	return [layer nextDrawable];
+	return [sw->layer nextDrawable];
 }
 
 bool
-MTL_Present(id<MTLDevice> dev, struct RenderContext *ctx, VIEWTYPE *v, id<CAMetalDrawable> image, id<MTLFence> f)
+MTL_Present(id<MTLDevice> dev, struct NeRenderContext *ctx, struct NeSwapchain *sw, id<CAMetalDrawable> image, id<MTLFence> f)
 {
-	ctx->cmdBuffer = [ctx->queue commandBuffer];
+	ctx->cmdBuffer = [ctx->queue commandBufferWithUnretainedReferences];
 
-	__block dispatch_semaphore_t blockSemaphore = _semaphore;
+	__block dispatch_semaphore_t blockSemaphore = MTL_frameSemaphore;
 	[ctx->cmdBuffer addCompletedHandler:^(id<MTLCommandBuffer> buffer) {
 		dispatch_semaphore_signal(blockSemaphore);
 	}];
 
+	struct Mtld_SubmitInfo *si;
+	Rt_ArrayForEach(si, &ctx->submitted.graphics) {
+		if (si->signal)
+			[si->cmdBuffer encodeSignalEvent: si->signal value: si->signalValue];
+		else
+			[si->cmdBuffer encodeSignalEvent: sw->event value: ++sw->value];
+
+		[si->cmdBuffer commit];
+	}
+
+	[ctx->cmdBuffer encodeWaitForEvent: sw->event value: sw->value];
 	[ctx->cmdBuffer presentDrawable: image];
 	[ctx->cmdBuffer commit];
 
@@ -102,30 +127,30 @@ MTL_Present(id<MTLDevice> dev, struct RenderContext *ctx, VIEWTYPE *v, id<CAMeta
 	return true;
 }
 
-struct Texture *
-MTL_SwapchainTexture(CAMetalLayer *layer, id<CAMetalDrawable> image)
+struct NeTexture *
+MTL_SwapchainTexture(struct NeSwapchain *sw, id<CAMetalDrawable> image)
 {
-	struct Texture *t = Sys_Alloc(1, sizeof(*t), MH_Transient);
+	struct NeTexture *t = Sys_Alloc(1, sizeof(*t), MH_Transient);
 	t->tex = [image texture];
 	return t;
 }
 
-enum TextureFormat
-MTL_SwapchainFormat(CAMetalLayer *layer)
+enum NeTextureFormat
+MTL_SwapchainFormat(struct NeSwapchain *sw)
 {
-	return MTLToNeTextureFormat([layer pixelFormat]);
+	return MTLToNeTextureFormat([sw->layer pixelFormat]);
 }
 
 void
-MTL_SwapchainDesc(CAMetalLayer *layer, struct FramebufferAttachmentDesc *desc)
+MTL_SwapchainDesc(struct NeSwapchain *sw, struct NeFramebufferAttachmentDesc *desc)
 {
-	desc->format = MTLToNeTextureFormat([layer pixelFormat]);
+	desc->format = MTLToNeTextureFormat([sw->layer pixelFormat]);
 	desc->usage = TU_COLOR_ATTACHMENT | TU_TRANSFER_DST;
 }
 
 void
-MTL_ScreenResized(id<MTLDevice> dev, CAMetalLayer *layer)
+MTL_ScreenResized(id<MTLDevice> dev, struct NeSwapchain *sw)
 {
 	(void)dev;
-	(void)layer;
+	(void)sw;
 }

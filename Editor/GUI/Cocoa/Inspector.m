@@ -1,10 +1,6 @@
-#define Handle __EngineHandle
-
 #include <Scene/Scene.h>
 #include <Engine/Entity.h>
 #include <Runtime/Runtime.h>
-
-#undef Handle
 
 #import "Inspector.h"
 
@@ -30,13 +26,13 @@
 
 - (void)inspectScene
 {
-	[_titleText setStringValue: [NSString stringWithUTF8String: Rt_WcsToMbs(Scn_activeScene->name)]];
+	[_titleText setStringValue: [NSString stringWithUTF8String: Scn_activeScene->name]];
 }
 
 - (void)inspectEntity: (void *)entity
 {
 	if (entity) {
-		[_titleText setStringValue: [NSString stringWithUTF8String: Rt_WcsToMbs(E_EntityName(entity))]];
+		[_titleText setStringValue: [NSString stringWithUTF8String: E_EntityName(entity)]];
 	} else {
 		[_titleText setStringValue: @"No selection"];
 	}

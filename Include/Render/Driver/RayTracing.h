@@ -4,13 +4,13 @@
 #include <Render/Types.h>
 #include <Render/Driver/Device.h>
 
-struct AccelerationStructureAABB
+struct NeAccelerationStructureAABB
 {
 	float minX, minY, minZ;
 	float maxX, maxY, maxZ;
 };
 
-struct AccelerationStructureInstance
+struct NeAccelerationStructureInstance
 {
 	float transform[3][4];
 	uint32_t instanceIndex : 24;
@@ -20,9 +20,9 @@ struct AccelerationStructureInstance
 	uint64_t accelerationStructureHandle;
 };
 
-struct AccelerationStructureGeometryDesc
+struct NeAccelerationStructureGeometryDesc
 {
-	enum AccelerationStructureGeometryType type;
+	enum NeAccelerationStructureGeometryType type;
 
 	union {
 		struct {
@@ -30,7 +30,7 @@ struct AccelerationStructureGeometryDesc
 			uint64_t vertexBufferAddress;
 			uint64_t stride;
 			uint32_t vertexCount;
-			enum IndexType indexType;
+			enum NeIndexType indexType;
 			uint64_t indexBufferAddress;
 			uint64_t transformBufferAddress;
 		} triangles;
@@ -44,18 +44,18 @@ struct AccelerationStructureGeometryDesc
 	};
 };
 
-struct AccelerationStructureBuildInfo
+struct NeAccelerationStructureBuildInfo
 {
-	enum AccelerationStructureType type;
-	enum AccelerationStructureFlags flags;
-	enum AccelerationStructureBuildMode mode;
-	struct AccelerationStructure *src, *dst;
+	enum NeAccelerationStructureType type;
+	enum NeAccelerationStructureFlags flags;
+	enum NeAccelerationStructureBuildMode mode;
+	struct NeAccelerationStructure *src, *dst;
 	uint32_t geometryCount;
-	struct AccelerationStructureGeometryDesc *geometries;
+	struct NeAccelerationStructureGeometryDesc *geometries;
 	uint64_t scratchAddress;
 };
 
-struct AccelerationStructureRangeInfo
+struct NeAccelerationStructureRangeInfo
 {
 	uint32_t primitiveCount;
 	uint32_t primitiveOffset;
@@ -63,28 +63,28 @@ struct AccelerationStructureRangeInfo
 	uint32_t transformOffset;
 };
 
-struct AccelerationStructureDesc
+struct NeAccelerationStructureDesc
 {
-	enum AccelerationStructureType type;
-	struct AccelerationStructureGeometryDesc geometryDesc;
-	enum GPUMemoryType memoryType;
+	enum NeAccelerationStructureType type;
+	struct NeAccelerationStructureGeometryDesc geometryDesc;
+	enum NeGPUMemoryType memoryType;
 };
 
-struct AccelerationStructureCreateInfo
+struct NeAccelerationStructureCreateInfo
 {
-	struct AccelerationStructureDesc desc;
+	struct NeAccelerationStructureDesc desc;
 };
 
-static inline struct AccelerationStructure *Re_CreateAccelerationStructure(const struct AccelerationStructureCreateInfo *aci)
+static inline struct NeAccelerationStructure *Re_CreateAccelerationStructure(const struct NeAccelerationStructureCreateInfo *aci)
 { return Re_deviceProcs.CreateAccelerationStructure(Re_device, aci); };
-static inline uint64_t Re_AccelerationStructureHandle(struct RenderDevice *dev, const struct AccelerationStructure *as)
+static inline uint64_t Re_AccelerationStructureHandle(struct NeRenderDevice *dev, const struct NeAccelerationStructure *as)
 { return Re_deviceProcs.AccelerationStructureHandle(Re_device, as); }
-static inline void Re_DestroyAccelerationStructure(struct AccelerationStructure *as)
+static inline void Re_DestroyAccelerationStructure(struct NeAccelerationStructure *as)
 { Re_deviceProcs.DestroyAccelerationStructure(Re_device, as); }
 
-struct ShaderBindingTable *Re_CreateShaderBindingTable(void);
-void Re_SBTAddShader(struct ShaderBindingTable *sbt, enum ShaderEntryType type, struct Shader *sh);
-void Re_BuildShaderBindingTable(struct ShaderBindingTable *sbt);
-void Re_DestroyShaderBindingTable(struct ShaderBindingTable *sbt);
+struct NeShaderBindingTable *Re_CreateShaderBindingTable(void);
+void Re_SBTAddShader(struct NeShaderBindingTable *sbt, enum NeShaderEntryType type, struct NeShader *sh);
+void Re_BuildShaderBindingTable(struct NeShaderBindingTable *sbt);
+void Re_DestroyShaderBindingTable(struct NeShaderBindingTable *sbt);
 
 #endif /* _NE_RENDER_DRIVER_RAY_TRACING_H_ */

@@ -1,23 +1,23 @@
 #include <Render/Render.h>
 #include <Runtime/Runtime.h>
 
-struct BufferInfo
+struct NeBufferInfo
 {
-	struct Buffer *buff;
-	struct BufferDesc desc;
+	struct NeBuffer *buff;
+	struct NeBufferDesc desc;
 };
 
 static uint16_t _nextId;
-static struct BufferInfo _buffers[UINT16_MAX];
-static struct Queue _freeList;
+static struct NeBufferInfo _buffers[UINT16_MAX];
+static struct NeQueue _freeList;
 
 bool
-Re_CreateBuffer(const struct BufferCreateInfo *bci, BufferHandle *handle)
+Re_CreateBuffer(const struct NeBufferCreateInfo *bci, NeBufferHandle *handle)
 {
 	if (!Re_ReserveBufferId(handle))
 		return false;
 
-	struct BufferInfo *info = &_buffers[*handle];
+	struct NeBufferInfo *info = &_buffers[*handle];
 
 	info->buff = Re_deviceProcs.CreateBuffer(Re_device, &bci->desc, *handle);
 	if (!info->buff)
@@ -35,81 +35,83 @@ Re_CreateBuffer(const struct BufferCreateInfo *bci, BufferHandle *handle)
 }
 
 void
-Re_UpdateBuffer(BufferHandle handle, uint64_t offset, uint8_t *data, uint64_t size)
+Re_UpdateBuffer(NeBufferHandle handle, uint64_t offset, uint8_t *data, uint64_t size)
 {
 	Re_deviceProcs.UpdateBuffer(Re_device, _buffers[handle].buff, offset, data, size);
 }
 
 void
-Re_CmdCopyBuffer(BufferHandle src, uint64_t srcOffset, BufferHandle dst, uint64_t dstOffset, uint64_t size)
+Re_CmdCopyBuffer(NeBufferHandle src, uint64_t srcOffset, NeBufferHandle dst, uint64_t dstOffset, uint64_t size)
 {
 	Re_contextProcs.CopyBuffer(Re_CurrentContext(), _buffers[src].buff, srcOffset, _buffers[dst].buff, dstOffset, size);
 }
 
 void *
-Re_MapBuffer(BufferHandle handle)
+Re_MapBuffer(NeBufferHandle handle)
 {
 	return Re_deviceProcs.MapBuffer(Re_device, _buffers[handle].buff);
 }
 
 void
-Re_FlushBuffer(BufferHandle handle, uint64_t offset, uint64_t size)
+Re_FlushBuffer(NeBufferHandle handle, uint64_t offset, uint64_t size)
 {
 	Re_deviceProcs.FlushBuffer(Re_device, _buffers[handle].buff, offset, size);
 }
 
 void
-Re_UnmapBuffer(BufferHandle handle)
+Re_UnmapBuffer(NeBufferHandle handle)
 {
 	Re_deviceProcs.UnmapBuffer(Re_device, _buffers[handle].buff);
 }
 
 uint64_t
-Re_BufferAddress(BufferHandle handle, uint64_t offset)
+Re_BufferAddress(NeBufferHandle handle, uint64_t offset)
 {
 	return Re_deviceProcs.BufferAddress(Re_device, _buffers[handle].buff, offset);
 }
 
-const struct BufferDesc *
-Re_BufferDesc(BufferHandle handle)
+const struct NeBufferDesc *
+Re_BufferDesc(NeBufferHandle handle)
 {
 	return &_buffers[handle].desc;
 }
 
 void
-Re_DestroyBuffer(BufferHandle handle)
+Re_DestroyBuffer(NeBufferHandle handle)
 {
 	Re_deviceProcs.DestroyBuffer(Re_device, _buffers[handle].buff);
 	Re_ReleaseBufferId(handle);
 }
 
 bool
-Re_ReserveBufferId(BufferHandle *handle)
+Re_ReserveBufferId(NeBufferHandle *handle)
 {
-	if (_freeList.count)
-		*handle = *(BufferHandle *)Rt_QueuePop(&_freeList);
-	else if (_nextId < UINT16_MAX)
+	if (_freeList.count) {
+		*handle = *(NeBufferHandle*)Rt_QueuePop(&_freeList);
+	} else if (_nextId < UINT16_MAX) {
 		*handle = _nextId++;
-	else
+	} else {
+		*handle = (uint16_t)-1;
 		return false;
+	}
 
 	return true;
 }
 
 void
-Re_ReleaseBufferId(BufferHandle handle)
+Re_ReleaseBufferId(NeBufferHandle handle)
 {
 	Rt_QueuePush(&_freeList, &handle);
 }
 
 void
-Re_CmdBindIndexBuffer(BufferHandle handle, uint64_t offset, enum IndexType type)
+Re_CmdBindIndexBuffer(NeBufferHandle handle, uint64_t offset, enum NeIndexType type)
 {
 	Re_contextProcs.BindIndexBuffer(Re_CurrentContext(), _buffers[handle].buff, offset, type);
 }
 
-struct Buffer *
-Re_CreateTransientBuffer(const struct BufferDesc *desc, BufferHandle location, uint64_t offset, uint64_t *size)
+struct NeBuffer *
+Re_CreateTransientBuffer(const struct NeBufferDesc *desc, NeBufferHandle location, uint64_t offset, uint64_t *size)
 {
 	_buffers[location].desc = *desc;
 	_buffers[location].buff = Re_deviceProcs.CreateTransientBuffer(Re_device, desc, location, offset, size);
@@ -120,7 +122,7 @@ Re_CreateTransientBuffer(const struct BufferDesc *desc, BufferHandle location, u
 bool
 Re_InitBufferSystem(void)
 {
-	return Rt_InitQueue(&_freeList, UINT16_MAX, sizeof(BufferHandle), MH_Render);
+	return Rt_InitQueue(&_freeList, UINT16_MAX, sizeof(NeBufferHandle), MH_Render);
 }
 
 void
@@ -130,13 +132,13 @@ Re_TermBufferSystem(void)
 }
 
 void
-Re_CmdCopyBufferToTexture(BufferHandle src, struct Texture *dst, const struct BufferImageCopy *bic)
+Re_CmdCopyBufferToTexture(NeBufferHandle src, struct NeTexture *dst, const struct NeBufferImageCopy *bic)
 {
 	Re_contextProcs.CopyBufferToTexture(Re_CurrentContext(), _buffers[src].buff, dst, bic);
 }
 
 void
-Re_CmdCopyTextureToBuffer(struct Texture *src, BufferHandle dst, const struct BufferImageCopy *bic)
+Re_CmdCopyTextureToBuffer(struct NeTexture *src, NeBufferHandle dst, const struct NeBufferImageCopy *bic)
 {
 	Re_contextProcs.CopyTextureToBuffer(Re_CurrentContext(), src, _buffers[dst].buff, bic);
 }

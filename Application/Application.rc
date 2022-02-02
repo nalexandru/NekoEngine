@@ -70,12 +70,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "Alexandru Naiman"
             VALUE "FileDescription", "NekoEngine Test Application"
-            VALUE "FileVersion", E_VER_STR_A
+            VALUE "FileVersion", E_VER_STR
             VALUE "InternalName", "NekoEngine.exe"
             VALUE "LegalCopyright", E_CPY_STR
             VALUE "OriginalFilename", "NekoEngine.exe"
             VALUE "ProductName", E_PGM_NAME
-            VALUE "ProductVersion", E_VER_STR_A
+            VALUE "ProductVersion", E_VER_STR
         END
     END
     BLOCK "VarFileInfo"

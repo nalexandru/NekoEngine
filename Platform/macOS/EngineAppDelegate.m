@@ -1,9 +1,5 @@
-#define Handle __EngineHandle
-
 #include <Engine/Engine.h>
 #include <Engine/Application.h>
-
-#undef Handle
 
 #import "EngineAppDelegate.h"
 
@@ -13,12 +9,8 @@ extern bool Darwin_screenVisible;
 
 - (void)about: (id)sender
 {
-	NSString *name = [[NSString alloc] initWithBytes: App_applicationInfo.name
-											  length: wcslen(App_applicationInfo.name) * sizeof(wchar_t)
-											encoding: NSUTF32LittleEndianStringEncoding];
-	NSString *copyright = [[NSString alloc] initWithBytes: App_applicationInfo.copyright
-													length: wcslen(App_applicationInfo.copyright) * sizeof(wchar_t)
-												  encoding: NSUTF32LittleEndianStringEncoding];
+	NSString *name = [NSString stringWithUTF8String: App_applicationInfo.name];
+	NSString *copyright = [NSString stringWithUTF8String: App_applicationInfo.copyright];
 	NSString *msg = [NSString stringWithFormat: @"Version: %d.%d.%d.%d\nCopyright (C) %@",
 					 App_applicationInfo.version.major, App_applicationInfo.version.minor,
 					 App_applicationInfo.version.build, App_applicationInfo.version.revision,

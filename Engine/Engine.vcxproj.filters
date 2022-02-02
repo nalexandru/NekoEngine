@@ -267,9 +267,6 @@
     <ClInclude Include="..\Include\Scene\Camera.h">
       <Filter>Header Files\Scene</Filter>
     </ClInclude>
-    <ClInclude Include="..\Include\Scene\Sky.h">
-      <Filter>Header Files\Scene</Filter>
-    </ClInclude>
     <ClInclude Include="..\Include\Scene\Systems.h">
       <Filter>Header Files\Scene</Filter>
     </ClInclude>
@@ -290,9 +287,6 @@
     </ClInclude>
     <ClInclude Include="..\Include\Script\Script.h">
       <Filter>Header Files\Script</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Scene\ScriptHost.h">
-      <Filter>Header Files\Scene</Filter>
     </ClInclude>
     <ClInclude Include="..\Include\UI\UI.h">
       <Filter>Header Files\UI</Filter>
@@ -513,6 +507,12 @@
     <ClInclude Include="Render\Internal.h">
       <Filter>Source Files\Render</Filter>
     </ClInclude>
+    <ClInclude Include="..\Include\Engine\Console.h">
+      <Filter>Header Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Engine\Plugin.h">
+      <Filter>Header Files\Engine</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="System\System.c">
@@ -532,9 +532,6 @@
     </ClCompile>
     <ClCompile Include="System\Log.c">
       <Filter>Source Files\System</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\ECSInit.c">
-      <Filter>Source Files\Engine</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Resource.c">
       <Filter>Source Files\Engine</Filter>
@@ -637,9 +634,6 @@
     </ClCompile>
     <ClCompile Include="Script\Script.c">
       <Filter>Source Files\Script</Filter>
-    </ClCompile>
-    <ClCompile Include="Scene\ScriptHost.c">
-      <Filter>Source Files\Scene</Filter>
     </ClCompile>
     <ClCompile Include="UI\UI.c">
       <Filter>Source Files\UI</Filter>
@@ -848,9 +842,6 @@
     <ClCompile Include="Asset\DDS.c">
       <Filter>Source Files\Asset</Filter>
     </ClCompile>
-    <ClCompile Include="Render\Pass\Forward.c">
-      <Filter>Source Files\Render\Pass</Filter>
-    </ClCompile>
     <ClCompile Include="UI\UIPass.c">
       <Filter>Source Files\UI</Filter>
     </ClCompile>
@@ -871,6 +862,45 @@
     </ClCompile>
     <ClCompile Include="Render\Pass\Sky.c">
       <Filter>Source Files\Render\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Console.c">
+      <Filter>Source Files\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\l_Console.c">
+      <Filter>Source Files\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\l_UI.c">
+      <Filter>Source Files\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\l_ScriptComponent.c">
+      <Filter>Source Files\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\l_Resource.c">
+      <Filter>Source Files\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\l_IO.c">
+      <Filter>Source Files\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\l_Event.c">
+      <Filter>Source Files\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\l_Input.c">
+      <Filter>Source Files\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\l_Transform.c">
+      <Filter>Source Files\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\l_Camera.c">
+      <Filter>Source Files\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\l_Light.c">
+      <Filter>Source Files\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\l_Config.c">
+      <Filter>Source Files\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Plugin.c">
+      <Filter>Source Files\Engine</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

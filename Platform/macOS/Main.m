@@ -1,9 +1,5 @@
-#define Handle __EngineHandle
-
 #include <Engine/Engine.h>
 #include <System/System.h>
-
-#undef Handle
 
 #import <Cocoa/Cocoa.h>
 

@@ -53,7 +53,7 @@
 static inline struct vec4 *
 v4_simd(struct vec4 *v, float x, float y, float z, float w)
 {
-	ALIGN(16) float data[4] = { x, y, z, w };
+	NE_ALIGN(16) float data[4] = { x, y, z, w };
 	v->sv = vld1q_f32(data);
 	return v;
 }

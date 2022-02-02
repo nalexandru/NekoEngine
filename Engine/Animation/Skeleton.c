@@ -1,12 +1,12 @@
 #include <Engine/Engine.h>
 #include <Animation/Animation.h>
 
-static inline void _LerpVecKey(struct vec3 *v, double time, const struct Array *keys);
-static inline void _LerpQuatKey(struct quat *q, double time, const struct Array *keys);
-static void _XformHierarchy(double time, const struct SkeletonNode *n, const struct mat4 *parentXform, const struct AnimationClip *ac);
+static inline void _LerpVecKey(struct vec3 *v, double time, const struct NeArray *keys);
+static inline void _LerpQuatKey(struct quat *q, double time, const struct NeArray *keys);
+static void _XformHierarchy(double time, const struct NeSkeletonNode *n, const struct mat4 *parentXform, const struct NeAnimationClip *ac);
 
 bool
-Anim_InitSkeleton(struct Skeleton *s, const struct Array *bones, const struct Array *nodes, const struct mat4 *git)
+Anim_InitSkeleton(struct NeSkeleton *s, const struct NeArray *bones, const struct NeArray *nodes, const struct mat4 *git)
 {
 	Rt_CloneArray(&s->bones, bones, MH_Scene);
 	Rt_CloneArray(&s->nodes, nodes, MH_Scene);
@@ -17,7 +17,7 @@ Anim_InitSkeleton(struct Skeleton *s, const struct Array *bones, const struct Ar
 }
 
 void
-Anim_UpdateSkeleton(struct Skeleton *s, double time, const struct AnimationClip *ac)
+Anim_UpdateSkeleton(struct NeSkeleton *s, double time, const struct NeAnimationClip *ac)
 {
 	const double tTime = time * (ac->ticks != 0 ? ac->ticks : 25.0);
 	const double aTime = mod(tTime, ac->duration);
@@ -26,30 +26,30 @@ Anim_UpdateSkeleton(struct Skeleton *s, double time, const struct AnimationClip 
 }
 
 void
-Anim_TermSkeleton(struct Skeleton *s)
+Anim_TermSkeleton(struct NeSkeleton *s)
 {
 
 }
 
 static inline void
-_LerpVecKey(struct vec3 *v, double time, const struct Array *keys)
+_LerpVecKey(struct vec3 *v, double time, const struct NeArray *keys)
 {
 	if (keys->count == 1) {
-		v3_copy(v, &((struct AnimVectorKey *)Rt_ArrayGet(keys, 0))->val);
+		v3_copy(v, &((struct NeAnimVectorKey *)Rt_ArrayGet(keys, 0))->val);
 		return;
 	}
 
 	size_t idx = 0;
 	for (size_t i = 0; i < keys->count - 1; ++i) {
-		if (time > ((const struct AnimVectorKey *)Rt_ArrayGet(keys, i + 1))->time)
+		if (time > ((const struct NeAnimVectorKey *)Rt_ArrayGet(keys, i + 1))->time)
 			continue;
 
 		idx = i;
 		break;
 	}
 
-	const struct AnimVectorKey *key = Rt_ArrayGet(keys, idx);
-	const struct AnimVectorKey *nextKey = Rt_ArrayGet(keys, idx + 1);
+	const struct NeAnimVectorKey *key = Rt_ArrayGet(keys, idx);
+	const struct NeAnimVectorKey *nextKey = Rt_ArrayGet(keys, idx + 1);
 
 	const double f = (time - key->time) / (nextKey->time - key->time);
 
@@ -60,33 +60,33 @@ _LerpVecKey(struct vec3 *v, double time, const struct Array *keys)
 }
 
 static inline void
-_LerpQuatKey(struct quat *q, double time, const struct Array *keys)
+_LerpQuatKey(struct quat *q, double time, const struct NeArray *keys)
 {
 	if (keys->count == 1) {
-		quat_copy(q, &((struct AnimQuatKey *)Rt_ArrayGet(keys, 0))->val);
+		quat_copy(q, &((struct NeAnimQuatKey *)Rt_ArrayGet(keys, 0))->val);
 		return;
 	}
 
 	size_t idx = 0;
 	for (size_t i = 0; i < keys->count - 1; ++i) {
-		if (time > ((const struct AnimQuatKey *)Rt_ArrayGet(keys, i + 1))->time)
+		if (time > ((const struct NeAnimQuatKey *)Rt_ArrayGet(keys, i + 1))->time)
 			continue;
 
 		idx = i;
 		break;
 	}
 
-	const struct AnimQuatKey *key = Rt_ArrayGet(keys, idx);
-	const struct AnimQuatKey *nextKey = Rt_ArrayGet(keys, idx + 1);
+	const struct NeAnimQuatKey *key = Rt_ArrayGet(keys, idx);
+	const struct NeAnimQuatKey *nextKey = Rt_ArrayGet(keys, idx + 1);
 
 	const double f = (time - key->time) / (nextKey->time - key->time);
 	quat_norm(q, quat_slerp(q, &key->val, &nextKey->val, (float)f));
 }
 
 static void
-_XformHierarchy(double time, const struct SkeletonNode *n, const struct mat4 *parentXform, const struct AnimationClip *ac)
+_XformHierarchy(double time, const struct NeSkeletonNode *n, const struct mat4 *parentXform, const struct NeAnimationClip *ac)
 {
-	const struct AnimationChannel *ch = NULL;
+	const struct NeAnimationChannel *ch = NULL;
 	Rt_ArrayForEach(ch, &ac->channels) {
 		if (ch->hash == n->hash)
 			break;
@@ -122,7 +122,7 @@ _XformHierarchy(double time, const struct SkeletonNode *n, const struct mat4 *pa
 
 	// bone map
 	
-	struct SkeletonNode *child;
+	struct NeSkeletonNode *child;
 	Rt_ArrayForEach(child, &n->children)
 		_XformHierarchy(time, child, &xform, ac);
 }

@@ -8,32 +8,32 @@
 
 #include "ECS.h"
 
-#define ENT_MOD	L"Entity"
+#define ENT_MOD	"Entity"
 
-static struct Array _entityTypes;
+static struct NeArray _entityTypes;
 
 static int _TypeCmp(const void *, const void *);
-static inline bool _AddComponent(struct Scene *s, struct Entity *, CompTypeId, CompHandle);
-static inline bool _CreateComponent(struct Scene *s, struct Entity *ent, CompTypeId type, const void **args);
+static inline bool _AddComponent(struct NeScene *s, struct NeEntity *, NeCompTypeId, NeCompHandle);
+static inline bool _CreateComponent(struct NeScene *s, struct NeEntity *ent, NeCompTypeId type, const void **args);
 
-EntityHandle
-E_CreateEntityS(struct Scene *s, const wchar_t *typeName)
+NeEntityHandle
+E_CreateEntityS(struct NeScene *s, const char *typeName)
 {
 	uint64_t hash = 0;
-	struct Entity *ent = NULL;
-	struct EntityType *type = NULL;
+	struct NeEntity *ent = NULL;
+	struct NeEntityType *type = NULL;
 
 	if (typeName) {
-		hash = Rt_HashStringW(typeName);
+		hash = Rt_HashString(typeName);
 		type = Rt_ArrayFind(&_entityTypes, &hash, _TypeCmp);
-		ent = E_CreateEntityWithArgsS(s, type->comp_types, NULL, type->comp_count);
+		ent = E_CreateEntityWithArgsS(s, type->comp_types, NULL, type->compCount);
 	} else {
 		ent = Sys_Alloc(1, sizeof(*ent), MH_Scene);
 
 		if (!ent)
 			return ES_INVALID_ENTITY;
 
-		E_RenameEntity(ent, L"unnamed");
+		E_RenameEntity(ent, "unnamed");
 		if (!Rt_ArrayAddPtr(&s->entities, ent)) {
 			Sys_Free(ent);
 			return ES_INVALID_ENTITY;
@@ -45,11 +45,11 @@ E_CreateEntityS(struct Scene *s, const wchar_t *typeName)
 	return ent;
 }
 
-EntityHandle
-E_CreateEntityWithArgsS(struct Scene *s, const CompTypeId *compTypes, const void ***compArgs, uint8_t count)
+NeEntityHandle
+E_CreateEntityWithArgsS(struct NeScene *s, const NeCompTypeId *compTypes, const void ***compArgs, uint8_t count)
 {
 	uint8_t i = 0;
-	struct Entity *ent = NULL;
+	struct NeEntity *ent = NULL;
 
 	if (count > MAX_ENTITY_COMPONENTS)
 		return ES_INVALID_ENTITY;
@@ -65,7 +65,7 @@ E_CreateEntityWithArgsS(struct Scene *s, const CompTypeId *compTypes, const void
 		}
 	}
 
-	E_RenameEntity(ent, L"unnamed");
+	E_RenameEntity(ent, "unnamed");
 	if (!Rt_ArrayAddPtr(&s->entities, ent)) {
 		Sys_Free(ent);
 		return ES_INVALID_ENTITY;
@@ -76,11 +76,11 @@ E_CreateEntityWithArgsS(struct Scene *s, const CompTypeId *compTypes, const void
 	return ent;
 }
 
-EntityHandle
-E_CreateEntityVS(struct Scene *s, int count, const struct EntityCompInfo *info)
+NeEntityHandle
+E_CreateEntityVS(struct NeScene *s, int count, const struct NeEntityCompInfo *info)
 {
 	uint8_t i = 0;
-	struct Entity *ent = NULL;
+	struct NeEntity *ent = NULL;
 
 	if (count > MAX_ENTITY_COMPONENTS)
 		return ES_INVALID_ENTITY;
@@ -96,7 +96,7 @@ E_CreateEntityVS(struct Scene *s, int count, const struct EntityCompInfo *info)
 		}
 	}
 
-	E_RenameEntity(ent, L"unnamed");
+	E_RenameEntity(ent, "unnamed");
 	if (!Rt_ArrayAddPtr(&s->entities, ent)) {
 		Sys_Free(ent);
 		return ES_INVALID_ENTITY;
@@ -107,12 +107,12 @@ E_CreateEntityVS(struct Scene *s, int count, const struct EntityCompInfo *info)
 	return ent;
 }
 
-EntityHandle
-E_CreateEntityWithComponentsS(struct Scene *s, int count, ...)
+NeEntityHandle
+E_CreateEntityWithComponentsS(struct NeScene *s, int count, ...)
 {
 	va_list va;
-	struct Entity *ent = NULL;
-	CompHandle handle;
+	struct NeEntity *ent = NULL;
+	NeCompHandle handle;
 	uint8_t i = 0;
 
 	if (count > MAX_ENTITY_COMPONENTS)
@@ -124,7 +124,7 @@ E_CreateEntityWithComponentsS(struct Scene *s, int count, ...)
 
 	va_start(va, count);
 	for (i = 0; i < count; ++i) {
-		handle = va_arg(va, CompHandle);
+		handle = va_arg(va, NeCompHandle);
 
 		if (!_AddComponent(s, ent, E_ComponentTypeS(s, handle), handle)) {
 			Sys_Free(ent);
@@ -132,13 +132,13 @@ E_CreateEntityWithComponentsS(struct Scene *s, int count, ...)
 		}
 	}
 
-	E_RenameEntity(ent, L"unnamed");
+	E_RenameEntity(ent, "unnamed");
 	if (!Rt_ArrayAddPtr(&s->entities, ent)) {
 		Sys_Free(ent);
 		return ES_INVALID_ENTITY;
 	}
 
-	for (i = 0; i < ent->comp_count; ++i)
+	for (i = 0; i < ent->compCount; ++i)
 		E_SetComponentOwnerS(s, ent->comp[i].handle, ent);
 
 	E_Broadcast(EVT_ENTITY_CREATED, ent);
@@ -147,24 +147,24 @@ E_CreateEntityWithComponentsS(struct Scene *s, int count, ...)
 }
 
 bool
-E_AddComponentS(struct Scene *s, EntityHandle ent, CompTypeId type, CompHandle comp)
+E_AddComponentS(struct NeScene *s, NeEntityHandle ent, NeCompTypeId type, NeCompHandle comp)
 {
 	return _AddComponent(s, ent, type, comp);
 }
 
 bool
-E_AddNewComponentS(struct Scene *s, EntityHandle ent, CompTypeId type, const void **args)
+E_AddNewComponentS(struct NeScene *s, NeEntityHandle ent, NeCompTypeId type, const void **args)
 {
 	return _CreateComponent(s, ent, type, args);
 }
 
 void *
-E_GetComponentS(struct Scene *s, EntityHandle handle, CompTypeId type)
+E_GetComponentS(struct NeScene *s, NeEntityHandle handle, NeCompTypeId type)
 {
 	uint8_t i = 0;
-	struct Entity *ent = handle;
+	struct NeEntity *ent = handle;
 
-	for (i = 0; i < ent->comp_count; ++i)
+	for (i = 0; i < ent->compCount; ++i)
 		if (ent->comp[i].type == type)
 			return E_ComponentPtrS(s, ent->comp[i].handle);
 
@@ -172,40 +172,40 @@ E_GetComponentS(struct Scene *s, EntityHandle handle, CompTypeId type)
 }
 
 void
-E_GetComponentsS(struct Scene *s, EntityHandle handle, struct Array *comp)
+E_GetComponentsS(struct NeScene *s, NeEntityHandle handle, struct NeArray *comp)
 {
-	struct Entity *ent = handle;
-	Rt_InitArray(comp, ent->comp_count, sizeof(struct EntityComp), MH_Frame);
+	struct NeEntity *ent = handle;
+	Rt_InitArray(comp, ent->compCount, sizeof(struct NeEntityComp), MH_Frame);
 	memcpy(comp->data, ent->comp, Rt_ArrayByteSize(comp));
 }
 
 void
-E_RemoveComponentS(struct Scene *s, EntityHandle handle, CompTypeId type)
+E_RemoveComponentS(struct NeScene *s, NeEntityHandle handle, NeCompTypeId type)
 {
-	struct Entity *ent = handle;
+	struct NeEntity *ent = handle;
 	uint8_t id = 0;
 
-	for (id = 0; id < ent->comp_count; ++id)
+	for (id = 0; id < ent->compCount; ++id)
 		if (ent->comp[id].type == type)
 			break;
 
 	E_DestroyComponentS(s, ent->comp[id].handle);
-	--ent->comp_count;
+	--ent->compCount;
 
-	if (id == ent->comp_count)
+	if (id == ent->compCount)
 		return;
 
-	memcpy(&ent->comp[id], &ent->comp_count, sizeof(struct EntityComp));
+	memcpy(&ent->comp[id], &ent->compCount, sizeof(struct NeEntityComp));
 }
 
 void
-E_DestroyEntityS(struct Scene *s, EntityHandle handle)
+E_DestroyEntityS(struct NeScene *s, NeEntityHandle handle)
 {
-	struct Entity *ent = handle;
+	struct NeEntity *ent = handle;
 	size_t dst_id = 0;
 	uint8_t i = 0;
 
-	for (i = 0; i < ent->comp_count; ++i)
+	for (i = 0; i < ent->compCount; ++i)
 		E_DestroyComponentS(s, ent->comp[i].handle);
 
 	dst_id = ent->id;
@@ -221,55 +221,55 @@ E_DestroyEntityS(struct Scene *s, EntityHandle handle)
 }
 
 bool
-E_RegisterEntityType(const wchar_t *typeName, const CompTypeId *compTypes, uint8_t typeCount)
+E_RegisterEntityType(const char *typeName, const NeCompTypeId *compTypes, uint8_t typeCount)
 {
-	struct EntityType type;
+	struct NeEntityType type;
 
 	if (typeCount > MAX_ENTITY_COMPONENTS)
 		return false;
 
-	type.hash = Rt_HashStringW(typeName);
-	type.comp_count = typeCount;
-	memcpy(type.comp_types, compTypes, sizeof(CompTypeId) * typeCount);
+	type.hash = Rt_HashString(typeName);
+	type.compCount = typeCount;
+	memcpy(type.comp_types, compTypes, sizeof(NeCompTypeId) * typeCount);
 
 	return Rt_ArrayAdd(&_entityTypes, &type);
 }
 
 void *
-E_EntityPtrS(struct Scene *s, EntityHandle handle)
+E_EntityPtrS(struct NeScene *s, NeEntityHandle handle)
 {
-	struct Entity *ent = handle;
+	struct NeEntity *ent = handle;
 	return Rt_ArrayGetPtr(&s->entities, ent->id);
 }
 
 uint32_t
-E_EntityCountS(struct Scene *s)
+E_EntityCountS(struct NeScene *s)
 {
 	return (uint32_t)s->entities.count;
 }
 
-const wchar_t *
-E_EntityName(EntityHandle handle)
+const char *
+E_EntityName(NeEntityHandle handle)
 {
-	struct Entity *ent = handle;
+	struct NeEntity *ent = handle;
 	return ent->name;
 }
 
 void
-E_RenameEntity(EntityHandle handle, const wchar_t *name)
+E_RenameEntity(NeEntityHandle handle, const char *name)
 {
-	struct Entity *ent = handle;
-	wcsncpy(ent->name, name, MAX_ENTITY_NAME);
-	ent->hash = Rt_HashStringW(ent->name);
+	struct NeEntity *ent = handle;
+	strncpy(ent->name, name, MAX_ENTITY_NAME);
+	ent->hash = Rt_HashString(ent->name);
 }
 
-EntityHandle
-E_FindEntityS(struct Scene *s, const wchar_t *name)
+NeEntityHandle
+E_FindEntityS(struct NeScene *s, const char *name)
 {
-	struct Entity *ent = NULL;
-	uint64_t hash = Rt_HashStringW(name);
+	struct NeEntity *ent = NULL;
+	uint64_t hash = Rt_HashString(name);
 
-	Rt_ArrayForEach(ent, &s->entities)
+	Rt_ArrayForEachPtr(ent, &s->entities)
 		if (ent->hash == hash)
 			return ent;
 
@@ -281,7 +281,7 @@ E_InitEntities(void)
 {
 	memset(&_entityTypes, 0x0, sizeof(_entityTypes));
 
-	if (!Rt_InitArray(&_entityTypes, 10, sizeof(struct EntityType), MH_System))
+	if (!Rt_InitArray(&_entityTypes, 10, sizeof(struct NeEntityType), MH_System))
 		return false;
 
 	return true;
@@ -294,13 +294,13 @@ E_TermEntities(void)
 }
 
 bool
-E_InitSceneEntities(struct Scene *s)
+E_InitSceneEntities(struct NeScene *s)
 {
-	return Rt_InitArray(&s->entities, 100, sizeof(struct Entity *), MH_Scene);
+	return Rt_InitArray(&s->entities, 100, sizeof(struct NeEntity *), MH_Scene);
 }
 
 void
-E_TermSceneEntities(struct Scene *s)
+E_TermSceneEntities(struct NeScene *s)
 {
 	size_t i = 0;
 	for (i = 0; i < s->entities.count; ++i)
@@ -311,20 +311,20 @@ E_TermSceneEntities(struct Scene *s)
 static int
 _TypeCmp(const void *item, const void *data)
 {
-	return !(((struct EntityType *)item)->hash == *((uint64_t *)data));
+	return !(((struct NeEntityType *)item)->hash == *((uint64_t *)data));
 }
 
 bool
-_AddComponent(struct Scene *s, struct Entity *ent, CompTypeId type, CompHandle handle)
+_AddComponent(struct NeScene *s, struct NeEntity *ent, NeCompTypeId type, NeCompHandle handle)
 {
 	uint8_t i = 0;
-	struct EntityComp *comp = NULL;
+	struct NeEntityComp *comp = NULL;
 
-	for (i = 0; i < ent->comp_count; ++i)
+	for (i = 0; i < ent->compCount; ++i)
 		if (ent->comp[i].type == type)
 			return false;
 
-	comp = &ent->comp[ent->comp_count++];
+	comp = &ent->comp[ent->compCount++];
 	comp->type = type;
 	comp->handle = handle;
 	E_SetComponentOwnerS(s, handle, ent);
@@ -333,16 +333,15 @@ _AddComponent(struct Scene *s, struct Entity *ent, CompTypeId type, CompHandle h
 }
 
 bool
-_CreateComponent(struct Scene *s, struct Entity *ent, CompTypeId type, const void **args)
+_CreateComponent(struct NeScene *s, struct NeEntity *ent, NeCompTypeId type, const void **args)
 {
-	CompHandle handle = E_CreateComponentIdS(s, type, ent, args);
+	NeCompHandle handle = E_CreateComponentIdS(s, type, ent, args);
 
 	if (handle == ES_INVALID_COMPONENT)
 		return false;
 
 	if (!_AddComponent(s, ent, type, handle)) {
-		Sys_LogEntry(ENT_MOD, LOG_CRITICAL,
-			L"Failed to add component of type [%d]", type);
+		Sys_LogEntry(ENT_MOD, LOG_CRITICAL, "Failed to add component of type [%d]", type);
 		return false;
 	}
 

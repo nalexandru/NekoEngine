@@ -30,7 +30,7 @@ This repository is a mirror which is not frequently updated.
 
 #### Prerequisites
 * Visual Studio 2022
-* Vulkan SDK 1.2.182 or later
+* Vulkan SDK 1.2.189.2 or later
 * (Optional) FreeType for building the FontGen tool
 
 #### Build
@@ -85,3 +85,4 @@ pkg install vulkan-headers vulkan-loader vulkan-tools vulkan-validation-layers c
 * simple-stdatomic-for-VS-Clang - https://github.com/zenny-chen/simple-stdatomic-for-VS-Clang
 * D3D12 Helper Library - https://github.com/Microsoft/DirectX-Graphics-Samples/tree/master/Libraries/D3DX12
 * OpenAL Soft - https://github.com/kcat/openal-soft
+* meshoptimizer - https://github.com/zeux/meshoptimizer

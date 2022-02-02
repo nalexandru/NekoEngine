@@ -1,9 +1,9 @@
 #include "MTLDriver.h"
 
-struct Buffer *
-MTL_CreateBuffer(id<MTLDevice> dev, const struct BufferDesc *desc, uint16_t location)
+struct NeBuffer *
+MTL_CreateBuffer(id<MTLDevice> dev, const struct NeBufferDesc *desc, uint16_t location)
 {
-	struct Buffer *buff = Sys_Alloc(sizeof(*buff), 1, MH_RenderDriver);
+	struct NeBuffer *buff = Sys_Alloc(sizeof(*buff), 1, MH_RenderDriver);
 	if (!buff)
 		return NULL;
 	
@@ -27,13 +27,13 @@ MTL_CreateBuffer(id<MTLDevice> dev, const struct BufferDesc *desc, uint16_t loca
 }
 
 void
-MTL_UpdateBuffer(id<MTLDevice> dev, struct Buffer *buff, uint64_t offset, uint8_t *data, uint64_t size)
+MTL_UpdateBuffer(id<MTLDevice> dev, struct NeBuffer *buff, uint64_t offset, uint8_t *data, uint64_t size)
 {
 	if (buff->memoryType == MT_GPU_LOCAL) {
 		id<MTLBuffer> staging = [dev newBufferWithBytes: data length: size options: MTLResourceStorageModeShared];
 		
 		id<MTLCommandQueue> queue = [dev newCommandQueue];
-		id<MTLCommandBuffer> cmdBuffer = [queue commandBuffer];
+		id<MTLCommandBuffer> cmdBuffer = [queue commandBufferWithUnretainedReferences];
 		id<MTLBlitCommandEncoder> encoder = [cmdBuffer blitCommandEncoder];
 		
 		[encoder copyFromBuffer: staging
@@ -61,13 +61,13 @@ MTL_UpdateBuffer(id<MTLDevice> dev, struct Buffer *buff, uint64_t offset, uint8_
 }
 
 void *
-MTL_MapBuffer(id<MTLDevice> dev, struct Buffer *buff)
+MTL_MapBuffer(id<MTLDevice> dev, struct NeBuffer *buff)
 {
 	return [buff->buff contents];
 }
 
 void
-MTL_FlushBuffer(id<MTLDevice> dev, struct Buffer *buff, uint64_t offset, uint64_t size)
+MTL_FlushBuffer(id<MTLDevice> dev, struct NeBuffer *buff, uint64_t offset, uint64_t size)
 {
 #if TARGET_OS_OSX
 	if (![dev hasUnifiedMemory] && !(buff->buff.resourceOptions & MTLResourceStorageModeShared))
@@ -78,7 +78,7 @@ MTL_FlushBuffer(id<MTLDevice> dev, struct Buffer *buff, uint64_t offset, uint64_
 }
 
 void
-MTL_UnmapBuffer(id<MTLDevice> dev, struct Buffer *buff)
+MTL_UnmapBuffer(id<MTLDevice> dev, struct NeBuffer *buff)
 {
 #if TARGET_OS_OSX
 	if (![dev hasUnifiedMemory] && !(buff->buff.resourceOptions & MTLResourceStorageModeShared))
@@ -89,7 +89,7 @@ MTL_UnmapBuffer(id<MTLDevice> dev, struct Buffer *buff)
 }
 
 uint64_t
-MTL_BufferAddress(id<MTLDevice> dev, const struct Buffer *buff, uint64_t offset)
+MTL_BufferAddress(id<MTLDevice> dev, const struct NeBuffer *buff, uint64_t offset)
 {
 	uint64_t r = 0;
 	uint32_t *v = (uint32_t *)&r;
@@ -107,7 +107,7 @@ MTL_OffsetAddress(uint64_t address, uint64_t offset)
 }
 
 void
-MTL_DestroyBuffer(id<MTLDevice> dev, struct Buffer *buff)
+MTL_DestroyBuffer(id<MTLDevice> dev, struct NeBuffer *buff)
 {
 	MTL_RemoveBuffer(buff->buff);
 	[buff->buff release];

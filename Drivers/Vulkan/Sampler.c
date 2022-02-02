@@ -1,7 +1,7 @@
 #include "VulkanDriver.h"
 
 VkSampler
-Vk_CreateSampler(struct RenderDevice *dev, const struct SamplerDesc *desc)
+Vk_CreateSampler(struct NeRenderDevice *dev, const struct NeSamplerDesc *desc)
 {
 	VkSampler s;
 	VkSamplerCreateInfo info =
@@ -28,11 +28,16 @@ Vk_CreateSampler(struct RenderDevice *dev, const struct SamplerDesc *desc)
 
 	Vk_SetSampler(dev, 0, s);
 
+#ifdef _DEBUG
+	if (desc->name)
+		Vkd_SetObjectName(dev->dev, s, VK_OBJECT_TYPE_SAMPLER, desc->name);
+#endif
+
 	return s;
 }
 
 void
-Vk_DestroySampler(struct RenderDevice *dev, VkSampler s)
+Vk_DestroySampler(struct NeRenderDevice *dev, VkSampler s)
 {
 	vkDestroySampler(dev->dev, s, Vkd_allocCb);
 }

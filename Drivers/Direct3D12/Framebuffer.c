@@ -4,12 +4,12 @@
 
 #include "D3D12Driver.h"
 
-struct Framebuffer *
-D3D12_CreateFramebuffer(struct RenderDevice *dev, const struct FramebufferDesc *desc)
+struct NeFramebuffer *
+D3D12_CreateFramebuffer(struct NeRenderDevice *dev, const struct NeFramebufferDesc *desc)
 {
-	enum MemoryHeap heap = MH_Frame;
+	enum NeMemoryHeap heap = MH_Frame;
 
-	struct Framebuffer *fb = Sys_Alloc(1, sizeof(*fb), heap);
+	struct NeFramebuffer *fb = Sys_Alloc(1, sizeof(*fb), heap);
 	if (!fb)
 		return NULL;
 
@@ -68,13 +68,13 @@ D3D12_CreateFramebuffer(struct RenderDevice *dev, const struct FramebufferDesc *
 }
 
 void
-D3D12_SetAttachment(struct Framebuffer *fb, uint32_t pos, struct Texture *tex)
+D3D12_SetAttachment(struct NeFramebuffer *fb, uint32_t pos, struct NeTexture *tex)
 {
 //	fb->attachments[pos] = tex->imageView;
 }
 
 void
-D3D12_DestroyFramebuffer(struct RenderDevice *dev, struct Framebuffer *fb)
+D3D12_DestroyFramebuffer(struct NeRenderDevice *dev, struct NeFramebuffer *fb)
 {
 //	vkDestroyFramebuffer(dev->dev, fb->fb, Vkd_allocCb);
 

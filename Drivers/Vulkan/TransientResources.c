@@ -4,10 +4,10 @@
 
 #define ROUND_UP(v, powerOf2Alignment) (((v) + (powerOf2Alignment)-1) & ~((powerOf2Alignment)-1))
 
-struct Texture *
-Vk_CreateTransientTexture(struct RenderDevice *dev, const struct TextureDesc *desc, uint16_t location, uint64_t offset, uint64_t *size)
+struct NeTexture *
+Vk_CreateTransientTexture(struct NeRenderDevice *dev, const struct NeTextureDesc *desc, uint16_t location, uint64_t offset, uint64_t *size)
 {
-	struct Texture *tex = Sys_Alloc(1, sizeof(*tex), MH_Frame);
+	struct NeTexture *tex = Sys_Alloc(1, sizeof(*tex), MH_Frame);
 	if (!tex)
 		return NULL;
 
@@ -41,10 +41,10 @@ error:
 	return NULL;
 }
 
-struct Buffer *
-Vk_CreateTransientBuffer(struct RenderDevice *dev, const struct BufferDesc *desc, uint16_t location, uint64_t offset, uint64_t *size)
+struct NeBuffer *
+Vk_CreateTransientBuffer(struct NeRenderDevice *dev, const struct NeBufferDesc *desc, uint16_t location, uint64_t offset, uint64_t *size)
 {
-	struct Buffer *buff = Sys_Alloc(1, sizeof(*buff), MH_Frame);
+	struct NeBuffer *buff = Sys_Alloc(1, sizeof(*buff), MH_Frame);
 	if (!buff)
 		return NULL;
 
@@ -67,32 +67,47 @@ Vk_CreateTransientBuffer(struct RenderDevice *dev, const struct BufferDesc *desc
 
 	vkBindBufferMemory(dev->dev, buff->buff, dev->transientHeap, realOffset);
 
-	if (location)
-		Vk_SetBuffer(dev, location, buff->buff);
+#ifdef _DEBUG
+	if (desc->name)
+		Vkd_SetObjectName(dev->dev, buff->buff, VK_OBJECT_TYPE_BUFFER, desc->name);
+#endif
 
 	return buff;
 }
 
 bool
-Vk_InitTransientHeap(struct RenderDevice *dev, uint64_t size)
+Vk_InitTransientHeap(struct NeRenderDevice *dev, uint64_t size)
 {
+	VkMemoryAllocateFlagsInfo fi =
+	{
+		.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO,
+		.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT
+	};
 	VkMemoryAllocateInfo ai =
 	{
 		.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+		.pNext = &fi,
 		.allocationSize = size,
 		.memoryTypeIndex = Vkd_MemoryTypeIndex(dev, 0x90, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) // this *might* break
 	};
-	return vkAllocateMemory(dev->dev, &ai, Vkd_allocCb, &dev->transientHeap) == VK_SUCCESS;
+	if (vkAllocateMemory(dev->dev, &ai, Vkd_allocCb, &dev->transientHeap) != VK_SUCCESS)
+		return false;
+
+#ifdef _DEBUG
+	Vkd_SetObjectName(dev->dev, dev->transientHeap, VK_OBJECT_TYPE_DEVICE_MEMORY, "Transient Memory Heap");
+#endif
+
+	return true;
 }
 
 bool
-Vk_ResizeTransientHeap(struct RenderDevice *dev, uint64_t size)
+Vk_ResizeTransientHeap(struct NeRenderDevice *dev, uint64_t size)
 {
 	return false;
 }
 
 void
-Vk_TermTransientHeap(struct RenderDevice *dev)
+Vk_TermTransientHeap(struct NeRenderDevice *dev)
 {
 	vkFreeMemory(dev->dev, dev->transientHeap, Vkd_allocCb);
 }

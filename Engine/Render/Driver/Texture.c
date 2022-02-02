@@ -6,19 +6,19 @@
 #include <Engine/Resource.h>
 #include <Render/Render.h>
 
-static Handle _placeholderTexture;
-static struct Sampler *_sceneSampler;
+static NeHandle _placeholderTexture;
+static struct NeSampler *_sceneSampler;
 
-static bool _CreateTextureResource(const char *name, const struct TextureCreateInfo *ci, struct TextureResource *tex, Handle h);
-static bool _LoadTextureResource(struct ResourceLoadInfo *li, const char *args, struct TextureResource *tex, Handle h);
-static void _UnloadTextureResource(struct TextureResource *tex, Handle h);
-static inline struct Texture *_CreateTexture(const struct TextureDesc *desc, uint16_t location) { return Re_deviceProcs.CreateTexture(Re_device, desc, location); };
-static inline bool _InitTexture(struct Texture *tex, const struct TextureCreateInfo *tci);
-static inline uint32_t _RowSize(enum TextureFormat fmt, uint32_t width);
-static inline uint32_t _ByteSize(enum TextureFormat fmt, uint32_t width, uint32_t height);
+static bool _CreateTextureResource(const char *name, const struct NeTextureCreateInfo *ci, struct NeTextureResource *tex, NeHandle h);
+static bool _LoadTextureResource(struct NeResourceLoadInfo *li, const char *args, struct NeTextureResource *tex, NeHandle h);
+static void _UnloadTextureResource(struct NeTextureResource *tex, NeHandle h);
+static inline struct NeTexture *_CreateTexture(const struct NeTextureDesc *desc, uint16_t location) { return Re_deviceProcs.CreateTexture(Re_device, desc, location); };
+static inline bool _InitTexture(struct NeTexture *tex, const struct NeTextureCreateInfo *tci);
+static inline uint32_t _RowSize(enum NeTextureFormat fmt, uint32_t width);
+static inline uint32_t _ByteSize(enum NeTextureFormat fmt, uint32_t width, uint32_t height);
 
 static bool
-_CreateTextureResource(const char *name, const struct TextureCreateInfo *ci, struct TextureResource *tex, Handle h)
+_CreateTextureResource(const char *name, const struct NeTextureCreateInfo *ci, struct NeTextureResource *tex, NeHandle h)
 {
 	if ((h & 0x00000000FFFFFFFF) > (uint64_t)65535)
 		return false;
@@ -37,13 +37,13 @@ _CreateTextureResource(const char *name, const struct TextureCreateInfo *ci, str
 }
 
 static bool
-_LoadTextureResource(struct ResourceLoadInfo *li, const char *args, struct TextureResource *tex, Handle h)
+_LoadTextureResource(struct NeResourceLoadInfo *li, const char *args, struct NeTextureResource *tex, NeHandle h)
 {
 	if ((h & 0x00000000FFFFFFFF) > (uint64_t)65535)
 		return false;
 
-	bool rc = false, cube = args && !strncmp(args, "cube", strlen(args));
-	struct TextureCreateInfo ci =
+	bool rc = false, cube = args && strstr(args, "cube"), flip = args && strstr(args, "flip");
+	struct NeTextureCreateInfo ci =
 	{
 		.desc =
 		{
@@ -59,8 +59,10 @@ _LoadTextureResource(struct ResourceLoadInfo *li, const char *args, struct Textu
 		rc = E_LoadDDSAsset(&li->stm, &ci);
 	else if (strstr(li->path, ".tga"))
 		rc = E_LoadTGAAsset(&li->stm, &ci);
+	else if (strstr(li->path, ".hdr"))
+		rc = E_LoadHDRAsset(&li->stm, &ci, flip);
 	else
-		rc = E_LoadImageAsset(&li->stm, &ci);
+		rc = E_LoadImageAsset(&li->stm, &ci, flip);
 
 	if (cube && ci.desc.type == TT_2D) {
 		// cubemap not loaded from a DDS file
@@ -116,7 +118,7 @@ _LoadTextureResource(struct ResourceLoadInfo *li, const char *args, struct Textu
 	
 error:
 	if (tex->texture)
-		Re_TDestroyTexture(tex->texture);
+		Re_TDestroyNeTexture(tex->texture);
 	
 	Sys_Free(ci.data);
 	
@@ -124,39 +126,39 @@ error:
 }
 
 static void
-_UnloadTextureResource(struct TextureResource *tex, Handle h)
+_UnloadTextureResource(struct NeTextureResource *tex, NeHandle h)
 {
 	Re_Destroy(tex->texture);
 }
 
-const struct TextureDesc *
-Re_TextureDesc(TextureHandle tex)
+const struct NeTextureDesc *
+Re_TextureDesc(NeTextureHandle tex)
 {
-	struct TextureResource *res = E_ResourcePtr(E_GPUHandleToRes(tex, RES_TEXTURE));
+	struct NeTextureResource *res = E_ResourcePtr(E_GPUHandleToRes(tex, RES_TEXTURE));
 	return res ? &res->desc : NULL;
 }
 
-enum TextureLayout
-Re_TextureLayout(TextureHandle tex)
+enum NeTextureLayout
+Re_TextureLayout(NeTextureHandle tex)
 {
-	struct TextureResource *res = E_ResourcePtr(E_GPUHandleToRes(tex, RES_TEXTURE));
+	struct NeTextureResource *res = E_ResourcePtr(E_GPUHandleToRes(tex, RES_TEXTURE));
 	return res ? Re_deviceProcs.TextureLayout(res->texture) : TL_UNKNOWN;
 }
 
 bool
 Re_InitTextureSystem(void)
 {
-	if (!E_RegisterResourceType(RES_TEXTURE, sizeof(struct TextureResource), (ResourceCreateProc)_CreateTextureResource,
-							(ResourceLoadProc)_LoadTextureResource, (ResourceUnloadProc)_UnloadTextureResource))
+	if (!E_RegisterResourceType(RES_TEXTURE, sizeof(struct NeTextureResource), (NeResourceCreateProc)_CreateTextureResource,
+							(NeResourceLoadProc)_LoadTextureResource, (NeResourceUnloadProc)_UnloadTextureResource))
 		return false;
 
-	struct SamplerDesc desc =
+	struct NeSamplerDesc desc =
 	{
 		.minFilter = IF_LINEAR,
 		.magFilter = IF_LINEAR,
 		.mipmapMode = SMM_LINEAR,
-		.enableAnisotropy = E_GetCVarBln(L"Render_AnisotropicFiltering", true)->bln,
-		.maxAnisotropy = E_GetCVarFlt(L"Render_Anisotropy", 16)->flt,
+		.enableAnisotropy = E_GetCVarBln("Render_AnisotropicFiltering", true)->bln,
+		.maxAnisotropy = E_GetCVarFlt("Render_Anisotropy", 16)->flt,
 		.addressModeU = SAM_REPEAT,
 		.addressModeV = SAM_REPEAT,
 		.addressModeW = SAM_REPEAT,
@@ -168,7 +170,7 @@ Re_InitTextureSystem(void)
 
 	// hot pink so it's ugly and it stands out
 	uint8_t texData[] = { 255, 105, 180, 255 };
-	struct TextureCreateInfo tci =
+	struct NeTextureCreateInfo tci =
 	{
 		.desc =
 		{
@@ -200,10 +202,10 @@ Re_TermTextureSystem(void)
 }
 
 static inline bool
-_InitTexture(struct Texture *tex, const struct TextureCreateInfo *tci)
+_InitTexture(struct NeTexture *tex, const struct NeTextureCreateInfo *tci)
 {
-	BufferHandle staging;
-	struct BufferCreateInfo bci =
+	NeBufferHandle staging;
+	struct NeBufferCreateInfo bci =
 	{
 		.desc.size = tci->dataSize,
 		.desc.usage = BU_TRANSFER_SRC | BU_TRANSFER_DST,
@@ -226,7 +228,7 @@ _InitTexture(struct Texture *tex, const struct TextureCreateInfo *tci)
 			uint32_t h = tci->desc.height >> j; h = h ? h : 1;
 			uint32_t d = tci->desc.depth >> j; d = d ? d : 1;
 
-			struct BufferImageCopy bic =
+			struct NeBufferImageCopy bic =
 			{
 				.bufferOffset = offset,
 				.bytesPerRow = _RowSize(tci->desc.format, w),
@@ -248,20 +250,14 @@ _InitTexture(struct Texture *tex, const struct TextureCreateInfo *tci)
 		}
 	}
 	
-	Re_EndCommandBuffer();
-	
-	struct Fence *f = Re_CreateFence(false);
-	Re_SubmitTransfer(f);
-	Re_WaitForFence(f, UINT64_MAX);
-	
+	Re_ExecuteTransfer(Re_EndCommandBuffer());
 	Re_DestroyBuffer(staging);
-	Re_DestroyFence(f);
 	
 	return true;
 }
 
 static inline uint32_t
-_RowSize(enum TextureFormat fmt, uint32_t width)
+_RowSize(enum NeTextureFormat fmt, uint32_t width)
 {
 	switch (fmt) {
 	case TF_R8G8B8A8_UNORM:
@@ -296,7 +292,7 @@ _RowSize(enum TextureFormat fmt, uint32_t width)
 }
 
 static inline uint32_t
-_ByteSize(enum TextureFormat fmt, uint32_t width, uint32_t height)
+_ByteSize(enum NeTextureFormat fmt, uint32_t width, uint32_t height)
 {
 	switch (fmt) {
 	case TF_R8G8B8A8_UNORM:

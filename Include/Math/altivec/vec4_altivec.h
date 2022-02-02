@@ -72,7 +72,7 @@ _reciprocal_sqr(vector float v)
 static inline struct vec4 *
 v4_simd(struct vec4 *v, float x, float y, float z, float w)
 {
-	ALIGN(16) const float data[4] = { x, y, z, w };
+	NE_ALIGN(16) const float data[4] = { x, y, z, w };
 	v->sv = vec_ld(0, data);
 	return v;
 }
@@ -80,7 +80,7 @@ v4_simd(struct vec4 *v, float x, float y, float z, float w)
 static inline struct vec4 *
 v4_fill_simd(struct vec4 *v, float f)
 {
-	ALIGN(16) const float data[4] = { f, f, f, f };
+	NE_ALIGN(16) const float data[4] = { f, f, f, f };
 	v->sv = vec_ld(0, data);
 	return v;
 }

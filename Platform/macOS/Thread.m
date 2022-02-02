@@ -41,7 +41,7 @@ Sys_Yield(void)
 }
 
 bool
-Sys_InitThread(Thread *t, const wchar_t *name, void (*proc)(void *), void *args)
+Sys_InitThread(NeThread *t, const char *name, void (*proc)(void *), void *args)
 {
 	pthread_attr_t attr;
 
@@ -59,7 +59,7 @@ Sys_InitThread(Thread *t, const wchar_t *name, void (*proc)(void *), void *args)
 }
 
 void
-Sys_SetThreadAffinity(Thread t, int cpu)
+Sys_SetThreadAffinity(NeThread t, int cpu)
 {
 	thread_affinity_policy_data_t pd = { cpu };
 	mach_port_t machThread = pthread_mach_thread_np((pthread_t)t);
@@ -67,43 +67,43 @@ Sys_SetThreadAffinity(Thread t, int cpu)
 }
 
 void
-Sys_JoinThread(Thread t)
+Sys_JoinThread(NeThread t)
 {
 	pthread_join((pthread_t)t, NULL);
 }
 
 void
-Sys_TermThread(Thread t)
+Sys_TermThread(NeThread t)
 {
 	pthread_cancel((pthread_t)t);
 }
 
 bool
-Sys_InitMutex(Mutex *mtx)
+Sys_InitMutex(NeMutex *mtx)
 {
-	return Sys_InitFutex((Futex *)mtx);
+	return Sys_InitFutex((NeFutex *)mtx);
 }
 
 bool
-Sys_LockMutex(Mutex mtx)
+Sys_LockMutex(NeMutex mtx)
 {
-	return Sys_LockFutex((Futex)mtx);
+	return Sys_LockFutex((NeFutex)mtx);
 }
 
 bool
-Sys_UnlockMutex(Mutex mtx)
+Sys_UnlockMutex(NeMutex mtx)
 {
-	return Sys_UnlockFutex((Futex)mtx);
+	return Sys_UnlockFutex((NeFutex)mtx);
 }
 
 void
-Sys_TermMutex(Mutex mtx)
+Sys_TermMutex(NeMutex mtx)
 {
-	Sys_TermFutex((Futex)mtx);
+	Sys_TermFutex((NeFutex)mtx);
 }
 
 bool
-Sys_InitFutex(Futex *ftx)
+Sys_InitFutex(NeFutex *ftx)
 {
 	pthread_mutex_t *m = Sys_Alloc(sizeof(*m), 1, MH_System);
 	if (!m)
@@ -115,26 +115,26 @@ Sys_InitFutex(Futex *ftx)
 }
 
 bool
-Sys_LockFutex(Futex ftx)
+Sys_LockFutex(NeFutex ftx)
 {
 	return !pthread_mutex_lock((pthread_mutex_t *)ftx);
 }
 
 bool
-Sys_UnlockFutex(Futex ftx)
+Sys_UnlockFutex(NeFutex ftx)
 {
 	return !pthread_mutex_unlock((pthread_mutex_t *)ftx);
 }
 
 void
-Sys_TermFutex(Futex ftx)
+Sys_TermFutex(NeFutex ftx)
 {
 	pthread_mutex_destroy((pthread_mutex_t *)ftx);
 	Sys_Free(ftx);
 }
 
 bool
-Sys_InitConditionVariable(ConditionVariable *cv)
+Sys_InitConditionVariable(NeConditionVariable *cv)
 {
 	pthread_cond_t *c = Sys_Alloc(sizeof(*c), 1, MH_System);
 	if (!c)
@@ -146,31 +146,31 @@ Sys_InitConditionVariable(ConditionVariable *cv)
 }
 
 void
-Sys_Signal(ConditionVariable cv)
+Sys_Signal(NeConditionVariable cv)
 {
 	pthread_cond_signal((pthread_cond_t *)cv);
 }
 
 void
-Sys_Broadcast(ConditionVariable cv)
+Sys_Broadcast(NeConditionVariable cv)
 {
 	pthread_cond_broadcast((pthread_cond_t *)cv);
 }
 
 bool
-Sys_WaitMutex(ConditionVariable cv, Mutex mtx)
+Sys_WaitMutex(NeConditionVariable cv, NeMutex mtx)
 {
-	return Sys_WaitFutex(cv, (Futex)mtx);
+	return Sys_WaitFutex(cv, (NeFutex)mtx);
 }
 
 bool
-Sys_WaitFutex(ConditionVariable cv, Futex ftx)
+Sys_WaitFutex(NeConditionVariable cv, NeFutex ftx)
 {
 	return !pthread_cond_wait((pthread_cond_t *)cv, (pthread_mutex_t *)ftx);
 }
 
 void
-Sys_TermConditionVariable(ConditionVariable cv)
+Sys_TermConditionVariable(NeConditionVariable cv)
 {
 	pthread_cond_destroy((pthread_cond_t *)cv);
 	Sys_Free(cv);

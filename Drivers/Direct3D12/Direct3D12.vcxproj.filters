@@ -66,6 +66,9 @@
     <ClCompile Include="Synchronization.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="DescriptorHeap.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="D3D12Driver.h">

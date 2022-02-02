@@ -7,21 +7,21 @@
 #include <Engine/Types.h>
 #include <System/Memory.h>
 
-typedef enum FileOpenMode
+enum NeFileOpenMode
 {
 	IO_READ,
 	IO_WRITE,
 	IO_APPEND
-} FileOpenMode;
+};
 
-typedef enum FileSeekStart 
+enum NeFileSeekStart 
 {
 	IO_SEEK_SET,
 	IO_SEEK_CUR,
 	IO_SEEK_END
-} FileSeekStart;
+};
 
-enum StreamType
+enum NeStreamType
 {
 	ST_Closed = 0,
 	ST_Memory,
@@ -29,7 +29,7 @@ enum StreamType
 	ST_MappedFile
 };
 
-enum WriteDirectory
+enum NeWriteDirectory
 {
 	WD_Data,
 	WD_Save,
@@ -37,29 +37,29 @@ enum WriteDirectory
 	WD_Config
 };
 
-struct Stream
+struct NeStream
 {
 	uint8_t *ptr;
 	uint64_t pos, size;
-	File f;
-	enum StreamType type;
+	NeFile f;
+	enum NeStreamType type;
 	bool open;
 };
 
-File		  E_OpenFile(const char *path, FileOpenMode mode);
-void		 *E_MapFile(const char *path, FileOpenMode mode, uint64_t *size);
+NeFile		  E_OpenFile(const char *path, enum NeFileOpenMode mode);
+void		 *E_MapFile(const char *path, enum NeFileOpenMode mode, uint64_t *size);
 void		  E_UnmapFile(const void *ptr, uint64_t size);
-int64_t		  E_ReadFile(File f, void *ptr, int64_t size);
-void		 *E_ReadFileBlob(File f, int64_t *size, bool transient);
-char		 *E_ReadFileText(File f, int64_t *size, bool transient);
-char		 *E_FGets(File f, char *buff, int64_t max);
-int64_t		  E_WriteFile(File f, void *ptr, int64_t size);
-int64_t		  E_FTell(File f);
-int64_t		  E_FSeek(File f, int64_t offset, FileSeekStart whence);
-int64_t		  E_FileLength(File f);
-bool		  E_FEof(File f);
+int64_t		  E_ReadFile(NeFile f, void *ptr, int64_t size);
+void		 *E_ReadFileBlob(NeFile f, int64_t *size, bool transient);
+char		 *E_ReadFileText(NeFile f, int64_t *size, bool transient);
+char		 *E_FGets(NeFile f, char *buff, int64_t max);
+int64_t		  E_WriteFile(NeFile f, const void *ptr, int64_t size);
+int64_t		  E_FTell(NeFile f);
+int64_t		  E_FSeek(NeFile f, int64_t offset, enum NeFileSeekStart whence);
+int64_t		  E_FileLength(NeFile f);
+bool		  E_FEof(NeFile f);
 bool		  E_FileExists(const char *path);
-void		  E_CloseFile(File file);
+void		  E_CloseFile(NeFile file);
 bool		  E_Mount(const char *path, const char *point);
 bool		  E_MountMemory(const char *name, const void *ptr, uint64_t size, const char *point);
 bool		  E_Unmount(const char *name);
@@ -68,20 +68,20 @@ bool		  E_IsDirectory(const char *path);
 void		  E_FreeFileList(const char **list);
 void		  E_ProcessFiles(const char *path, const char *ext, bool recurse, void (*cb)(const char *));
 
-bool		  E_EnableWrite(enum WriteDirectory wd);
+bool		  E_EnableWrite(enum NeWriteDirectory wd);
 void		  E_DisableWrite(void);
 bool		  E_CreateDirectory(const char *name);
 
-bool		  E_FileStream(const char *path, FileOpenMode mode, struct Stream *stm);
-bool		  E_MemoryStream(void *buff, uint64_t size, struct Stream *stm);
-void		  E_CloseStream(struct Stream *stm);
+bool		  E_FileStream(const char *path, enum NeFileOpenMode mode, struct NeStream *stm);
+bool		  E_MemoryStream(void *buff, uint64_t size, struct NeStream *stm);
+void		  E_CloseStream(struct NeStream *stm);
 
 bool		  E_InitIOSystem(void);
 void		  E_TermIOSystem(void);
 
 // Inline functions
 static inline int64_t
-E_StreamTell(const struct Stream *stm)
+E_StreamTell(const struct NeStream *stm)
 {
 	if (stm->ptr)
 		return stm->pos;
@@ -92,7 +92,7 @@ E_StreamTell(const struct Stream *stm)
 }
 
 static inline int64_t
-E_StreamSeek(struct Stream *stm, int64_t offset, FileSeekStart whence)
+E_StreamSeek(struct NeStream *stm, int64_t offset, enum NeFileSeekStart whence)
 {
 	if (stm->ptr) {
 		switch (whence) {
@@ -110,7 +110,7 @@ E_StreamSeek(struct Stream *stm, int64_t offset, FileSeekStart whence)
 }
 
 static inline int64_t
-E_StreamLength(const struct Stream *stm)
+E_StreamLength(const struct NeStream *stm)
 {
 	if (stm->ptr)
 		return stm->size;
@@ -121,7 +121,7 @@ E_StreamLength(const struct Stream *stm)
 }
 
 static inline bool
-E_EndOfStream(const struct Stream *stm)
+E_EndOfStream(const struct NeStream *stm)
 {
 	if (stm->ptr)
 		return stm->pos == stm->size;
@@ -132,7 +132,7 @@ E_EndOfStream(const struct Stream *stm)
 }
 
 static inline int64_t
-E_ReadStream(struct Stream *stm, void *ptr, int64_t size)
+E_ReadStream(struct NeStream *stm, void *ptr, int64_t size)
 {
 	if (stm->ptr) {
 		memmove(ptr, stm->ptr + stm->pos, (size_t)size);
@@ -146,7 +146,7 @@ E_ReadStream(struct Stream *stm, void *ptr, int64_t size)
 }
 
 static inline char *
-E_ReadStreamLine(struct Stream *stm, char *ptr, int64_t size)
+E_ReadStreamLine(struct NeStream *stm, char *ptr, int64_t size)
 {
 	char *ret = NULL;
 
@@ -176,25 +176,8 @@ E_ReadStreamLine(struct Stream *stm, char *ptr, int64_t size)
 	return ret;
 }
 
-static inline int64_t
-E_ReadFullStream(struct Stream *stm, void *ptr)
-{
-	size_t size = (size_t)E_StreamLength(stm);
-	if (stm->ptr) {
-		stm->pos = 0;
-		memmove(ptr, stm->ptr + stm->pos, size);
-		stm->pos += size;
-		return size;
-	} else if (stm->f) {
-		E_FSeek(stm->f, 0, IO_SEEK_SET);
-		return E_ReadFile(stm->f, ptr, size);
-	} else {
-		return -1;
-	}
-}
-
 static inline void *
-E_ReadStreamBlob(struct Stream *stm, enum MemoryHeap heap)
+E_ReadStreamBlob(struct NeStream *stm, enum NeMemoryHeap heap)
 {
 	size_t size = (size_t)E_StreamLength(stm);
 	if (!stm->open || !size)
@@ -218,7 +201,7 @@ E_ReadStreamBlob(struct Stream *stm, enum MemoryHeap heap)
 }
 
 static inline int64_t
-E_WriteStream(struct Stream *stm, void *ptr, int64_t size)
+E_WriteStream(struct NeStream *stm, const void *ptr, int64_t size)
 {
 	if (stm->ptr) {
 		memmove(stm->ptr + stm->pos, ptr, (size_t)size);

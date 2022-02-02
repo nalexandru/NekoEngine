@@ -7,7 +7,7 @@ struct HeapInfo
 	MTLResourceOptions options;
 };
 
-static struct Array _textureHeapInfo, _bufferHeapInfo, _textureHeaps, _bufferHeaps;
+static struct NeArray _textureHeapInfo, _bufferHeapInfo, _textureHeaps, _bufferHeaps;
 
 bool
 MTLDrv_InitMemory(void)
@@ -35,7 +35,7 @@ MTLDrv_CreateBuffer(id<MTLDevice> dev, uint64_t size, MTLResourceOptions options
 	}
 
 	MTLHeapDescriptor *heapDesc = [[MTLHeapDescriptor alloc] init];
-	heapDesc.size = E_GetCVarU32(L"MetalDrv_BufferHeapSize", 128 * 1024 * 1024)->u32;
+	heapDesc.size = E_GetCVarU32("MetalDrv_BufferHeapSize", 128 * 1024 * 1024)->u32;
 	heapDesc.resourceOptions = options;
 	heapDesc.hazardTrackingMode = MTLHazardTrackingModeUntracked;
 	heapDesc.type = MTLHeapTypeAutomatic;
@@ -62,7 +62,7 @@ MTLDrv_CreateTexture(id<MTLDevice> dev, MTLTextureDescriptor *desc)
 	}
 
 	MTLHeapDescriptor *heapDesc = [[MTLHeapDescriptor alloc] init];
-	heapDesc.size = E_GetCVarU32(L"MetalDrv_TextureHeapSize", 256 * 1024 * 1024)->u32;
+	heapDesc.size = E_GetCVarU32("MetalDrv_TextureHeapSize", 256 * 1024 * 1024)->u32;
 	heapDesc.resourceOptions = [desc resourceOptions];
 	heapDesc.hazardTrackingMode = MTLHazardTrackingModeUntracked;
 	heapDesc.type = MTLHeapTypeAutomatic;

@@ -4,12 +4,12 @@
 #include <Render/Types.h>
 #include <Runtime/Runtime.h>
 
-struct RenderGraph
+struct NeRenderGraph
 {
-	struct Array execPasses;
-	struct Array resources;
-	struct Array allPasses;
-	struct Semaphore *semaphore;
+	struct NeArray execPasses;
+	struct NeArray resources;
+	struct NeArray allPasses;
+	struct NeSemaphore *semaphore;
 };
 
 #endif /* _NE_RENDER_INTERNAL_H_ */

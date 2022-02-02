@@ -5,7 +5,7 @@
 
 #define RES_AUDIO_CLIP	"AudioClip"
 
-enum AudioFormat
+enum NeAudioFormat
 {
 	AF_INT_16,
 	AF_INT_32,
@@ -13,28 +13,28 @@ enum AudioFormat
 	AF_FLOAT_64
 };
 
-struct AudioClip
+struct NeAudioClip
 {
 	uint16_t *data;
 	uint32_t byteSize;
 	uint32_t bitsPerSample;
 	uint32_t sampleRate;
 	uint32_t channels;
-	enum AudioFormat format;
+	enum NeAudioFormat format;
 	uint8_t soundSystemData;
 };
 
-struct AudioClipCreateInfo
+struct NeAudioClipCreateInfo
 {
 	uint16_t *samples;
 	uint32_t sampleCount;
 };
 
-bool Au_CreateClip(const char *name, const struct AudioClipCreateInfo *ci, struct AudioClip *data, Handle h);
-bool Au_LoadClip(struct ResourceLoadInfo *li, const char *args, struct AudioClip *model, Handle h);
-void Au_UnloadClip(struct AudioClip *model, Handle h);
+bool Au_CreateClip(const char *name, const struct NeAudioClipCreateInfo *ci, struct NeAudioClip *data, NeHandle h);
+bool Au_LoadClip(struct NeResourceLoadInfo *li, const char *args, struct NeAudioClip *model, NeHandle h);
+void Au_UnloadClip(struct NeAudioClip *model, NeHandle h);
 
-bool Au_InitClip(struct AudioClip *clip);
-void Au_TermClip(struct AudioClip *clip);
+bool Au_InitClip(struct NeAudioClip *clip);
+void Au_TermClip(struct NeAudioClip *clip);
 
 #endif /* _NE_AUDIO_CLIP_H_ */

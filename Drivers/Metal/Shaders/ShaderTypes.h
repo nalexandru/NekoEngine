@@ -14,6 +14,7 @@ struct Vertex
 	float nx, ny, nz;
 	float tx, ty, tz;
 	float u, v;
+	float r, g, b, a;
 };
 
 struct UIVertex
@@ -47,7 +48,7 @@ struct Scene
 	float4 cameraPosition;
 
 	float4 sunPosition;
-	uint4 enviornmentMap;
+	uint4 enviornmentMaps;
 
 	uint lightCount;
 	uint xTileCount;

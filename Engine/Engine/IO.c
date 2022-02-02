@@ -12,17 +12,19 @@
 #include <Runtime/Runtime.h>
 #include <Engine/Application.h>
 
-#include "EngineRes.h"
+#ifndef USE_PLATFORM_RESOURCES
+#	include "EngineRes.h"
+#else
+bool Sys_MountPlatformResources(void);
+void Sys_UnmountPlatformResources(void);
+#endif
 
-#define IO_MODULE L"I/O"
-
-extern unsigned char engine_res[];
-extern unsigned int engine_res_size;
+#define IO_MODULE "I/O"
 
 const char *E_RealPath(const char *path);
 
-File
-E_OpenFile(const char *path, FileOpenMode mode)
+NeFile
+E_OpenFile(const char *path, enum NeFileOpenMode mode)
 {
 	PHYSFS_file *f = NULL;
 
@@ -38,11 +40,11 @@ E_OpenFile(const char *path, FileOpenMode mode)
 		break;
 	}
 
-	return (File)f;
+	return (NeFile)f;
 }
 
 void *
-E_MapFile(const char *path, FileOpenMode mode, uint64_t *size)
+E_MapFile(const char *path, enum NeFileOpenMode mode, uint64_t *size)
 {
 	void *ptr = NULL;
 	if (!Sys_MapFile(E_RealPath(path), mode == IO_WRITE, &ptr, size))
@@ -58,16 +60,16 @@ E_UnmapFile(const void *ptr, uint64_t size)
 }
 
 int64_t
-E_ReadFile(File f, void *ptr, int64_t size)
+E_ReadFile(NeFile f, void *ptr, int64_t size)
 {
 	return PHYSFS_readBytes((PHYSFS_file *)f, ptr, size);
 }
 
 void *
-E_ReadFileBlob(File f, int64_t *size, bool transient)
+E_ReadFileBlob(NeFile f, int64_t *size, bool transient)
 {
 	uint8_t *ret = NULL;
-	enum MemoryHeap heap = transient ? MH_Transient : MH_System;
+	enum NeMemoryHeap heap = transient ? MH_Transient : MH_System;
 
 	*size = PHYSFS_fileLength((PHYSFS_file *)f);
 	if (!*size)
@@ -86,10 +88,10 @@ E_ReadFileBlob(File f, int64_t *size, bool transient)
 }
 
 char *
-E_ReadFileText(File f, int64_t *size, bool transient)
+E_ReadFileText(NeFile f, int64_t *size, bool transient)
 {
 	char *ret = NULL;
-	enum MemoryHeap heap = transient ? MH_Transient : MH_System;
+	enum NeMemoryHeap heap = transient ? MH_Transient : MH_System;
 
 	*size = PHYSFS_fileLength((PHYSFS_file *)f) - PHYSFS_tell((PHYSFS_file *)f);
 	if (!*size)
@@ -110,7 +112,7 @@ E_ReadFileText(File f, int64_t *size, bool transient)
 }
 
 char *
-E_FGets(File f, char *buff, int64_t max)
+E_FGets(NeFile f, char *buff, int64_t max)
 {
 	char c;
 	char *p = buff;
@@ -156,19 +158,19 @@ E_FGets(File f, char *buff, int64_t max)
 }
 
 int64_t
-E_WriteFile(File f, void *ptr, int64_t size)
+E_WriteFile(NeFile f, const void *ptr, int64_t size)
 {
 	return PHYSFS_writeBytes((PHYSFS_file *)f, ptr, size);
 }
 
 int64_t
-E_FTell(File f)
+E_FTell(NeFile f)
 {
 	return PHYSFS_tell((PHYSFS_file *)f);
 }
 
 int64_t
-E_FSeek(File f, int64_t offset, FileSeekStart whence)
+E_FSeek(NeFile f, int64_t offset, enum NeFileSeekStart whence)
 {
 	int64_t dest = offset;
 
@@ -181,13 +183,13 @@ E_FSeek(File f, int64_t offset, FileSeekStart whence)
 }
 
 int64_t
-E_FileLength(File f)
+E_FileLength(NeFile f)
 {
 	return PHYSFS_fileLength((PHYSFS_file *)f);
 }
 
 bool
-E_FEof(File f)
+E_FEof(NeFile f)
 {
 	return PHYSFS_eof((PHYSFS_file *)f);
 }
@@ -199,7 +201,7 @@ E_FileExists(const char *path)
 }
 
 void
-E_CloseFile(File file)
+E_CloseFile(NeFile file)
 {
 	PHYSFS_close((PHYSFS_file *)file);
 }
@@ -209,7 +211,7 @@ E_Mount(const char *path, const char *point)
 {
 	if (!PHYSFS_mount(path, point, 0)) {
 		Sys_LogEntry(IO_MODULE, LOG_CRITICAL,
-			L"Failed to mount directory [%s] -> [%s]: %s", path, point,
+			"Failed to mount directory [%s] -> [%s]: %s", path, point,
 			PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
 		return false;
 	}
@@ -222,7 +224,7 @@ E_MountMemory(const char *name, const void *ptr, uint64_t size, const char *poin
 {
 	if (!PHYSFS_mountMemory(ptr, size, NULL, name, point, 0)) {
 		Sys_LogEntry(IO_MODULE, LOG_CRITICAL,
-			L"Failed to mount memory archive [%s] -> [%s]: %s", name, point,
+			"Failed to mount memory archive [%s] -> [%s]: %s", name, point,
 			PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
 		return false;
 	}
@@ -288,13 +290,13 @@ E_ProcessFiles(const char *path, const char *ext, bool recurse, void (*cb)(const
 }
 
 bool
-E_EnableWrite(enum WriteDirectory wd)
+E_EnableWrite(enum NeWriteDirectory wd)
 {
 	size_t len = 4096;
 	char *dir = Sys_Alloc(sizeof(*dir), len, MH_Transient);
 
 	switch (wd) {
-	case WD_Data: memcpy(dir, E_GetCVarStr(L"Engine_DataDir", NULL)->str, len); break;
+	case WD_Data: memcpy(dir, E_GetCVarStr("Engine_DataDir", NULL)->str, len); break;
 	case WD_Save: Sys_DirectoryPath(SD_SAVE_GAME, dir, len); break;
 	case WD_Temp: Sys_DirectoryPath(SD_TEMP, dir, len); break;
 	case WD_Config: Sys_DirectoryPath(SD_APP_DATA, dir, len); break;
@@ -316,7 +318,7 @@ E_CreateDirectory(const char *path)
 }
 
 bool
-E_FileStream(const char *path, FileOpenMode mode, struct Stream *stm)
+E_FileStream(const char *path, enum NeFileOpenMode mode, struct NeStream *stm)
 {
 	if (!path || !strlen(path))
 		return false;
@@ -345,14 +347,14 @@ E_FileStream(const char *path, FileOpenMode mode, struct Stream *stm)
 }
 
 bool
-E_MemoryStream(void *buff, uint64_t size, struct Stream *stm)
+E_MemoryStream(void *buff, uint64_t size, struct NeStream *stm)
 {
 	stm->open = false;
 	return false;
 }
 
 void
-E_CloseStream(struct Stream *stm)
+E_CloseStream(struct NeStream *stm)
 {
 	if (stm->type == ST_File)
 		E_CloseFile(stm->f);
@@ -366,11 +368,20 @@ bool
 E_InitIOSystem(void)
 {
 	if (!PHYSFS_init("NekoEngine")) {
-		Sys_LogEntry(IO_MODULE, LOG_CRITICAL, L"Failed to initialize I/O subsystem: %s", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+		Sys_LogEntry(IO_MODULE, LOG_CRITICAL, "Failed to initialize I/O subsystem: %s", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
 		return false;
 	}
 
-	const char *dataDir = E_GetCVarStr(L"Engine_DataDir", "Data")->str;
+#ifndef USE_PLATFORM_RESOURCES
+	if (!PHYSFS_mountMemory(EngineRes_zip, sizeof(EngineRes_zip), 0, "EngineRes.zip", "/", 0)) {
+#else
+	if (!Sys_MountPlatformResources()) {
+#endif
+		Sys_LogEntry(IO_MODULE, LOG_CRITICAL, "Failed to load builtin resources: %ls", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+		return false;
+	}
+
+	const char *dataDir = E_GetCVarStr("Engine_DataDir", "Data")->str;
 	if (!Sys_DirectoryExists(dataDir))
 		Sys_CreateDirectory(dataDir);
 
@@ -387,15 +398,19 @@ E_InitIOSystem(void)
 		PHYSFS_mount(dir, "/", 0);
 	
 	Sys_DirectoryPath(SD_TEMP, dir, len);
-	if (!PHYSFS_mount(dir, "/Temp", 1))
+	if (!PHYSFS_mount(dir, "/Temp", 1)) {
+		Sys_LogEntry(IO_MODULE, LOG_CRITICAL, "Failed to mount Temp directory: %s", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
 		return false;
+	}
 
 	Sys_DirectoryPath(SD_SAVE_GAME, dir, len);
 	if (!Sys_DirectoryExists(dir))
 		Sys_CreateDirectory(dir);
 
-	if (!PHYSFS_mount(dir, "/Save", 1))
+	if (!PHYSFS_mount(dir, "/Save", 1)) {
+		Sys_LogEntry(IO_MODULE, LOG_CRITICAL, "Failed to mount Save directory: %s", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
 		return false;
+	}
 
 	Sys_DirectoryPath(SD_APP_DATA, dir, len);
 	if (!Sys_DirectoryExists(dir))
@@ -404,18 +419,18 @@ E_InitIOSystem(void)
 	if (!PHYSFS_mount(dir, "/Config", 1))
 		return false;
 
-	if (!PHYSFS_mountMemory(EngineRes_zip, sizeof(EngineRes_zip), 0, "EngineRes.zip", "/", 0))
-		Sys_LogEntry(IO_MODULE, LOG_CRITICAL, L"Failed to load builtin resources: %ls",
-										PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
-
 	return true;
 }
 
 void
 E_TermIOSystem(void)
 {
+#ifndef USE_PLATFORM_RESOURCES
 	if (!PHYSFS_unmount("EngineRes.zip"))
-		Sys_LogEntry(IO_MODULE, LOG_DEBUG, L"Failed to unmount EngineRes.zip");
+		Sys_LogEntry(IO_MODULE, LOG_DEBUG, "Failed to unmount EngineRes.zip");
+#else
+	Sys_UnmountPlatformResources();
+#endif
 
 	PHYSFS_deinit();
 }

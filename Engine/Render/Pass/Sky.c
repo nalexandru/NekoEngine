@@ -8,11 +8,11 @@
 #include <Render/Graph/Pass.h>
 #include <Render/Graph/Graph.h>
 
-struct SkyPass;
-static bool _Init(struct SkyPass **pass);
-static void _Term(struct SkyPass *pass);
-static bool _Setup(struct SkyPass *pass, struct Array *resources);
-static void _Execute(struct SkyPass *pass, const struct Array *resources);
+struct NeSkyPass;
+static bool _Init(struct NeSkyPass **pass);
+static void _Term(struct NeSkyPass *pass);
+static bool _Setup(struct NeSkyPass *pass, struct NeArray *resources);
+static void _Execute(struct NeSkyPass *pass, const struct NeArray *resources);
 
 static float _vertices[] =
 {
@@ -36,21 +36,21 @@ static uint16_t _indices[] =
 	3, 7, 6, 2, 3, 6
 };
 
-struct RenderPass RP_sky =
+struct NeRenderPass RP_sky =
 {
-	.Init = (PassInitProc)_Init,
-	.Term = (PassTermProc)_Term,
-	.Setup = (PassSetupProc)_Setup,
-	.Execute = (PassExecuteProc)_Execute
+	.Init = (NePassInitProc)_Init,
+	.Term = (NePassTermProc)_Term,
+	.Setup = (NePassSetupProc)_Setup,
+	.Execute = (NePassExecuteProc)_Execute
 };
 
-struct SkyPass
+struct NeSkyPass
 {
-	struct Framebuffer *fb;
-	struct Pipeline *pipeline;
-	struct RenderPassDesc *rpd;
-	uint64_t depthHash, outputHash;
-	BufferHandle vertexBuffer, indexBuffer;
+	struct NeFramebuffer *fb;
+	struct NePipeline *pipeline;
+	struct NeRenderPassDesc *rpd;
+	uint64_t depthHash, outputHash, passSemaphoreHash;
+	NeBufferHandle vertexBuffer, indexBuffer;
 };
 
 struct Constants
@@ -64,19 +64,19 @@ struct Constants
 };
 
 static bool 
-_Setup(struct SkyPass *pass, struct Array *resources)
+_Setup(struct NeSkyPass *pass, struct NeArray *resources)
 {
 	if (Scn_activeScene->environmentMap == E_INVALID_HANDLE)
 		return false;
 
-	struct FramebufferAttachmentDesc fbAtDesc[2] =
+	struct NeFramebufferAttachmentDesc fbAtDesc[2] =
 	{
 		{ .usage = 0, .format = 0 },
 		{ .usage = TU_DEPTH_STENCIL_ATTACHMENT, .format = TF_D32_SFLOAT },
 	};
 	Re_SwapchainDesc(Re_swapchain, &fbAtDesc[0]);
 
-	struct FramebufferDesc fbDesc =
+	struct NeFramebufferDesc fbDesc =
 	{
 		.attachmentCount = 2,
 		.attachments = fbAtDesc,
@@ -92,7 +92,7 @@ _Setup(struct SkyPass *pass, struct Array *resources)
 }
 
 static void
-_Execute(struct SkyPass *pass, const struct Array *resources)
+_Execute(struct NeSkyPass *pass, const struct NeArray *resources)
 {
 	struct Constants constants =
 	{
@@ -126,19 +126,21 @@ _Execute(struct SkyPass *pass, const struct Array *resources)
 	Re_CmdDrawIndexed(sizeof(_indices) / sizeof(_indices[0]), 1, 0, 0, 0);
 
 	Re_CmdEndRenderPass();
-	Re_EndCommandBuffer();
+
+	struct NeSemaphore *passSemaphore = Re_GraphData(pass->passSemaphoreHash, resources);
+	Re_QueueGraphics(Re_EndCommandBuffer(), passSemaphore, passSemaphore);
 }
 
 static bool
-_Init(struct SkyPass **pass)
+_Init(struct NeSkyPass **pass)
 {
-	*pass = Sys_Alloc(sizeof(struct SkyPass), 1, MH_Render);
+	*pass = Sys_Alloc(sizeof(struct NeSkyPass), 1, MH_Render);
 	if (!*pass)
 		return false;
 
-	struct Shader *shader = Re_GetShader("Sky");
+	struct NeShader *shader = Re_GetShader("Sky");
 
-	struct AttachmentDesc atDesc =
+	struct NeAttachmentDesc atDesc =
 	{
 		.mayAlias = false,
 		.format = Re_SwapchainFormat(Re_swapchain),
@@ -150,7 +152,7 @@ _Init(struct SkyPass **pass)
 		.finalLayout = TL_COLOR_ATTACHMENT,
 		.clearColor = { .0f, .0f, .0f, .0f }
 	};
-	struct AttachmentDesc depthDesc =
+	struct NeAttachmentDesc depthDesc =
 	{
 		.mayAlias = false,
 		.format = TF_D32_SFLOAT,
@@ -166,11 +168,11 @@ _Init(struct SkyPass **pass)
 	if (!(*pass)->rpd)
 		goto error;
 
-	struct BlendAttachmentDesc blendAttachments[] =
+	struct NeBlendAttachmentDesc blendAttachments[] =
 	{
 		{ .enableBlend = false, .writeMask = RE_WRITE_MASK_RGBA }
 	};
-	struct GraphicsPipelineDesc pipeDesc =
+	struct NeGraphicsPipelineDesc pipeDesc =
 	{
 		.flags = RE_TOPOLOGY_TRIANGLES | RE_POLYGON_FILL |
 					RE_CULL_NONE | RE_FRONT_FACE_CW |
@@ -188,10 +190,11 @@ _Init(struct SkyPass **pass)
 
 	(*pass)->depthHash = Rt_HashString("Re_depthBuffer");
 	(*pass)->outputHash = Rt_HashString("Re_output");
+	(*pass)->passSemaphoreHash = Rt_HashString("Re_passSemaphore");
 
 	///////////////// FIXME
 
-	struct BufferCreateInfo bci =
+	struct NeBufferCreateInfo bci =
 	{
 		.desc =
 		{
@@ -230,7 +233,7 @@ error:
 }
 
 static void
-_Term(struct SkyPass *pass)
+_Term(struct NeSkyPass *pass)
 {
 	Re_Destroy(pass->vertexBuffer);
 	Re_Destroy(pass->indexBuffer);

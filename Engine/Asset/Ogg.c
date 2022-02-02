@@ -4,7 +4,7 @@
 #include <Engine/Asset.h>
 
 bool
-E_LoadOggAsset(struct Stream *stm, struct AudioClip *clip)
+E_LoadOggAsset(struct NeStream *stm, struct NeAudioClip *clip)
 {
 	/*int channels, sampleRate;
 	short *pcm;*/

@@ -2,141 +2,150 @@
 
 #include "D3D12Driver.h"
 
-struct Buffer *
-D3D12_CreateBuffer(struct RenderDevice *dev, const struct BufferDesc *desc, uint16_t location)
+void
+D3D12D_InitBufferDesc(const struct NeBufferDesc *desc, D3D12_HEAP_PROPERTIES *heapProperties, D3D12_RESOURCE_DESC *resDesc)
 {
-	struct Buffer *buff = Sys_Alloc(1, sizeof(*buff), MH_RenderDriver);
+	heapProperties->MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+	heapProperties->CreationNodeMask = 1;
+	heapProperties->VisibleNodeMask = 1;
+
+	resDesc->Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	resDesc->Alignment = 0;
+	resDesc->Width = desc->size;
+	resDesc->Height = 1;
+	resDesc->DepthOrArraySize = 1;
+	resDesc->MipLevels = 1;
+	resDesc->Format = DXGI_FORMAT_UNKNOWN;
+	resDesc->SampleDesc.Count = 1;
+	resDesc->SampleDesc.Quality = 0;
+	resDesc->Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	resDesc->Flags = D3D12_RESOURCE_FLAG_NONE;
+
+	switch (desc->memoryType) {
+	case MT_GPU_LOCAL:
+		heapProperties->Type = D3D12_HEAP_TYPE_DEFAULT;
+		heapProperties->CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_NOT_AVAILABLE;
+	break;
+	case MT_CPU_READ:
+		heapProperties->Type = D3D12_HEAP_TYPE_READBACK;
+		heapProperties->CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+	break;
+	case MT_CPU_WRITE:
+		heapProperties->Type = D3D12_HEAP_TYPE_UPLOAD;
+		heapProperties->CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_WRITE_COMBINE;
+	break;
+	case MT_CPU_COHERENT:
+		heapProperties->Type = D3D12_HEAP_TYPE_UPLOAD;
+		heapProperties->CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+	break;
+	}
+}
+
+struct NeBuffer *
+D3D12_CreateBuffer(struct NeRenderDevice *dev, const struct NeBufferDesc *desc, uint16_t location)
+{
+	struct NeBuffer *buff = Sys_Alloc(1, sizeof(*buff), MH_RenderDriver);
 	if (!buff)
 		return NULL;
 
-/*	VkBufferCreateInfo buffInfo =
-	{
-		.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-		.size = bci->desc.size,
-		.usage = bci->desc.usage | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-		.sharingMode = VK_SHARING_MODE_EXCLUSIVE
-	};
-	vkCreateBuffer(dev->dev, &buffInfo, Vkd_allocCb, &buff->buff);
+	D3D12_RESOURCE_DESC resDesc;
+	D3D12_HEAP_PROPERTIES heapProperties;
+	D3D12D_InitBufferDesc(desc, &heapProperties, &resDesc);
 
-	VkMemoryRequirements req = { 0 };
-	vkGetBufferMemoryRequirements(dev->dev, buff->buff, &req);
+	HRESULT hr = ID3D12Device5_CreateCommittedResource(dev->dev, &heapProperties, D3D12_HEAP_FLAG_NONE,
+		&resDesc, D3D12_RESOURCE_STATE_GENERIC_READ, NULL, &IID_ID3D12Resource, &buff->res);
 
-	VkMemoryAllocateFlagsInfo fi =
-	{
-		.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO,
-		.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT
-	};
-	VkMemoryAllocateInfo ai =
-	{
-		.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-		.pNext = &fi,
-		.allocationSize = req.size,
-		.memoryTypeIndex = Vkd_MemoryTypeIndex(dev, req.memoryTypeBits, NeToVkMemoryProperties(bci->desc.memoryType))
-	};
-	vkAllocateMemory(dev->dev, &ai, Vkd_allocCb, &buff->memory);
+	if (FAILED(hr)) {
+		Sys_Free(buff);
+		return NULL;
+	}
 
-	vkBindBufferMemory(dev->dev, buff->buff, buff->memory, 0);
-
-	D3D12_SetBuffer(dev, location, buff->buff);
-
-	if (!bci->data)
-		return buff;
-
-	if (bci->dataSize < 65535) {
-		VkCommandBuffer cb = Vkd_TransferCmdBuffer(dev);
-		vkCmdUpdateBuffer(cb, buff->buff, 0, bci->dataSize, bci->data);
-		Vkd_ExecuteCmdBuffer(dev, cb);
-	} else {
-		VkBufferCreateInfo stagingInfo =
-		{
-			.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-			.size = bci->dataSize,
-			.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT
-		};
-
-		VkBuffer staging;
-		vkCreateBuffer(dev->dev, &stagingInfo, Vkd_allocCb, &staging);
-
-		VkMemoryRequirements bMemReq;
-		vkGetBufferMemoryRequirements(dev->dev, staging, &bMemReq);
-
-		VkMemoryAllocateInfo bMemAI =
-		{
-			.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-			.allocationSize = bMemReq.size,
-			.memoryTypeIndex = Vkd_MemoryTypeIndex(dev, req.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
-		};
-
-		VkDeviceMemory stagingMem;
-		vkAllocateMemory(dev->dev, &bMemAI, Vkd_allocCb, &stagingMem);
-
-		vkBindBufferMemory(dev->dev, staging, stagingMem, 0);
-
-		void *stagingData = NULL;
-		vkMapMemory(dev->dev, stagingMem, 0, VK_WHOLE_SIZE, 0, &stagingData);
-
-		memcpy(stagingData, bci->data, bci->dataSize);
-
-		vkUnmapMemory(dev->dev, stagingMem);
-
-		VkCommandBuffer cb = Vkd_TransferCmdBuffer(dev);
-
-		VkBufferCopy copy =
-		{
-			.srcOffset = 0,
-			.dstOffset = 0,
-			.size = bci->dataSize
-		};
-		vkCmdCopyBuffer(cb, staging, buff->buff, 1, &copy);
-
-		Vkd_ExecuteCmdBuffer(dev, cb);
-
-		vkDestroyBuffer(dev->dev, staging, Vkd_allocCb);
-		vkFreeMemory(dev->dev, stagingMem, Vkd_allocCb);
-	}*/
+//	D3D12_SetBuffer(dev, location, buff->buff);
 
 	return buff;
 }
 
 void
-D3D12_UpdateBuffer(struct RenderDevice *dev, struct Buffer *buff, uint64_t offset, void *data, uint64_t size)
+D3D12_UpdateBuffer(struct NeRenderDevice *dev, struct NeBuffer *buff, uint64_t offset, void *data, uint64_t size)
 {
-	//
+	D3D12_HEAP_PROPERTIES heapProperties =
+	{
+		.Type = D3D12_HEAP_TYPE_UPLOAD,
+		.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+		.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN,
+		.CreationNodeMask = 1,
+		.VisibleNodeMask = 1
+	};
+	D3D12_RESOURCE_DESC desc =
+	{
+		.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
+		.Alignment = 0,
+		.Width = size,
+		.Height = 1,
+		.DepthOrArraySize = 1,
+		.MipLevels = 1,
+		.Format = DXGI_FORMAT_UNKNOWN,
+		.SampleDesc.Count = 1,
+		.SampleDesc.Quality = 0,
+		.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
+		.Flags = D3D12_RESOURCE_FLAG_NONE
+	};
+
+	ID3D12Resource *upload;
+	ID3D12Device5_CreateCommittedResource(dev->dev, &heapProperties, D3D12_HEAP_FLAG_NONE,
+		&desc, D3D12_RESOURCE_STATE_GENERIC_READ, NULL, &IID_ID3D12Resource, &upload);
+
+	uint32_t numRows = 0;
+	uint64_t reqSize = 0, rowSize = 0;
+	D3D12_PLACED_SUBRESOURCE_FOOTPRINT layout = { 0 };
+
+	D3D12_RESOURCE_DESC dstDesc = { 0 };
+	ID3D12Resource_GetDesc(buff->res, &dstDesc);
+
+	ID3D12Device5_GetCopyableFootprints(dev->dev, &dstDesc, 0, 1, 0, &layout, &numRows, &rowSize, &reqSize);
+
+	void *ptr;
+	ID3D12Resource_Map(upload, 0, NULL, &ptr);
+	// check HRESULT
+
+	memcpy(ptr, data, size);
+	ID3D12Resource_Unmap(upload, 0, NULL);
+
+	ID3D12GraphicsCommandList4 *cmdList = D3D12D_TransferCmdList(dev);
+	ID3D12GraphicsCommandList4_Reset(cmdList, dev->driverCopyAllocator, NULL);
+
+	ID3D12GraphicsCommandList4_CopyBufferRegion(cmdList, buff->res, offset, upload, layout.Offset, layout.Footprint.Width);
+
+	ID3D12GraphicsCommandList4_Close(cmdList);
+	ID3D12CommandQueue_ExecuteCommandLists(dev->copyQueue, 1, (ID3D12CommandList **)&cmdList);
+
+	// wait for cmd list exec
 }
 
 void *
-D3D12_MapBuffer(struct RenderDevice *dev, struct Buffer *buff)
+D3D12_MapBuffer(struct NeRenderDevice *dev, struct NeBuffer *buff)
 {
-//	void *mem;
-//	if (vkMapMemory(dev->dev, buff->memory, 0, VK_WHOLE_SIZE, 0, &mem) != VK_SUCCESS)
-		return NULL;
-//	else
-//		return mem;
+	void *mem;
+	ID3D12Resource_Map(buff->res, 0, NULL, &mem);
+	return mem;
 }
 
 void
-D3D12_UnmapBuffer(struct RenderDevice *dev, struct Buffer *buff)
+D3D12_UnmapBuffer(struct NeRenderDevice *dev, struct NeBuffer *buff)
 {
-//	vkUnmapMemory(dev->dev, buff->memory);
+	ID3D12Resource_Unmap(buff->res, 0, NULL);
 }
 
 void
-D3D12_FlushBuffer(struct RenderDevice *dev, struct Buffer *buff, uint64_t offset, uint64_t size)
+D3D12_FlushBuffer(struct NeRenderDevice *dev, struct NeBuffer *buff, uint64_t offset, uint64_t size)
 {
-	//
+	// TODO
 }
 
 uint64_t
-D3D12_BufferAddress(struct RenderDevice *dev, const struct Buffer *buff, uint64_t offset)
+D3D12_BufferAddress(struct NeRenderDevice *dev, const struct NeBuffer *buff, uint64_t offset)
 {
-/*	VkBufferDeviceAddressInfo bdai =
-	{
-		.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
-		.buffer = buff->buff
-	};
-	VkDeviceAddress addr = vkGetBufferDeviceAddress(dev->dev, &bdai);
-	return addr ? addr + offset : 0;*/
-	return 0;
+	return ID3D12Resource_GetGPUVirtualAddress(buff->res) + offset;
 }
 
 uint64_t
@@ -146,10 +155,8 @@ D3D12_OffsetAddress(uint64_t addr, uint64_t offset)
 }
 
 void
-D3D12_DestroyBuffer(struct RenderDevice *dev, struct Buffer *buff)
+D3D12_DestroyBuffer(struct NeRenderDevice *dev, struct NeBuffer *buff)
 {
-//	vkDestroyBuffer(dev->dev, buff->buff, Vkd_allocCb);
-//	vkFreeMemory(dev->dev, buff->memory, Vkd_allocCb);
-
+	ID3D12Resource_Release(buff->res);
 	Sys_Free(buff);
 }

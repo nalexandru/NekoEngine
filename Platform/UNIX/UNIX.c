@@ -59,9 +59,9 @@ Sys_InitDbgOut(void)
 }
 
 void
-Sys_DbgOut(int color, const wchar_t *module, const wchar_t *severity, const wchar_t *text)
+Sys_DbgOut(int color, const char *module, const char *severity, const char *text)
 {
-	fwprintf(stderr, L"%hs[%ls][%ls]: %ls\x1B[0m\n", _colors[color], module, severity, text);
+	fprintf(stderr, "%s[%s][%s]: %s\x1B[0m\n", _colors[color], module, severity, text);
 }
 
 void
@@ -201,12 +201,20 @@ Sys_OperatingSystem(void)
 }
 
 const char *
-Sys_OperatingSystemVersion(void)
+Sys_OperatingSystemVersionString(void)
 {
 	return _uname.release;
 }
 
-enum MachineType
+struct NeSysVersion
+Sys_OperatingSystemVersion(void)
+{
+	struct NeSysVersion sv;
+	sscanf(_uname.release, "%d.%d.%d", &sv.major, &sv.minor, &sv.revision);
+	return sv;
+}
+
+enum NeMachineType
 Sys_MachineType(void)
 {
 	return MT_PC;
@@ -225,7 +233,7 @@ Sys_ScreenVisible(void)
 }
 
 void
-Sys_MessageBox(const wchar_t *title, const wchar_t *message, int icon)
+Sys_MessageBox(const char *title, const char *message, int icon)
 {
 /*	UINT type = MB_OK;
 
@@ -256,7 +264,7 @@ Sys_ProcessEvents(void)
 		
 		switch (ev.type) {
 		case KeyPress: {
-			In_buttonState[X11_keymap[ev.xkey.keycode]] = true;
+			In_Key(X11_keymap[ev.xkey.keycode], true);
 		} break;
 		case KeyRelease: {
 			if (XEventsQueued(X11_display, QueuedAfterReading)) {
@@ -268,7 +276,7 @@ Sys_ProcessEvents(void)
 					break;
 			}
 			
-			In_buttonState[X11_keymap[ev.xkey.keycode]] = false;
+			In_Key(X11_keymap[ev.xkey.keycode], false);
 		} break;
 		case ButtonPress:
 		case ButtonRelease: {
@@ -367,21 +375,17 @@ Sys_USleep(uint32_t usec)
 }
 
 void
-Sys_DirectoryPath(enum SystemDirectory sd, char *out, size_t len)
-{
-	wchar_t *path = Sys_Alloc(sizeof(wchar_t *), len, MH_Transient);
-	
+Sys_DirectoryPath(enum NeSystemDirectory sd, char *out, size_t len)
+{	
 	switch (sd) {
-	case SD_SAVE_GAME: swprintf(path, len, L"%hs/.config/%ls/saves", getenv("HOME"), App_applicationInfo.name); break; 
-	case SD_APP_DATA: swprintf(path, len, L"%hs/.config/%ls/data", getenv("HOME"), App_applicationInfo.name); break; 
-	case SD_TEMP: swprintf(path, len, L"/tmp/"); break;
+	case SD_SAVE_GAME: snprintf(out, len, "%s/.config/%s/saves", getenv("HOME"), App_applicationInfo.name); break; 
+	case SD_APP_DATA: snprintf(out, len, "%s/.config/%s/data", getenv("HOME"), App_applicationInfo.name); break; 
+	case SD_TEMP: snprintf(out, len, "/tmp/"); break;
 	}
-	
-	wcstombs(out, path, len);
 }
 
 bool
-Sys_FileExists ( const char* path )
+Sys_FileExists(const char* path)
 {
 	struct stat st;
 	return !stat(path, &st);
@@ -422,6 +426,12 @@ Sys_CreateDirectory(const char *path)
 		return errno == EEXIST;
 	else
 		return true;
+}
+
+void
+Sys_ExecutableLocation(char *buff, uint32_t len)
+{
+	//GetModuleFileNameA(NULL, buff, len);
 }
 
 void *

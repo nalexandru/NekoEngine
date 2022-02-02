@@ -1,7 +1,7 @@
 #include "MTLDriver.h"
 
 MTLTextureDescriptor *
-MTL_TextureDescriptor(id<MTLDevice> dev, const struct TextureDesc *tDesc)
+MTL_TextureDescriptor(id<MTLDevice> dev, const struct NeTextureDesc *tDesc)
 {
 	MTLTextureDescriptor *desc = [[MTLTextureDescriptor alloc] init];
 	
@@ -36,14 +36,14 @@ MTL_TextureDescriptor(id<MTLDevice> dev, const struct TextureDesc *tDesc)
 	return desc;
 }
 
-struct Texture *
-MTL_CreateTexture(id<MTLDevice> dev, const struct TextureDesc *tDesc, uint16_t location)
+struct NeTexture *
+MTL_CreateTexture(id<MTLDevice> dev, const struct NeTextureDesc *tDesc, uint16_t location)
 {
 	MTLTextureDescriptor *desc = MTL_TextureDescriptor(dev, tDesc);
 	if (!desc)
 		return NULL;
 	
-	struct Texture *tex = Sys_Alloc(sizeof(*tex), 1, MH_RenderDriver);
+	struct NeTexture *tex = Sys_Alloc(sizeof(*tex), 1, MH_RenderDriver);
 	if (!tex) {
 		[desc release];
 		return NULL;
@@ -61,14 +61,14 @@ MTL_CreateTexture(id<MTLDevice> dev, const struct TextureDesc *tDesc, uint16_t l
 	return tex;
 }
 
-enum TextureLayout
-MTL_TextureLayout(const struct Texture *tex)
+enum NeTextureLayout
+MTL_TextureLayout(const struct NeTexture *tex)
 {
 	return tex->layout;
 }
 
 void
-MTL_DestroyTexture(id<MTLDevice> dev, struct Texture *tex)
+MTL_DestroyTexture(id<MTLDevice> dev, struct NeTexture *tex)
 {
 	MTL_RemoveTexture(tex->tex);
 	[tex->tex release];

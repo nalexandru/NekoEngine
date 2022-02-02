@@ -23,7 +23,7 @@ main()
 	const mat4 mvp = DrawInfo.instance.mvp;
 	const vec4 pos = DrawInfo.instance.model * v;
 	v_pos = pos.xyz / pos.w;
-	v_color = vec4(1.0);
+	v_color = Re_Color();
 
 	gl_Position = mvp * v;
 }

@@ -6,20 +6,20 @@
 #define P_COMPUTE		1
 #define P_RAY_TRACING	2
 
-static struct Array _pipelines;
+static struct NeArray _pipelines;
 
-struct PipelineInfo
+struct NePipelineInfo
 {
 	uint32_t type;
 	union {
 		struct {
-			struct ShaderStageInfo *stageInfo;
+			struct NeShaderStageInfo *stageInfo;
 			uint64_t flags;
-			struct BlendAttachmentDesc *at;
+			struct NeBlendAttachmentDesc *at;
 			uint32_t atCount;
 		} graphics;
 		struct {
-			struct ShaderStageInfo *stageInfo;
+			struct NeShaderStageInfo *stageInfo;
 			struct {
 				uint32_t x;
 				uint32_t y;
@@ -27,17 +27,17 @@ struct PipelineInfo
 			} threadsPerThreadgroup;
 		} compute;
 		struct {
-			struct ShaderBindingTable *sbt;
+			struct NeShaderBindingTable *sbt;
 			uint32_t maxDepth;
 		} rayTracing;
 	};
-	struct Pipeline *pipeline;
+	struct NePipeline *pipeline;
 };
 
 bool
 Re_InitPipelines(void)
 {
-	if (!Rt_InitArray(&_pipelines, 10, sizeof(struct PipelineInfo), MH_Render))
+	if (!Rt_InitArray(&_pipelines, 10, sizeof(struct NePipelineInfo), MH_Render))
 		return false;
 
 	Re_deviceProcs.LoadPipelineCache(Re_device);
@@ -45,10 +45,10 @@ Re_InitPipelines(void)
 	return true;
 }
 
-struct Pipeline *
-Re_GraphicsPipeline(const struct GraphicsPipelineDesc *desc)
+struct NePipeline *
+Re_GraphicsPipeline(const struct NeGraphicsPipelineDesc *desc)
 {
-	struct PipelineInfo *pi;
+	struct NePipelineInfo *pi;
 	Rt_ArrayForEach(pi, &_pipelines) {
 		if (pi->type != P_GRAPHICS ||
 				pi->graphics.stageInfo != desc->stageInfo ||
@@ -67,13 +67,13 @@ Re_GraphicsPipeline(const struct GraphicsPipelineDesc *desc)
 		return pi->pipeline;
 	}
 
-	struct BlendAttachmentDesc *newAt = Sys_Alloc(desc->attachmentCount, sizeof(*newAt), MH_Render);
+	struct NeBlendAttachmentDesc *newAt = Sys_Alloc(desc->attachmentCount, sizeof(*newAt), MH_Render);
 	if (!newAt)
 		return NULL;
 
 	memcpy(newAt, desc->attachments, desc->attachmentCount * sizeof(*newAt));
 
-	struct PipelineInfo new =
+	struct NePipelineInfo new =
 	{
 		.type = P_GRAPHICS,
 		.graphics.stageInfo = desc->stageInfo,
@@ -91,10 +91,10 @@ Re_GraphicsPipeline(const struct GraphicsPipelineDesc *desc)
 	return new.pipeline;
 }
 
-struct Pipeline *
-Re_ComputePipeline(const struct ComputePipelineDesc *desc)
+struct NePipeline *
+Re_ComputePipeline(const struct NeComputePipelineDesc *desc)
 {
-	struct PipelineInfo *pi;
+	struct NePipelineInfo *pi;
 	Rt_ArrayForEach(pi, &_pipelines) {
 		if (pi->type != P_GRAPHICS ||
 				pi->compute.stageInfo != desc->stageInfo ||
@@ -106,7 +106,7 @@ Re_ComputePipeline(const struct ComputePipelineDesc *desc)
 		return pi->pipeline;
 	}
 
-	struct PipelineInfo new =
+	struct NePipelineInfo new =
 	{
 		.type = P_COMPUTE,
 		.compute.stageInfo = desc->stageInfo,
@@ -124,10 +124,10 @@ Re_ComputePipeline(const struct ComputePipelineDesc *desc)
 	return new.pipeline;
 }
 
-struct Pipeline *
-Re_RayTracingPipeline(struct ShaderBindingTable *sbt, uint32_t maxDepth)
+struct NePipeline *
+Re_RayTracingPipeline(struct NeShaderBindingTable *sbt, uint32_t maxDepth)
 {
-	struct PipelineInfo *pi;
+	struct NePipelineInfo *pi;
 	Rt_ArrayForEach(pi, &_pipelines) {
 		if (pi->type != P_RAY_TRACING || pi->rayTracing.sbt != sbt || pi->rayTracing.maxDepth != maxDepth)
 			continue;
@@ -135,7 +135,7 @@ Re_RayTracingPipeline(struct ShaderBindingTable *sbt, uint32_t maxDepth)
 		return pi->pipeline;
 	}
 
-	struct PipelineInfo new =
+	struct NePipelineInfo new =
 	{
 		.type = P_RAY_TRACING,
 		.rayTracing.sbt = sbt,
@@ -154,7 +154,7 @@ Re_RayTracingPipeline(struct ShaderBindingTable *sbt, uint32_t maxDepth)
 void
 Re_TermPipelines(void)
 {
-	struct PipelineInfo *pi;
+	struct NePipelineInfo *pi;
 	Rt_ArrayForEach(pi, &_pipelines) {
 		if (pi->type == P_GRAPHICS)
 			Sys_Free(pi->graphics.at);

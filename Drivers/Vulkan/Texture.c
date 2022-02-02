@@ -3,7 +3,7 @@
 #include "VulkanDriver.h"
 
 bool
-Vk_CreateImage(struct RenderDevice *dev, const struct TextureDesc *desc, struct Texture *tex, bool alias)
+Vk_CreateImage(struct NeRenderDevice *dev, const struct NeTextureDesc *desc, struct NeTexture *tex, bool alias)
 {
 	VkImageCreateInfo imageInfo =
 	{
@@ -42,11 +42,16 @@ Vk_CreateImage(struct RenderDevice *dev, const struct TextureDesc *desc, struct 
 
 	tex->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
+#ifdef _DEBUG
+	if (desc->name)
+		Vkd_SetObjectName(dev->dev, tex->image, VK_OBJECT_TYPE_IMAGE, desc->name);
+#endif
+
 	return vkCreateImage(dev->dev, &imageInfo, tex->transient ? Vkd_transientAllocCb : Vkd_allocCb, &tex->image) == VK_SUCCESS;
 }
 
 bool
-Vk_CreateImageView(struct RenderDevice *dev, const struct TextureDesc *desc, struct Texture *tex)
+Vk_CreateImageView(struct NeRenderDevice *dev, const struct NeTextureDesc *desc, struct NeTexture *tex)
 {
 	VkImageViewCreateInfo viewInfo =
 	{
@@ -80,13 +85,18 @@ Vk_CreateImageView(struct RenderDevice *dev, const struct TextureDesc *desc, str
 	break;
 	}
 
+#ifdef _DEBUG
+	if (desc->name)
+		Vkd_SetObjectName(dev->dev, tex->imageView, VK_OBJECT_TYPE_IMAGE_VIEW, desc->name);
+#endif
+
 	return vkCreateImageView(dev->dev, &viewInfo, tex->transient ? Vkd_transientAllocCb : Vkd_allocCb, &tex->imageView) == VK_SUCCESS;
 }
 
-struct Texture *
-Vk_CreateTexture(struct RenderDevice *dev, const struct TextureDesc *desc, uint16_t location)
+struct NeTexture *
+Vk_CreateTexture(struct NeRenderDevice *dev, const struct NeTextureDesc *desc, uint16_t location)
 {
-	struct Texture *tex = Sys_Alloc(1, sizeof(*tex), MH_RenderDriver);
+	struct NeTexture *tex = Sys_Alloc(1, sizeof(*tex), MH_RenderDriver);
 	if (!tex)
 		return NULL;
 
@@ -123,6 +133,16 @@ Vk_CreateTexture(struct RenderDevice *dev, const struct TextureDesc *desc, uint1
 	Vkd_TransitionImageLayout(cb, tex->image, VK_IMAGE_LAYOUT_UNDEFINED, tex->layout);
 	Vkd_ExecuteCmdBuffer(dev, cb);
 
+#ifdef _DEBUG
+	if (desc->name && tex->memory) {
+		size_t tmpLen = strlen(desc->name) + 8;
+		char *tmp = Sys_Alloc(sizeof(*tmp), tmpLen, MH_Transient);
+		snprintf(tmp, tmpLen, "%s memory", desc->name);
+
+		Vkd_SetObjectName(dev->dev, tex->memory, VK_OBJECT_TYPE_DEVICE_MEMORY, tmp);
+	}
+#endif
+
 	return tex;
 
 error:
@@ -130,14 +150,14 @@ error:
 	return NULL;
 }
 
-enum TextureLayout
-Vk_TextureLayout(const struct Texture *tex)
+enum NeTextureLayout
+Vk_TextureLayout(const struct NeTexture *tex)
 {
 	return VkToNeImageLayout(tex->layout);
 }
 
 void
-Vk_DestroyTexture(struct RenderDevice *dev, struct Texture *tex)
+Vk_DestroyTexture(struct NeRenderDevice *dev, struct NeTexture *tex)
 {
 	if (!tex->transient) {
 		vkDestroyImageView(dev->dev, tex->imageView, Vkd_allocCb);

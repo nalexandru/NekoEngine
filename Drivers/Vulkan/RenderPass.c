@@ -5,13 +5,13 @@
 
 #include "VulkanDriver.h"
 
-static inline void _SetAttachment(VkAttachmentDescription *dst, const struct AttachmentDesc *src);
+static inline void _SetAttachment(VkAttachmentDescription *dst, const struct NeAttachmentDesc *src);
 
-struct RenderPassDesc *
-Vk_CreateRenderPassDesc(struct RenderDevice *dev, const struct AttachmentDesc *attachments, uint32_t count, const struct AttachmentDesc *depthAttachment,
-	const struct AttachmentDesc *inputAttachments, uint32_t inputCount)
+struct NeRenderPassDesc *
+Vk_CreateRenderPassDesc(struct NeRenderDevice *dev, const struct NeAttachmentDesc *attachments, uint32_t count, const struct NeAttachmentDesc *depthAttachment,
+	const struct NeAttachmentDesc *inputAttachments, uint32_t inputCount)
 {
-	struct RenderPassDesc *rp = Sys_Alloc(sizeof(*rp), 1, MH_RenderDriver);
+	struct NeRenderPassDesc *rp = Sys_Alloc(sizeof(*rp), 1, MH_RenderDriver);
 	if (!rp)
 		return NULL;
 
@@ -124,7 +124,7 @@ Vk_CreateRenderPassDesc(struct RenderDevice *dev, const struct AttachmentDesc *a
 }
 
 void
-Vk_DestroyRenderPassDesc(struct RenderDevice *dev, struct RenderPassDesc *rp)
+Vk_DestroyRenderPassDesc(struct NeRenderDevice *dev, struct NeRenderPassDesc *rp)
 {
 	vkDestroyRenderPass(dev->dev, rp->rp, Vkd_allocCb);
 
@@ -133,7 +133,7 @@ Vk_DestroyRenderPassDesc(struct RenderDevice *dev, struct RenderPassDesc *rp)
 }
 
 static inline void
-_SetAttachment(VkAttachmentDescription *dst, const struct AttachmentDesc *src)
+_SetAttachment(VkAttachmentDescription *dst, const struct NeAttachmentDesc *src)
 {
 	dst->flags = src->mayAlias ? VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT : 0;
 	dst->format = NeToVkTextureFormat(src->format);

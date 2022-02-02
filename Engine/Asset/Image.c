@@ -21,11 +21,12 @@ static int _stbiEof(void *user);
 static stbi_io_callbacks _cb = { _stbiRead, _stbiSkip, _stbiEof };
 
 bool
-E_LoadImageAssetComp(struct Stream *stm, struct TextureCreateInfo *tci, int rcomp)
+E_LoadImageAssetComp(struct NeStream *stm, struct NeTextureCreateInfo *tci, bool flip, int rcomp)
 {
+	stbi_set_flip_vertically_on_load(flip);
+
 	int x, y, comp;
 	stbi_uc *image = stbi_load_from_callbacks(&_cb, stm, &x, &y, &comp, rcomp);
-
 	if (!image)
 		return false;
 
@@ -41,7 +42,28 @@ E_LoadImageAssetComp(struct Stream *stm, struct TextureCreateInfo *tci, int rcom
 	tci->desc.height = (uint16_t)y;
 	tci->desc.mipLevels = tci->desc.arrayLayers = 1;
 	tci->data = image;
-	tci->dataSize = sizeof(stbi_uc) * comp * x * y;
+	tci->dataSize = sizeof(*image) * rcomp * x * y;
+
+	return true;
+}
+
+bool
+E_LoadHDRAsset(struct NeStream *stm, struct NeTextureCreateInfo *tci, bool flip)
+{
+	stbi_set_flip_vertically_on_load(flip);
+
+	int x, y, comp;
+	float *image = stbi_loadf_from_callbacks(&_cb, stm, &x, &y, &comp, 4);
+	if (!image)
+		return false;
+
+	tci->desc.type = TT_2D;
+	tci->desc.format = TF_R32G32B32A32_SFLOAT;
+	tci->desc.width = (uint16_t)x;
+	tci->desc.height = (uint16_t)y;
+	tci->desc.mipLevels = tci->desc.arrayLayers = 1;
+	tci->data = image;
+	tci->dataSize = sizeof(*image) * 4 * x * y;
 
 	return true;
 }
@@ -49,17 +71,17 @@ E_LoadImageAssetComp(struct Stream *stm, struct TextureCreateInfo *tci, int rcom
 int
 _stbiRead(void *user, char *data, int size)
 {
-	return (int)E_ReadStream((struct Stream *)user, data, size);
+	return (int)E_ReadStream((struct NeStream *)user, data, size);
 }
 
 void
 _stbiSkip(void *user, int n)
 {
-	E_StreamSeek((struct Stream *)user, n, IO_SEEK_CUR);
+	E_StreamSeek((struct NeStream *)user, n, IO_SEEK_CUR);
 }
 
 int
 _stbiEof(void *user)
 {
-	return E_EndOfStream((struct Stream *)user);
+	return E_EndOfStream((struct NeStream *)user);
 }

@@ -35,22 +35,32 @@ parse(const char *file)
 	CXCursor cur = clang_getTranslationUnitCursor(tu);
 
 	clang_visitChildren(cur, _visitor, NULL);
+
+	clang_disposeTranslationUnit(tu);
 }
 
 int
 main(int argc, char *argv[])
 {
+	printf("NekoEngine Parser\n");
+
 	_index = clang_createIndex(0, 0);
+
+	parse("D:\\Projects\\test.c");
+
+	clang_disposeIndex(_index);
+
+	return 0;
 }
 
 static inline void
 _processStruct(CXCursor cur)
 {
-	//
+	printf("struct: %s\n", clang_getCString(clang_getCursorSpelling(cur)));
 }
 
 static inline void
 _processEnum(CXCursor cur)
 {
-
+	printf("enum: %s\n", clang_getCString(clang_getCursorSpelling(cur)));
 }

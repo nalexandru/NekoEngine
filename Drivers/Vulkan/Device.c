@@ -12,11 +12,16 @@ static const char *_devExtensions[10] =
 };
 static uint32_t _devExtensionCount = 1;
 
-struct RenderDevice *
-Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProcs, struct RenderContextProcs *ctxProcs)
+static struct NeRenderInterface *_CreateRenderInterface(struct NeRenderDevice *dev);
+static void _DestroyRenderInterface(struct NeRenderInterface *iface);
+
+static inline bool _CheckExtension(const char *name, VkExtensionProperties *extProps, uint32_t extCount);
+
+struct NeRenderDevice *
+Vk_CreateDevice(struct NeRenderDeviceInfo *info, struct NeRenderDeviceProcs *devProcs, struct NeRenderContextProcs *ctxProcs)
 {
 	VkPhysicalDevice physDev = (VkPhysicalDevice)info->private;
-	struct RenderDevice *dev = Sys_Alloc(1, sizeof(*dev), MH_RenderDriver);
+	struct NeRenderDevice *dev = Sys_Alloc(1, sizeof(*dev), MH_RenderDriver);
 
 	if (!dev)
 		return NULL;
@@ -25,29 +30,35 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 	vkGetPhysicalDeviceProperties(physDev, &dev->physDevProps);
 	vkGetPhysicalDeviceMemoryProperties(physDev, &dev->physDevMemProps);
 
+	void *pNext = NULL;
+
 	VkPhysicalDeviceMeshShaderFeaturesNV *msFeatures = Sys_Alloc(sizeof(*msFeatures), 1, MH_Transient);
 	msFeatures->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_NV;
-	msFeatures->pNext = NULL;
+	msFeatures->pNext = pNext;
 
 	if (info->features.meshShading) {
+		pNext = msFeatures;
 		msFeatures->taskShader = VK_TRUE;
 		msFeatures->meshShader = VK_TRUE;
-		_devExtensions[_devExtensionCount] = VK_NV_MESH_SHADER_EXTENSION_NAME;
+		_devExtensions[_devExtensionCount++] = VK_NV_MESH_SHADER_EXTENSION_NAME;
 	}
 
 	VkPhysicalDeviceRayTracingPipelineFeaturesKHR *rtFeatures = Sys_Alloc(sizeof(*rtFeatures), 1, MH_Transient);
 	rtFeatures->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
-	rtFeatures->pNext = msFeatures;
+	rtFeatures->pNext = pNext;
 
 	if (info->features.rayTracing) {
+		pNext = rtFeatures;
 		rtFeatures->rayTracingPipeline = VK_TRUE;
 		rtFeatures->rayTracingPipelineTraceRaysIndirect = info->features.indirectRayTracing ? VK_TRUE : VK_FALSE;
-		_devExtensions[_devExtensionCount] = VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME;
+		_devExtensions[_devExtensionCount++] = VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME;
+		_devExtensions[_devExtensionCount++] = VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME;
+		_devExtensions[_devExtensionCount++] = VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME;
 	}
 
 	VkPhysicalDeviceVulkan11Features *vk11Features = Sys_Alloc(sizeof(*vk11Features), 1, MH_Transient);
 	vk11Features->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
-	vk11Features->pNext = rtFeatures;
+	vk11Features->pNext = pNext;
 
 	if (info->features.multiDrawIndirect)
 		vk11Features->shaderDrawParameters = true;
@@ -141,6 +152,32 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 	}
 
 	// check extension support
+	uint32_t extCount = 0;
+	vkEnumerateDeviceExtensionProperties((VkPhysicalDevice)info->private, NULL, &extCount, NULL);
+
+	VkExtensionProperties *extProps = Sys_Alloc(sizeof(*extProps), extCount, MH_Transient);
+	vkEnumerateDeviceExtensionProperties((VkPhysicalDevice)info->private, NULL, &extCount, extProps);
+
+	for (uint32_t i = 0; i < _devExtensionCount; ++i)
+		if (!_CheckExtension(_devExtensions[i], extProps, extCount)) {
+			Sys_LogEntry(VKDRV_MOD, LOG_CRITICAL, "Selected device missing required extension %s", _devExtensions[i]);
+			goto error;
+		}
+
+#ifdef _DEBUG
+	if (_CheckExtension(VK_NV_DEVICE_DIAGNOSTICS_CONFIG_EXTENSION_NAME, extProps, extCount)) {
+		_devExtensions[_devExtensionCount++] = VK_NV_DEVICE_DIAGNOSTICS_CONFIG_EXTENSION_NAME;
+		VkDeviceDiagnosticsConfigCreateInfoNV ddcci =
+		{
+			.sType = VK_STRUCTURE_TYPE_DEVICE_DIAGNOSTICS_CONFIG_CREATE_INFO_NV,
+			.pNext = features->pNext,
+			.flags = VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_AUTOMATIC_CHECKPOINTS_BIT_NV |
+				VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_RESOURCE_TRACKING_BIT_NV |
+				VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_SHADER_DEBUG_INFO_BIT_NV
+		};
+		features->pNext = &ddcci;
+	}
+#endif
 
 	VkDeviceCreateInfo devInfo =
 	{
@@ -154,7 +191,7 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 
 	VkResult rc = vkCreateDevice((VkPhysicalDevice)info->private, &devInfo, Vkd_allocCb, &dev->dev);
 	if (rc != VK_SUCCESS) {
-		Sys_LogEntry(VKDRV_MOD, LOG_CRITICAL, L"vkCreateDevice = %d", rc);
+		Sys_LogEntry(VKDRV_MOD, LOG_CRITICAL, "vkCreateDevice = %d", rc);
 		goto error;
 	}
 
@@ -180,8 +217,8 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 	devProcs->TextureLayout = Vk_TextureLayout;
 	devProcs->DestroyTexture = Vk_DestroyTexture;
 
-	devProcs->CreateSampler = (struct Sampler *(*)(struct RenderDevice *, const struct SamplerDesc *))Vk_CreateSampler;
-	devProcs->DestroySampler = (void (*)(struct RenderDevice *dev, struct Sampler *))Vk_DestroySampler;
+	devProcs->CreateSampler = (struct NeSampler *(*)(struct NeRenderDevice *, const struct NeSamplerDesc *))Vk_CreateSampler;
+	devProcs->DestroySampler = (void (*)(struct NeRenderDevice *dev, struct NeSampler *))Vk_DestroySampler;
 
 	devProcs->CreateBuffer = Vk_CreateBuffer;
 	devProcs->UpdateBuffer = Vk_UpdateBuffer;
@@ -197,11 +234,11 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 	devProcs->ResetContext = Vk_ResetContext;
 	devProcs->DestroyContext = Vk_DestroyContext;
 
-	devProcs->CreateSurface = (struct Surface *(*)(struct RenderDevice *, void *))Vk_CreateSurface;
-	devProcs->DestroySurface = (void (*)(struct RenderDevice *, struct Surface *))Vk_DestroySurface;
+	devProcs->CreateSurface = (struct NeSurface *(*)(struct NeRenderDevice *, void *))Vk_CreateSurface;
+	devProcs->DestroySurface = (void (*)(struct NeRenderDevice *, struct NeSurface *))Vk_DestroySurface;
 
-	devProcs->CreateSwapchain = (struct Swapchain *(*)(struct RenderDevice *dev, struct Surface *, bool))Vk_CreateSwapchain;
-	devProcs->DestroySwapchain = (void(*)(struct RenderDevice *dev, struct Swapchain *))Vk_DestroySwapchain;
+	devProcs->CreateSwapchain = (struct NeSwapchain *(*)(struct NeRenderDevice *dev, struct NeSurface *, bool))Vk_CreateSwapchain;
+	devProcs->DestroySwapchain = (void(*)(struct NeRenderDevice *dev, struct NeSwapchain *))Vk_DestroySwapchain;
 
 	devProcs->CreateFramebuffer = Vk_CreateFramebuffer;
 	devProcs->SetAttachment = Vk_SetAttachment;
@@ -232,12 +269,15 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 	devProcs->SignalSemaphore = Vk_SignalSemaphore;
 	devProcs->DestroySemaphore = Vk_DestroySemaphore;
 
-	devProcs->CreateFence = (struct Fence *(*)(struct RenderDevice *, bool))Vk_CreateFence;
-	devProcs->SignalFence = (void(*)(struct RenderDevice *, struct Fence *))Vk_SignalFence;
-	devProcs->WaitForFence = (bool(*)(struct RenderDevice *, struct Fence *, uint64_t))Vk_WaitForFence;
-	devProcs->DestroyFence = (void(*)(struct RenderDevice *, struct Fence *))Vk_DestroyFence;
+	devProcs->CreateFence = (struct NeFence *(*)(struct NeRenderDevice *, bool))Vk_CreateFence;
+	devProcs->SignalFence = (void(*)(struct NeRenderDevice *, struct NeFence *))Vk_SignalFence;
+	devProcs->WaitForFence = (bool(*)(struct NeRenderDevice *, struct NeFence *, uint64_t))Vk_WaitForFence;
+	devProcs->DestroyFence = (void(*)(struct NeRenderDevice *, struct NeFence *))Vk_DestroyFence;
 
 	devProcs->OffsetAddress = Vk_OffsetAddress;
+
+	devProcs->CreateRenderInterface = _CreateRenderInterface;
+	devProcs->DestroyRenderInterface = _DestroyRenderInterface;
 
 	Vk_InitContextProcs(ctxProcs);
 
@@ -279,14 +319,25 @@ Vk_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProc
 	if (vkCreateCommandPool(dev->dev, &poolInfo, Vkd_allocCb, &dev->driverTransferPool) != VK_SUCCESS)
 		goto error;
 
-	if (E_GetCVarBln(L"VulkanDrv_ForceNonCoherentStaging", false)->bln) {
+	if (E_GetCVarBln("VulkanDrv_ForceNonCoherentStaging", false)->bln) {
 		Re_deviceInfo.features.coherentMemory = false;
-		Sys_LogEntry(VKDRV_MOD, LOG_DEBUG, L"Forcing non-coherent staging memory");
+		Sys_LogEntry(VKDRV_MOD, LOG_DEBUG, "Forcing non-coherent staging memory");
 	}
 
 	if (!Re_deviceInfo.features.coherentMemory)
 		if (!Vkd_InitStagingArea(dev))
 			goto error;
+
+#ifdef _DEBUG
+	Vkd_SetObjectName(dev->dev, dev->graphicsQueue, VK_OBJECT_TYPE_QUEUE, "Graphics Queue");
+	Vkd_SetObjectName(dev->dev, dev->computeQueue, VK_OBJECT_TYPE_QUEUE, "Compute Queue");
+	Vkd_SetObjectName(dev->dev, dev->transferQueue, VK_OBJECT_TYPE_QUEUE, "Transfer Queue");
+
+	Vkd_SetObjectName(dev->dev, dev->frameSemaphore, VK_OBJECT_TYPE_SEMAPHORE, "Frame Semaphore");
+
+	Vkd_SetObjectName(dev->dev, dev->driverTransferFence, VK_OBJECT_TYPE_FENCE, "Driver Transfer Fence");
+	Vkd_SetObjectName(dev->dev, dev->driverTransferPool, VK_OBJECT_TYPE_COMMAND_POOL, "Driver Transfer Pool");
+#endif
 
 	return dev;
 
@@ -300,7 +351,7 @@ error:
 }
 
 bool
-Vk_Execute(struct RenderDevice *dev, struct RenderContext *ctx, bool wait)
+Vk_Execute(struct NeRenderDevice *dev, struct NeRenderContext *ctx, bool wait)
 {
 	VkSubmitInfo si =
 	{
@@ -319,13 +370,13 @@ Vk_Execute(struct RenderDevice *dev, struct RenderContext *ctx, bool wait)
 }
 
 void
-Vk_WaitIdle(struct RenderDevice *dev)
+Vk_WaitIdle(struct NeRenderDevice *dev)
 {
 	vkDeviceWaitIdle(dev->dev);
 }
 
 void
-Vk_DestroyDevice(struct RenderDevice *dev)
+Vk_DestroyDevice(struct NeRenderDevice *dev)
 {
 	if (!Re_deviceInfo.features.coherentMemory)
 		Vkd_TermStagingArea(dev);
@@ -336,8 +387,78 @@ Vk_DestroyDevice(struct RenderDevice *dev)
 	vkDestroyCommandPool(dev->dev, dev->driverTransferPool, Vkd_allocCb);
 	vkDestroyFence(dev->dev, dev->driverTransferFence, Vkd_allocCb);
 	vkDestroySemaphore(dev->dev, dev->frameSemaphore, Vkd_allocCb);
+
 	vkDestroyDevice(dev->dev, Vkd_allocCb);
 
 	Sys_Free(dev->frameValues);
 	Sys_Free(dev);
+}
+
+static uint64_t _IFace_FrameSemaphoreValue(struct NeRenderDevice *dev) { return dev->frameValues[Re_frameId]; }
+static VkCommandBuffer _IFace_CurrentCommandBuffer(struct NeRenderContext *ctx) { return ctx->cmdBuffer; }
+static VkSemaphore _IFace_SemaphoreHandle(struct NeSemaphore *sem) { return sem->sem; }
+static uint64_t _IFace_CurrentSemaphoreValue(struct NeSemaphore *sem) { return sem->value; }
+static VkImage _IFace_Image(struct NeTexture *tex) { return tex->image; }
+static VkImageView _IFace_ImageView(struct NeTexture *tex) { return tex->imageView; }
+static VkBuffer _IFace_Buffer(struct NeBuffer *buff) { return buff->buff; }
+static VkAccelerationStructureKHR _IFace_AccelerationStructure(struct NeAccelerationStructure *as) { return as->as; }
+static VkFramebuffer _IFace_Framebuffer(struct NeFramebuffer *fb) { return fb->fb; }
+static VkRenderPass _IFace_RenderPass(struct NeRenderPassDesc *rp) { return rp->rp; }
+static VkSampler _IFace_Sampler(struct NeSampler *s) { return (VkSampler)s; }
+static VkPipeline _IFace_Pipeline(struct NePipeline *p) { return p->pipeline; }
+
+static struct NeRenderInterface *
+_CreateRenderInterface(struct NeRenderDevice *dev)
+{
+	struct NeRenderInterface *iface = Sys_Alloc(sizeof(*iface), 1, MH_RenderDriver);
+	if (!iface)
+		return NULL;
+
+	iface->CurrentCommandBuffer = _IFace_CurrentCommandBuffer;
+
+	iface->FrameSemaphoreValue = _IFace_FrameSemaphoreValue;
+	iface->frameSemaphore = dev->frameSemaphore;
+
+	iface->SemaphoreHandle = _IFace_SemaphoreHandle;
+	iface->CurrentSemaphoreValue = _IFace_CurrentSemaphoreValue;
+	iface->Image = _IFace_Image;
+	iface->ImageView = _IFace_ImageView;
+	iface->Buffer = _IFace_Buffer;
+	iface->Framebuffer = _IFace_Framebuffer;
+	iface->Sampler = _IFace_Sampler;
+	iface->RenderPass = _IFace_RenderPass;
+	iface->AccelerationStructure = _IFace_AccelerationStructure;
+	iface->Pipeline = _IFace_Pipeline;
+	
+	iface->device = dev->dev;
+	iface->graphicsQueue = dev->graphicsQueue;
+	iface->transferQueue = dev->transferQueue;
+	iface->computeQueue = dev->computeQueue;
+	iface->graphicsFamily = dev->graphicsFamily;
+	iface->transferFamily = dev->transferFamily;
+	iface->computeFamily = dev->computeFamily;
+	iface->physicalDevice = dev->physDev;
+	iface->pipelineCache = Vkd_pipelineCache;
+	iface->allocationCallbacks = Vkd_allocCb;
+
+	iface->instance = Vkd_inst;
+	iface->GetInstanceProcAddr = vkGetInstanceProcAddr;
+
+	return iface;
+}
+
+static void
+_DestroyRenderInterface(struct NeRenderInterface *iface)
+{
+	Sys_Free(iface);
+}
+
+static inline bool
+_CheckExtension(const char *name, VkExtensionProperties *extProps, uint32_t extCount)
+{
+	size_t len = strnlen(name, VK_MAX_EXTENSION_NAME_SIZE);
+	for (uint32_t i = 0; i < extCount; ++i)
+		if (!strncmp(extProps[i].extensionName, name, len))
+			return true;
+	return false;
 }

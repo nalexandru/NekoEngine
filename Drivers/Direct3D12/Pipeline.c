@@ -5,264 +5,220 @@
 
 #include "D3D12Driver.h"
 
-#define VKPMOD	L"VulkanPipeline"
-
-/*static VkPipelineCache _cache;
-
-static inline VkCompareOp
-_NeToVkCompareOp(uint64_t flags)
+static inline D3D12_COMPARISON_FUNC
+_NeToD3DCompareOp(uint64_t flags)
 {
 	switch (flags & RE_DEPTH_OP_BITS) {
-	case RE_DEPTH_OP_LESS: return VK_COMPARE_OP_LESS;
-	case RE_DEPTH_OP_EQUAL: return VK_COMPARE_OP_EQUAL;
-	case RE_DEPTH_OP_LESS_EQUAL: return VK_COMPARE_OP_LESS_OR_EQUAL;
-	case RE_DEPTH_OP_GREATER: return VK_COMPARE_OP_GREATER;
-	case RE_DEPTH_OP_NOT_EQUAL: return VK_COMPARE_OP_NOT_EQUAL;
-	case RE_DEPTH_OP_GREATER_EQUAL: return VK_COMPARE_OP_GREATER_OR_EQUAL;
-	case RE_DEPTH_OP_ALWAYS: return VK_COMPARE_OP_ALWAYS;
+	case RE_DEPTH_OP_LESS: return D3D12_COMPARISON_FUNC_LESS;
+	case RE_DEPTH_OP_EQUAL: return D3D12_COMPARISON_FUNC_EQUAL;
+	case RE_DEPTH_OP_LESS_EQUAL: return D3D12_COMPARISON_FUNC_LESS_EQUAL;
+	case RE_DEPTH_OP_GREATER: return D3D12_COMPARISON_FUNC_GREATER;
+	case RE_DEPTH_OP_NOT_EQUAL: return D3D12_COMPARISON_FUNC_NOT_EQUAL;
+	case RE_DEPTH_OP_GREATER_EQUAL: return D3D12_COMPARISON_FUNC_GREATER_EQUAL;
+	case RE_DEPTH_OP_ALWAYS: return D3D12_COMPARISON_FUNC_ALWAYS;
 	}
-	
-	return VK_COMPARE_OP_GREATER_OR_EQUAL;
+
+	return D3D12_COMPARISON_FUNC_GREATER_EQUAL;
 }
 
-static inline VkPipelineLayout _CreateLayout(struct RenderDevice *dev, uint32_t size);*/
-
-struct Pipeline *
-D3D12_GraphicsPipeline(struct RenderDevice *dev, const struct GraphicsPipelineDesc *desc)
+static inline D3D12_BLEND
+_NeToD3DBlendFactor(enum NeBlendFactor bf)
 {
-	struct Pipeline *p = Sys_Alloc(1, sizeof(*p), MH_RenderDriver);
+	switch (bf) {
+	case RE_BF_ZERO: return D3D12_BLEND_ZERO;
+	case RE_BF_ONE: return D3D12_BLEND_ONE;
+	case RE_BF_SRC_COLOR: return D3D12_BLEND_SRC_COLOR;
+	case RE_BF_ONE_MINUS_SRC_COLOR: return D3D12_BLEND_INV_SRC_COLOR;
+	case RE_BF_DST_COLOR: return D3D12_BLEND_DEST_COLOR;
+	case RE_BF_ONE_MINUS_DST_COLOR: return D3D12_BLEND_INV_DEST_COLOR;
+	case RE_BF_SRC_ALPHA: return D3D12_BLEND_SRC_ALPHA;
+	case RE_BF_ONE_MINUS_SRC_ALPHA: return D3D12_BLEND_INV_SRC_ALPHA;
+	case RE_BF_DST_ALPHA: return D3D12_BLEND_DEST_ALPHA;
+	case RE_BF_ONE_MINUS_DST_ALPHA: return D3D12_BLEND_INV_DEST_ALPHA;
+	case RE_BF_CONSTANT_COLOR: return D3D12_BLEND_BLEND_FACTOR;
+	case RE_BF_ONE_MINUS_CONSTANT_COLOR: return D3D12_BLEND_INV_BLEND_FACTOR;
+	case RE_BF_CONSTANT_ALPHA: return D3D12_BLEND_BLEND_FACTOR;
+	case RE_BF_ONE_MINUS_CONSTANT_ALPHA: return D3D12_BLEND_INV_BLEND_FACTOR;
+	case RE_BF_SRC_ALPHA_SATURATE: return D3D12_BLEND_SRC_ALPHA_SAT;
+	case RE_BF_SRC1_COLOR: return D3D12_BLEND_SRC1_COLOR;
+	case RE_BF_ONE_MINUS_SRC1_COLOR: return D3D12_BLEND_INV_SRC1_COLOR;
+	case RE_BF_SRC1_ALPHA: return D3D12_BLEND_SRC1_ALPHA;
+	case RE_BF_ONE_MINUS_SRC1_ALPHA: return D3D12_BLEND_INV_SRC_ALPHA;
+	}
+
+	return RE_BF_ZERO;
+}
+
+static inline D3D12_BLEND_OP
+_NeToD3DBlendOp(enum NeBlendOperation bop)
+{
+	switch (bop) {
+	case RE_BOP_ADD: return D3D12_BLEND_OP_ADD;
+	case RE_BOP_SUBTRACT: return D3D12_BLEND_OP_SUBTRACT;
+	case RE_BOP_REVERSE_SUBTRACT: return D3D12_BLEND_OP_REV_SUBTRACT;
+	case RE_BOP_MIN: return D3D12_BLEND_OP_MIN;
+	case RE_BOP_MAX: return D3D12_BLEND_OP_MAX;
+	}
+
+	return RE_BOP_ADD;
+}
+
+struct NePipeline *
+D3D12_GraphicsPipeline(struct NeRenderDevice *dev, const struct NeGraphicsPipelineDesc *desc)
+{
+	struct NePipeline *p = Sys_Alloc(1, sizeof(*p), MH_RenderDriver);
 	if (!p)
 		return NULL;
 
-/*	VkPipelineLayout layout = _CreateLayout(dev, desc->pushConstantSize);
-	if (!layout) {
-		Sys_Free(p);
-		return NULL;
-	}
-
-	uint64_t flags = desc->flags;
-
-	VkPipelineVertexInputStateCreateInfo vi =
-	{
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO
-	};
-
-	VkPipelineInputAssemblyStateCreateInfo ia =
-	{
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-		.primitiveRestartEnable = VK_FALSE
-	};
+	const uint64_t flags = desc->flags;
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC pDesc = { 0 };
 
 	switch (flags & RE_TOPOLOGY_BITS) {
-	case RE_TOPOLOGY_TRIANGLES: ia.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST; break;
-	case RE_TOPOLOGY_POINTS: ia.topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST; break;
-	case RE_TOPOLOGY_LINES: ia.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST; break;
+	case RE_TOPOLOGY_TRIANGLES: pDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE; break;
+	case RE_TOPOLOGY_POINTS: pDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT; break;
+	case RE_TOPOLOGY_LINES: pDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE; break;
 	}
 
-	VkPipelineRasterizationStateCreateInfo rs =
-	{
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
-		.depthClampEnable = flags & RE_DEPTH_CLAMP,
-		.rasterizerDiscardEnable = flags & RE_DISCARD,
-		.depthBiasEnable = flags & RE_DEPTH_BIAS,
-		.lineWidth = 1.f
-	};
-
 	switch (flags & RE_POLYGON_BITS) {
-	case RE_POLYGON_FILL: rs.polygonMode = VK_POLYGON_MODE_FILL; break;
-	case RE_POLYGON_LINE: rs.polygonMode = VK_POLYGON_MODE_LINE; break;
-	case RE_POLYGON_POINT: rs.polygonMode = VK_POLYGON_MODE_POINT; break;
+	case RE_POLYGON_FILL: pDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID; break;
+	case RE_POLYGON_LINE: pDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME; break;
+	case RE_POLYGON_POINT: pDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME; break;
 	}
 
 	switch (flags & RE_CULL_BITS) {
-	case RE_CULL_BACK: rs.cullMode = VK_CULL_MODE_BACK_BIT; break;
-	case RE_CULL_FRONT: rs.cullMode = VK_CULL_MODE_FRONT_BIT; break;
-	case RE_CULL_NONE: rs.cullMode = VK_CULL_MODE_NONE; break;
-	case RE_CULL_FRONT_AND_BACK: rs.cullMode = VK_CULL_MODE_FRONT_AND_BACK; break;
+	case RE_CULL_BACK: pDesc.RasterizerState.CullMode = D3D12_CULL_MODE_BACK; break;
+	case RE_CULL_FRONT: pDesc.RasterizerState.CullMode = D3D12_CULL_MODE_FRONT; break;
+	case RE_CULL_NONE: pDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE; break;
+	case RE_CULL_FRONT_AND_BACK: pDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE; break;
 	}
 
 	switch (flags & RE_FRONT_FACE_BITS) {
-	case RE_FRONT_FACE_CCW: rs.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE; break;
-	case RE_FRONT_FACE_CW: rs.frontFace = VK_FRONT_FACE_CLOCKWISE; break;
+	case RE_FRONT_FACE_CCW: pDesc.RasterizerState.FrontCounterClockwise = TRUE; break;
+	case RE_FRONT_FACE_CW: pDesc.RasterizerState.FrontCounterClockwise = FALSE; break;
 	}
 
-	VkPipelineMultisampleStateCreateInfo ms =
-	{
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-		.sampleShadingEnable = flags & RE_SAMPLE_SHADING,
-		.alphaToCoverageEnable = flags & RE_ALPHA_TO_COVERAGE,
-		.alphaToOneEnable = flags & RE_ALPHA_TO_ONE
-	};
-
-	if ((flags & RE_MULTISAMPLE) == RE_MULTISAMPLE) {
+	pDesc.RasterizerState.MultisampleEnable = (flags & RE_MULTISAMPLE) == RE_MULTISAMPLE;
+	if (pDesc.RasterizerState.MultisampleEnable) {
 		switch (flags & RE_SAMPLES_BITS) {
-		case RE_MS_2_SAMPLES: ms.rasterizationSamples = VK_SAMPLE_COUNT_2_BIT; break;
-		case RE_MS_4_SAMPLES: ms.rasterizationSamples = VK_SAMPLE_COUNT_4_BIT; break;
-		case RE_MS_8_SAMPLES: ms.rasterizationSamples = VK_SAMPLE_COUNT_8_BIT; break;
-		case RE_MS_16_SAMPLES: ms.rasterizationSamples = VK_SAMPLE_COUNT_16_BIT; break;
+		case RE_MS_2_SAMPLES: pDesc.SampleDesc.Count = 2; break;
+		case RE_MS_4_SAMPLES: pDesc.SampleDesc.Count = 4; break;
+		case RE_MS_8_SAMPLES: pDesc.SampleDesc.Count = 8; break;
+		case RE_MS_16_SAMPLES: pDesc.SampleDesc.Count = 16; break;
 		}
-	} else {
-		ms.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+		pDesc.SampleDesc.Quality = 1;
+		//pDesc.SampleMask
 	}
 
-	VkPipelineDepthStencilStateCreateInfo ds =
-	{
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-		.depthTestEnable = (flags & RE_DEPTH_TEST) == RE_DEPTH_TEST,
-		.depthWriteEnable = (flags & RE_DEPTH_WRITE) == RE_DEPTH_WRITE,
-		.depthCompareOp = _NeToVkCompareOp(flags & RE_DEPTH_OP_BITS),
-		.depthBoundsTestEnable = (flags & RE_DEPTH_BOUNDS) == RE_DEPTH_BOUNDS,
-		.stencilTestEnable = VK_FALSE, // stencil not supported in v1 of the render API
-		.minDepthBounds = 0.f,
-		.maxDepthBounds = 1.f
-	};
+//		.sampleShadingEnable = flags & RE_SAMPLE_SHADING,
+//		.alphaToCoverageEnable = flags & RE_ALPHA_TO_COVERAGE,
+//		.alphaToOneEnable = flags & RE_ALPHA_TO_ONE
 
-	VkPipelineColorBlendAttachmentState *cbAttachments = Sys_Alloc(sizeof(*cbAttachments), desc->attachmentCount, MH_Transient);
+	pDesc.RasterizerState.DepthClipEnable = flags & RE_DEPTH_CLAMP;
+	pDesc.RasterizerState.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+
+	pDesc.DepthStencilState.DepthEnable = (flags & RE_DEPTH_TEST) == RE_DEPTH_TEST;
+	pDesc.DepthStencilState.DepthWriteMask = (flags & RE_DEPTH_WRITE) == RE_DEPTH_WRITE ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
+	pDesc.DepthStencilState.DepthFunc = _NeToD3DCompareOp(flags & RE_DEPTH_OP_BITS);
+	pDesc.DepthStencilState.StencilEnable = FALSE; // stencil not supported by the render api (yet)
+
+	pDesc.BlendState.IndependentBlendEnable = TRUE;
+	pDesc.BlendState.AlphaToCoverageEnable = FALSE;
+
+	pDesc.NumRenderTargets = desc->attachmentCount;
+	pDesc.DSVFormat = NeToDXGITextureFormat(desc->depthFormat);
 
 	for (uint32_t i = 0; i < desc->attachmentCount; ++i) {
-		cbAttachments[i].blendEnable = desc->attachments[i].enableBlend;
+		pDesc.BlendState.RenderTarget[i].BlendEnable = desc->attachments[i].enableBlend;
 
-		cbAttachments[i].srcColorBlendFactor = desc->attachments[i].srcColor;
-		cbAttachments[i].dstColorBlendFactor = desc->attachments[i].dstColor;
-		cbAttachments[i].colorBlendOp = desc->attachments[i].colorOp;
+		pDesc.BlendState.RenderTarget[i].SrcBlend = _NeToD3DBlendFactor(desc->attachments[i].srcColor);
+		pDesc.BlendState.RenderTarget[i].DestBlend = _NeToD3DBlendFactor(desc->attachments[i].dstColor);
+		pDesc.BlendState.RenderTarget[i].BlendOp = _NeToD3DBlendOp(desc->attachments[i].colorOp);
 
-		cbAttachments[i].srcAlphaBlendFactor = desc->attachments[i].srcAlpha;
-		cbAttachments[i].dstAlphaBlendFactor = desc->attachments[i].dstAlpha;
-		cbAttachments[i].alphaBlendOp = desc->attachments[i].alphaOp;
+		pDesc.BlendState.RenderTarget[i].SrcBlendAlpha = _NeToD3DBlendFactor(desc->attachments[i].srcAlpha);
+		pDesc.BlendState.RenderTarget[i].DestBlendAlpha = _NeToD3DBlendFactor(desc->attachments[i].dstAlpha);
+		pDesc.BlendState.RenderTarget[i].BlendOpAlpha = _NeToD3DBlendOp(desc->attachments[i].alphaOp);
 
-		cbAttachments[i].colorWriteMask = desc->attachments[i].writeMask;
+		pDesc.BlendState.RenderTarget[i].LogicOpEnable = FALSE;
+
+		pDesc.BlendState.RenderTarget[i].RenderTargetWriteMask = desc->attachments[i].writeMask;
+
+		pDesc.RTVFormats[i] = desc->renderPassDesc->rtvFormats[i];
 	}
 
-	VkPipelineColorBlendStateCreateInfo cb =
-	{
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-		.logicOpEnable = VK_FALSE,
-		.logicOp = VK_LOGIC_OP_SET,
-		.attachmentCount = desc->attachmentCount,
-		.pAttachments = cbAttachments,
-		.blendConstants = { 0.f, 0.f, 0.f, 0.f }
-	};
+    //ID3D12RootSignature *pRootSignature;
+	for (uint32_t i = 0; i < desc->stageInfo->stageCount; ++i) {
+		const struct NeShaderStageDesc *sDesc = &desc->stageInfo->stages[i];
+		const struct D3D12DShaderModule *sm = sDesc->module;
+		struct D3D12_SHADER_BYTECODE *dst = NULL;
 
-	VkDynamicState dynState[] =
-	{
-		VK_DYNAMIC_STATE_VIEWPORT,
-		VK_DYNAMIC_STATE_SCISSOR,
-		VK_DYNAMIC_STATE_LINE_WIDTH,
-		VK_DYNAMIC_STATE_DEPTH_BIAS,
-		VK_DYNAMIC_STATE_BLEND_CONSTANTS,
-		VK_DYNAMIC_STATE_DEPTH_BOUNDS
-	};
-	VkPipelineDynamicStateCreateInfo dyn =
-	{
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-		.dynamicStateCount = sizeof(dynState) / sizeof(dynState[0]),
-		.pDynamicStates = dynState
-	};
+		switch (sDesc->stage) {
+		case SS_VERTEX: dst = &pDesc.VS; break;
+		case SS_FRAGMENT: dst = &pDesc.PS; break;
+		case SS_TESS_CTRL: dst = &pDesc.DS; break;
+		case SS_TESS_EVAL: dst = &pDesc.HS; break;
+		case SS_GEOMETRY: dst = &pDesc.GS; break;
+		}
 
-	VkViewport vp = { 0, (float)*E_screenHeight, (float)*E_screenWidth, -(float)*E_screenHeight, 0.f, 1.f };
-	VkRect2D scissor = { { 0, 0 }, { *E_screenWidth, *E_screenHeight } };
+		if (!dst)
+			continue;
 
-	VkPipelineViewportStateCreateInfo vpState =
-	{
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-		.viewportCount = 1,
-		.pViewports = &vp,
-		.scissorCount = 1,
-		.pScissors = &scissor
-	};
-
-	VkGraphicsPipelineCreateInfo info =
-	{
-		.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-		.pVertexInputState = &vi,
-		.pInputAssemblyState = &ia,
-		.pTessellationState = NULL,
-		.pViewportState = &vpState,
-		.pRasterizationState = &rs,
-		.pMultisampleState = &ms,
-		.pDepthStencilState = &ds,
-		.pColorBlendState = &cb,
-		.pDynamicState = &dyn,
-		.layout = layout,
-		.renderPass = desc->renderPassDesc ? desc->renderPassDesc->rp : VK_NULL_HANDLE
-	};
-
-	info.stageCount = desc->shader->stageCount;
-	VkPipelineShaderStageCreateInfo *stages = Sys_Alloc(sizeof(*stages), info.stageCount, MH_Transient);
-	info.pStages = stages;
-
-	for (uint32_t i = 0; i < info.stageCount; ++i) {
-		stages[i].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		stages[i].stage = desc->shader->stages[i].stage;
-		stages[i].module = desc->shader->stages[i].module;
-		stages[i].pName = "main";
-		stages[i].pSpecializationInfo = NULL;
+		dst->pShaderBytecode = sm->bytecode;
+		dst->BytecodeLength = sm->len;
 	}
 
-	if (vkCreateGraphicsPipelines(dev->dev, _cache, 1, &info, Vkd_allocCb, &p->pipeline) != VK_SUCCESS) {
-		vkDestroyPipelineLayout(dev->dev, layout, Vkd_allocCb);
+    //D3D12_STREAM_OUTPUT_DESC StreamOutput;
+
+	pDesc.NodeMask = 0;
+	//pDesc.CachedPSO
+
+	HRESULT hr = ID3D12Device5_CreateGraphicsPipelineState(dev->dev, &pDesc, &IID_ID3D12PipelineState, &p->ps);
+
+	if (FAILED(hr)) {
 		Sys_Free(p);
 		return NULL;
 	}
 
-	p->layout = layout;*/
-
 	return p;
 }
 
-struct Pipeline *
-D3D12_ComputePipeline(struct RenderDevice *dev, const struct ComputePipelineDesc *desc)
+struct NePipeline *
+D3D12_ComputePipeline(struct NeRenderDevice *dev, const struct NeComputePipelineDesc *desc)
 {
-	struct Pipeline *p = Sys_Alloc(sizeof(*p), 1, MH_RenderDriver);
+	struct NePipeline *p = Sys_Alloc(sizeof(*p), 1, MH_RenderDriver);
 	if (!p)
 		return NULL;
 
-/*	VkSpecializationMapEntry specMap[] =
-	{
-		{ 0, 0, sizeof(uint32_t) },
-		{ 1, sizeof(uint32_t), sizeof(uint32_t) },
-		{ 2, sizeof(uint32_t) * 2, sizeof(uint32_t) }
-	};
-	uint32_t specData[] = { desc->threadsPerThreadgroup.x, desc->threadsPerThreadgroup.y, desc->threadsPerThreadgroup.z };
-	VkSpecializationInfo si =
-	{
-		.mapEntryCount = sizeof(specMap) / sizeof(specMap[0]),
-		.pMapEntries = specMap,
-		.dataSize = sizeof(specData),
-		.pData = specData
-	};
-	VkComputePipelineCreateInfo info =
-	{
-		.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-		.stage = {
-			.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-			.stage = VK_SHADER_STAGE_COMPUTE_BIT,
-			.pName = "main",
-			.pSpecializationInfo = &si
-		},
-		.layout = VK_NULL_HANDLE
-	};
+	D3D12_COMPUTE_PIPELINE_STATE_DESC pDesc = { 0 };
 
-	for (uint32_t i = 0; i < desc->shader->stageCount; ++i) {
-		if (desc->shader->stages[i].stage != SS_COMPUTE)
+	//pDesc.CachedPSO = 
+
+    //ID3D12RootSignature *pRootSignature;
+	for (uint32_t i = 0; i < desc->stageInfo->stageCount; ++i) {
+		if (desc->stageInfo->stages[i].stage != SS_COMPUTE)
 			continue;
 
-		info.stage.module = desc->shader->stages[i].module;
+		const struct D3D12DShaderModule *sm = desc->stageInfo->stages[i].module;
+
+		pDesc.CS.pShaderBytecode = sm->bytecode;
+		pDesc.CS.BytecodeLength = sm->len;
+
 		break;
 	}
 
-	if (!info.stage.module || (vkCreateComputePipelines(dev->dev, _cache, 1, &info, Vkd_allocCb, &p->pipeline) != VK_SUCCESS)) {
+	HRESULT hr = ID3D12Device5_CreateComputePipelineState(dev->dev, &pDesc, &IID_ID3D12PipelineState, &p->ps);
+
+	if (FAILED(hr)) {
 		Sys_Free(p);
 		return NULL;
-	}*/
+	}
 
 	return p;
 }
 
-struct Pipeline *
-D3D12_RayTracingPipeline(struct RenderDevice *dev, struct ShaderBindingTable *sbt, uint32_t maxDepth)
+struct NePipeline *
+D3D12_RayTracingPipeline(struct NeRenderDevice *dev, struct NeShaderBindingTable *sbt, uint32_t maxDepth)
 {
-	struct Pipeline *p = Sys_Alloc(1, sizeof(*p), MH_RenderDriver);
+	struct NePipeline *p = Sys_Alloc(1, sizeof(*p), MH_RenderDriver);
 	if (!p)
 		return NULL;
 
@@ -289,11 +245,20 @@ D3D12_RayTracingPipeline(struct RenderDevice *dev, struct ShaderBindingTable *sb
 		return NULL;
 	}*/
 
+//	D3D12_STATE
+
+/*	HRESULT hr = ID3D12Device5_CreatePipelineState(dev->dev, &pDesc, &IID_ID3D12PipelineState, &p->ps);
+
+	if (FAILED(hr)) {
+		Sys_Free(p);
+		return NULL;
+	}*/
+
 	return p;
 }
 
 void
-D3D12_LoadPipelineCache(struct RenderDevice *dev)
+D3D12_LoadPipelineCache(struct NeRenderDevice *dev)
 {
 /*	int64_t dataSize = 0;
 	void *data = NULL;
@@ -301,7 +266,7 @@ D3D12_LoadPipelineCache(struct RenderDevice *dev)
 	char *path = Sys_Alloc(sizeof(*path), 4096, MH_Transient);
 	snprintf(path, 4096, "/Config/VulkanPipelineCache/%d_%d_%d.bin", dev->physDevProps.vendorID, dev->physDevProps.deviceID, dev->physDevProps.driverVersion);
 
-	File f = E_OpenFile(path, IO_READ);
+	NeFile f = E_OpenFile(path, IO_READ);
 	if (f) {
 		data = E_ReadFileBlob(f, &dataSize, false);
 		E_CloseFile(f);
@@ -321,7 +286,7 @@ D3D12_LoadPipelineCache(struct RenderDevice *dev)
 }
 
 void
-D3D12_SavePipelineCache(struct RenderDevice *dev)
+D3D12_SavePipelineCache(struct NeRenderDevice *dev)
 {
 /*	size_t dataSize = 0;
 	void *data = NULL;
@@ -337,7 +302,7 @@ D3D12_SavePipelineCache(struct RenderDevice *dev)
 	char *path = Sys_Alloc(sizeof(*path), 4096, MH_Transient);
 	snprintf(path, 4096, "/VulkanPipelineCache/%d_%d_%d.bin", dev->physDevProps.vendorID, dev->physDevProps.deviceID, dev->physDevProps.driverVersion);
 
-	File f = E_OpenFile(path, IO_WRITE);
+	NeFile f = E_OpenFile(path, IO_WRITE);
 	E_WriteFile(f, data, dataSize);
 	E_CloseFile(f);
 
@@ -349,15 +314,14 @@ D3D12_SavePipelineCache(struct RenderDevice *dev)
 }
 
 void
-D3D12_DestroyPipeline(struct RenderDevice *dev, struct Pipeline *pipeline)
+D3D12_DestroyPipeline(struct NeRenderDevice *dev, struct NePipeline *pipeline)
 {
-//	vkDestroyPipeline(dev->dev, pipeline->pipeline, Vkd_allocCb);
-//	vkDestroyPipelineLayout(dev->dev, pipeline->layout, Vkd_allocCb);
+	ID3D12PipelineState_Release(pipeline->ps);
 	Sys_Free(pipeline);
 }
 
 /*static inline VkPipelineLayout
-_CreateLayout(struct RenderDevice *dev, uint32_t size)
+_CreateLayout(struct NeRenderDevice *dev, uint32_t size)
 {
 	VkPushConstantRange range =
 	{

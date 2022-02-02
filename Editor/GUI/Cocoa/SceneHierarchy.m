@@ -1,5 +1,3 @@
-#define Handle __EngineHandle
-
 #include <Engine/Entity.h>
 #include <Engine/Events.h>
 #include <Engine/Component.h>
@@ -8,8 +6,6 @@
 #include <Scene/Components.h>
 #include <Runtime/Runtime.h>
 
-#undef Handle
-
 #include <uthash.h>
 
 #import "SceneHierarchy.h"
@@ -17,16 +13,16 @@
 struct EntityNode
 {
 	TreeNode *node;
-	EntityHandle handle;
+	NeEntityHandle handle;
 	UT_hash_handle hh;
 };
 
-static void _SceneActivated(SceneHierarchy *sh, struct Scene *scn);
-static void _EntityCreated(SceneHierarchy *sh, EntityHandle eh);
-static void _EntityDestroyed(SceneHierarchy *sh, EntityHandle eh);
-static void _ComponentCreated(SceneHierarchy *sh, const struct ComponentCreationData *ccd);
-static void _ComponentDestroyed(SceneHierarchy *sh, CompHandle ch);
-static void _AddTransform(const struct Transform *xform, SceneHierarchy *sh, TreeNode *parentNode);
+static void _SceneActivated(SceneHierarchy *sh, struct NeScene *scn);
+static void _EntityCreated(SceneHierarchy *sh, NeEntityHandle eh);
+static void _EntityDestroyed(SceneHierarchy *sh, NeEntityHandle eh);
+static void _ComponentCreated(SceneHierarchy *sh, const struct NeComponentCreationData *ccd);
+static void _ComponentDestroyed(SceneHierarchy *sh, NeCompHandle ch);
+static void _AddTransform(const struct NeTransform *xform, SceneHierarchy *sh, TreeNode *parentNode);
 
 @implementation SceneHierarchy
 
@@ -79,13 +75,13 @@ static void _AddTransform(const struct Transform *xform, SceneHierarchy *sh, Tre
 	self.inspector = inspector;
 
 	_entityNodes = NULL;
-	_sceneActivatedHandler = E_RegisterHandler(EVT_SCENE_ACTIVATED, (EventHandlerProc)_SceneActivated, self);
+	_sceneActivatedHandler = E_RegisterHandler(EVT_SCENE_ACTIVATED, (NeEventHandlerProc)_SceneActivated, self);
 
-	_entityCreatedHandler = E_RegisterHandler(EVT_ENTITY_CREATED, (EventHandlerProc)_EntityCreated, self);
-	_entityDestroyedHandler = E_RegisterHandler(EVT_ENTITY_DESTROYED, (EventHandlerProc)_EntityDestroyed, self);
+	_entityCreatedHandler = E_RegisterHandler(EVT_ENTITY_CREATED, (NeEventHandlerProc)_EntityCreated, self);
+	_entityDestroyedHandler = E_RegisterHandler(EVT_ENTITY_DESTROYED, (NeEventHandlerProc)_EntityDestroyed, self);
 
-	_componentCreatedHandler = E_RegisterHandler(EVT_COMPONENT_CREATED, (EventHandlerProc)_ComponentCreated, self);
-	_componentDestroyedHandler = E_RegisterHandler(EVT_COMPONENT_DESTROYED, (EventHandlerProc)_ComponentDestroyed, self);
+	_componentCreatedHandler = E_RegisterHandler(EVT_COMPONENT_CREATED, (NeEventHandlerProc)_ComponentCreated, self);
+	_componentDestroyedHandler = E_RegisterHandler(EVT_COMPONENT_DESTROYED, (NeEventHandlerProc)_ComponentDestroyed, self);
 
 	return self;
 }
@@ -195,19 +191,19 @@ static void _AddTransform(const struct Transform *xform, SceneHierarchy *sh, Tre
 @end
 
 static void
-_SceneActivated(SceneHierarchy *sh, struct Scene *scn)
+_SceneActivated(SceneHierarchy *sh, struct NeScene *scn)
 {
-	const struct Array *transforms = E_GetAllComponentsS(scn, E_ComponentTypeId(TRANSFORM_COMP));
+	const struct NeArray *transforms = E_GetAllComponentsS(scn, E_ComponentTypeId(TRANSFORM_COMP));
 
 	if (sh.rootNode) {
 		//
 	}
 
 	sh.rootNode = [[TreeNode alloc] init];
-	sh.rootNode.text = [NSString stringWithFormat:@"%s", Rt_WcsToMbs(scn->name)];
+	sh.rootNode.text = [NSString stringWithUTF8String: scn->name];
 	sh.rootNode.handle = NULL;
 
-	const struct Transform *xform = NULL;
+	const struct NeTransform *xform = NULL;
 	Rt_ArrayForEach(xform, transforms)
 		if (!xform->parent)
 			_AddTransform(xform, sh, sh.rootNode);
@@ -220,9 +216,9 @@ _SceneActivated(SceneHierarchy *sh, struct Scene *scn)
 }
 
 static void
-_EntityCreated(SceneHierarchy *sh, EntityHandle eh)
+_EntityCreated(SceneHierarchy *sh, NeEntityHandle eh)
 {
-	const struct Transform *xform = E_GetComponent(eh, E_ComponentTypeId(TRANSFORM_COMP));
+	const struct NeTransform *xform = E_GetComponent(eh, E_ComponentTypeId(TRANSFORM_COMP));
 	if (!xform)
 		return;
 
@@ -240,7 +236,7 @@ _EntityCreated(SceneHierarchy *sh, EntityHandle eh)
 }
 
 static void
-_EntityDestroyed(SceneHierarchy *sh, EntityHandle eh)
+_EntityDestroyed(SceneHierarchy *sh, NeEntityHandle eh)
 {
 	[sh lock];
 
@@ -262,7 +258,7 @@ _EntityDestroyed(SceneHierarchy *sh, EntityHandle eh)
 }
 
 static void
-_ComponentCreated(SceneHierarchy *sh, const struct ComponentCreationData *ccd)
+_ComponentCreated(SceneHierarchy *sh, const struct NeComponentCreationData *ccd)
 {
 	if (ccd->type != E_ComponentTypeId(TRANSFORM_COMP))
 		return;
@@ -271,7 +267,7 @@ _ComponentCreated(SceneHierarchy *sh, const struct ComponentCreationData *ccd)
 }
 
 static void
-_ComponentDestroyed(SceneHierarchy *sh, CompHandle ch)
+_ComponentDestroyed(SceneHierarchy *sh, NeCompHandle ch)
 {
 	//if (ccd->type != E_ComponentTypeId(TRANSFORM_COMP))
 	//	return;
@@ -281,7 +277,7 @@ _ComponentDestroyed(SceneHierarchy *sh, CompHandle ch)
 }
 
 static void
-_AddTransform(const struct Transform *xform, SceneHierarchy *sh, TreeNode *parentNode)
+_AddTransform(const struct NeTransform *xform, SceneHierarchy *sh, TreeNode *parentNode)
 {
 	[sh lock];
 
@@ -291,12 +287,12 @@ _AddTransform(const struct Transform *xform, SceneHierarchy *sh, TreeNode *paren
 	}
 
 	TreeNode *node = [[TreeNode alloc] init];
-	node.text = [NSString stringWithFormat:@"%s", Rt_WcsToMbs(E_EntityName(xform->_owner))];
+	node.text = [NSString stringWithUTF8String: E_EntityName(xform->_owner)];
 	node.handle = xform->_owner;
 
 	[sh addNode: node forHandle: xform->_owner];
 
-	const struct Transform *child = NULL;
+	const struct NeTransform *child = NULL;
 	Rt_ArrayForEach(child, &xform->children)
 		_AddTransform(child, sh, node);
 

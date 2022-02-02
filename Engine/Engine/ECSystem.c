@@ -1,92 +1,222 @@
 #include <System/Log.h>
 #include <System/System.h>
+#include <System/Thread.h>
 #include <Runtime/Runtime.h>
 
+#include <Engine/IO.h>
+#include <Engine/Job.h>
 #include <Engine/ECSystem.h>
 #include <Engine/Entity.h>
 #include <Engine/Component.h>
 
 #include "ECS.h"
 
-#define ECSYS_MOD	L"ECSystem"
+#define ECSYS_MOD	"ECSystem"
 
-bool E_RegisterSystems(void);
+struct NeExecArgs
+{
+	struct NeECSystem *sys;
+	void *components[MAX_ENTITY_COMPONENTS];
+	void *args;
+};
 
-static struct Array _systems;
-static struct Array _filteredEntities;
+struct NeSystemInitInfo
+{
+	const char *name, *group;
+	const char *comp[MAX_ENTITY_COMPONENTS];
+	size_t numComp;
+	NeECSysExecProc proc;
+	int32_t priority;
+	bool singleThread;
+};
 
-static int _ecsysInsertCmp(const void *item, const void *data);
-static inline void _sysExec(struct Scene *s, struct ECSystem *sys, void *args);
-static inline void _filterEntities(struct Scene *s, struct Array *ent, CompTypeId *comp_types, size_t type_count);
+static struct NeArray _systems;
+static struct NeArray _filteredEntities;
+static struct NeArray _initInfo;
+
+static int _ECSysInsertCmp(const void *item, const void *data);
+static inline void _SysExec(struct NeScene *s, struct NeECSystem *sys, void *args);
+static inline bool *_SysExecJobs(struct NeScene *s, struct NeECSystem *sys, void *args);
+static inline void _FilterEntities(struct NeScene *s, struct NeArray *ent, NeCompTypeId *compTypes, size_t typeCount);
+static void _ExecJob(int worker, struct NeExecArgs *ea);
+static void _JobCompleted(uint64_t id, bool *done);
+static inline void _Exec(struct NeECSystem *sys, void **components, void *args);
+static void _LoadScript(const char *path);
 
 bool
-E_RegisterSystem(const wchar_t *name, const wchar_t *group,
-	const wchar_t **comp, size_t num_comp,
-	ECSysExecProc proc, int32_t priority)
+E_RegisterSystem(const char *name, const char *group,
+	const char **comp, size_t numComp,
+	NeECSysExecProc proc, int32_t priority,
+	bool singleThread)
 {
-	size_t i = 0;
-	CompTypeId types[MAX_ENTITY_COMPONENTS];
+	NeCompTypeId types[MAX_ENTITY_COMPONENTS];
 
-	if (num_comp > MAX_ENTITY_COMPONENTS)
+	if (numComp > MAX_ENTITY_COMPONENTS)
 		return false;
 
-	for (i = 0; i < num_comp; ++i)
-		types[i] = E_ComponentTypeId(comp[i]);
+	if (_systems.data) {
+		for (size_t i = 0; i < numComp; ++i)
+			types[i] = E_ComponentTypeId(comp[i]);
 
-	return E_RegisterSystemId(name, group, types, num_comp, proc, priority);
+		return E_RegisterSystemId(name, group, types, numComp, proc, priority, singleThread);
+	} else {
+		// this branch is taken during initialization, before E_InitECSystems is called
+
+		if (!_initInfo.data)
+			Rt_InitArray(&_initInfo, 10, sizeof(struct NeSystemInitInfo), MH_System);
+
+		struct NeSystemInitInfo *init = Rt_ArrayAllocate(&_initInfo);
+
+		init->name = name;
+		init->group = group;
+		init->numComp = numComp;
+		init->proc = proc;
+		init->priority = priority;
+		init->singleThread = singleThread;
+
+		for (size_t i = 0; i < numComp; ++i)
+			init->comp[i] = comp[i];
+
+		return true;
+	}
 }
 
 bool
-E_RegisterSystemId(const wchar_t *name, const wchar_t *group,
-	const CompTypeId *comp, size_t num_comp,
-	ECSysExecProc proc, int32_t priority)
+E_RegisterSystemId(const char *name, const char *group,
+	const NeCompTypeId *comp, size_t numComp,
+	NeECSysExecProc proc, int32_t priority,
+	bool singleThread)
 {
 	size_t pos = 0;
-	struct ECSystem sys;
+	struct NeECSystem sys;
 
 	memset(&sys, 0x0, sizeof(sys));
 
-	if (num_comp > MAX_ENTITY_COMPONENTS)
+	if (numComp > MAX_ENTITY_COMPONENTS)
 		return false;
 
 	if (!Rt_ArrayAllocate(&_systems))
 		return false;
 	--_systems.count;
 
-	sys.name_hash = Rt_HashStringW(name);
-	sys.group_hash = Rt_HashStringW(group);
+	sys.nameHash = Rt_HashString(name);
+	sys.groupHash = Rt_HashString(group);
+	sys.singleThread = singleThread;
 
-	sys.comp_types = Sys_Alloc(num_comp, sizeof(CompTypeId), MH_System);
-	if (!sys.comp_types)
+	sys.compTypes = Sys_Alloc(numComp, sizeof(NeCompTypeId), MH_System);
+	if (!sys.compTypes)
 		return false;
 
-	memcpy(sys.comp_types, comp, sizeof(CompTypeId) * num_comp);
-	sys.type_count = num_comp;
+	memcpy(sys.compTypes, comp, sizeof(NeCompTypeId) * numComp);
+	sys.typeCount = numComp;
 	sys.exec = proc;
 	sys.priority = priority;
 
-	pos = Rt_ArrayFindId(&_systems, &priority, _ecsysInsertCmp);
+	pos = Rt_ArrayFindId(&_systems, &priority, _ECSysInsertCmp);
 	if (pos == RT_NOT_FOUND)
 		pos = _systems.count;
 
 	if (!Rt_ArrayInsert(&_systems, &sys, pos)) {
-		Sys_Free(sys.comp_types);
+		Sys_Free(sys.compTypes);
 		return false;
 	}
 
 	return true;
 }
 
-void
-E_ExecuteSystemS(struct Scene *s, const wchar_t *name, void *args)
+bool
+E_RegisterScriptSystem(const char *name, const char *group,
+	const char **comp, size_t numComp,
+	const char *script, int32_t priority,
+	bool singleThread)
 {
 	size_t i = 0;
-	struct ECSystem *sys = NULL;
-	uint64_t hash = Rt_HashStringW(name);
+	NeCompTypeId types[MAX_ENTITY_COMPONENTS];
+
+	if (numComp > MAX_ENTITY_COMPONENTS)
+		return false;
+
+	for (i = 0; i < numComp; ++i)
+		types[i] = E_ComponentTypeId(comp[i]);
+
+	return E_RegisterScriptSystemId(name, group, types, numComp, script, priority, singleThread);
+}
+
+bool
+E_RegisterScriptSystemId(const char *name, const char *group,
+	const NeCompTypeId *comp, size_t numComp,
+	const char *script, int32_t priority,
+	bool singleThread)
+{
+	size_t pos = 0;
+	struct NeECSystem sys;
+
+	memset(&sys, 0x0, sizeof(sys));
+
+	if (numComp > MAX_ENTITY_COMPONENTS)
+		return false;
+
+	if (!Rt_ArrayAllocate(&_systems))
+		return false;
+	--_systems.count;
+
+	sys.nameHash = Rt_HashString(name);
+	sys.groupHash = Rt_HashString(group);
+	sys.singleThread = singleThread;
+
+	sys.compTypes = Sys_Alloc(numComp, sizeof(NeCompTypeId), MH_System);
+	if (!sys.compTypes)
+		return false;
+
+	memcpy(sys.compTypes, comp, sizeof(NeCompTypeId) * numComp);
+	sys.typeCount = numComp;
+	sys.priority = priority;
+
+	sys.vm = Sc_CreateVM();
+	if (!sys.vm)
+		goto error;
+
+	if (!Sc_LoadScriptFile(sys.vm, script))
+		goto error;
+
+	lua_getglobal(sys.vm, "Execute");
+
+	if (!lua_isfunction(sys.vm, lua_gettop(sys.vm))) {
+		Sys_LogEntry(ECSYS_MOD, LOG_CRITICAL, "Execute function not found in script %s", script);
+		lua_pop(sys.vm, 1);
+		goto error;
+	}
+
+	lua_pop(sys.vm, 1);
+
+	pos = Rt_ArrayFindId(&_systems, &priority, _ECSysInsertCmp);
+	if (pos == RT_NOT_FOUND)
+		pos = _systems.count;
+
+	if (!Rt_ArrayInsert(&_systems, &sys, pos))
+		goto error;
+
+	return true;
+
+error:
+	if (sys.vm)
+		Sc_DestroyVM(sys.vm);
+
+	Sys_Free(sys.compTypes);
+	
+	return false;
+}
+
+void
+E_ExecuteSystemS(struct NeScene *s, const char *name, void *args)
+{
+	size_t i = 0;
+	struct NeECSystem *sys = NULL;
+	uint64_t hash = Rt_HashString(name);
 
 	for (i = 0; i < _systems.count; ++i) {
 		sys = Rt_ArrayGet(&_systems, i);
-		if (sys->name_hash == hash)
+		if (sys->nameHash == hash)
 			break;
 		sys = NULL;
 	}
@@ -94,54 +224,76 @@ E_ExecuteSystemS(struct Scene *s, const wchar_t *name, void *args)
 	if (!sys)
 		return;
 
-	_sysExec(s, sys, args);
+	if (sys->singleThread) {
+		_SysExec(s, sys, args);
+	} else {
+		bool *done = _SysExecJobs(s, sys, args);
+		while (done && !*done)
+			Sys_Yield();
+	}
 }
 
 void
-E_ExecuteSystemGroupS(struct Scene *s, const wchar_t *name)
+E_ExecuteSystemGroupS(struct NeScene *s, const char *name)
 {
 	size_t i = 0;
-	struct ECSystem *sys = NULL;
-	uint64_t hash = Rt_HashStringW(name);
+	struct NeECSystem *sys = NULL;
+	uint64_t hash = Rt_HashString(name);
 
 	for (i = 0; i < _systems.count; ++i) {
 		sys = Rt_ArrayGet(&_systems, i);
 
-		if (sys->group_hash != hash)
+		if (sys->groupHash != hash)
 			continue;
 
-		_sysExec(s, sys, NULL);
+		if (sys->singleThread) {
+			_SysExec(s, sys, NULL);
+		} else {
+			bool *done = _SysExecJobs(s, sys, NULL);
+			while (done && !*done)
+				Sys_Yield();
+		}
 	}
 }
 
 bool
 E_InitECSystems(void)
 {
-	if (!Rt_InitArray(&_systems, 40, sizeof(struct ECSystem), MH_System))
+	if (!Rt_InitArray(&_systems, 40, sizeof(struct NeECSystem), MH_System))
 		return false;
 
 	if (!Rt_InitPtrArray(&_filteredEntities, 100, MH_System))
 		return false;
 
-	return E_RegisterSystems();
+	struct NeSystemInitInfo *info;
+	Rt_ArrayForEach(info, &_initInfo)
+		E_RegisterSystem(info->name, info->group, info->comp, info->numComp, info->proc, info->priority, info->singleThread);
+	Rt_TermArray(&_initInfo);
+
+	E_ProcessFiles("/Scripts", "lua", true, _LoadScript);
+
+	return true;
 }
 
 void
 E_TermECSystems(void)
 {
-	size_t i = 0;
+	struct NeECSystem *sys = NULL;
+	Rt_ArrayForEach(sys, &_systems) {
+		if (sys->vm)
+			Sc_DestroyVM(sys->vm);
 
-	for (i = 0; i < _systems.count; ++i)
-		Sys_Free(((struct ECSystem *)Rt_ArrayGet(&_systems, i))->comp_types);
+		Sys_Free(sys->compTypes);
+	}
 
 	Rt_TermArray(&_systems);
 	Rt_TermArray(&_filteredEntities);
 }
 
 static int
-_ecsysInsertCmp(const void *item, const void *data)
+_ECSysInsertCmp(const void *item, const void *data)
 {
-	const struct ECSystem *sys = item;
+	const struct NeECSystem *sys = item;
 	int32_t priority = *(int32_t *)data;
 
 	if (priority > sys->priority)
@@ -153,60 +305,107 @@ _ecsysInsertCmp(const void *item, const void *data)
 }
 
 static inline void
-_sysExec(struct Scene *s, struct ECSystem *sys, void *args)
+_SysExec(struct NeScene *s, struct NeECSystem *sys, void *args)
 {
 	size_t i = 0, j = 0;
 	void *ptr = NULL;
-	const struct Array *comp = NULL;
-	EntityHandle handle = 0;
+	const struct NeArray *comp = NULL;
+	NeEntityHandle handle = 0;
 	void *components[MAX_ENTITY_COMPONENTS];
 
-	if (sys->type_count == 1) {
-		comp = E_GetAllComponentsS(s, sys->comp_types[0]);
+	if (sys->typeCount == 1) {
+		comp = E_GetAllComponentsS(s, sys->compTypes[0]);
 
 		if (!comp)
 			return;
 
 		for (i = 0; i < comp->count; ++i) {
 			ptr = Rt_ArrayGet(comp, i);
-			sys->exec(&ptr, args);
+			_Exec(sys, &ptr, args);
 		}
 	} else {
-		_filterEntities(s, &_filteredEntities, sys->comp_types, sys->type_count);
+		_FilterEntities(s, &_filteredEntities, sys->compTypes, sys->typeCount);
 
 		for (i = 0; i < _filteredEntities.count; ++i) {
-			handle = (EntityHandle *)Rt_ArrayGetPtr(&_filteredEntities, i);
+			handle = (NeEntityHandle *)Rt_ArrayGetPtr(&_filteredEntities, i);
 
-			for (j = 0; j < sys->type_count; ++j)
-				components[j] = E_GetComponentS(s, handle, sys->comp_types[j]);
+			for (j = 0; j < sys->typeCount; ++j)
+				components[j] = E_GetComponentS(s, handle, sys->compTypes[j]);
 
-			sys->exec(components, args);
+			_Exec(sys, components, args);
 		}
 	}
 }
 
-static inline void
-_filterEntities(struct Scene *s, struct Array *ent, CompTypeId *comp_types, size_t type_count)
+static inline bool *
+_SysExecJobs(struct NeScene *s, struct NeECSystem *sys, void *args)
 {
-	const struct Array *components;
-	CompTypeId type = -1;
+	const struct NeArray *comp = NULL;
+	NeEntityHandle handle = 0;
+	struct NeExecArgs **ea;
+	size_t count;
+
+	if (sys->typeCount == 1) {
+		comp = E_GetAllComponentsS(s, sys->compTypes[0]);
+
+		if (!comp || !comp->count)
+			return NULL;
+
+		count = comp->count;
+		ea = Sys_Alloc(sizeof(*ea), count, MH_Frame);
+		for (size_t i = 0; i < count; ++i) {
+			ea[i] = Sys_Alloc(sizeof(*ea[0]), 1, MH_Frame);
+			ea[i]->sys = sys;
+			ea[i]->args = args;
+			ea[i]->components[0] = Rt_ArrayGet(comp, i);
+		}
+	} else {
+		_FilterEntities(s, &_filteredEntities, sys->compTypes, sys->typeCount);
+
+		if (!_filteredEntities.count)
+			return NULL;
+
+		count = _filteredEntities.count;
+		ea = Sys_Alloc(sizeof(*ea), count, MH_Frame);
+		for (size_t i = 0; i < count; ++i) {
+			handle = (NeEntityHandle *)Rt_ArrayGetPtr(&_filteredEntities, i);
+			ea[i] = Sys_Alloc(sizeof(*ea[0]), 1, MH_Frame);
+			ea[i]->sys = sys;
+			ea[i]->args = args;
+
+			for (size_t j = 0; j < sys->typeCount; ++j)
+				ea[i]->components[j] = E_GetComponentS(s, handle, sys->compTypes[j]);
+		}
+	}
+
+	bool *done = Sys_Alloc(sizeof(*done), 1, MH_Frame);
+	E_DispatchJobs(count, (NeJobProc)_ExecJob, (void **)ea, (NeJobCompletedProc)_JobCompleted, done);
+
+	return done;
+}
+
+static inline void
+_FilterEntities(struct NeScene *s, struct NeArray *ent, NeCompTypeId *compTypes, size_t typeCount)
+{
+	const struct NeArray *components;
+	NeCompTypeId type = -1;
 	size_t count = 0, min_count = SIZE_MAX;
-	struct CompBase *comp = NULL;
+	struct NeCompBase *comp = NULL;
 	bool valid = false;
 	size_t i = 0, j = 0;
 
-	for (i = 0; i < type_count; ++i) {
-		count = E_ComponentCountS(s, comp_types[i]);
+	for (i = 0; i < typeCount; ++i) {
+		count = E_ComponentCountS(s, compTypes[i]);
 
 		if (count >= min_count)
 			continue;
 
-		type = comp_types[i];
+		type = compTypes[i];
 		min_count = count;
 	}
 
 	if (type == -1) {
-		Sys_LogEntry(ECSYS_MOD, LOG_CRITICAL, L"_filterEntities: Entity with least components not found. Is type_count set ?");
+		Sys_LogEntry(ECSYS_MOD, LOG_CRITICAL, "_filterEntities: Entity with least components not found. Is typeCount set ?");
 		return;
 	}
 
@@ -224,8 +423,8 @@ _filterEntities(struct Scene *s, struct Array *ent, CompTypeId *comp_types, size
 
 		valid = true;
 
-		for (j = 0; j < type_count; ++j) {
-			if (E_GetComponentS(s, comp->_owner, comp_types[j]))
+		for (j = 0; j < typeCount; ++j) {
+			if (E_GetComponentS(s, comp->_owner, compTypes[j]))
 				continue;
 
 			valid = false;
@@ -235,4 +434,86 @@ _filterEntities(struct Scene *s, struct Array *ent, CompTypeId *comp_types, size
 		if (valid)
 			Rt_ArrayAddPtr(ent, comp->_owner);
 	}
+}
+
+static void
+_ExecJob(int worker, struct NeExecArgs *ea)
+{
+	_Exec(ea->sys, ea->components, ea->args);
+}
+
+static void
+_JobCompleted(uint64_t id, bool *done)
+{
+	*done = true;
+}
+
+static inline void
+_Exec(struct NeECSystem *sys, void **comp, void *args)
+{
+	if (sys->exec) {
+		sys->exec(comp, args);
+	} else {
+		lua_getglobal(sys->vm, "Execute");
+
+		for (size_t i = 0; i < sys->typeCount; ++i)
+			lua_pushlightuserdata(sys->vm, comp[i]);
+		lua_pushlightuserdata(sys->vm, args);
+
+		if (lua_pcall(sys->vm, (int)sys->typeCount + 1, 0, 0) && lua_gettop(sys->vm)) {
+			Sys_LogEntry(ECSYS_MOD, LOG_CRITICAL, "Failed to execute script system: %s", lua_tostring(sys->vm, -1));
+			Sc_LogStackDump(sys->vm, LOG_CRITICAL);
+			lua_pop(sys->vm, 1);
+		}
+	}
+}
+
+static void
+_LoadScript(const char *path)
+{
+	char buff[512], *p1 = NULL, *p2 = NULL;
+	char *name, *module = NULL;
+	int32_t priority = 0;
+	struct NeStream stm;
+	NeCompTypeId types[MAX_ENTITY_COMPONENTS];
+	uint32_t typeCount = 0;
+	
+	if (!E_FileStream(path, IO_READ, &stm))
+		return;
+
+	E_ReadStreamLine(&stm, buff, sizeof(buff));
+
+	if (strncmp(buff, "-- NeSystem ", 12))
+		goto exit;
+
+	p1 = strchr(&buff[12], ' ');
+	*p1++ = 0x0;
+	name = Rt_TransientStrDup(&buff[12]);
+
+	p2 = strchr(p1, ' ');
+	*p2++ = 0x0;
+	module = Rt_TransientStrDup(p1);
+	
+	priority = atoi(p2);
+
+	while (!E_EndOfStream(&stm)) {
+		E_ReadStreamLine(&stm, buff, sizeof(buff));
+
+		if (!strncmp(buff, "-- End", 6))
+			break;
+
+		NeCompTypeId typeId = E_ComponentTypeId(&buff[3]);
+		if (typeId == RT_NOT_FOUND)
+			break;
+
+		if (typeCount == MAX_ENTITY_COMPONENTS)
+			goto exit;
+
+		types[typeCount++] = typeId;
+	}
+
+	E_RegisterScriptSystemId(name, module, types, typeCount, path, priority, true);
+	
+exit:
+	E_CloseStream(&stm);
 }

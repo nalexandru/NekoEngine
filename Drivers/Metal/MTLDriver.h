@@ -1,16 +1,6 @@
 #ifndef _MTLDRIVER_H_
 #define _MTLDRIVER_H_
 
-#define Handle __EngineHandle
-
-#include <System/Log.h>
-#include <System/Memory.h>
-#include <Render/Types.h>
-#include <Render/Render.h>
-#include <Engine/Config.h>
-
-#undef Handle
-
 #import <TargetConditionals.h>
 
 #if TARGET_OS_OSX
@@ -27,12 +17,19 @@
 #import <Metal/Metal.h>
 #import <QuartzCore/CAMetalLayer.h>
 
+#include <System/Log.h>
+#include <System/Memory.h>
+#include <Render/Types.h>
+#include <Render/Render.h>
+#include <Engine/Config.h>
+#include <Engine/Job.h>
+
 #define MTLDRV_MOD	L"MetalDriver"
 
 #define PS_RENDER		0
 #define PS_COMPUTE		1
 #define PS_RAY_TRACING	2
-struct Pipeline
+struct NePipeline
 {
 	uint32_t type;
 	union {
@@ -48,20 +45,20 @@ struct Pipeline
 	};
 };
 
-struct Texture
+struct NeTexture
 {
 	id<MTLTexture> tex;
-	enum TextureLayout layout;
+	enum NeTextureLayout layout;
 };
 
-struct Buffer
+struct NeBuffer
 {
 	id<MTLBuffer> buff;
-	enum GPUMemoryType memoryType;
+	enum NeGPUMemoryType memoryType;
 	uint32_t location;
 };
 
-struct RenderDevice
+struct NeRenderDevice
 {
 	id<MTLDevice> dev;
 };
@@ -69,7 +66,7 @@ struct RenderDevice
 #define RC_RENDER	0
 #define RC_COMPUTE	1
 #define RC_BLIT		2
-struct RenderContext
+struct NeRenderContext
 {
 	uint32_t type;
 	id<MTLCommandQueue> queue;
@@ -82,26 +79,30 @@ struct RenderContext
 	} encoders;
 	union {
 		struct {
-			struct Pipeline *boundPipeline;
+			struct NePipeline *boundPipeline;
 			struct {
 				MTLIndexType type;
-				struct Buffer *buffer;
+				struct NeBuffer *buffer;
 				uint64_t offset;
 			} boundIndexBuffer;
 		};
 		MTLSize threadsPerThreadgroup;
 	};
+	struct
+	{
+		struct NeArray graphics, compute, xfer;
+	} submitted;
 	id<MTLParallelRenderCommandEncoder> parallelEncoder;
 	id<MTLDevice> dev;
 };
 
-struct Framebuffer
+struct NeFramebuffer
 {
 	id<MTLTexture> *attachments;
 	uint32_t attachmentCount;
 };
 
-struct RenderPassDesc
+struct NeRenderPassDesc
 {
 	MTLRenderPassDescriptor *desc;
 	uint32_t colorAttachments, inputAttachments;
@@ -109,79 +110,101 @@ struct RenderPassDesc
 	MTLPixelFormat depthFormat;
 };
 
-struct AccelerationStructure
+struct NeAccelerationStructure
 {
 	id<MTLAccelerationStructure> as;
 	MTLAccelerationStructureDescriptor *desc;
 };
 
+struct NeSemaphore
+{
+	id<MTLEvent> event;
+	uint64_t value;
+};
+
+struct NeSwapchain
+{
+	CAMetalLayer *layer;
+	id<MTLEvent> event;
+	uint64_t value;
+};
+
+struct Mtld_SubmitInfo
+{
+	id<MTLEvent> wait, signal;
+	uint64_t waitValue, signalValue;
+	id<MTLCommandBuffer> cmdBuffer;
+};
+
+extern dispatch_semaphore_t MTL_frameSemaphore;
+
 // Device
-struct RenderDevice *MTL_CreateDevice(struct RenderDeviceInfo *info,
-									  struct RenderDeviceProcs *devProcs,
-									  struct RenderContextProcs *ctxProcs);
-bool MTL_Execute(id<MTLDevice> dev, struct RenderContext *ctx, bool wait);
+struct NeRenderDevice *MTL_CreateDevice(struct NeRenderDeviceInfo *info,
+									  struct NeRenderDeviceProcs *devProcs,
+									  struct NeRenderContextProcs *ctxProcs);
+bool MTL_Execute(id<MTLDevice> dev, struct NeRenderContext *ctx, bool wait);
 void MTL_WaitIdle(id<MTLDevice> dev);
 void MTL_DestroyDevice(id<MTLDevice> dev);
 
 // Pipeline
-struct Pipeline *MTL_GraphicsPipeline(id<MTLDevice> dev, const struct GraphicsPipelineDesc *gpDesc);
-struct Pipeline *MTL_ComputePipeline(id<MTLDevice> dev, const struct ComputePipelineDesc *cpDesc);
-struct Pipeline *MTL_RayTracingPipeline(id<MTLDevice> dev, struct ShaderBindingTable *sbt, uint32_t maxDepth);
+struct NePipeline *MTL_GraphicsPipeline(id<MTLDevice> dev, const struct NeGraphicsPipelineDesc *gpDesc);
+struct NePipeline *MTL_ComputePipeline(id<MTLDevice> dev, const struct NeComputePipelineDesc *cpDesc);
+struct NePipeline *MTL_RayTracingPipeline(id<MTLDevice> dev, struct NeShaderBindingTable *sbt, uint32_t maxDepth);
 void MTL_LoadPipelineCache(id<MTLDevice> dev);
 void MTL_SavePipelineCache(id<MTLDevice> dev);
-void MTL_DestroyPipeline(id<MTLDevice> dev, struct Pipeline *p);
+void MTL_DestroyPipeline(id<MTLDevice> dev, struct NePipeline *p);
 
 // Surface
 void *MTL_CreateSurface(id<MTLDevice> dev, WINDOWTYPE *window);
 void MTL_DestroySurface(id<MTLDevice> dev, VIEWTYPE *view);
 
 // Swapchain
-void *MTL_CreateSwapchain(id<MTLDevice> dev, VIEWTYPE *view, bool verticalSync);
-void MTL_DestroySwapchain(id<MTLDevice> dev, CAMetalLayer *layer);
-void *MTL_AcquireNextImage(id<MTLDevice> dev, CAMetalLayer *layer);
-bool MTL_Present(id<MTLDevice> dev, struct RenderContext *ctx, VIEWTYPE *v, id<CAMetalDrawable> image, id<MTLFence> f);
-struct Texture *MTL_SwapchainTexture(CAMetalLayer *layer, id<CAMetalDrawable> image);
-enum TextureFormat MTL_SwapchainFormat(CAMetalLayer *layer);
-void MTL_SwapchainDesc(CAMetalLayer *layer, struct FramebufferAttachmentDesc *desc);
-void MTL_ScreenResized(id<MTLDevice> dev, CAMetalLayer *layer);
+struct NeSwapchain *MTL_CreateSwapchain(id<MTLDevice> dev, VIEWTYPE *view, bool verticalSync);
+void MTL_DestroySwapchain(id<MTLDevice> dev, struct NeSwapchain *);
+void *MTL_AcquireNextImage(id<MTLDevice> dev, struct NeSwapchain *);
+bool MTL_Present(id<MTLDevice> dev, struct NeRenderContext *ctx, struct NeSwapchain *sw, id<CAMetalDrawable> image, id<MTLFence> f);
+struct NeTexture *MTL_SwapchainTexture(struct NeSwapchain *sw, id<CAMetalDrawable> image);
+enum NeTextureFormat MTL_SwapchainFormat(struct NeSwapchain *sw);
+void MTL_SwapchainDesc(struct NeSwapchain *sw, struct NeFramebufferAttachmentDesc *desc);
+void MTL_ScreenResized(id<MTLDevice> dev, struct NeSwapchain *sw);
 
 // Context
-void MTL_InitContextProcs(struct RenderContextProcs *p);
-struct RenderContext *MTL_CreateContext(id<MTLDevice> dev);
-void MTL_ResetContext(id<MTLDevice> dev, struct RenderContext *ctx);
-void MTL_DestroyContext(id<MTLDevice> dev, struct RenderContext *ctx);
+void MTL_InitContextProcs(struct NeRenderContextProcs *p);
+struct NeRenderContext *MTL_CreateContext(id<MTLDevice> dev);
+void MTL_ResetContext(id<MTLDevice> dev, struct NeRenderContext *ctx);
+void MTL_DestroyContext(id<MTLDevice> dev, struct NeRenderContext *ctx);
 
 // Texture
-MTLTextureDescriptor *MTL_TextureDescriptor(id<MTLDevice> dev, const struct TextureDesc *desc);
-struct Texture *MTL_CreateTexture(id<MTLDevice> dev, const struct TextureDesc *desc, uint16_t location);
-enum TextureLayout MTL_TextureLayout(const struct Texture *tex);
-void MTL_DestroyTexture(id<MTLDevice> dev, struct Texture *tex);
+MTLTextureDescriptor *MTL_TextureDescriptor(id<MTLDevice> dev, const struct NeTextureDesc *desc);
+struct NeTexture *MTL_CreateTexture(id<MTLDevice> dev, const struct NeTextureDesc *desc, uint16_t location);
+enum NeTextureLayout MTL_TextureLayout(const struct NeTexture *tex);
+void MTL_DestroyTexture(id<MTLDevice> dev, struct NeTexture *tex);
 
 // Buffer
-struct Buffer *MTL_CreateBuffer(id<MTLDevice> dev, const struct BufferDesc *desc, uint16_t location);
-void MTL_UpdateBuffer(id<MTLDevice> dev, struct Buffer *buff, uint64_t offset, uint8_t *data, uint64_t size);
-void *MTL_MapBuffer(id<MTLDevice> dev, struct Buffer *buff);
-void MTL_FlushBuffer(id<MTLDevice> dev, struct Buffer *buff, uint64_t offset, uint64_t size);
-void MTL_UnmapBuffer(id<MTLDevice> dev, struct Buffer *buff);
-uint64_t MTL_BufferAddress(id<MTLDevice> dev, const struct Buffer *buff, uint64_t offset);
+struct NeBuffer *MTL_CreateBuffer(id<MTLDevice> dev, const struct NeBufferDesc *desc, uint16_t location);
+void MTL_UpdateBuffer(id<MTLDevice> dev, struct NeBuffer *buff, uint64_t offset, uint8_t *data, uint64_t size);
+void *MTL_MapBuffer(id<MTLDevice> dev, struct NeBuffer *buff);
+void MTL_FlushBuffer(id<MTLDevice> dev, struct NeBuffer *buff, uint64_t offset, uint64_t size);
+void MTL_UnmapBuffer(id<MTLDevice> dev, struct NeBuffer *buff);
+uint64_t MTL_BufferAddress(id<MTLDevice> dev, const struct NeBuffer *buff, uint64_t offset);
 uint64_t MTL_OffsetAddress(uint64_t address, uint64_t offset);
-void MTL_DestroyBuffer(id<MTLDevice> dev, struct Buffer *buff);
+void MTL_DestroyBuffer(id<MTLDevice> dev, struct NeBuffer *buff);
 
 // Acceleration Structure
-struct AccelerationStructure *MTL_CreateAccelerationStructure(id<MTLDevice> dev, const struct AccelerationStructureCreateInfo *asci);
-uint64_t MTL_AccelerationStructureHandle(id<MTLDevice> dev, const struct AccelerationStructure *as);
-void MTL_DestroyAccelerationStructure(id<MTLDevice> dev, struct AccelerationStructure *as);
+struct NeAccelerationStructure *MTL_CreateAccelerationStructure(id<MTLDevice> dev, const struct NeAccelerationStructureCreateInfo *asci);
+uint64_t MTL_AccelerationStructureHandle(id<MTLDevice> dev, const struct NeAccelerationStructure *as);
+void MTL_DestroyAccelerationStructure(id<MTLDevice> dev, struct NeAccelerationStructure *as);
 
 // Framebuffer
-struct Framebuffer *MTL_CreateFramebuffer(id<MTLDevice> dev, const struct FramebufferDesc *desc);
-void MTL_SetAttachment(struct Framebuffer *fb, uint32_t pos, struct Texture *tex);
-const struct FramebufferDesc *MTL_FramebufferDesc(const struct Framebuffer *fb);
-void MTL_DestroyFramebuffer(id<MTLDevice> dev, struct Framebuffer *fb);
+struct NeFramebuffer *MTL_CreateFramebuffer(id<MTLDevice> dev, const struct NeFramebufferDesc *desc);
+void MTL_SetAttachment(struct NeFramebuffer *fb, uint32_t pos, struct NeTexture *tex);
+const struct NeFramebufferDesc *MTL_FramebufferDesc(const struct NeFramebuffer *fb);
+void MTL_DestroyFramebuffer(id<MTLDevice> dev, struct NeFramebuffer *fb);
 
 // Render Pass
-struct RenderPassDesc *MTL_CreateRenderPassDesc(id<MTLDevice> dev, const struct AttachmentDesc *attachments, uint32_t count, const struct AttachmentDesc *depthAttachment,
-												const struct AttachmentDesc *inputAttachments, uint32_t inputCount);
-void MTL_DestroyRenderPassDesc(id<MTLDevice> dev, struct RenderPassDesc *pass);
+struct NeRenderPassDesc *MTL_CreateRenderPassDesc(id<MTLDevice> dev, const struct NeAttachmentDesc *attachments, uint32_t count, const struct NeAttachmentDesc *depthAttachment,
+												const struct NeAttachmentDesc *inputAttachments, uint32_t inputCount);
+void MTL_DestroyRenderPassDesc(id<MTLDevice> dev, struct NeRenderPassDesc *pass);
 
 // Argument Buffer
 bool MTL_InitArgumentBuffer(id<MTLDevice> dev);
@@ -201,22 +224,22 @@ id<MTLFunction> MTL_ShaderModule(id<MTLDevice> dev, const char *name);
 void MTL_TermLibrary(void);
 
 // Sampler
-id<MTLSamplerState> MTL_CreateSampler(id<MTLDevice> dev, const struct SamplerDesc *sDesc);
+id<MTLSamplerState> MTL_CreateSampler(id<MTLDevice> dev, const struct NeSamplerDesc *sDesc);
 void MTL_DestroySampler(id<MTLDevice> dev, id<MTLSamplerState> s);
 
 // Transient Resources
-struct Texture *MTL_CreateTransientTexture(id<MTLDevice> dev, const struct TextureDesc *desc, uint16_t location, uint64_t offset, uint64_t *size);
-struct Buffer *MTL_CreateTransientBuffer(id<MTLDevice> dev, const struct BufferDesc *desc, uint16_t location, uint64_t offset, uint64_t *size);
+struct NeTexture *MTL_CreateTransientTexture(id<MTLDevice> dev, const struct NeTextureDesc *desc, uint16_t location, uint64_t offset, uint64_t *size);
+struct NeBuffer *MTL_CreateTransientBuffer(id<MTLDevice> dev, const struct NeBufferDesc *desc, uint16_t location, uint64_t offset, uint64_t *size);
 bool MTL_InitTransientHeap(id<MTLDevice> dev, uint64_t size);
 bool MTL_ResizeTransientHeap(id<MTLDevice> dev, uint64_t size);
 void MTL_TermTransientHeap(id<MTLDevice> dev);
 
 // Synchronization
-id<MTLFence> MTL_CreateSemaphore(id<MTLDevice> dev);
-bool MTL_WaitSemaphore(id<MTLDevice> dev, id<MTLFence> f, uint64_t value, uint64_t timeout);
-bool MTL_WaitSemaphores(id<MTLDevice> dev, uint32_t count, id<MTLFence> *f, uint64_t *values, uint64_t timeout);
-bool MTL_SignalSemaphore(id<MTLDevice> dev, id<MTLFence> f, uint64_t value);
-void MTL_DestroySemaphore(id<MTLDevice> dev, id<MTLFence> f);
+struct NeSemaphore *MTL_CreateSemaphore(id<MTLDevice> dev);
+bool MTL_WaitSemaphore(id<MTLDevice> dev, struct NeSemaphore *s, uint64_t value, uint64_t timeout);
+bool MTL_WaitSemaphores(id<MTLDevice> dev, uint32_t count, struct NeSemaphore **s, uint64_t *values, uint64_t timeout);
+bool MTL_SignalSemaphore(id<MTLDevice> dev, struct NeSemaphore *s, uint64_t value);
+void MTL_DestroySemaphore(id<MTLDevice> dev, struct NeSemaphore *s);
 
 dispatch_semaphore_t MTL_CreateFence(id<MTLDevice> dev, bool createSignaled);
 void MTL_SignalFence(id<MTLDevice> dev, dispatch_semaphore_t ds);
@@ -231,9 +254,13 @@ void MTLDrv_SetRenderHeaps(id<MTLRenderCommandEncoder> encoder);
 void MTLDrv_SetComputeHeaps(id<MTLComputeCommandEncoder> encoder);
 void MTLDrv_TermMemory(void);
 
+// Render Interface
+struct NeRenderInterface *MTL_CreateRenderInterface(struct NeRenderDevice *dev);
+void MTL_DestroyRenderInterface(struct NeRenderInterface *iface);
+
 // Utility functions
 static inline MTLResourceOptions
-MTL_GPUMemoryTypetoResourceOptions(bool hasUnifiedMemory, enum GPUMemoryType type)
+MTL_GPUMemoryTypetoResourceOptions(bool hasUnifiedMemory, enum NeGPUMemoryType type)
 {
 #ifdef _DEBUG
 	MTLResourceOptions options = MTLResourceHazardTrackingModeTracked;
@@ -267,7 +294,7 @@ MTL_GPUMemoryTypetoResourceOptions(bool hasUnifiedMemory, enum GPUMemoryType typ
 }
 
 static inline MTLPixelFormat
-NeToMTLTextureFormat(enum TextureFormat fmt)
+NeToMTLTextureFormat(enum NeTextureFormat fmt)
 {
 	switch (fmt) {
 	case TF_R8G8B8A8_UNORM: return MTLPixelFormatRGBA8Unorm;
@@ -305,7 +332,7 @@ NeToMTLTextureFormat(enum TextureFormat fmt)
 	return MTLPixelFormatInvalid;
 }
 
-static inline enum TextureFormat
+static inline enum NeTextureFormat
 MTLToNeTextureFormat(MTLPixelFormat fmt)
 {
 	switch (fmt) {
@@ -342,7 +369,7 @@ MTLToNeTextureFormat(MTLPixelFormat fmt)
 }
 
 static inline NSUInteger
-MTL_TextureFormatSize(enum TextureFormat fmt)
+MTL_TextureFormatSize(enum NeTextureFormat fmt)
 {
 	switch (fmt) {
 	case TF_R8G8B8A8_UNORM: return 4;
@@ -377,7 +404,7 @@ MTL_TextureFormatSize(enum TextureFormat fmt)
 }
 
 static inline MTLBlendOperation
-NeToMTLBlendOperation(enum BlendOperation op)
+NeToMTLBlendOperation(enum NeBlendOperation op)
 {
 	switch (op) {
 	case RE_BOP_ADD: return MTLBlendOperationAdd;
@@ -389,7 +416,7 @@ NeToMTLBlendOperation(enum BlendOperation op)
 }
 
 static inline MTLBlendFactor
-NeToMTLBlendFactor(enum BlendFactor bf)
+NeToMTLBlendFactor(enum NeBlendFactor bf)
 {
 	switch (bf) {
 	case RE_BF_ZERO: return MTLBlendFactorZero;
@@ -415,7 +442,7 @@ NeToMTLBlendFactor(enum BlendFactor bf)
 }
 
 static inline MTLSamplerMinMagFilter
-NeToMTLTextureFilter(enum ImageFilter tf)
+NeToMTLTextureFilter(enum NeImageFilter tf)
 {
 	switch (tf) {
 	case IF_NEAREST: return MTLSamplerMinMagFilterNearest;
@@ -425,7 +452,7 @@ NeToMTLTextureFilter(enum ImageFilter tf)
 }
 
 static inline MTLSamplerMipFilter
-NeToMTLMipFilter(enum SamplerMipmapMode tmm)
+NeToMTLMipFilter(enum NeSamplerMipmapMode tmm)
 {
 	switch (tmm) {
 	case SMM_NEAREST: return MTLSamplerMipFilterNearest;
@@ -434,7 +461,7 @@ NeToMTLMipFilter(enum SamplerMipmapMode tmm)
 }
 
 static inline MTLSamplerAddressMode
-NeToMTLSamplerAddressMode(enum SamplerAddressMode tam)
+NeToMTLSamplerAddressMode(enum NeSamplerAddressMode tam)
 {
 	switch (tam) {
 	case SAM_REPEAT: return MTLSamplerAddressModeRepeat;
@@ -446,7 +473,7 @@ NeToMTLSamplerAddressMode(enum SamplerAddressMode tam)
 }
 
 static inline MTLCompareFunction
-NeToMTLSamplerCompareFunction(enum CompareOperation co)
+NeToMTLSamplerCompareFunction(enum NeCompareOperation co)
 {
 	switch (co) {
 	case CO_NEVER: return MTLCompareFunctionNever;
@@ -461,7 +488,7 @@ NeToMTLSamplerCompareFunction(enum CompareOperation co)
 }
 
 static inline MTLSamplerBorderColor
-NeToMTLSamplerBorderColor(enum BorderColor bc)
+NeToMTLSamplerBorderColor(enum NeBorderColor bc)
 {
 	switch (bc) {
 	case BC_INT_TRANSPARENT_BLACK:

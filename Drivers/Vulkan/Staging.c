@@ -11,14 +11,14 @@ static VkDeviceMemory _cpuMem, _gpuMem;
 static VkCommandBuffer _cmdBuffers[3];
 static uint8_t *_memPtr;
 static uint64_t _offset;
-static struct AtomicLock _lock = { 0 };
+static struct NeAtomicLock _lock = { 0 };
 
 #define ROUND_UP(v, powerOf2Alignment) (((v) + (powerOf2Alignment)-1) & ~((powerOf2Alignment)-1))
 
 bool
-Vkd_InitStagingArea(struct RenderDevice *dev)
+Vkd_InitStagingArea(struct NeRenderDevice *dev)
 {
-	_size = E_GetCVarU64(L"VulkanDrv_NonCoherentStagingArea", 224 * 1024 * 1024)->u64;
+	_size = E_GetCVarU64("VulkanDrv_NonCoherentStagingArea", 224 * 1024 * 1024)->u64;
 
 	VkBufferCreateInfo bci =
 	{
@@ -65,6 +65,14 @@ Vkd_InitStagingArea(struct RenderDevice *dev)
 	VkSemaphoreCreateInfo sci = { .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
 	vkCreateSemaphore(dev->dev, &sci, Vkd_allocCb, &Vkd_stagingSignal);
 
+#ifdef _DEBUG
+	Vkd_SetObjectName(dev->dev, _cpu, VK_OBJECT_TYPE_BUFFER, "CPU Staging Area");
+	Vkd_SetObjectName(dev->dev, _gpu, VK_OBJECT_TYPE_BUFFER, "GPU Staging Area");
+	Vkd_SetObjectName(dev->dev, _cpuMem, VK_OBJECT_TYPE_DEVICE_MEMORY, "GPU Staging Area Memory");
+	Vkd_SetObjectName(dev->dev, _gpuMem, VK_OBJECT_TYPE_DEVICE_MEMORY, "GPU Staging Area Memory");
+	Vkd_SetObjectName(dev->dev, Vkd_stagingSignal, VK_OBJECT_TYPE_SEMAPHORE, "Staging Semaphore");
+#endif
+
 	return true;
 }
 
@@ -84,11 +92,15 @@ Vkd_AllocateStagingMemory(VkDevice dev, VkBuffer buff, VkMemoryRequirements *mr)
 }
 
 void
-Vkd_CommitStagingArea(struct RenderDevice *dev, VkSemaphore wait)
+Vkd_CommitStagingArea(struct NeRenderDevice *dev, VkSemaphore wait)
 {
 	if (_cmdBuffers[Re_frameId])
 		vkFreeCommandBuffers(dev->dev, dev->driverTransferPool, 1, &_cmdBuffers[Re_frameId]);
 	_cmdBuffers[Re_frameId] = Vkd_TransferCmdBuffer(dev);
+
+#ifdef _DEBUG
+	Vkd_SetObjectName(dev->dev, _cmdBuffers[Re_frameId], VK_OBJECT_TYPE_COMMAND_BUFFER, "Staging CmdBuffer");
+#endif
 
 	VkMemoryBarrier memBarrier =
 	{
@@ -138,7 +150,7 @@ Vkd_StagingBarrier(VkCommandBuffer cmdBuffer)
 }
 
 void
-Vkd_TermStagingArea(struct RenderDevice *dev)
+Vkd_TermStagingArea(struct NeRenderDevice *dev)
 {
 	vkDestroySemaphore(dev->dev, Vkd_stagingSignal, Vkd_allocCb);
 

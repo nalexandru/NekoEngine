@@ -2,78 +2,79 @@
 
 #include "D3D12Driver.h"
 
-struct Texture *
-D3D12_CreateTransientTexture(struct RenderDevice *dev, const struct TextureDesc *desc, uint16_t location, uint64_t offset, uint64_t *size)
+struct NeTexture *
+D3D12_CreateTransientTexture(struct NeRenderDevice *dev, const struct NeTextureDesc *desc, uint16_t location, uint64_t offset, uint64_t *size)
 {
-	struct Texture *tex = Sys_Alloc(1, sizeof(*tex), MH_Frame);
+	struct NeTexture *tex = Sys_Alloc(1, sizeof(*tex), MH_Frame);
 	if (!tex)
 		return NULL;
 
-/*	if (!D3D12_CreateImage(dev, tci, tex, true))
-		goto error;
+	D3D12_RESOURCE_DESC resDesc;
+	D3D12_HEAP_PROPERTIES heapProperties;
+	D3D12D_InitTextureDesc(desc, &heapProperties, &resDesc);
 
-	vkBindImageMemory(dev->dev, tex->image, dev->transientHeap, offset);
+	HRESULT hr = ID3D12Device5_CreatePlacedResource(dev->dev, dev->transientHeap, offset, &resDesc,
+		D3D12_RESOURCE_STATE_GENERIC_READ, NULL, &IID_ID3D12Resource, &tex->res);
 
-	if (!D3D12_CreateImageView(dev, tci, tex))
-		goto error;
+	if (FAILED(hr)) {
+		return NULL;
+	}
 
-	if (location)
+	/*if (location)
 			D3D12_SetTexture(dev, location, tex->imageView);*/
 
 	return tex;
-
-/*error:
-	if (tex->image)
-		vkDestroyImage(dev->dev, tex->image, Vkd_allocCb);
-	Sys_Free(tex);
-	return NULL;*/
 }
 
-struct Buffer *
-D3D12_CreateTransientBuffer(struct RenderDevice *dev, const struct BufferDesc *desc, uint16_t location, uint64_t offset, uint64_t *size)
+struct NeBuffer *
+D3D12_CreateTransientBuffer(struct NeRenderDevice *dev, const struct NeBufferDesc *desc, uint16_t location, uint64_t offset, uint64_t *size)
 {
-	struct Buffer *buff = Sys_Alloc(1, sizeof(*buff), MH_Frame);
+	struct NeBuffer *buff = Sys_Alloc(1, sizeof(*buff), MH_Frame);
 	if (!buff)
 		return NULL;
 
-/*	VkBufferCreateInfo buffInfo =
-	{
-		.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-		.size = bci->desc.size,
-		.usage = bci->desc.usage | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-		.sharingMode = VK_SHARING_MODE_EXCLUSIVE
-	};
-	vkCreateBuffer(dev->dev, &buffInfo, Vkd_allocCb, &buff->buff);
+	D3D12_RESOURCE_DESC resDesc;
+	D3D12_HEAP_PROPERTIES heapProperties;
+	D3D12D_InitBufferDesc(desc, &heapProperties, &resDesc);
 
-	vkBindBufferMemory(dev->dev, buff->buff, dev->transientHeap, offset);
+	HRESULT hr = ID3D12Device5_CreateCommittedResource(dev->dev, &heapProperties, D3D12_HEAP_FLAG_NONE,
+		&resDesc, D3D12_RESOURCE_STATE_GENERIC_READ, NULL, &IID_ID3D12Resource, &buff->res);
 
-	if (location)
+	if (FAILED(hr)) {
+		return NULL;
+	}
+
+/*	if (location)
 		D3D12_SetBuffer(dev, location, buff->buff);*/
 
 	return buff;
 }
 
 bool
-D3D12_InitTransientHeap(struct RenderDevice *dev, uint64_t size)
+D3D12_InitTransientHeap(struct NeRenderDevice *dev, uint64_t size)
 {
-/*	VkMemoryAllocateInfo ai =
+	D3D12_HEAP_DESC desc =
 	{
-		.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-		.allocationSize = size,
-		.memoryTypeIndex = Vkd_MemoryTypeIndex(dev, 0x90, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) // this *might* break
+		.SizeInBytes = size,
+		.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT,
+		.Flags = D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES,
+		.Properties.Type = D3D12_HEAP_TYPE_DEFAULT,
+		.Properties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_NOT_AVAILABLE,
+		.Properties.MemoryPoolPreference = D3D12_MEMORY_POOL_L1,
+		.Properties.CreationNodeMask = 1,
+		.Properties.VisibleNodeMask = 1
 	};
-	return vkAllocateMemory(dev->dev, &ai, Vkd_allocCb, &dev->transientHeap) == VK_SUCCESS;*/
-	return false;
+	return SUCCEEDED(ID3D12Device5_CreateHeap(dev->dev, &desc, &IID_ID3D12Heap, &dev->transientHeap));
 }
 
 bool
-D3D12_ResizeTransientHeap(struct RenderDevice *dev, uint64_t size)
+D3D12_ResizeTransientHeap(struct NeRenderDevice *dev, uint64_t size)
 {
 	return false;
 }
 
 void
-D3D12_TermTransientHeap(struct RenderDevice *dev)
+D3D12_TermTransientHeap(struct NeRenderDevice *dev)
 {
-//	vkFreeMemory(dev->dev, dev->transientHeap, Vkd_allocCb);
+	ID3D12Heap_Release(dev->transientHeap);
 }

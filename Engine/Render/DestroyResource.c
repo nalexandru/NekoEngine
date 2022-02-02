@@ -5,7 +5,7 @@
 #define DT_OBJECT	0
 #define DT_HANDLE	1
 
-struct TDestroy
+struct NeTDestroy
 {
 	uint8_t type;
 	union {
@@ -18,13 +18,13 @@ struct TDestroy
 	};
 };
 
-struct Array _destroyedResources[RE_NUM_FRAMES];
+struct NeArray _destroyedResources[RE_NUM_FRAMES];
 
 bool
 Re_InitResourceDestructor(void)
 {
 	for (uint32_t i = 0; i < RE_NUM_FRAMES; ++i)
-		if (!Rt_InitArray(&_destroyedResources[i], 50, sizeof(struct TDestroy), MH_Render))
+		if (!Rt_InitArray(&_destroyedResources[i], 50, sizeof(struct NeTDestroy), MH_Render))
 			return false;
 	return true;
 }
@@ -32,7 +32,7 @@ Re_InitResourceDestructor(void)
 void
 Re_DestroyResources(void)
 {
-	const struct TDestroy *d;
+	const struct NeTDestroy *d;
 	Rt_ArrayForEach(d, &_destroyedResources[Re_frameId]) {
 		if (d->type == DT_OBJECT)
 			d->destroy(d->object);
@@ -46,7 +46,7 @@ void
 Re_TermResourceDestructor(void)
 {
 	for (uint32_t i = 0; i < RE_NUM_FRAMES; ++i) {
-		const struct TDestroy *d;
+		const struct NeTDestroy *d;
 		Rt_ArrayForEach(d, &_destroyedResources[i]) {
 			if (d->type == DT_OBJECT)
 				d->destroy(d->object);
@@ -57,12 +57,12 @@ Re_TermResourceDestructor(void)
 	}
 }
 
-static void _DestroyBuffer(struct Buffer *buff) { Re_deviceProcs.DestroyBuffer(Re_device, buff); }
-static void _DestroyTexture(struct Texture *tex) { Re_deviceProcs.DestroyTexture(Re_device, tex); }
+static void _DestroyBuffer(struct NeBuffer *buff) { Re_deviceProcs.DestroyBuffer(Re_device, buff); }
+static void _DestroyTexture(struct NeTexture *tex) { Re_deviceProcs.DestroyTexture(Re_device, tex); }
 
 #define TDESTROY(x, func)								\
 void Re_TDestroy ## x(struct x *obj) {					\
-	struct TDestroy d =									\
+	struct NeTDestroy d =								\
 	{													\
 		.type = DT_OBJECT,								\
 		.object = obj,									\
@@ -73,7 +73,7 @@ void Re_TDestroy ## x(struct x *obj) {					\
 
 #define TDESTROYH(x, func)								\
 void Re_TDestroyH ## x(x ## Handle h) {					\
-	struct TDestroy d =									\
+	struct NeTDestroy d =								\
 	{													\
 		.type = DT_HANDLE,								\
 		.handle = h,									\
@@ -82,10 +82,10 @@ void Re_TDestroyH ## x(x ## Handle h) {					\
 	Rt_ArrayAdd(&_destroyedResources[Re_frameId], &d);	\
 }
 
-TDESTROY(Buffer, _DestroyBuffer)
-TDESTROY(Texture, _DestroyTexture)
-TDESTROY(Framebuffer, Re_DestroyFramebuffer)
-TDESTROY(AccelerationStructure, Re_DestroyAccelerationStructure)
-TDESTROY(Sampler, Re_DestroySampler)
+TDESTROY(NeBuffer, _DestroyBuffer)
+TDESTROY(NeTexture, _DestroyTexture)
+TDESTROY(NeFramebuffer, Re_DestroyFramebuffer)
+TDESTROY(NeAccelerationStructure, Re_DestroyAccelerationStructure)
+TDESTROY(NeSampler, Re_DestroySampler)
 
-TDESTROYH(Buffer, Re_DestroyBuffer)
+TDESTROYH(NeBuffer, Re_DestroyBuffer)

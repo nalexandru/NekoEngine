@@ -19,10 +19,20 @@ static WORD _cpuArch, _colors[4] =
 	13, 7, 14, 12
 };
 static WORD _defaultColor;
-static char _hostname[MAX_COMPUTERNAME_LENGTH + 1], _cpu[50], _osName[128], _osVersion[48];
+static char _hostname[MAX_COMPUTERNAME_LENGTH + 1], _cpu[50], _osName[128], _osVersionString[48];
+static struct NeSysVersion _osVersion;
 
 static inline void _LoadOSInfo(void);
 static inline void _CalcCPUFreq(void);
+
+wchar_t *
+NeWin32_UTF8toUCS2(const char *text)
+{
+	int len = MultiByteToWideChar(CP_UTF8, 0, text, -1, NULL, 0);
+	wchar_t *out = Sys_Alloc(sizeof(*out), len, MH_Transient);
+	MultiByteToWideChar(CP_UTF8, 0, text, -1, out, len);
+	return out;
+}
 
 bool
 Sys_InitDbgOut(void)
@@ -52,16 +62,20 @@ Sys_InitDbgOut(void)
 }
 
 void
-Sys_DbgOut(int color, const wchar_t *module, const wchar_t *severity, const wchar_t *text)
+Sys_DbgOut(int color, const char *module, const char *severity, const char *text)
 {
 	SetConsoleTextAttribute(_stdout, _colors[color]);
 
 	if (IsDebuggerPresent()) {
-		wchar_t buff[4096];
+		char buff[4096];
+		snprintf(buff, 4096, "[%s][%s]: %s\n", module, severity, text);
+		OutputDebugStringA(buff);
+
+		/*wchar_t buff[4096];
 		swprintf(buff, 4096, L"[%ls][%ls]: %ls\n", module, severity, text);
-		OutputDebugStringW(buff);
+		OutputDebugStringW(buff);*/
 	} else {
-		fwprintf(stdout, L"[%ls][%ls]: %ls\n", module, severity, text);
+		fprintf(stdout, "[%s][%s]: %s\n", module, severity, text);
 	}
 
 	SetConsoleTextAttribute(_stdout, _defaultColor);
@@ -225,12 +239,18 @@ Sys_OperatingSystem(void)
 }
 
 const char *
+Sys_OperatingSystemVersionString(void)
+{
+	return _osVersionString;
+}
+
+struct NeSysVersion
 Sys_OperatingSystemVersion(void)
 {
 	return _osVersion;
 }
 
-enum MachineType
+enum NeMachineType
 Sys_MachineType(void)
 {
 	return MT_PC;
@@ -249,7 +269,7 @@ Sys_ScreenVisible(void)
 }
 
 void
-Sys_MessageBox(const wchar_t *title, const wchar_t *message, int icon)
+Sys_MessageBox(const char *title, const char *message, int icon)
 {
 	UINT type = MB_OK;
 
@@ -268,7 +288,7 @@ Sys_MessageBox(const wchar_t *title, const wchar_t *message, int icon)
 		break;
 	}
 
-	MessageBoxW((HWND)E_screen, message, title, type);
+	MessageBoxW((HWND)E_screen, NeWin32_UTF8toUCS2(message), NeWin32_UTF8toUCS2(title), type);
 }
 
 bool
@@ -293,7 +313,24 @@ Sys_ProcessEvents(void)
 void *
 Sys_LoadLibrary(const char *path)
 {
-	return LoadLibraryA(path);
+	UINT mode = SetErrorMode(SEM_FAILCRITICALERRORS);
+	void *module = NULL;
+
+	if (path) {
+		module = LoadLibraryA(path);
+
+		if (!module && !strstr(path, ".dll")) {
+			char *newPath = Sys_Alloc(sizeof(*newPath), MAX_PATH, MH_Transient);
+			snprintf(newPath, MAX_PATH, "%s.dll", path);
+
+			module = LoadLibraryA(newPath);
+		}
+	} else {
+		module = GetModuleHandle(NULL);
+	}
+
+	SetErrorMode(mode);
+	return module;
 }
 
 void *
@@ -396,7 +433,7 @@ Sys_USleep(uint32_t usec)
 }
 
 void
-Sys_DirectoryPath(enum SystemDirectory sd, char *out, size_t len)
+Sys_DirectoryPath(enum NeSystemDirectory sd, char *out, size_t len)
 {
 	WCHAR *path = NULL;
 
@@ -409,9 +446,7 @@ Sys_DirectoryPath(enum SystemDirectory sd, char *out, size_t len)
 	}
 
 	if (path) {
-		wchar_t *tmp = Sys_Alloc(sizeof(*tmp), 4096, MH_Transient);
-		swprintf(tmp, 4096, L"%ls/%ls", path, App_applicationInfo.name);
-		wcstombs(out, tmp, wcslen(tmp));
+		snprintf(out, len, "%ls\\%s", path, App_applicationInfo.name);
 		CoTaskMemFree(path);
 	}
 }
@@ -433,7 +468,34 @@ Sys_DirectoryExists(const char *path)
 bool
 Sys_CreateDirectory(const char *path)
 {
-	return CreateDirectoryA(path, NULL);
+	if (CreateDirectoryA(path, NULL))
+		return true;
+
+	if (GetLastError() != ERROR_PATH_NOT_FOUND)
+		return false;
+
+	char *dir = Sys_Alloc(sizeof(*dir), 4096, MH_Transient);
+	memcpy(dir, path, strnlen(path, 4096));
+
+	for (char *p = dir + 1; *p; ++p) {
+		if (*p != '/')
+			continue;
+
+		*p = 0x0;
+
+		if (!CreateDirectoryA(dir, NULL) && GetLastError() != ERROR_PATH_NOT_FOUND)
+			return false;
+
+		*p = '/';
+	}
+
+	return !CreateDirectoryA(path, NULL) ? GetLastError() == ERROR_PATH_NOT_FOUND : true;
+}
+
+void
+Sys_ExecutableLocation(char *buff, uint32_t len)
+{
+	GetModuleFileNameA(NULL, buff, len);
 }
 
 void
@@ -494,14 +556,21 @@ _LoadOSInfo(void)
 		 * key to have the value 6.3 for Win32 programs and
 		 * 10.0 for UWP programs. The RTM build of Windows 10
 		 * is 10240, so if the version is 6.3.x where x is >
-		 * than 10240 set the appropriate ver_str.
+		 * than 10240 set the appropriate verStr.
 		 */
 		if (!strncmp(verStr, "6.3", 3) && atoi(buildStr) > 10240)
 			(void)snprintf(verStr, sizeof(verStr), "10.0");
 
-		(void)snprintf(_osVersion, sizeof(_osVersion), "%s.%s%s", verStr, buildStr, spStr);
+		sscanf(verStr, "%d.%d", &_osVersion.major, &_osVersion.minor);
+		_osVersion.revision = atoi(buildStr);
+
+		(void)snprintf(_osVersionString, sizeof(_osVersionString), "%s.%s%s", verStr, buildStr, spStr);
 	} else {
-		(void)snprintf(_osVersion, sizeof(_osVersion), "%lu.%lu.%lu%s", osvi.dwMajorVersion, osvi.dwMinorVersion, osvi.dwBuildNumber, spStr);
+		_osVersion.major = osvi.dwMajorVersion;
+		_osVersion.minor = osvi.dwMinorVersion;
+		_osVersion.revision = osvi.dwBuildNumber;
+
+		(void)snprintf(_osVersionString, sizeof(_osVersionString), "%lu.%lu.%lu%s", osvi.dwMajorVersion, osvi.dwMinorVersion, osvi.dwBuildNumber, spStr);
 	}
 }
 

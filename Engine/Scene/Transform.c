@@ -1,7 +1,15 @@
+#include <Scene/Systems.h>
+#include <Engine/ECSystem.h>
 #include <Scene/Transform.h>
+#include <Scene/Components.h>
 
-bool
-Scn_InitTransform(struct Transform *xform, const void **args)
+static bool _InitTransform(struct NeTransform *xform, const void **args);
+static void _TermTransform(struct NeTransform *xform);
+
+E_REGISTER_COMPONENT(TRANSFORM_COMP, struct NeTransform, 16, _InitTransform, _TermTransform)
+
+static bool
+_InitTransform(struct NeTransform *xform, const void **args)
 {
 	v3(&xform->position, 0.f, 0.f, 0.f);
 	v3(&xform->scale, 1.f, 1.f, 1.f);
@@ -15,7 +23,7 @@ Scn_InitTransform(struct Transform *xform, const void **args)
 		//	if (!strncmp(*(++args), "true", 4))
 		//		Scn_ActiveCamera = cam;
 		} else if (!strncmp(arg, "ParentPtr", len)) {
-			xform->parent = (struct Transform *)*(++args);
+			xform->parent = (struct NeTransform *)*(++args);
 		} else if (!strncmp(arg, "Position", len)) {
 			char *ptr = (char *)*(++args);
 			xform->position.x = strtof(ptr, &ptr);
@@ -42,16 +50,15 @@ Scn_InitTransform(struct Transform *xform, const void **args)
 	return true;
 }
 
-void
-Scn_TermTransform(struct Transform *xform)
+static void
+_TermTransform(struct NeTransform *xform)
 {
 	//
 }
 
-void
-Scn_UpdateTransform(void **comp, void *args)
+E_SYSTEM(SCN_UPDATE_TRANSFORM, ECSYS_GROUP_PRE_RENDER, ECSYS_PRI_TRANSFORM, false, void, 1, TRANSFORM_COMP)
 {
-	struct Transform *xform = (struct Transform *)comp[0];
+	struct NeTransform *xform = (struct NeTransform *)comp[0];
 	
 	if (!xform->parent)
 		xform_update(xform);

@@ -6,7 +6,7 @@
 #include <System/Log.h>
 #include <System/Memory.h>
 
-#define SHMOD					L"Shader"
+#define SHMOD					"Shader"
 
 #define SHADER_META_ID			"NeShader"
 #define SHADER_META_VER			1
@@ -33,28 +33,28 @@
 #define SSTR_MESH				"mesh"
 #define SSTR_TASK				"task"
 
-struct ShaderModuleInfo
+struct NeShaderModuleInfo
 {
 	uint64_t hash;
 	void *module;
 };
 
-static struct Array _modules, _shaders;
+static struct NeArray _modules, _shaders;
 
-static int32_t _sortShaderModules(const struct ShaderModuleInfo *a, const struct ShaderModuleInfo *b);
-static int32_t _shaderModuleCompare(const struct ShaderModuleInfo *item, const uint64_t *hash);
+static int32_t _sortShaderModules(const struct NeShaderModuleInfo *a, const struct NeShaderModuleInfo *b);
+static int32_t _shaderModuleCompare(const struct NeShaderModuleInfo *item, const uint64_t *hash);
 
 static void _loadShader(const char *path);
-static int32_t _sortShaders(const struct Shader *a, const struct Shader *b);
-static int32_t _shaderCompare(const struct Shader *item, const uint64_t *hash);
+static int32_t _sortShaders(const struct NeShader *a, const struct NeShader *b);
+static int32_t _shaderCompare(const struct NeShader *item, const uint64_t *hash);
 
 bool
 Re_LoadShaders(void)
 {
-	if (!Rt_InitArray(&_shaders, 10, sizeof(struct Shader), MH_Render))
+	if (!Rt_InitArray(&_shaders, 10, sizeof(struct NeShader), MH_Render))
 		return false;
 
-	if (!Rt_InitArray(&_modules, 10, sizeof(struct ShaderModuleInfo), MH_Render)) {
+	if (!Rt_InitArray(&_modules, 10, sizeof(struct NeShaderModuleInfo), MH_Render)) {
 		Rt_TermArray(&_shaders);
 		return false;
 	}
@@ -68,7 +68,7 @@ Re_LoadShaders(void)
 void
 Re_UnloadShaders(void)
 {
-	struct Shader *s;
+	struct NeShader *s;
 	Rt_ArrayForEach(s, &_shaders) {
 		Sys_Free(s->stages);
 		Sys_Free(s->transparentStages.stages);
@@ -78,7 +78,7 @@ Re_UnloadShaders(void)
 	Rt_TermArray(&_shaders);
 }
 
-struct Shader *
+struct NeShader *
 Re_GetShader(const char *name)
 {
 	uint64_t hash = Rt_HashString(name);
@@ -86,7 +86,7 @@ Re_GetShader(const char *name)
 }
 
 static int32_t
-_sortShaderModules(const struct ShaderModuleInfo *a, const struct ShaderModuleInfo *b)
+_sortShaderModules(const struct NeShaderModuleInfo *a, const struct NeShaderModuleInfo *b)
 {
 	if (a->hash == b->hash)
 		return 0;
@@ -97,7 +97,7 @@ _sortShaderModules(const struct ShaderModuleInfo *a, const struct ShaderModuleIn
 }
 
 static int32_t
-_shaderModuleCompare(const struct ShaderModuleInfo *item, const uint64_t *hash)
+_shaderModuleCompare(const struct NeShaderModuleInfo *item, const uint64_t *hash)
 {
 	if (item->hash == *hash)
 		return 0;
@@ -108,7 +108,7 @@ _shaderModuleCompare(const struct ShaderModuleInfo *item, const uint64_t *hash)
 }
 
 static inline uint32_t
-_loadModules(struct Shader *s, uint32_t startPos, uint32_t count, const struct Metadata *meta, struct ShaderStageInfo *si)
+_loadModules(struct NeShader *s, uint32_t startPos, uint32_t count, const struct NeMetadata *meta, struct NeShaderStageInfo *si)
 {
 	uint32_t pos = startPos;
 	for (uint32_t j = 0; j < count; ++j) {
@@ -123,12 +123,12 @@ _loadModules(struct Shader *s, uint32_t startPos, uint32_t count, const struct M
 				meta->json[val.end] = 0x0;
 
 				uint64_t hash = Rt_HashString(tmp);
-				struct ShaderModuleInfo *modInfo = Rt_ArrayBSearch(&_shaders, &hash, (RtCmpFunc)_shaderModuleCompare);
+				struct NeShaderModuleInfo *modInfo = Rt_ArrayBSearch(&_shaders, &hash, (RtCmpFunc)_shaderModuleCompare);
 
 				if (modInfo) {
 					s->stages[j].module = modInfo->module;
 				} else {
-					struct ShaderModuleInfo info =
+					struct NeShaderModuleInfo info =
 					{
 						.hash = hash,
 						.module = Re_deviceProcs.ShaderModule(Re_device, tmp)
@@ -185,7 +185,7 @@ _loadModules(struct Shader *s, uint32_t startPos, uint32_t count, const struct M
 static void
 _loadShader(const char *path)
 {
-	struct Metadata meta =
+	struct NeMetadata meta =
 	{
 		.version = SHADER_META_VER,
 		.id = SHADER_META_ID
@@ -194,7 +194,7 @@ _loadShader(const char *path)
 	if (!E_LoadMetadata(&meta, path))
 		return;
 
-	struct Shader s = { 0 };
+	struct NeShader s = { 0 };
 
 	for (uint32_t i = 0; i < meta.tokenCount; ++i) {
 		jsmntok_t key = meta.tokens[i];
@@ -233,7 +233,7 @@ _loadShader(const char *path)
 }
 
 int32_t
-_sortShaders(const struct Shader *a, const struct Shader *b)
+_sortShaders(const struct NeShader *a, const struct NeShader *b)
 {
 	if (a->hash == b->hash)
 		return 0;
@@ -244,7 +244,7 @@ _sortShaders(const struct Shader *a, const struct Shader *b)
 }
 
 int32_t
-_shaderCompare(const struct Shader *item, const uint64_t *hash)
+_shaderCompare(const struct NeShader *item, const uint64_t *hash)
 {
 	if (item->hash == *hash)
 		return 0;

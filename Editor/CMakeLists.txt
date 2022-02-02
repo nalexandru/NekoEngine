@@ -24,8 +24,9 @@ else ()
 	add_executable(NekoEditor ${src} ${motif_src})
 endif ()
 
+set_target_properties(NekoEditor PROPERTIES ENABLE_EXPORTS TRUE)
 target_compile_definitions(NekoEditor PRIVATE _ENGINE_INTERNAL_)
-target_link_libraries(NekoEditor Platform Engine VulkanDriver)
+target_link_libraries(NekoEditor "-Wl,--allow-multiple-definition" Platform OpenAL "-Wl,--whole-archive" Engine VulkanDriver "-Wl,--no-whole-archive" meshoptimizer stdc++)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 	target_link_libraries(NekoEditor objc)

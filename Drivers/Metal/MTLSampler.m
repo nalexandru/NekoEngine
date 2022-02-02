@@ -1,7 +1,7 @@
 #include "MTLDriver.h"
 
 id<MTLSamplerState>
-MTL_CreateSampler(id<MTLDevice> dev, const struct SamplerDesc *sDesc)
+MTL_CreateSampler(id<MTLDevice> dev, const struct NeSamplerDesc *sDesc)
 {
 	MTLSamplerDescriptor *desc = [[MTLSamplerDescriptor alloc] init];
 	

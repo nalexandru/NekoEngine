@@ -3,13 +3,13 @@
 #include <System/AtomicLock.h>
 
 void
-Sys_InitAtomicLock(struct AtomicLock *lock)
+Sys_InitAtomicLock(struct NeAtomicLock *lock)
 {
 	lock->read = lock->write = 0;
 }
 
 void
-Sys_AtomicLockRead(volatile struct AtomicLock *lock)
+Sys_AtomicLockRead(volatile struct NeAtomicLock *lock)
 {
 	while (lock->write != 0)
 		Sys_Yield();
@@ -18,13 +18,13 @@ Sys_AtomicLockRead(volatile struct AtomicLock *lock)
 }
 
 void
-Sys_AtomicUnlockRead(volatile struct AtomicLock *lock)
+Sys_AtomicUnlockRead(volatile struct NeAtomicLock *lock)
 {
 	atomic_fetch_sub_explicit(&lock->read, 1, memory_order_release);
 }
 
 void
-Sys_AtomicLockWrite(volatile struct AtomicLock *lock)
+Sys_AtomicLockWrite(volatile struct NeAtomicLock *lock)
 {
 	int expected = 0;
 	while (atomic_compare_exchange_strong_explicit(&lock->write, &expected, 1,
@@ -36,7 +36,7 @@ Sys_AtomicLockWrite(volatile struct AtomicLock *lock)
 }
 
 void
-Sys_AtomicUnlockWrite(volatile struct AtomicLock *lock)
+Sys_AtomicUnlockWrite(volatile struct NeAtomicLock *lock)
 {
 	atomic_store_explicit(&lock->write, 0, memory_order_release);
 }

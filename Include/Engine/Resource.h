@@ -4,31 +4,31 @@
 #include <Engine/IO.h>
 #include <Engine/Types.h>
 
-struct ResourceLoadInfo
+struct NeResourceLoadInfo
 {
-	struct Stream stm;
+	struct NeStream stm;
 	const char *path;
 };
 
-typedef bool(*ResourceCreateProc)(const char *name, const void *createInfo, void *ptr, Handle h);
-typedef bool(*ResourceLoadProc)(struct ResourceLoadInfo *li, const char *args, void *ptr, Handle h);
-typedef void (*ResourceUnloadProc)(void *, Handle);
+typedef bool (*NeResourceCreateProc)(const char *name, const void *createInfo, void *ptr, NeHandle h);
+typedef bool (*NeResourceLoadProc)(struct NeResourceLoadInfo *li, const char *args, void *ptr, NeHandle h);
+typedef void (*NeResourceUnloadProc)(void *, NeHandle);
 
-bool E_RegisterResourceType(const char *name, size_t size, ResourceCreateProc create, ResourceLoadProc load, ResourceUnloadProc unload);
+bool E_RegisterResourceType(const char *name, size_t size, NeResourceCreateProc create, NeResourceLoadProc load, NeResourceUnloadProc unload);
 
-Handle E_CreateResource(const char *name, const char *type, const void *info);
-Handle E_LoadResource(const char *path, const char *type);
+NeHandle E_CreateResource(const char *name, const char *type, const void *info);
+NeHandle E_LoadResource(const char *path, const char *type);
 
-void *E_ResourcePtr(Handle res);
+void *E_ResourcePtr(NeHandle res);
 
-int32_t	E_ResourceReferences(Handle res);
-void	E_RetainResource(Handle res);
-void	E_ReleaseResource(Handle res);
+int32_t	E_ResourceReferences(NeHandle res);
+void	E_RetainResource(NeHandle res);
+void	E_ReleaseResource(NeHandle res);
 
-static inline uint16_t	E_ResHandleToGPU(Handle h) { return (uint16_t)(h & (uint64_t)0x000000000000FFFF); }
-Handle					E_GPUHandleToRes(uint16_t id, const char *type);
+static inline uint16_t	E_ResHandleToGPU(NeHandle h) { return (uint16_t)(h & (uint64_t)0x000000000000FFFF); }
+NeHandle				E_GPUHandleToRes(uint16_t id, const char *type);
 
-void	E_UnloadResource(Handle res);
+void	E_UnloadResource(NeHandle res);
 
 void	E_PurgeResources(void);
 

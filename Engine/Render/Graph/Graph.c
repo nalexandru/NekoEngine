@@ -8,44 +8,46 @@
 
 #include "../Internal.h"
 
-enum GraphResourceType
+#define GRAPH_MOD	"RenderGraph"
+
+enum NeGraphResourceType
 {
 	PRT_TEXTURE,
 	PRT_BUFFER,
 	PRT_DATA
 };
 
-struct GraphResource
+struct NeGraphResource
 {
 	uint64_t hash;
 	struct {
-		enum GraphResourceType type;
-		struct TextureDesc texture;
-		struct BufferDesc buffer;
+		enum NeGraphResourceType type;
+		struct NeTextureDesc texture;
+		struct NeBufferDesc buffer;
 	} info;
 	union {
-		struct Texture *texture;
+		struct NeTexture *texture;
 		struct {
 			uint64_t bufferAddress;
-			BufferHandle buffer;
-			struct Buffer *ptr;
+			NeBufferHandle buffer;
+			struct NeBuffer *bufferPtr;
 		};
 		void *hostData;
 	} handle;
 };
 
-struct PassData
+struct NePassData
 {
 	void *data;
-	struct RenderPass procs;
+	struct NeRenderPass procs;
 };
 
-static struct GraphResource *_GetResource(uint64_t hash, const struct Array *resources);
+static struct NeGraphResource *_GetResource(uint64_t hash, const struct NeArray *resources);
 
 bool
-Re_AddGraphTexture(const char *name, const struct TextureDesc *desc, struct Array *resources)
+Re_AddGraphTexture(const char *name, const struct NeTextureDesc *desc, struct NeArray *resources)
 {
-	struct GraphResource res = { .hash = Rt_HashString(name), .info.type = PRT_TEXTURE, .info.texture = *desc };
+	struct NeGraphResource res = { .hash = Rt_HashString(name), .info.type = PRT_TEXTURE, .info.texture = *desc };
 	if (_GetResource(res.hash, resources))
 		return false;
 
@@ -53,9 +55,9 @@ Re_AddGraphTexture(const char *name, const struct TextureDesc *desc, struct Arra
 }
 
 bool
-Re_AddGraphBuffer(const char *name, const struct BufferDesc *desc, struct Array *resources)
+Re_AddGraphBuffer(const char *name, const struct NeBufferDesc *desc, struct NeArray *resources)
 {
-	struct GraphResource res = { .hash = Rt_HashString(name), .info.type = PRT_BUFFER, .info.buffer = *desc };
+	struct NeGraphResource res = { .hash = Rt_HashString(name), .info.type = PRT_BUFFER, .info.buffer = *desc };
 	if (_GetResource(res.hash, resources))
 		return false;
 
@@ -63,55 +65,55 @@ Re_AddGraphBuffer(const char *name, const struct BufferDesc *desc, struct Array 
 }
 
 bool
-Re_AddGraphData(const char *name, void *ptr, struct Array *resources)
+Re_AddGraphData(const char *name, void *ptr, struct NeArray *resources)
 {
-	struct GraphResource res = { .hash = Rt_HashString(name), .info.type = PRT_DATA };
+	struct NeGraphResource res = { .hash = Rt_HashString(name), .info.type = PRT_DATA };
 	if (_GetResource(res.hash, resources))
 		return false;
 
 	return Rt_ArrayAdd(resources, &res);
 }
 
-struct Texture *
-Re_GraphTexture(uint64_t hash, const struct Array *resources)
+struct NeTexture *
+Re_GraphTexture(uint64_t hash, const struct NeArray *resources)
 {
-	struct GraphResource *res = _GetResource(hash, resources);
+	struct NeGraphResource *res = _GetResource(hash, resources);
 	if (!res)
 		return 0;
 	return res->info.type == PRT_TEXTURE ? res->handle.texture : NULL;
 }
 
 uint64_t
-Re_GraphBuffer(uint64_t hash, const struct Array *resources, struct Buffer **buff)
+Re_GraphBuffer(uint64_t hash, const struct NeArray *resources, struct NeBuffer **buff)
 {
-	struct GraphResource *res = _GetResource(hash, resources);
+	struct NeGraphResource *res = _GetResource(hash, resources);
 	if (!res)
 		return 0;
 
 	if (buff)
-		*buff = res->handle.ptr;
+		*buff = res->handle.bufferPtr;
 
 	return res->info.type == PRT_BUFFER ? res->handle.bufferAddress : 0;
 }
 
 void *
-Re_GraphData(uint64_t hash, const struct Array *resources)
+Re_GraphData(uint64_t hash, const struct NeArray *resources)
 {
-	struct GraphResource *res = _GetResource(hash, resources);
+	struct NeGraphResource *res = _GetResource(hash, resources);
 	if (!res)
 		return 0;
 	return res->info.type == PRT_DATA ? res->handle.hostData : NULL;
 }
 
-struct RenderGraph *
+struct NeRenderGraph *
 Re_CreateGraph(void)
 {
-	struct RenderGraph *g = Sys_Alloc(sizeof(*g), 1, MH_Render);
+	struct NeRenderGraph *g = Sys_Alloc(sizeof(*g), 1, MH_Render);
 	if (!g)
 		return 0;
 
-	Rt_InitArray(&g->allPasses, 10, sizeof(struct PassData), MH_Render);
-	Rt_InitArray(&g->resources, 10, sizeof(struct GraphResource), MH_Render);
+	Rt_InitArray(&g->allPasses, 10, sizeof(struct NePassData), MH_Render);
+	Rt_InitArray(&g->resources, 10, sizeof(struct NeGraphResource), MH_Render);
 
 	g->semaphore = Re_CreateSemaphore();
 
@@ -119,9 +121,9 @@ Re_CreateGraph(void)
 }
 
 bool
-Re_AddPass(struct RenderGraph *g, struct RenderPass *pass)
+Re_AddPass(struct NeRenderGraph *g, struct NeRenderPass *pass)
 {
-	struct PassData pd = { .procs = *pass };
+	struct NePassData pd = { .procs = *pass };
 
 	if (!pass->Init(&pd.data))
 		return false;
@@ -132,20 +134,20 @@ Re_AddPass(struct RenderGraph *g, struct RenderPass *pass)
 }
 
 void
-Re_BuildGraph(struct RenderGraph *g, struct Texture *output)
+Re_BuildGraph(struct NeRenderGraph *g, struct NeTexture *output)
 {
-	const struct Scene *s = Scn_activeScene;
+	const struct NeScene *s = Scn_activeScene;
 
 	Rt_InitArray(&g->execPasses, g->allPasses.count, g->allPasses.elemSize, MH_Transient);
 	Rt_ClearArray(&g->resources, false);
 
-	struct PassData *pd; 
+	struct NePassData *pd; 
 	Rt_ArrayForEach(pd, &g->allPasses)
 		if (pd->procs.Setup(pd->data, &g->resources))
 			Rt_ArrayAdd(&g->execPasses, pd);
 
 	uint64_t offset = 0, size = 0;
-	struct GraphResource *gr;
+	struct NeGraphResource *gr;
 	Rt_ArrayForEach(gr, &g->resources) {
 		if (gr->info.type == PRT_TEXTURE) {
 			gr->handle.texture = Re_CreateTransientTexture(&gr->info.texture, offset, &size);
@@ -154,7 +156,8 @@ Re_BuildGraph(struct RenderGraph *g, struct Texture *output)
 			if (!gr->handle.buffer)
 				Re_ReserveBufferId(&gr->handle.buffer);
 
-			gr->handle.ptr = Re_CreateTransientBuffer(&gr->info.buffer, gr->handle.buffer, offset, &size);
+			gr->handle.bufferPtr = Re_CreateTransientBuffer(&gr->info.buffer, gr->handle.buffer, offset, &size);
+			gr->handle.bufferAddress = Re_BufferAddress(gr->handle.buffer, 0);
 			Re_Destroy(gr->handle.buffer);
 		} else {
 			size = 0;
@@ -163,7 +166,7 @@ Re_BuildGraph(struct RenderGraph *g, struct Texture *output)
 		offset += size;
 	}
 
-	struct GraphResource res =
+	struct NeGraphResource res =
 	{
 		.hash = Rt_HashString("Re_output"),
 		.info.type = PRT_TEXTURE,
@@ -185,22 +188,27 @@ Re_BuildGraph(struct RenderGraph *g, struct Texture *output)
 	res.handle.bufferAddress = instAddr;
 	res.handle.buffer = s->sceneData;
 	Rt_ArrayAdd(&g->resources, &res);
+
+	res.hash = Rt_HashString("Re_passSemaphore");
+	res.info.type = PRT_DATA;
+	res.handle.hostData = g->semaphore;
+	Rt_ArrayAdd(&g->resources, &res);
 }
 
 void
-Re_ExecuteGraph(struct RenderGraph *g)
+Re_ExecuteGraph(struct NeRenderGraph *g)
 {
-	struct PassData *pd; 
+	struct NePassData *pd; 
 	Rt_ArrayForEach(pd, &g->execPasses)
 		pd->procs.Execute(pd->data, &g->resources);
 }
 
 void
-Re_DestroyGraph(struct RenderGraph *g)
+Re_DestroyGraph(struct NeRenderGraph *g)
 {
 	Rt_TermArray(&g->resources);
 
-	struct PassData *pd; 
+	struct NePassData *pd; 
 	Rt_ArrayForEach(pd, &g->allPasses)
 		pd->procs.Term(pd->data);
 	Rt_TermArray(&g->allPasses);
@@ -210,10 +218,10 @@ Re_DestroyGraph(struct RenderGraph *g)
 	Sys_Free(g);
 }
 
-static struct GraphResource *
-_GetResource(uint64_t hash, const struct Array *resources)
+static struct NeGraphResource *
+_GetResource(uint64_t hash, const struct NeArray *resources)
 {
-	struct GraphResource *gr;
+	struct NeGraphResource *gr;
 	Rt_ArrayForEach(gr, resources)
 		if (gr->hash == hash)
 			return gr;

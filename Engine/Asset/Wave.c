@@ -7,14 +7,14 @@
 #include <System/Memory.h>
 #include <System/System.h>
 
-struct RiffHeader
+struct NeRiffHeader
 {
 	char chunk_id[4];   ///< Contains the letters "RIFF" in ASCII form (0x52494646 big-endian form)
 	int chunk_size;     ///< 36 + SubChunk2Size. This is the size of the rest of the chunk following this number. This is the entire file minus 8 bytes for the two fields not included in this count: ChunkID and ChunkSize.
 	char format[4];     ///< Contains the letters "WAVE" (0x57415645 big-endian form).
 };
 
-struct WaveFormat 
+struct NeWaveFormat 
 {
 	char sub_chunk_id[4];   ///< Contains the letters "fmt " (0x666d7420)
 	int sub_chunk_size; ///< 16 for PCM. This is the size of the rest of the Subchunk which follows this number.
@@ -26,19 +26,19 @@ struct WaveFormat
 	short bits_per_sample;  ///< 8 bits = 8, 16 bits = 16, etc.
 };
 
-struct WaveData
+struct NeWaveData
 {
 	char sub_chunk_id[4];   ///< Contains the letters "data" (0x64617461 big-endian form).
 	int sub_chunk_2_size;   ///< == NumSamples * NumChannels * BitsPerSammple/8. This is the number of bytes in the data. You can also think of this as the size of the read of the subchunk following this number.
 };
 
 bool
-E_LoadWaveAsset(struct Stream *stm, struct AudioClip *ac)
+E_LoadWaveAsset(struct NeStream *stm, struct NeAudioClip *ac)
 {
 	int size;
-	struct WaveFormat waveFormat;
-	struct RiffHeader riffHeader;
-	struct WaveData waveData;
+	struct NeWaveFormat waveFormat;
+	struct NeRiffHeader riffHeader;
+	struct NeWaveData waveData;
 
 	E_ReadStream(stm, &riffHeader, sizeof(riffHeader));
 	if ((riffHeader.chunk_id[0] != 'R' ||

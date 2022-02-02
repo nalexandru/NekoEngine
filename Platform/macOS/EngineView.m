@@ -1,9 +1,5 @@
-#define Handle __EngineHandle
-
 #include <Input/Input.h>
 #include <Engine/Engine.h>
-
-#undef Handle
 
 #import "EngineView.h"
 #include "macOSPlatform.h"
@@ -36,12 +32,31 @@ extern bool __InSys_enableMouseAxis;
 
 - (void)keyUp: (NSEvent *)e
 {
-	In_buttonState[macOS_keymap[[e keyCode]]] = false;
+	In_Key(macOS_keymap[[e keyCode]], false);
 }
 
 - (void)keyDown: (NSEvent *)e
 {
-	In_buttonState[macOS_keymap[[e keyCode]]] = true;
+	In_Key(macOS_keymap[[e keyCode]], true);
+}
+
+- (void)flagsChanged: (NSEvent *)e
+{
+	NSEventModifierFlags flags = [e modifierFlags];
+
+#define MODIFIER_KEY(x, y)								\
+	if (((prevFlags & x) == x) && !((flags & x) == x))	\
+		In_Key(y, false);								\
+	if (!((prevFlags & x) == x) && ((flags & x) == x))	\
+		In_Key(y, true)
+
+	MODIFIER_KEY(NSEventModifierFlagCommand, BTN_KEY_LSUPER);
+	MODIFIER_KEY(NSEventModifierFlagOption, BTN_KEY_LALT);
+	MODIFIER_KEY(NSEventModifierFlagShift, BTN_KEY_LSHIFT);
+	MODIFIER_KEY(NSEventModifierFlagControl, BTN_KEY_LCTRL);
+	MODIFIER_KEY(NSEventModifierFlagCapsLock, BTN_KEY_CAPS);
+
+	prevFlags = flags;
 }
 
 - (void)mouseUp: (NSEvent *)e

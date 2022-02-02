@@ -5,7 +5,7 @@
 #include "VulkanDriver.h"
 
 bool
-Vk_CreateDescriptorSet(struct RenderDevice *dev)
+Vk_CreateDescriptorSet(struct NeRenderDevice *dev)
 {
 	VkDescriptorSetLayoutBinding bindings[] =
 	{
@@ -21,16 +21,9 @@ Vk_CreateDescriptorSet(struct RenderDevice *dev)
 			.descriptorCount = UINT16_MAX,
 			.stageFlags = VK_SHADER_STAGE_ALL,
 		},
-		{
-			.binding = 2,
-			.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-			.descriptorCount = UINT16_MAX,
-			.stageFlags = VK_SHADER_STAGE_ALL
-		}
 	};
 	VkDescriptorBindingFlags bindingFlags[] = 
 	{
-		VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT,
 		VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT,
 		VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT
 	};
@@ -54,7 +47,6 @@ Vk_CreateDescriptorSet(struct RenderDevice *dev)
 	VkDescriptorPoolSize poolSize[] =
 	{
 		{ VK_DESCRIPTOR_TYPE_SAMPLER, 3 },
-		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, UINT16_MAX },
 		{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, UINT16_MAX }
 	};
 	VkDescriptorPoolCreateInfo poolInfo =
@@ -105,7 +97,7 @@ Vk_CreateDescriptorSet(struct RenderDevice *dev)
 	if (vkCreateDescriptorSetLayout(dev->dev, &iaDslInfo, Vkd_allocCb, &dev->iaSetLayout) != VK_SUCCESS)
 		goto error;
 
-	uint32_t inputAttachmentPoolSize = E_GetCVarU32(L"Vulkan_InputAttachmentPoolSize", 32)->i32;
+	uint32_t inputAttachmentPoolSize = E_GetCVarU32("Vulkan_InputAttachmentPoolSize", 32)->i32;
 	VkDescriptorPoolSize iaPoolSize[] =
 	{
 		{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, inputAttachmentPoolSize }
@@ -120,6 +112,19 @@ Vk_CreateDescriptorSet(struct RenderDevice *dev)
 	for (uint32_t i = 0; i < RE_NUM_FRAMES; ++i)
 		if (vkCreateDescriptorPool(dev->dev, &iaPoolInfo, Vkd_allocCb, &dev->iaDescriptorPool[i]) != VK_SUCCESS)
 			goto error;
+
+#ifdef _DEBUG
+	Vkd_SetObjectName(dev->dev, dev->descriptorPool, VK_OBJECT_TYPE_DESCRIPTOR_POOL, "Global Descriptor Pool");
+	Vkd_SetObjectName(dev->dev, dev->descriptorSet, VK_OBJECT_TYPE_DESCRIPTOR_SET, "Global Descriptor Set");
+	Vkd_SetObjectName(dev->dev, dev->setLayout, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, "Global Descriptor Set Layout");
+	Vkd_SetObjectName(dev->dev, dev->iaSetLayout, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, "Input Attachment Descriptor Set Layout");
+
+	char *tmp = Sys_Alloc(sizeof(*tmp), 64, MH_Transient);
+	for (uint32_t i = 0; i < RE_NUM_FRAMES; ++i) {
+		snprintf(tmp, 64, "Input Attachment Descriptor Pool %d", i);
+		Vkd_SetObjectName(dev->dev, dev->iaDescriptorPool[i], VK_OBJECT_TYPE_DESCRIPTOR_POOL, tmp);
+	}
+#endif
 
 	return true;
 
@@ -141,7 +146,7 @@ error:
 }
 
 VkDescriptorSet
-Vk_AllocateIADescriptorSet(struct RenderDevice *dev)
+Vk_AllocateIADescriptorSet(struct NeRenderDevice *dev)
 {
 	VkDescriptorSet ds = VK_NULL_HANDLE;
 	VkDescriptorSetAllocateInfo allocInfo =
@@ -151,12 +156,18 @@ Vk_AllocateIADescriptorSet(struct RenderDevice *dev)
 		.descriptorSetCount = 1,
 		.pSetLayouts = &dev->iaSetLayout
 	};
-	vkAllocateDescriptorSets(dev->dev, &allocInfo, &ds);
+	if (vkAllocateDescriptorSets(dev->dev, &allocInfo, &ds) != VK_SUCCESS)
+		return VK_NULL_HANDLE;
+
+#ifdef _DEBUG
+	Vkd_SetObjectName(dev->dev, ds, VK_OBJECT_TYPE_DESCRIPTOR_SET, "Input Attachment Descriptor Set");
+#endif
+
 	return ds;
 }
 
 void
-Vk_SetSampler(struct RenderDevice *dev, uint16_t location, VkSampler sampler)
+Vk_SetSampler(struct NeRenderDevice *dev, uint16_t location, VkSampler sampler)
 {
 	VkDescriptorImageInfo dii =
 	{
@@ -176,28 +187,7 @@ Vk_SetSampler(struct RenderDevice *dev, uint16_t location, VkSampler sampler)
 }
 
 void
-Vk_SetBuffer(struct RenderDevice *dev, uint16_t location, VkBuffer buffer)
-{
-	VkDescriptorBufferInfo dbi =
-	{
-		.buffer = buffer,
-		.range = VK_WHOLE_SIZE
-	};
-	VkWriteDescriptorSet wds =
-	{
-		.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-		.dstSet = dev->descriptorSet,
-		.dstBinding = 2,
-		.dstArrayElement = location,
-		.descriptorCount = 1,
-		.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-		.pBufferInfo = &dbi
-	};
-	vkUpdateDescriptorSets(dev->dev, 1, &wds, 0, NULL);
-}
-
-void
-Vk_SetTexture(struct RenderDevice *dev, uint16_t location, VkImageView imageView)
+Vk_SetTexture(struct NeRenderDevice *dev, uint16_t location, VkImageView imageView)
 {
 	VkDescriptorImageInfo dii =
 	{
@@ -218,7 +208,7 @@ Vk_SetTexture(struct RenderDevice *dev, uint16_t location, VkImageView imageView
 }
 
 void
-Vk_SetInputAttachment(struct RenderDevice *dev, VkDescriptorSet set, uint16_t location, VkImageView imageView)
+Vk_SetInputAttachment(struct NeRenderDevice *dev, VkDescriptorSet set, uint16_t location, VkImageView imageView)
 {
 	VkDescriptorImageInfo dii =
 	{
@@ -239,7 +229,7 @@ Vk_SetInputAttachment(struct RenderDevice *dev, VkDescriptorSet set, uint16_t lo
 }
 
 void
-Vk_TermDescriptorSet(struct RenderDevice *dev)
+Vk_TermDescriptorSet(struct NeRenderDevice *dev)
 {
 	vkDestroyDescriptorPool(dev->dev, dev->descriptorPool, Vkd_allocCb);
 	vkDestroyDescriptorSetLayout(dev->dev, dev->setLayout, Vkd_allocCb);

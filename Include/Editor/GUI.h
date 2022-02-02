@@ -1,6 +1,8 @@
 #ifndef _NE_EDITOR_GUI_H_
 #define _NE_EDITOR_GUI_H_
 
+void Ed_ShowProjectDialog(void);
+
 bool Ed_CreateGUI(void);
 
 void EdGUI_ProcessEvents(void);

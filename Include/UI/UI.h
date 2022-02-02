@@ -6,26 +6,24 @@
 #include <Engine/Component.h>
 #include <Runtime/Runtime.h>
 
-#define UI_UPDATE_BUFFERS			L"UI_UpdateBuffers"
-#define UI_DRAW_CONTEXT			L"UI_DrawContext"
+#define UI_UPDATE_BUFFERS		"UI_UpdateBuffers"
+#define UI_DRAW_CONTEXT			"UI_DrawContext"
 
-struct UIContext
+struct NeUIContext
 {
 	COMPONENT_BASE;
 
-	struct Array vertices, indices, draws;
+	struct NeArray vertices, indices, draws;
 };
 
 bool UI_InitUI(void);
 void UI_TermUI(void);
 
-void UI_Update(struct Scene *s);
+void UI_Update(struct NeScene *s);
 
-bool UI_InitContext(struct UIContext *ctx, const void **);
-void UI_TermContext(struct UIContext *ctx);
+struct NeUIContext *UI_CreateStandaloneContext(uint32_t vertexCount, uint32_t indexCount, uint32_t drawCallCount);
+void UI_DestroyStandaloneContext(struct NeUIContext *ctx);
 
-void UI_ResetContext(void **comp, void *args);
-void UI_UpdateBuffers(void **comp, void *a);
-void UI_DrawContext(void **comp, void *a);
+bool UI_ResizeBuffers(uint32_t maxVertices, uint32_t maxIndices);
 
 #endif /* _NE_UI_UI_H_ */

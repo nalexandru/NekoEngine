@@ -9,7 +9,7 @@
 #include <System/Memory.h>
 #include <Runtime/RtDefs.h>
 
-struct Queue
+struct NeQueue
 {
 	uint8_t *data;
 	size_t size;
@@ -17,11 +17,11 @@ struct Queue
 	size_t end;
 	size_t count;
 	size_t elemSize;
-	enum MemoryHeap heap;
+	enum NeMemoryHeap heap;
 };
 
 static inline bool
-Rt_InitQueue(struct Queue *q, size_t size, size_t elemSize, enum MemoryHeap heap)
+Rt_InitQueue(struct NeQueue *q, size_t size, size_t elemSize, enum NeMemoryHeap heap)
 {
 	if (!q)
 		return false;
@@ -40,7 +40,7 @@ Rt_InitQueue(struct Queue *q, size_t size, size_t elemSize, enum MemoryHeap heap
 #define Rt_InitPtrQueue(a, size) Rt_InitQueue(a, size, sizeof(void *))
 
 static inline bool
-Rt_CloneQueue(struct Queue *dst, const struct Queue *src, enum MemoryHeap heap)
+Rt_CloneQueue(struct NeQueue *dst, const struct NeQueue *src, enum NeMemoryHeap heap)
 {
 	if (!dst || !src)
 		return false;
@@ -59,7 +59,7 @@ Rt_CloneQueue(struct Queue *dst, const struct Queue *src, enum MemoryHeap heap)
 }
 
 static inline bool
-Rt_ResizeQueue(struct Queue *q, size_t size)
+Rt_ResizeQueue(struct NeQueue *q, size_t size)
 {
 	uint8_t *tmp = 0;
 
@@ -81,13 +81,13 @@ Rt_ResizeQueue(struct Queue *q, size_t size)
 }
 
 static inline bool
-Rt_GrowQueue(struct Queue *q)
+Rt_GrowQueue(struct NeQueue *q)
 {
 	return Rt_ResizeQueue(q, _Rt_CalcGrowSize(q->size, q->elemSize, q->size + RT_DEF_INC));
 }
 
 static inline bool
-Rt_QueuePush(struct Queue *q, void *data)
+Rt_QueuePush(struct NeQueue *q, void *data)
 {
 	if (q->count == q->size)
 		if (!Rt_GrowQueue(q))
@@ -103,14 +103,14 @@ Rt_QueuePush(struct Queue *q, void *data)
 }
 
 static inline bool
-Rt_QueuePushPtr(struct Queue *q, void *data)
+Rt_QueuePushPtr(struct NeQueue *q, void *data)
 {
 	return Rt_QueuePush(q, &data);
 }
 
 
 static inline void *
-Rt_QueuePeek(const struct Queue *q)
+Rt_QueuePeek(const struct NeQueue *q)
 {
 	if (!q->count)
 		return NULL;
@@ -119,13 +119,13 @@ Rt_QueuePeek(const struct Queue *q)
 }
 
 static inline void *
-Rt_QueuePeekPtr(const struct Queue *q)
+Rt_QueuePeekPtr(const struct NeQueue *q)
 {
 	return *(void **)Rt_QueuePeek(q);
 }
 
 static inline void *
-Rt_QueuePop(struct Queue *q)
+Rt_QueuePop(struct NeQueue *q)
 {
 	void *ptr = 0;
 
@@ -146,7 +146,7 @@ Rt_QueuePop(struct Queue *q)
 }
 
 static inline void *
-Rt_QueuePopPtr(struct Queue *q)
+Rt_QueuePopPtr(struct NeQueue *q)
 {
 	return *(void **)Rt_QueuePop(q);
 }
@@ -154,7 +154,7 @@ Rt_QueuePopPtr(struct Queue *q)
 #define Rt_FillQueue(q) q->count = q->size
 
 static inline void
-Rt_ClearQueue(struct Queue *q, bool freeMemory)
+Rt_ClearQueue(struct NeQueue *q, bool freeMemory)
 {
 	q->count = 0;
 
@@ -168,7 +168,7 @@ Rt_ClearQueue(struct Queue *q, bool freeMemory)
 
 
 static inline void
-Rt_TermQueue(struct Queue *q)
+Rt_TermQueue(struct NeQueue *q)
 {
 	Rt_ClearQueue(q, true);
 }

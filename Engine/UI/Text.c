@@ -9,11 +9,11 @@
 static int _compare(const void *key, const void *elem);
 
 void
-UI_DrawText(struct UIContext *ctx, const wchar_t *text, float px, float py, float size, struct Font *font)
+UI_DrawText(struct NeUIContext *ctx, const char *text, float px, float py, float size, struct NeFont *font)
 {
 	float sizeFactor;
-	struct UIVertex v;
-	struct UIDrawCmd drawCmd;
+	struct NeUIVertex v;
+	struct NeUIDrawCmd drawCmd;
 
 	if (!text[0])
 		return;
@@ -33,7 +33,7 @@ UI_DrawText(struct UIContext *ctx, const wchar_t *text, float px, float py, floa
 
 	uint16_t vtxOffset = drawCmd.vtxOffset;
 	for (; *text; ++text) {
-		const struct Glyph *g = NULL;
+		const struct NeGlyph *g = NULL;
 
 		//
 		g = bsearch(text, font->glyphs, font->glyphCount, sizeof(*font->glyphs), _compare);

@@ -4,11 +4,40 @@
 #include <Render/Render.h>
 #include <Render/Components/ModelRender.h>
 #include <Engine/Resource.h>
+#include <Scene/Components.h>
 
-bool
-Re_InitModelRender(struct ModelRender *mr, const void **args)
+static bool _InitModelRender(struct NeModelRender *mr, const void **args);
+static void _TermModelRender(struct NeModelRender *mr);
+
+E_REGISTER_COMPONENT(MODEL_RENDER_COMP, struct NeModelRender, 1, _InitModelRender, _TermModelRender)
+
+void
+Re_SetModel(struct NeModelRender *mr, NeHandle model)
 {
-	Handle model = E_INVALID_HANDLE;
+	struct NeModel *new = E_ResourcePtr(model);
+	struct NeModel *old = E_ResourcePtr(mr->model);
+
+	if (old)
+		_TermModelRender(mr);
+
+	if (!new)
+		return;
+
+	mr->model = model;
+
+	mr->materials = Sys_Alloc(new->meshCount, sizeof(*mr->materials), MH_Render);
+	mr->meshBounds = Sys_Alloc(new->meshCount, sizeof(*mr->meshBounds), MH_Render);
+
+	for (uint32_t i = 0; i < new->meshCount; ++i)
+		Re_InitMaterial(new->meshes[i].materialResource, &mr->materials[i]);
+
+	mr->vertexBuffer = new->gpu.vertexBuffer;
+}
+
+static bool
+_InitModelRender(struct NeModelRender *mr, const void **args)
+{
+	NeHandle model = E_INVALID_HANDLE;
 	mr->model = E_INVALID_HANDLE;
 
 	for (; args && *args; ++args) {
@@ -18,7 +47,7 @@ Re_InitModelRender(struct ModelRender *mr, const void **args)
 		if (!strncmp(arg, "Model", len)) {
 			model = E_LoadResource(*(++args), RES_MODEL);
 		} else if (!strncmp(arg, "__ModelHandle", len)) {
-			model = (Handle)(*(++args));
+			model = (NeHandle)(*(++args));
 		} else if (!strncmp(arg, "Material", len)) {
 		}
 	}
@@ -31,31 +60,10 @@ Re_InitModelRender(struct ModelRender *mr, const void **args)
 	return true;
 }
 
-void
-Re_SetModel(struct ModelRender *mr, Handle model)
+static void
+_TermModelRender(struct NeModelRender *mr)
 {
-	struct Model *new = E_ResourcePtr(model);
-	struct Model *old = E_ResourcePtr(mr->model);
-
-	if (old)
-		Re_TermModelRender(mr);
-
-	if (!new)
-		return;
-
-	mr->model = model;
-
-	mr->materials = Sys_Alloc(new->meshCount, sizeof(*mr->materials), MH_Render);
-	mr->meshBounds = Sys_Alloc(new->meshCount, sizeof(*mr->meshBounds), MH_Render);
-
-	for (uint32_t i = 0; i < new->meshCount; ++i)
-		Re_InitMaterial(new->meshes[i].materialResource, &mr->materials[i]);
-}
-
-void
-Re_TermModelRender(struct ModelRender *mr)
-{
-	struct Model *m = E_ResourcePtr(mr->model);
+	struct NeModel *m = E_ResourcePtr(mr->model);
 	if (!m)
 		return;
 

@@ -22,10 +22,10 @@
 #define AU_MOD L"Audio"
 #define CHK_FAIL(x, y) if (!x) { Sys_LogEntry(AU_MOD, LOG_CRITICAL, y); return false; }
 
-ALCdevice* Au_device = NULL;
+ALCdevice *Au_device = NULL;
 ALCcontext *Au_context = NULL;
 
-struct AudioDeviceInfo Au_deviceInfo = { 0 };
+struct NeAudioDeviceInfo Au_deviceInfo = { 0 };
 
 bool
 Au_Init(void)
@@ -43,11 +43,11 @@ Au_Init(void)
 
 	return true;
 
-/*	E_RegisterResourceType(RES_AUDIO_CLIP, sizeof(struct AudioClip) - sizeof(uint8_t) + Au_audioClipDataSize,
-		(ResourceCreateProc)Au_CreateClip, (ResourceLoadProc)Au_LoadClip, (ResourceUnloadProc)Au_UnloadClip);
+/*	E_RegisterResourceType(RES_AUDIO_CLIP, sizeof(struct NeAudioClip) - sizeof(uint8_t) + Au_audioClipDataSize,
+		(NeResourceCreateProc)Au_CreateClip, (NeResourceLoadProc)Au_LoadClip, (NeResourceUnloadProc)Au_UnloadClip);
 
 	return E_RegisterComponent(AUDIO_SOURCE_COMP, Au_sourceSize, 1,
-		(CompInitProc)Au_InitSourceComponent, (CompTermProc)Au_TermSourceComponent);*/
+		(NeCompInitProc)Au_InitSourceComponent, (NeCompTermProc)Au_TermSourceComponent);*/
 /*error:
 	if (Au_context)
 		alcDestroyContext(Au_context);

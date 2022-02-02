@@ -5,32 +5,32 @@
 #include <Engine/Types.h>
 #include <Runtime/Runtime.h>
 
-struct Bone
+struct NeBone
 {
 	uint64_t hash;
 	struct mat4 offset;
 	char name[256];
 };
 
-struct SkeletonNode
+struct NeSkeletonNode
 {
 	uint64_t hash;
 	struct mat4 xform;
-	struct SkeletonNode *parent;
-	struct Array children;
+	struct NeSkeletonNode *parent;
+	struct NeArray children;
 	char name[256];
 };
 
-struct Skeleton
+struct NeSkeleton
 {
-	struct SkeletonNode *root;
-	struct Array bones, nodes;
+	struct NeSkeletonNode *root;
+	struct NeArray bones, nodes;
 	struct mat4 globalInverseTransform;
-	struct Array transforms, prevTransforms;
+	struct NeArray transforms, prevTransforms;
 };
 
-bool Anim_InitSkeleton(struct Skeleton *s, const struct Array *bones, const struct Array *nodes, const struct mat4 *git);
-void Anim_UpdateSkeleton(struct Skeleton *s, double time, const struct AnimationClip *ac);
-void Anim_TermSkeleton(struct Skeleton *s);
+bool Anim_InitSkeleton(struct NeSkeleton *s, const struct NeArray *bones, const struct NeArray *nodes, const struct mat4 *git);
+void Anim_UpdateSkeleton(struct NeSkeleton *s, double time, const struct NeAnimationClip *ac);
+void Anim_TermSkeleton(struct NeSkeleton *s);
 
 #endif /* _NE_ANIMATION_SKELETON_H_ */

@@ -18,10 +18,7 @@ SIF_FUNC(MessageBox)
 	if (!title || !message)
 		return 0;
 
-	const wchar_t *wTitle = Rt_MbsToWcs(title);
-	const wchar_t *wMessage = Rt_MbsToWcs(message);
-
-	Sys_MessageBox(wTitle, wMessage, icon);
+	Sys_MessageBox(title, message, icon);
 	
 	return 0;
 }
@@ -33,7 +30,7 @@ SIF_INTEGER(CpuFreq, Sys_CpuFreq());
 SIF_INTEGER(CpuCount, Sys_CpuCount());
 SIF_INTEGER(CpuThreadCount, Sys_CpuThreadCount());
 SIF_STRING(OperatingSystem, Sys_OperatingSystem());
-SIF_STRING(OperatingSystemVersion, Sys_OperatingSystemVersion());
+SIF_STRING(OperatingSystemVersionString, Sys_OperatingSystemVersionString());
 SIF_INTEGER(MachineType, Sys_MachineType());
 SIF_INTEGER(Capabilities, Sys_Capabilities());
 
@@ -64,10 +61,7 @@ SIF_FUNC(LogEntry)
 	if (!module || !message)
 		return 0;
 
-	const wchar_t *wModule = Rt_MbsToWcs(module);
-	const wchar_t *wMessage = Rt_MbsToWcs(message);
-
-	Sys_LogEntry(wModule, severity, wMessage);
+	Sys_LogEntry(module, severity, message);
 
 	return 0;
 }
@@ -97,7 +91,7 @@ SIface_OpenSystem(lua_State *vm)
 		SIF_REG(CpuCount),
 		SIF_REG(CpuThreadCount),
 		SIF_REG(OperatingSystem),
-		SIF_REG(OperatingSystemVersion),
+		SIF_REG(OperatingSystemVersionString),
 		SIF_REG(MachineType),
 		SIF_REG(Capabilities),
 		SIF_REG(BigEndian),
@@ -118,4 +112,16 @@ SIface_OpenSystem(lua_State *vm)
 
 	lua_pushinteger(vm, LOG_INFORMATION);
 	lua_setglobal(vm, "LOG_INFORMATION");
+
+	lua_pushinteger(vm, MSG_ICON_NONE);
+	lua_setglobal(vm, "MSG_ICON_NONE");
+
+	lua_pushinteger(vm, MSG_ICON_INFO);
+	lua_setglobal(vm, "MSG_ICON_INFO");
+
+	lua_pushinteger(vm, MSG_ICON_WARN);
+	lua_setglobal(vm, "MSG_ICON_WARN");
+
+	lua_pushinteger(vm, MSG_ICON_ERROR);
+	lua_setglobal(vm, "MSG_ICON_ERROR");
 }

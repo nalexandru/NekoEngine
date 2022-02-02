@@ -12,6 +12,6 @@ extern Display *X11_display;
 extern XVisualInfo X11_visualInfo;
 extern Atom X11_WM_PROTOCOLS, X11_WM_DELETE_WINDOW, X11_NET_WM_STATE, X11_NET_WM_PID,
 	X11_NET_WM_WINDOW_TYPE, X11_NET_WM_WINDOW_TYPE_NORMAL, X11_NET_WM_BYPASS_COMPOSITOR;
-extern enum Button X11_keymap[];
+extern enum NeButton X11_keymap[];
 
 #endif /* _UNIX_PLATFORM_H_ */

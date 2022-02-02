@@ -3,35 +3,35 @@
 #include <Animation/Animation.h>
 
 bool
-Anim_CreateClip(const char *name, const struct AnimationClipCreateInfo *ci, struct AnimationClip *ac, Handle h)
+Anim_CreateClip(const char *name, const struct NeAnimationClipCreateInfo *ci, struct NeAnimationClip *ac, NeHandle h)
 {
 	memcpy(ac->name, ci->name, sizeof(ac->name));
 
 	ac->ticks = ci->ticks;
 	ac->duration = ci->duration;
 
-	if (!Rt_InitArray(&ac->channels, ci->channelCount, sizeof(struct AnimationChannel), MH_Asset))
+	if (!Rt_InitArray(&ac->channels, ci->channelCount, sizeof(struct NeAnimationChannel), MH_Asset))
 		return false;
 
 	Rt_FillArray(&ac->channels);
 
 	for (uint32_t i = 0; i < ci->channelCount; ++i) {
-		struct AnimationChannel *ch = Rt_ArrayGet(&ac->channels, i);
+		struct NeAnimationChannel *ch = Rt_ArrayGet(&ac->channels, i);
 
 		ch->hash = Rt_HashString(ci->channels[i].name);
 		memcpy(ch->name, ci->channels[i].name, sizeof(ch->name));
 
-		if (!Rt_InitArray(&ch->positionKeys, ci->channels[i].positionCount, sizeof(struct AnimVectorKey), MH_Asset))
+		if (!Rt_InitArray(&ch->positionKeys, ci->channels[i].positionCount, sizeof(struct NeAnimVectorKey), MH_Asset))
 			goto error;
 		Rt_FillArray(&ch->positionKeys);
 		memcpy(ch->positionKeys.data, ci->channels[i].positionKeys, Rt_ArrayByteSize(&ch->positionKeys));
 
-		if (!Rt_InitArray(&ch->rotationKeys, ci->channels[i].rotationCount, sizeof(struct AnimQuatKey), MH_Asset))
+		if (!Rt_InitArray(&ch->rotationKeys, ci->channels[i].rotationCount, sizeof(struct NeAnimQuatKey), MH_Asset))
 			goto error;
 		Rt_FillArray(&ch->rotationKeys);
 		memcpy(ch->rotationKeys.data, ci->channels[i].rotationKeys, Rt_ArrayByteSize(&ch->rotationKeys));
 
-		if (!Rt_InitArray(&ch->scalingKeys, ci->channels[i].scalingCount, sizeof(struct AnimVectorKey), MH_Asset))
+		if (!Rt_InitArray(&ch->scalingKeys, ci->channels[i].scalingCount, sizeof(struct NeAnimVectorKey), MH_Asset))
 			goto error;
 		Rt_FillArray(&ch->scalingKeys);
 		memcpy(ch->scalingKeys.data, ci->channels[i].scalingKeys, Rt_ArrayByteSize(&ch->scalingKeys));
@@ -41,7 +41,7 @@ Anim_CreateClip(const char *name, const struct AnimationClipCreateInfo *ci, stru
 
 error:
 	for (uint32_t i = 0; i < ci->channelCount; ++i) {
-		struct AnimationChannel *ch = Rt_ArrayGet(&ac->channels, i);
+		struct NeAnimationChannel *ch = Rt_ArrayGet(&ac->channels, i);
 
 		if (!ch->hash)
 			continue;
@@ -60,15 +60,15 @@ error:
 }
 
 bool
-Anim_LoadClip(struct ResourceLoadInfo *li, const char *args, struct AnimationClip *ac, Handle h)
+Anim_LoadClip(struct NeResourceLoadInfo *li, const char *args, struct NeAnimationClip *ac, NeHandle h)
 {
 	return E_LoadNAnimAsset(&li->stm, ac);
 }
 
 void
-Anim_UnloadClip(struct AnimationClip *ac, Handle h)
+Anim_UnloadClip(struct NeAnimationClip *ac, NeHandle h)
 {
-	struct AnimationChannel *ch;
+	struct NeAnimationChannel *ch;
 	Rt_ArrayForEach(ch, &ac->channels) {
 		Rt_TermArray(&ch->positionKeys);
 		Rt_TermArray(&ch->rotationKeys);

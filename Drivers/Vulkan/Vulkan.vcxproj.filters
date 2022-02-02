@@ -134,6 +134,9 @@
     <ClCompile Include="Memory.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Debug.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="Shaders\DefaultPBR_O_VS.vert">

@@ -6,33 +6,44 @@
 #include <Runtime/Runtime.h>
 
 #pragma pack(push,1)
-struct Vertex
+struct NeVertex
 {
 	float x, y, z;
 	float nx, ny, nz;
 	float tx, ty, tz;
 	float u, v;
+	float r, g, b, a;
+};
+
+struct NeVertexWeight
+{
+	int32_t i1, i2, i3, i4, i5, i6, i7;
+	float w1, w2, w3, w4, w5, w6, w7;
+	uint32_t boneCount;
+	uint32_t reserved;
 };
 #pragma pack(pop)
 
-struct Mesh
+struct NeMesh
 {
+	enum NePrimitiveType type;
 	uint32_t vertexOffset;
 	uint32_t vertexCount;
 	uint32_t indexOffset;
 	uint32_t indexCount;
-	Handle materialResource;
+	NeHandle materialResource;
 };
 
-struct Model
+struct NeModel
 {
-	struct Mesh *meshes;
+	struct NeMesh *meshes;
 	uint32_t meshCount;
-	uint32_t indexType;
+	enum NeIndexType indexType;
+	bool dynamic;
 
 	struct {
-		BufferHandle vertexBuffer;
-		BufferHandle indexBuffer;
+		NeBufferHandle vertexBuffer, vertexWeightBuffer;
+		NeBufferHandle indexBuffer;
 	} gpu;
 
 	struct {
@@ -42,12 +53,18 @@ struct Model
 		void *indices;
 		uint32_t indexSize;
 
-		void *bones;
-		uint32_t boneSize;
+		void *vertexWeights;
+		uint32_t vertexWeightSize;
 	} cpu;
+
+	struct {
+		struct mat4 globalInverseTransform;
+		struct NeArray bones;
+		struct NeArray nodes;
+	} skeleton;
 };
 
-struct ModelCreateInfo
+struct NeModelCreateInfo
 {
 	void *vertices;
 	uint32_t vertexSize;
@@ -56,26 +73,32 @@ struct ModelCreateInfo
 	uint32_t indexSize;
 	uint8_t indexType;
 
-	struct Mesh *meshes;
+	struct NeBone *bones;
+	uint32_t boneSize;
+
+	struct NeVertexWeight *vertexWeights;
+	uint32_t vertexWeightSize;
+
+	struct NeMesh *meshes;
 	const char **materials;
 	uint32_t meshCount;
 
-	bool keepData, loadMaterials;
+	bool keepData, loadMaterials, dynamic;
 };
 
 #pragma pack(push, 1)
-struct ModelInstance
+struct NeModelInstance
 {
 	struct mat4 mvp;
 	struct mat4 model;
 	struct mat4 normal;
 	uint64_t vertexAddress;
 	uint64_t materialAddress;
-};
+} NE_ALIGN(16);
 #pragma pack(pop)
 
-bool Re_CreateModelResource(const char *name, const struct ModelCreateInfo *ci, struct Model *mdl, Handle h);
-bool Re_LoadModelResource(struct ResourceLoadInfo *li, const char *args, struct Model *mdl, Handle h);
-void Re_UnloadModelResource(struct Model *mdl, Handle h);
+bool Re_CreateModelResource(const char *name, const struct NeModelCreateInfo *ci, struct NeModel *mdl, NeHandle h);
+bool Re_LoadModelResource(struct NeResourceLoadInfo *li, const char *args, struct NeModel *mdl, NeHandle h);
+void Re_UnloadModelResource(struct NeModel *mdl, NeHandle h);
 
 #endif /* _NE_RENDER_MODEL_H_ */

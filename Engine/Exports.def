@@ -2,6 +2,7 @@ EXPORTS
 	E_screen DATA
 	E_screenWidth DATA
 	E_screenHeight DATA
+	E_deltaTime DATA
 	Scn_activeCamera DATA
 	Scn_activeScene DATA
 	Re_frameId DATA
@@ -9,17 +10,25 @@ EXPORTS
 	Re_contexts DATA
 	Re_deviceInfo DATA
 
+	Re_LoadVulkanDriver
+	Re_LoadDirect3D12Driver
+	Re_LoadOpenGLDriver
+	Re_LoadNullDriver
+
 	reallocarray
+
+	stbi_load_from_memory
 
 	E_Shutdown
 
 	E_ResourcePtr
 
+	E_CreateEntityS
+	E_AddNewComponentS
 	E_CreateComponentS
 	E_CreateComponentIdS
 	E_DestroyComponentS
 	E_ComponentPtrS
-	E_ComponentHandle
 	E_ComponentTypeS
 	E_ComponentTypeId
 	E_ComponentCountS
@@ -27,6 +36,7 @@ EXPORTS
 	E_SetComponentOwnerS
 	E_GetAllComponentsS
 	E_RegisterComponent
+	E_RenameEntity
 
 	E_GetCVarStr
 	E_GetCVarI32
@@ -51,6 +61,7 @@ EXPORTS
 	E_RegisterHandler
 	E_UnregisterHandler
 
+	E_Time
 	E_OpenFile
 	E_MapFile
 	E_UnmapFile
@@ -84,7 +95,19 @@ EXPORTS
 	E_ExecuteJob
 	E_DispatchJobs
 
+	In_EnableMouseAxis
+	In_CreateMap
+	In_Axis
+	In_UnmappedButtonUp
+	In_UnmappedButtonDown
+
+	Scn_StartSceneLoad
+	Scn_ActivateScene
+
+	UI_DrawText
+
 	Sys_Time
+	Sys_Sleep
 	Sys_MapFile
 	Sys_UnmapFile
 	Sys_TlsAlloc
@@ -102,6 +125,9 @@ EXPORTS
 	Sys_ScreenVisible
 	Sys_MessageBox
 	Sys_ProcessEvents
+	Sys_MoveWindow
+	Sys_DirectoryExists
+	Sys_CreateDirectory
 
 	Sys_Alloc
 	Sys_ReAlloc

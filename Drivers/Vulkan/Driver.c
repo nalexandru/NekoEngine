@@ -12,49 +12,51 @@
 
 #include "VulkanDriver.h"
 
-#define VKDMOD L"VulkanDrv"
-
 static bool _Init(void);
 static void _Term(void);
-static bool _EnumerateDevices(uint32_t *, struct RenderDeviceInfo *);
+static bool _EnumerateDevices(uint32_t *, struct NeRenderDeviceInfo *);
 
-static struct RenderDriver _drv =
+static struct NeRenderDriver _drv =
 {
-	NE_RENDER_DRIVER_ID,
-	NE_RENDER_DRIVER_API,
-	L"Vulkan",
-	_Init,
-	_Term,
-	_EnumerateDevices,
-	Vk_CreateDevice,
-	Vk_DestroyDevice
+	.identifier = NE_RENDER_DRIVER_ID,
+	.apiVersion = NE_RENDER_DRIVER_API,
+	.driverName = "Vulkan",
+	.graphicsApiId = RE_API_VULKAN,
+	.Init = _Init,
+	.Term = _Term,
+	.EnumerateDevices = _EnumerateDevices,
+	.CreateDevice = Vk_CreateDevice,
+	.DestroyDevice = Vk_DestroyDevice
 };
 
 VkInstance Vkd_inst = VK_NULL_HANDLE;
-struct Array Vkd_contexts;
+struct NeArray Vkd_contexts;
 
 static const char *_instLayers[10] = { 0 };
 static uint32_t _instLayerCount = 0;
 static const char *_instExtensions[10] =
 {
 	VK_KHR_SURFACE_EXTENSION_NAME,
-	VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME
+	VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME,
+#ifdef _DEBUG
+	VK_EXT_DEBUG_UTILS_EXTENSION_NAME
+#endif
 };
+#ifdef _DEBUG
+static uint32_t _instExtensionCount = 3;
+#else
 static uint32_t _instExtensionCount = 2;
+#endif
 
 extern const char *PlatformSurfaceExtensionName;
 
-#ifdef RENDER_DRIVER_BUILTIN
-const struct RenderDriver *Re_LoadBuiltinDriver() { return &_drv; }
-#else
 #ifdef _WIN32
 #	define EXPORT __declspec(dllexport)
 #else
 #	define EXPORT
 #endif
 
-EXPORT const struct RenderDriver *Re_LoadDriver(void) { return &_drv; }
-#endif
+EXPORT const struct NeRenderDriver *Re_LoadVulkanDriver() { return &_drv; }
 
 static bool
 _Init(void)
@@ -75,12 +77,10 @@ _Init(void)
 		return false;
 	}
 
-	char *appName = Sys_Alloc(sizeof(char), wcslen(App_applicationInfo.name), MH_Transient);
-	wcstombs(appName, App_applicationInfo.name, wcslen(App_applicationInfo.name));
 	VkApplicationInfo appInfo =
 	{
 		.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
-		.pApplicationName = appName,
+		.pApplicationName = App_applicationInfo.name,
 		.applicationVersion = VK_MAKE_VERSION(App_applicationInfo.version.major,
 			App_applicationInfo.version.minor, App_applicationInfo.version.build),
 		.pEngineName = "NekoEngine",
@@ -100,12 +100,12 @@ _Init(void)
 	_instExtensions[_instExtensionCount++] = PlatformSurfaceExtensionName;
 
 #ifdef _DEBUG
-	if (E_GetCVarBln(L"VulkanDrv_Validation", true)->bln) {
+	if (E_GetCVarBln("VulkanDrv_Validation", true)->bln) {
 #else
-	if (E_GetCVarBln(L"VulkanDrv_Validation", false)->bln) {
+	if (E_GetCVarBln("VulkanDrv_Validation", false)->bln) {
 #endif
 		_instLayers[_instLayerCount++] = "VK_LAYER_KHRONOS_validation";
-		Sys_LogEntry(VKDMOD, LOG_INFORMATION, L"Validation enabled");
+		Sys_LogEntry(VKDRV_MOD, LOG_INFORMATION, "Validation enabled");
 	}
 
 	instInfo.enabledLayerCount = _instLayerCount;
@@ -114,7 +114,7 @@ _Init(void)
 	rc = vkCreateInstance(&instInfo, Vkd_allocCb, &Vkd_inst);
 	if (rc != VK_SUCCESS) {
 		if (rc == VK_ERROR_LAYER_NOT_PRESENT) {
-			Sys_LogEntry(VKDMOD, LOG_WARNING, L"Failed to create instance with validation layers, disabling layers.");
+			Sys_LogEntry(VKDRV_MOD, LOG_WARNING, "Failed to create instance with validation layers, disabling layers.");
 			instInfo.enabledLayerCount = 0;
 
 			rc = vkCreateInstance(&instInfo, Vkd_allocCb, &Vkd_inst);
@@ -127,6 +127,10 @@ _Init(void)
 
 	volkLoadInstance(Vkd_inst);
 
+#ifdef _DEBUG
+	Vkd_InitDebug();
+#endif
+
 	Rt_InitPtrArray(&Vkd_contexts, E_JobWorkerThreads() + 1, MH_RenderDriver);
 
 	return true;
@@ -136,11 +140,16 @@ static void
 _Term(void)
 {
 	Rt_TermArray(&Vkd_contexts);
+
+#ifdef _DEBUG
+	Vkd_TermDebug();
+#endif
+
 	vkDestroyInstance(Vkd_inst, Vkd_allocCb);
 }
 
 static bool
-_EnumerateDevices(uint32_t *count, struct RenderDeviceInfo *info)
+_EnumerateDevices(uint32_t *count, struct NeRenderDeviceInfo *info)
 {
 	if (!*count || !info)
 		return vkEnumeratePhysicalDevices(Vkd_inst, count, NULL) == VK_SUCCESS;
@@ -238,7 +247,7 @@ _EnumerateDevices(uint32_t *count, struct RenderDeviceInfo *info)
 }
 
 void
-Vk_DestroySurface(struct RenderDevice *dev, VkSurfaceKHR surface)
+Vk_DestroySurface(struct NeRenderDevice *dev, VkSurfaceKHR surface)
 {
 	vkDestroySurfaceKHR(Vkd_inst, surface, Vkd_allocCb);
 }

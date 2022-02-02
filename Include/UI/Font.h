@@ -3,7 +3,7 @@
 
 #include <Engine/Types.h>
 
-struct Glyph
+struct NeGlyph
 {
 	float u, v, tw, th;
 	struct {
@@ -17,11 +17,11 @@ struct Glyph
 	uint32_t adv;
 };
 
-struct Font
+struct NeFont
 {
-	struct Glyph *glyphs;
+	struct NeGlyph *glyphs;
 	uint32_t glyphCount;
-	Handle texture;
+	NeHandle texture;
 };
 
 #endif /* _NE_UI_FONT_H_ */

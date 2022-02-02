@@ -20,7 +20,7 @@
 struct TreeNode
 {
 	void *widget;
-	EntityHandle handle;
+	NeEntityHandle handle;
 	UT_hash_handle hh;
 };
 
@@ -28,16 +28,16 @@ static Widget _container, _wnd, _inspectedItem, _treeRoot;
 static uint64_t _sceneActivatedHandler, _entityCreateHandler, _entityDestroyHandler,
 	_componentCreateHandler;
 static struct TreeNode *_nodes = NULL;
-static struct Array _nodeArray;
-static Futex _ftx;
+static struct NeArray _nodeArray;
+static NeFutex _ftx;
 
-static void _EntityCreate(void *user, EntityHandle eh);
-static void _EntityDestroy(void *user, EntityHandle eh);
-static void _ComponentCreate(void *user, const struct ComponentCreationData *ccd);
-static void _SceneActivated(void *user, struct Scene *scn);
-static void _AddTransform(const struct Transform *xform, Widget parentNode);
-static inline Widget _AddNode(const wchar_t *name, Widget parentNode, EntityHandle handle);
-static inline struct TreeNode *_FindNode(EntityHandle handle);
+static void _EntityCreate(void *user, NeEntityHandle eh);
+static void _EntityDestroy(void *user, NeEntityHandle eh);
+static void _ComponentCreate(void *user, const struct NeComponentCreationData *ccd);
+static void _SceneActivated(void *user, struct NeScene *scn);
+static void _AddTransform(const struct NeTransform *xform, Widget parentNode);
+static inline Widget _AddNode(const char *name, Widget parentNode, NeEntityHandle handle);
+static inline struct TreeNode *_FindNode(NeEntityHandle handle);
 static void _ItemSelected(Widget w, XtPointer client, XtPointer call);
 
 bool
@@ -57,10 +57,10 @@ GUI_InitSceneHierarchy(int x, int y, int width, int height)
 	Sys_InitFutex(&_ftx);
 
 	Rt_InitArray(&_nodeArray, 10, sizeof(struct TreeNode), MH_System);
-	_sceneActivatedHandler = E_RegisterHandler(EVT_SCENE_ACTIVATED, (EventHandlerProc)_SceneActivated, NULL);
-	_entityCreateHandler = E_RegisterHandler(EVT_ENTITY_CREATED, (EventHandlerProc)_EntityCreate, NULL);
-	_entityDestroyHandler = E_RegisterHandler(EVT_ENTITY_DESTROYED, (EventHandlerProc)_EntityDestroy, NULL);
-	_componentCreateHandler = E_RegisterHandler(EVT_COMPONENT_CREATED, (EventHandlerProc)_ComponentCreate, NULL);
+	_sceneActivatedHandler = E_RegisterHandler(EVT_SCENE_ACTIVATED, (NeEventHandlerProc)_SceneActivated, NULL);
+	_entityCreateHandler = E_RegisterHandler(EVT_ENTITY_CREATED, (NeEventHandlerProc)_EntityCreate, NULL);
+	_entityDestroyHandler = E_RegisterHandler(EVT_ENTITY_DESTROYED, (NeEventHandlerProc)_EntityDestroy, NULL);
+	_componentCreateHandler = E_RegisterHandler(EVT_COMPONENT_CREATED, (NeEventHandlerProc)_ComponentCreate, NULL);
 
 	return true;
 }
@@ -82,9 +82,9 @@ GUI_TermSceneHierarchy(void)
 }
 
 static void
-_EntityCreate(void *user, EntityHandle eh)
+_EntityCreate(void *user, NeEntityHandle eh)
 {
-	const struct Transform *xform = E_GetComponent(eh, E_ComponentTypeId(TRANSFORM_COMP));
+	const struct NeTransform *xform = E_GetComponent(eh, E_ComponentTypeId(TRANSFORM_COMP));
 	if (!xform)
 		return;
 
@@ -98,7 +98,7 @@ _EntityCreate(void *user, EntityHandle eh)
 }
 
 static void
-_EntityDestroy(void *user, EntityHandle eh)
+_EntityDestroy(void *user, NeEntityHandle eh)
 {
 	struct TreeNode *node = _FindNode(eh);
 	if (!node)
@@ -113,7 +113,7 @@ _EntityDestroy(void *user, EntityHandle eh)
 }
 
 static void
-_ComponentCreate(void *user, const struct ComponentCreationData *ccd)
+_ComponentCreate(void *user, const struct NeComponentCreationData *ccd)
 {
 	if (ccd->type != E_ComponentTypeId(TRANSFORM_COMP))
 		return;
@@ -122,10 +122,10 @@ _ComponentCreate(void *user, const struct ComponentCreationData *ccd)
 }
 
 static void
-_SceneActivated(void *user, struct Scene *scn)
+_SceneActivated(void *user, struct NeScene *scn)
 {
-	const struct Array *transforms = E_GetAllComponentsS(scn, E_ComponentTypeId(TRANSFORM_COMP));
-	const struct Transform *xform = NULL;
+	const struct NeArray *transforms = E_GetAllComponentsS(scn, E_ComponentTypeId(TRANSFORM_COMP));
+	const struct NeTransform *xform = NULL;
 
 	Rt_ClearArray(&_nodeArray, false);
 
@@ -136,32 +136,34 @@ _SceneActivated(void *user, struct Scene *scn)
 }
 
 static void
-_AddTransform(const struct Transform *xform, Widget parentNode)
+_AddTransform(const struct NeTransform *xform, Widget parentNode)
 {
 	Widget node = _AddNode(E_EntityName(xform->_owner), parentNode, xform->_owner);
 
-	const struct Transform *child;
+	const struct NeTransform *child;
 	Rt_ArrayForEach(child, &xform->children)
 		_AddTransform(child, node);
 }
 
 static inline Widget
-_AddNode(const wchar_t *name, Widget parentNode, EntityHandle handle)
+_AddNode(const char *name, Widget parentNode, NeEntityHandle handle)
 {
 	XtAppLock(Ed_appContext);
 	Sys_LockFutex(_ftx);
 
 	struct TreeNode *tn = _FindNode(handle);
-	if (tn)
-		return tn->widget;
+	Widget node = tn ? tn->widget : NULL;
 
-	Sys_LogEntry(L"MotifSceneHierarchy", LOG_DEBUG, L"AddNode: %ls | %p", name, handle);
+	if (node)
+		goto exit;
 
-	XmString str = XmStringCreateLocalized(Rt_WcsToMbs(name));
-	Widget node = XtVaCreateManagedWidget("iconGadget", xmIconGadgetClass, _container,
-											XmNentryParent, parentNode,
-											XmNlabelString, str,
-											NULL);
+	Sys_LogEntry("MotifSceneHierarchy", LOG_DEBUG, "AddNode: %ls | %p", name, handle);
+
+	XmString str = XmStringCreateLocalized((char *)name);
+	node = XtVaCreateManagedWidget("iconGadget", xmIconGadgetClass, _container,
+									XmNentryParent, parentNode,
+									XmNlabelString, str,
+									NULL);
 	XmStringFree(str);
 
 	tn = Rt_ArrayAllocate(&_nodeArray);
@@ -169,6 +171,7 @@ _AddNode(const wchar_t *name, Widget parentNode, EntityHandle handle)
 	tn->handle = handle;
 	HASH_ADD_PTR(_nodes, widget, tn);
 
+exit:
 	Sys_UnlockFutex(_ftx);
 	XtAppUnlock(Ed_appContext);
 
@@ -176,7 +179,7 @@ _AddNode(const wchar_t *name, Widget parentNode, EntityHandle handle)
 }
 
 static inline struct TreeNode *
-_FindNode(EntityHandle handle)
+_FindNode(NeEntityHandle handle)
 {
 	struct TreeNode *node = _nodes;
 	while (node) {

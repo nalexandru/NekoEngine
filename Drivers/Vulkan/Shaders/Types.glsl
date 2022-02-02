@@ -7,6 +7,7 @@ struct Vertex
 	float nx, ny, nz;
 	float tx, ty, tz;
 	float u, v;
+	float r, g, b, a;
 };
 
 struct UIVertex

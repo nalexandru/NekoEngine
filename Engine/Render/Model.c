@@ -5,12 +5,14 @@
 #include <Render/Render.h>
 #include <System/Memory.h>
 
-static inline bool _InitModel(struct Model *mdl);
+static inline bool _InitModel(struct NeModel *mdl);
 
 bool
-Re_CreateModelResource(const char *name, const struct ModelCreateInfo *ci, struct Model *mdl, Handle h)
+Re_CreateModelResource(const char *name, const struct NeModelCreateInfo *ci, struct NeModel *mdl, NeHandle h)
 {
 	const size_t meshSize = sizeof(*mdl->meshes) * ci->meshCount;
+
+	mdl->dynamic = ci->dynamic;
 
 	if (!(mdl->cpu.vertices = Sys_Alloc(ci->vertexSize, 1, MH_Render)))
 		goto error;
@@ -22,6 +24,16 @@ Re_CreateModelResource(const char *name, const struct ModelCreateInfo *ci, struc
 	memcpy(mdl->cpu.indices, ci->indices, ci->indexSize);
 	mdl->cpu.indexSize = ci->indexSize;
 	mdl->indexType = ci->indexType;
+
+	if (ci->vertexWeights) {
+		if (!(mdl->cpu.vertexWeights = Sys_Alloc(ci->vertexWeightSize, 1, MH_Render)))
+			goto error;
+		memcpy(mdl->cpu.vertexWeights, ci->vertexWeights, ci->vertexWeightSize);
+		mdl->cpu.vertexWeightSize = ci->vertexWeightSize;
+	} else {
+		mdl->cpu.vertexWeights = NULL;
+		mdl->cpu.vertexWeightSize = 0;
+	}
 
 	if (!(mdl->meshes = Sys_Alloc(meshSize, 1, MH_Render)))
 		goto error;
@@ -50,16 +62,19 @@ error:
 }
 
 bool
-Re_LoadModelResource(struct ResourceLoadInfo *li, const char *args, struct Model *mdl, Handle h)
+Re_LoadModelResource(struct NeResourceLoadInfo *li, const char *args, struct NeModel *mdl, NeHandle h)
 {
 	if (!E_LoadNMeshAsset(&li->stm, mdl))
 		return false;
+
+	if (args && strstr(args, "dynamic"))
+		mdl->dynamic = true;
 
 	return _InitModel(mdl);
 }
 
 void
-Re_UnloadModelResource(struct Model *mdl, Handle h)
+Re_UnloadModelResource(struct NeModel *mdl, NeHandle h)
 {
 	for (uint32_t i = 0; i < mdl->meshCount; ++i)
 		E_UnloadResource(mdl->meshes[i].materialResource);
@@ -67,15 +82,23 @@ Re_UnloadModelResource(struct Model *mdl, Handle h)
 	Re_Destroy(mdl->gpu.vertexBuffer);
 	Re_Destroy(mdl->gpu.indexBuffer);
 
+	Rt_TermArray(&mdl->skeleton.bones);
+	Rt_TermArray(&mdl->skeleton.nodes);
+
 	Sys_Free(mdl->cpu.vertices);
 	Sys_Free(mdl->cpu.indices);
 	Sys_Free(mdl->meshes);
+
+	if (mdl->cpu.vertexWeights) {
+		Re_Destroy(mdl->gpu.vertexWeightBuffer);
+		Sys_Free(mdl->cpu.vertexWeights);
+	}
 }
 
 static inline bool
-_InitModel(struct Model *mdl)
+_InitModel(struct NeModel *mdl)
 {
-	struct BufferCreateInfo bci =
+	struct NeBufferCreateInfo bci =
 	{
 		.desc =
 		{
@@ -90,11 +113,24 @@ _InitModel(struct Model *mdl)
 	if (!Re_CreateBuffer(&bci, &mdl->gpu.vertexBuffer))
 		return false;
 
+	if (mdl->cpu.vertexWeights) {
+		bci.data = mdl->cpu.vertexWeights;
+		bci.desc.size = bci.dataSize = mdl->cpu.vertexWeightSize;
+		if (!Re_CreateBuffer(&bci, &mdl->gpu.vertexWeightBuffer))
+			return false;
+	}
+
 	bci.desc.usage |= BU_INDEX_BUFFER;
 	bci.data = mdl->cpu.indices;
 	bci.desc.size = bci.dataSize = mdl->cpu.indexSize;
 	if (!Re_CreateBuffer(&bci, &mdl->gpu.indexBuffer))
 		return false;
+
+	if (!mdl->dynamic) {
+		Sys_Free(mdl->cpu.vertices); mdl->cpu.vertices = NULL;
+		Sys_Free(mdl->cpu.indices); mdl->cpu.indices = NULL;
+		Sys_Free(mdl->cpu.vertexWeights); mdl->cpu.vertexWeights = NULL;
+	}
 
 	return true;
 }

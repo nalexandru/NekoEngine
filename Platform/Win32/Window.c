@@ -16,18 +16,16 @@ static HWND _window;
 #define WM_SHOWCURSOR_MSG_GUID		L"NE_WM_SHOWCURSOR_{916fcbf2-b4be-4df8-884b-f0dc086e03ad}"
 #define WM_HIDECURSOR_MSG_GUID		L"NE_WM_HIDECURSOR_{916fcbf2-b4be-4df8-884b-f0dc086e03ad}"
 
-UINT WM_SHOWCURSOR = 0;
-UINT WM_HIDECURSOR = 0;
+__declspec(dllexport) UINT WM_SHOWCURSOR = 0;
+__declspec(dllexport) UINT WM_HIDECURSOR = 0;
 
-LRESULT CALLBACK
+static LRESULT CALLBACK
 _WndProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
 {
-	PAINTSTRUCT ps;
-	HDC hdc;
-	
 	switch (umsg) {
 	case WM_PAINT: {
-		hdc = BeginPaint(hwnd, &ps);
+		PAINTSTRUCT ps;
+		HDC hdc = BeginPaint(hwnd, &ps);
 		EndPaint(hwnd, &ps);
 	} break;
 	case WM_ERASEBKGND: {
@@ -102,7 +100,7 @@ Sys_CreateWindow(void)
 	AdjustWindowRectEx(&rc, style, FALSE, exStyle);
 
 	x = (GetSystemMetrics(SM_CXSCREEN) - *E_screenWidth) / 2;
-    y = (GetSystemMetrics(SM_CYSCREEN) - *E_screenHeight) / 2;
+	y = (GetSystemMetrics(SM_CYSCREEN) - *E_screenHeight) / 2;
 
 	_window = CreateWindowExW(exStyle, WND_CLASS_NAME,
 		L"NekoEngine", style, x, y, rc.right - rc.left, rc.bottom - rc.top,
@@ -123,9 +121,17 @@ Sys_CreateWindow(void)
 }
 
 void
-Sys_SetWindowTitle(const wchar_t *name)
+Sys_SetWindowTitle(const char *name)
 {
-	SetWindowTextW(_window, name);
+	SetWindowTextW(_window, NeWin32_UTF8toUCS2(name));
+}
+
+void
+Sys_MoveWindow(int x, int y)
+{
+	RECT rc;
+	GetWindowRect(_window, &rc);
+	MoveWindow(_window, x, y, rc.right - rc.left, rc.bottom - rc.top, TRUE);
 }
 
 void

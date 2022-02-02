@@ -1,10 +1,10 @@
 #include "MTLDriver.h"
 
-struct RenderPassDesc *
-MTL_CreateRenderPassDesc(id<MTLDevice> dev, const struct AttachmentDesc *attachments, uint32_t count, const struct AttachmentDesc *depthAttachment,
-						 const struct AttachmentDesc *inputAttachments, uint32_t inputCount)
+struct NeRenderPassDesc *
+MTL_CreateRenderPassDesc(id<MTLDevice> dev, const struct NeAttachmentDesc *attachments, uint32_t count, const struct NeAttachmentDesc *depthAttachment,
+						 const struct NeAttachmentDesc *inputAttachments, uint32_t inputCount)
 {
-	struct RenderPassDesc *rp = Sys_Alloc(sizeof(*rp), 1, MH_RenderDriver);
+	struct NeRenderPassDesc *rp = Sys_Alloc(sizeof(*rp), 1, MH_RenderDriver);
 	if (!rp)
 		return NULL;
 	
@@ -21,7 +21,7 @@ MTL_CreateRenderPassDesc(id<MTLDevice> dev, const struct AttachmentDesc *attachm
 	rp->attachmentFormats = Sys_Alloc(sizeof(*rp->attachmentFormats), count + inputCount, MH_RenderDriver);
 	
 	for (uint32_t i = 0; i < count; ++i) {
-		const struct AttachmentDesc *at = &attachments[i];
+		const struct NeAttachmentDesc *at = &attachments[i];
 		
 		switch (at->loadOp) {
 		case ATL_LOAD: rp->desc.colorAttachments[i].loadAction = MTLLoadActionLoad; break;
@@ -57,7 +57,7 @@ MTL_CreateRenderPassDesc(id<MTLDevice> dev, const struct AttachmentDesc *attachm
 	for (uint32_t i = 0; i < inputCount; ++i) {
 		int idx = i + count;
 
-		const struct AttachmentDesc *at = &inputAttachments[i];
+		const struct NeAttachmentDesc *at = &inputAttachments[i];
 
 		switch (at->loadOp) {
 		case ATL_LOAD: rp->desc.colorAttachments[idx].loadAction = MTLLoadActionLoad; break;
@@ -78,7 +78,7 @@ MTL_CreateRenderPassDesc(id<MTLDevice> dev, const struct AttachmentDesc *attachm
 }
 
 void
-MTL_DestroyRenderPassDesc(id<MTLDevice> dev, struct RenderPassDesc *rp)
+MTL_DestroyRenderPassDesc(id<MTLDevice> dev, struct NeRenderPassDesc *rp)
 {
 	[rp->desc release];
 	Sys_Free(rp->attachmentFormats);

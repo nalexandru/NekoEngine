@@ -2,12 +2,12 @@
 
 #include "MTLDriver.h"
 
-struct Framebuffer *
-MTL_CreateFramebuffer(id<MTLDevice> dev, const struct FramebufferDesc *desc)
+struct NeFramebuffer *
+MTL_CreateFramebuffer(id<MTLDevice> dev, const struct NeFramebufferDesc *desc)
 {
-	enum MemoryHeap heap = MH_Frame;
+	enum NeMemoryHeap heap = MH_Frame;
 	
-	struct Framebuffer *fb = Sys_Alloc(sizeof(*fb), 1, heap);
+	struct NeFramebuffer *fb = Sys_Alloc(sizeof(*fb), 1, heap);
 	if (!fb)
 		return NULL;
 	
@@ -23,13 +23,13 @@ MTL_CreateFramebuffer(id<MTLDevice> dev, const struct FramebufferDesc *desc)
 }
 
 void
-MTL_SetAttachment(struct Framebuffer *fb, uint32_t pos, struct Texture *tex)
+MTL_SetAttachment(struct NeFramebuffer *fb, uint32_t pos, struct NeTexture *tex)
 {
 	fb->attachments[pos] = tex->tex;
 }
 
 void
-MTL_DestroyFramebuffer(id<MTLDevice> dev, struct Framebuffer *fb)
+MTL_DestroyFramebuffer(id<MTLDevice> dev, struct NeFramebuffer *fb)
 {
 	Sys_Free(fb->attachments);
 	Sys_Free(fb);

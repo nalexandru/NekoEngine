@@ -77,5 +77,6 @@ add_dependencies(build_shader_zip create_shader_dir)
 add_dependencies(build_shader_header bin2c build_shader_zip)
 add_dependencies(VulkanDriver build_shader_header)
 
-target_include_directories(VulkanDriver PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(VulkanDriver PRIVATE "${PROJECT_SOURCE_DIR}/Deps/Aftermath/include")
+target_include_directories(VulkanDriver PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
 

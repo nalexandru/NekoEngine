@@ -6,26 +6,25 @@
 #include <Render/Driver/RenderPassDesc.h>
 #include <Runtime/Runtime.h>
 
-typedef bool (*PassInitProc)(void **);
-typedef void (*PassTermProc)(void *);
-typedef bool (*PassSetupProc)(void *, struct Array *);
-typedef void (*PassExecuteProc)(void *, const struct Array *);
+typedef bool (*NePassInitProc)(void **);
+typedef void (*NePassTermProc)(void *);
+typedef bool (*NePassSetupProc)(void *, struct NeArray *);
+typedef void (*NePassExecuteProc)(void *, const struct NeArray *);
 
-struct RenderPass
+struct NeRenderPass
 {
-	PassInitProc Init;
-	PassTermProc Term;
+	NePassInitProc Init;
+	NePassTermProc Term;
 
-	PassSetupProc Setup;
-	PassExecuteProc Execute;
+	NePassSetupProc Setup;
+	NePassExecuteProc Execute;
 };
 
-extern struct RenderPass RP_depthPrePass;
-extern struct RenderPass RP_lightCulling;
-extern struct RenderPass RP_ui;
-extern struct RenderPass RP_forward;
-extern struct RenderPass RP_opaque;
-extern struct RenderPass RP_transparent;
-extern struct RenderPass RP_sky;
+extern struct NeRenderPass RP_depthPrePass;
+extern struct NeRenderPass RP_lightCulling;
+extern struct NeRenderPass RP_ui;
+extern struct NeRenderPass RP_opaque;
+extern struct NeRenderPass RP_transparent;
+extern struct NeRenderPass RP_sky;
 
 #endif /* _NE_RENDER_GRAPH_PASS_H_ */

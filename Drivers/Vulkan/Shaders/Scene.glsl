@@ -21,8 +21,9 @@ layout(std430, buffer_reference, buffer_reference_align = 16) readonly buffer Sc
 
 	vec4 sunPosition;
 	uint enviornmentMap;
-
-	uint __padding[3];
+	uint irradianceMap;
+	uint aoMap;
+	uint reserved;
 
 	uint lightCount;
 	uint xTileCount;

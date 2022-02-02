@@ -1,27 +1,23 @@
-#define Handle __EngineHandle
-
 #include <Engine/IO.h>
 #include <Engine/Config.h>
 #include <System/Log.h>
 
-#undef Handle
-
 #include "MTLDriver.h"
 
-#define MPMOD	L"MetalPipeline"
+#define MPMOD	"MetalPipeline"
 
 extern NSURL *Darwin_appSupportURL;
 
 static id<MTLBinaryArchive> _cache;
 
-struct Pipeline *
-MTL_GraphicsPipeline(id<MTLDevice> dev, const struct GraphicsPipelineDesc *gpDesc)
+struct NePipeline *
+MTL_GraphicsPipeline(id<MTLDevice> dev, const struct NeGraphicsPipelineDesc *gpDesc)
 {
 	MTLRenderPipelineDescriptor *desc = [[MTLRenderPipelineDescriptor alloc] init];
 	if (_cache)
 		desc.binaryArchives = @[ _cache ];
 	
-	struct Pipeline *p = Sys_Alloc(sizeof(*p), 1, MH_RenderDriver);
+	struct NePipeline *p = Sys_Alloc(sizeof(*p), 1, MH_RenderDriver);
 	if (!p) {
 		[desc release];
 		return NULL;
@@ -97,7 +93,7 @@ MTL_GraphicsPipeline(id<MTLDevice> dev, const struct GraphicsPipelineDesc *gpDes
 	[desc release];
 	
 	if (!pso) {
-		Sys_LogEntry(MPMOD, LOG_CRITICAL, L"Failed to create graphics pipeline: %hs",
+		Sys_LogEntry(MPMOD, LOG_CRITICAL, "Failed to create graphics pipeline: %s",
 					 [[err localizedDescription] UTF8String]);
 		
 		return NULL;
@@ -114,10 +110,10 @@ MTL_GraphicsPipeline(id<MTLDevice> dev, const struct GraphicsPipelineDesc *gpDes
 	return p;
 }
 
-struct Pipeline *
-MTL_ComputePipeline(id<MTLDevice> dev, const struct ComputePipelineDesc *cpDesc)
+struct NePipeline *
+MTL_ComputePipeline(id<MTLDevice> dev, const struct NeComputePipelineDesc *cpDesc)
 {
-	struct ShaderStageDesc *stageDesc = NULL;
+	struct NeShaderStageDesc *stageDesc = NULL;
 	for (uint32_t i = 0; i < cpDesc->stageInfo->stageCount; ++i) {
 		if (cpDesc->stageInfo->stages[i].stage != SS_COMPUTE)
 			continue;
@@ -148,7 +144,7 @@ MTL_ComputePipeline(id<MTLDevice> dev, const struct ComputePipelineDesc *cpDesc)
 	[desc release];
 	
 	if (pso) {
-		struct Pipeline *p = Sys_Alloc(sizeof(*p), 1, MH_RenderDriver);
+		struct NePipeline *p = Sys_Alloc(sizeof(*p), 1, MH_RenderDriver);
 		p->type = PS_COMPUTE;
 		p->compute.state = pso;
 		p->compute.threadsPerThreadgroup = MTLSizeMake(cpDesc->threadsPerThreadgroup.x,
@@ -157,14 +153,14 @@ MTL_ComputePipeline(id<MTLDevice> dev, const struct ComputePipelineDesc *cpDesc)
 		return p;
 	}
 	
-	Sys_LogEntry(MPMOD, LOG_CRITICAL, L"Failed to create compute pipeline: %hs",
+	Sys_LogEntry(MPMOD, LOG_CRITICAL, "Failed to create compute pipeline: %hs",
 				 [[err localizedDescription] UTF8String]);
 	
 	return NULL;
 }
 
-struct Pipeline *
-MTL_RayTracingPipeline(id<MTLDevice> dev, struct ShaderBindingTable *sbt, uint32_t maxDepth)
+struct NePipeline *
+MTL_RayTracingPipeline(id<MTLDevice> dev, struct NeShaderBindingTable *sbt, uint32_t maxDepth)
 {
 	MTLRenderPipelineDescriptor *desc = [[MTLRenderPipelineDescriptor alloc] init];
 
@@ -179,14 +175,14 @@ MTL_RayTracingPipeline(id<MTLDevice> dev, struct ShaderBindingTable *sbt, uint32
 	[desc release];
 	
 	if (pso) {
-		struct Pipeline *p = Sys_Alloc(sizeof(*p), 1, MH_RenderDriver);
+		struct NePipeline *p = Sys_Alloc(sizeof(*p), 1, MH_RenderDriver);
 		p->type = PS_RAY_TRACING;
 		p->render.state = pso;
 		
 		return p;
 	}
 	
-	Sys_LogEntry(MPMOD, LOG_CRITICAL, L"Failed to create ray tracing pipeline: %hs",
+	Sys_LogEntry(MPMOD, LOG_CRITICAL, "Failed to create ray tracing pipeline: %hs",
 				 [[err localizedDescription] UTF8String]);
 	
 	return NULL;
@@ -195,7 +191,7 @@ MTL_RayTracingPipeline(id<MTLDevice> dev, struct ShaderBindingTable *sbt, uint32
 void
 MTL_LoadPipelineCache(id<MTLDevice> dev)
 {
-	if (!E_GetCVarBln(L"MetalDrv_EnableBinaryArchive", false)->bln)
+	if (!E_GetCVarBln("MetalDrv_EnableBinaryArchive", false)->bln)
 		return;
 
 	MTLBinaryArchiveDescriptor *desc = [[MTLBinaryArchiveDescriptor alloc] init];
@@ -214,7 +210,7 @@ MTL_LoadPipelineCache(id<MTLDevice> dev)
 void
 MTL_SavePipelineCache(id<MTLDevice> dev)
 {
-	if (!E_GetCVarBln(L"MetalDrv_EnableBinaryArchive", false)->bln)
+	if (!E_GetCVarBln("MetalDrv_EnableBinaryArchive", false)->bln)
 		return;
 
 	MTLBinaryArchiveDescriptor *desc = [[MTLBinaryArchiveDescriptor alloc] init];
@@ -230,7 +226,7 @@ MTL_SavePipelineCache(id<MTLDevice> dev)
 }
 
 void
-MTL_DestroyPipeline(id<MTLDevice> dev, struct Pipeline *p)
+MTL_DestroyPipeline(id<MTLDevice> dev, struct NePipeline *p)
 {
 	switch (p->type) {
 	case PS_RENDER:

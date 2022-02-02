@@ -4,15 +4,11 @@
 
 #include <unistd.h>
 
-#define Handle __EngineHandle
-
 #include <System/Window.h>
 #include <System/Memory.h>
 #include <Engine/Engine.h>
 
 #include "macOSPlatform.h"
-
-#undef Handle
 
 #import <Cocoa/Cocoa.h>
 #import <QuartzCore/CAMetalLayer.h>
@@ -81,11 +77,9 @@ Sys_CreateWindow(void)
 }
 
 void
-Sys_SetWindowTitle(const wchar_t *name)
+Sys_SetWindowTitle(const char *name)
 {
-	char *n = Sys_Alloc(wcslen(name), sizeof(*n) + 1, MH_Transient);
-	wcstombs(n, name, wcslen(name));
-	[(NSWindow *)E_screen setTitle: [NSString stringWithFormat:@"%s", n]];
+	[(NSWindow *)E_screen setTitle: [NSString stringWithUTF8String: name]];
 }
 
 void

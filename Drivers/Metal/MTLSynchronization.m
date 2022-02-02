@@ -1,48 +1,42 @@
 #include "MTLDriver.h"
 
-id<MTLFence>
+struct NeSemaphore *
 MTL_CreateSemaphore(id<MTLDevice> dev)
 {
-	return [dev newFence];
-}
+	struct NeSemaphore *s = Sys_Alloc(sizeof(*s), 1, MH_RenderDriver);
+	if (!s)
+		return NULL;
 
-/*void
-MTL_SignalSemaphore(id<MTLDevice> dev, dispatch_semaphore_t s)
-{
-	(void)dev;
-	dispatch_semaphore_signal(s);
+	s->event = [dev newEvent];
+	s->value = 0;
+
+	return s;
 }
 
 bool
-MTL_WaitSemaphore(id<MTLDevice> dev, dispatch_semaphore_t s, uint64_t timeout)
-{
-	(void)dev;
-	return dispatch_semaphore_wait(s, timeout) == 0;
-}*/
-
-bool
-MTL_WaitSemaphore(id<MTLDevice> dev, id<MTLFence> f, uint64_t value, uint64_t timeout)
+MTL_WaitSemaphore(id<MTLDevice> dev, struct NeSemaphore *s, uint64_t value, uint64_t timeout)
 {
 	return false;
 }
 
 bool
-MTL_WaitSemaphores(id<MTLDevice> dev, uint32_t count, id<MTLFence> *f, uint64_t *values, uint64_t timeout)
+MTL_WaitSemaphores(id<MTLDevice> dev, uint32_t count, struct NeSemaphore **s, uint64_t *values, uint64_t timeout)
 {
 	return false;
 }
 
 bool
-MTL_SignalSemaphore(id<MTLDevice> dev, id<MTLFence> f, uint64_t value)
+MTL_SignalSemaphore(id<MTLDevice> dev, struct NeSemaphore *s, uint64_t value)
 {
 	return false;
 }
 
 void
-MTL_DestroySemaphore(id<MTLDevice> dev, id<MTLFence> fence)
+MTL_DestroySemaphore(id<MTLDevice> dev, struct NeSemaphore *s)
 {
 	(void)dev;
-	[fence release];
+	[s->event release];
+	Sys_Free(s);
 }
 
 dispatch_semaphore_t

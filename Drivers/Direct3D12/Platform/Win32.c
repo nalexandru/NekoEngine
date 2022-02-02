@@ -1,9 +1,9 @@
 #include "../D3D12Driver.h"
 
-struct Surface *
-D3D12_CreateWin32Surface(struct RenderDevice *dev, void *window)
+struct NeSurface *
+D3D12_CreateWin32Surface(struct NeRenderDevice *dev, void *window)
 {
-	struct Surface *s = Sys_Alloc(sizeof(*s), 1, MH_RenderDriver);
+	struct NeSurface *s = Sys_Alloc(sizeof(*s), 1, MH_RenderDriver);
 	if (!s)
 		return NULL;
 
@@ -13,7 +13,7 @@ D3D12_CreateWin32Surface(struct RenderDevice *dev, void *window)
 }
 
 void
-D3D12_DestroyWin32Surface(struct RenderDevice *dev, struct Surface *surface)
+D3D12_DestroyWin32Surface(struct NeRenderDevice *dev, struct NeSurface *surface)
 {
 	Sys_Free(surface);
 }

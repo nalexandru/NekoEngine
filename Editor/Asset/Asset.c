@@ -1,4 +1,5 @@
 #include <System/Log.h>
+#include <Engine/Job.h>
 #include <Engine/Engine.h>
 #include <Engine/Entity.h>
 #include <Engine/Component.h>
@@ -9,18 +10,25 @@
 #include <Editor/GUI.h>
 #include <Editor/Asset/Asset.h>
 
-#define ED_A_MOD	L"Asset"
+#define ED_A_MOD	"Asset"
+
+struct OpenJobArgs
+{
+	struct NeAssetOpenHandler *handler;
+	char *path;
+};
 
 static bool _MatchMesh(const char *path) { return strstr(path, ".nmesh") != NULL; }
 static bool _OpenMesh(const char *path);
+static void _OpenJob(int worker, struct OpenJobArgs *args);
 
-struct AssetOpenHandler
+struct NeAssetOpenHandler
 {
 	bool (*Match)(const char *path);
 	bool (*Open)(const char *path);
 };
 
-static struct AssetOpenHandler _handlers[] =
+static struct NeAssetOpenHandler _handlers[] =
 {
 	{
 		.Match = _MatchMesh,
@@ -35,10 +43,15 @@ Ed_OpenAsset(const char *path)
 		if (!_handlers[i].Match(path))
 			continue;
 
-		if (!_handlers->Open(path)) {
-			EdGUI_MessageBox("Error", "Failed to open asset");
-			Sys_LogEntry(ED_A_MOD, LOG_CRITICAL, L"Failed to open asset from file: %hs", path);
-		}
+		struct OpenJobArgs *args = Sys_Alloc(sizeof(*args), 1, MH_Editor);
+		args->handler = &_handlers[i];
+		args->path = Rt_StrDup(path, MH_Editor);
+
+	#ifndef SYS_PLATFORM_WINDOWS
+		E_ExecuteJob((NeJobProc)_OpenJob, args, NULL, NULL);
+	#else
+		_OpenJob(0, args);
+	#endif
 
 		break;
 	}
@@ -47,7 +60,11 @@ Ed_OpenAsset(const char *path)
 static bool
 _OpenMesh(const char *path)
 {
-	EntityHandle eh = E_CreateEntity(NULL);
+	char buff[2048];
+	snprintf(buff, 2048, "Loading %s...", path);
+	EdGUI_ShowProgressDialog(buff);
+
+	NeEntityHandle eh = E_CreateEntity(NULL);
 
 	E_AddNewComponent(eh, E_ComponentTypeId(TRANSFORM_COMP), NULL);
 
@@ -61,7 +78,20 @@ _OpenMesh(const char *path)
 	char *ptr = strrchr(name, '.');
 	*ptr = 0x0;
 
-	E_RenameEntity(eh, Rt_MbsToWcs(name));
+	E_RenameEntity(eh, name);
+
+	EdGUI_HideProgressDialog();
 
 	return true;
+}
+
+static void
+_OpenJob(int worker, struct OpenJobArgs *args)
+{
+	if (!args->handler->Open(args->path)) {
+		EdGUI_MessageBox("Error", "Failed to open asset");
+		Sys_LogEntry(ED_A_MOD, LOG_CRITICAL, "Failed to open asset from file: %s", args->path);
+	}
+	Sys_Free(args->path);
+	Sys_Free(args);
 }

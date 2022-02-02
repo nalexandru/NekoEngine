@@ -1,108 +1,64 @@
 #include <assert.h>
 #include <stdlib.h>
 
+#include <Math/Math.h>
 #include <System/Memory.h>
 
 #include "D3D12Driver.h"
 
-//static inline void _SetAttachment(VkAttachmentDescription *dst, const struct AttachmentDesc *src);
+//static inline void _SetAttachment(VkAttachmentDescription *dst, const struct NeAttachmentDesc *src);
 
-struct RenderPassDesc *
-D3D12_CreateRenderPassDesc(struct RenderDevice *dev, const struct AttachmentDesc *attachments, uint32_t count, const struct AttachmentDesc *depthAttachment,
-							const struct AttachmentDesc *inputAttachments, uint32_t inputCount)
+struct NeRenderPassDesc *
+D3D12_CreateRenderPassDesc(struct NeRenderDevice *dev, const struct NeAttachmentDesc *attachments, uint32_t count, const struct NeAttachmentDesc *depthAttachment,
+							const struct NeAttachmentDesc *inputAttachments, uint32_t inputCount)
 {
-	struct RenderPassDesc *rp = Sys_Alloc(sizeof(*rp), 1, MH_RenderDriver);
+	struct NeRenderPassDesc *rp = Sys_Alloc(sizeof(*rp), 1, MH_RenderDriver);
 	if (!rp)
 		return NULL;
 
-/*	uint32_t atCount = count;
-	if (depthAttachment)
-		++atCount;
-
-	VkAttachmentDescription *atDesc = Sys_Alloc(sizeof(*atDesc), atCount, MH_Transient);
-	VkAttachmentReference *atRef = Sys_Alloc(sizeof(*atRef), atCount, MH_Transient);
-
-	rp->clearValues = Sys_Alloc(sizeof(*rp->clearValues), atCount, MH_RenderDriver);
-	assert(rp->clearValues);
+	rp->attachmentCount = count + inputCount;
 
 	for (uint32_t i = 0; i < count; ++i) {
-		_SetAttachment(&atDesc[i], &attachments[i]);
+		const struct NeAttachmentDesc *at = &attachments[i];
 
-		atRef[i].attachment = i;
-		atRef[i].layout = NeToVkImageLayout(attachments[i].layout);
+		rp->rtvFormats[i] = NeToDXGITextureFormat(at->format);
+		rp->loadOp[i] = at->loadOp;
+		// at->storeOp
+		v4(&rp->clearValues[i], at->clearColor[0], at->clearColor[1], at->clearColor[2], at->clearColor[3]);
+		rp->rtvInitialState[i] = NeTextureLayoutToD3D12ResourceState(at->initialLayout);
+		rp->rtvState[i] = NeTextureLayoutToD3D12ResourceState(at->layout);
+		rp->rtvFinalState[i] = NeTextureLayoutToD3D12ResourceState(at->finalLayout);
+	}
 
-		if (atDesc[i].loadOp == VK_ATTACHMENT_LOAD_OP_CLEAR)
-			memcpy(rp->clearValues[rp->clearValueCount++].color.float32, attachments[i].clearColor, sizeof(rp->clearValues[i].color.float32));
+	for (uint32_t i = 0; i < inputCount; ++i) {
+		const int idx = i + count;
+		const struct NeAttachmentDesc *at = &inputAttachments[i];
+
+		rp->rtvFormats[idx] = NeToDXGITextureFormat(at->format);
+		rp->loadOp[idx] = at->loadOp;
+		// at->storeOp
+		v4(&rp->clearValues[idx], at->clearColor[0], at->clearColor[1], at->clearColor[2], at->clearColor[3]);
+		rp->rtvInitialState[idx] = NeTextureLayoutToD3D12ResourceState(at->initialLayout);
+		rp->rtvState[idx] = NeTextureLayoutToD3D12ResourceState(at->layout);
+		rp->rtvFinalState[idx] = NeTextureLayoutToD3D12ResourceState(at->finalLayout);
 	}
 
 	if (depthAttachment) {
-		_SetAttachment(&atDesc[count], depthAttachment);
-
-		atRef[count].attachment = count;
-		atRef[count].layout = NeToVkImageLayout(depthAttachment->layout);
-
-		if (atDesc[count].loadOp == VK_ATTACHMENT_LOAD_OP_CLEAR) {
-			rp->clearValues[rp->clearValueCount  ].depthStencil.depth = depthAttachment->clearDepth;
-			rp->clearValues[rp->clearValueCount++].depthStencil.stencil = depthAttachment->clearStencil;
-		}
+		rp->depthFormat = NeToDXGITextureFormat(depthAttachment->format);
+		rp->depthLoadOp = depthAttachment->loadOp;
+		rp->depthClearValue = depthAttachment->clearDepth;
+		rp->depthInitialState = NeTextureLayoutToD3D12ResourceState(depthAttachment->initialLayout);
+		rp->depthState = NeTextureLayoutToD3D12ResourceState(depthAttachment->layout);
+		rp->depthFinalState = NeTextureLayoutToD3D12ResourceState(depthAttachment->finalLayout);
+	} else {
+		rp->depthFormat = DXGI_FORMAT_UNKNOWN;
 	}
-
-	VkSubpassDescription spDesc[] =
-	{
-		{
-			.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
-
-			.colorAttachmentCount = count,
-			.pColorAttachments = atRef,
-
-			.pDepthStencilAttachment = depthAttachment ? &atRef[count] : NULL
-		}
-	};
-
-	VkSubpassDependency spDep[] =
-	{
-		{
-			.srcSubpass = VK_SUBPASS_EXTERNAL,
-			.srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-			.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT,
-			.dstSubpass = 0,
-			.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-			.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-			.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT
-		},
-		{
-			.srcSubpass = 0,
-			.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-			.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-			.dstSubpass = VK_SUBPASS_EXTERNAL,
-			.dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-			.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT,
-			.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT
-		}
-	};
-
-	VkRenderPassCreateInfo rpInfo =
-	{
-		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-		.attachmentCount = atCount,
-		.pAttachments = atDesc,
-		.subpassCount = sizeof(spDesc) / sizeof(spDesc[0]),
-		.pSubpasses = spDesc,
-		.dependencyCount = sizeof(spDep) / sizeof(spDep[0]),
-		.pDependencies = spDep,
-	};
-
-	if (vkCreateRenderPass(dev->dev, &rpInfo, Vkd_allocCb, &rp->rp) != VK_SUCCESS) {
-		Sys_Free(rp->clearValues);
-		Sys_Free(rp);
-		return NULL;
-	}*/
 
 	return rp;
 }
 
 void
-D3D12_DestroyRenderPassDesc(struct RenderDevice *dev, struct RenderPassDesc *rp)
+D3D12_DestroyRenderPassDesc(struct NeRenderDevice *dev, struct NeRenderPassDesc *rp)
 {
 //	vkDestroyRenderPass(dev->dev, rp->rp, Vkd_allocCb);
 
@@ -111,7 +67,7 @@ D3D12_DestroyRenderPassDesc(struct RenderDevice *dev, struct RenderPassDesc *rp)
 }
 
 /*static inline void
-_SetAttachment(VkAttachmentDescription *dst, const struct AttachmentDesc *src)
+_SetAttachment(VkAttachmentDescription *dst, const struct NeAttachmentDesc *src)
 {
 	dst->flags = src->mayAlias ? VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT : 0;
 	dst->format = NeToVkTextureFormat(src->format);

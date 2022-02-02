@@ -1,7 +1,7 @@
 #include "D3D12Driver.h"
 
 D3D12_SAMPLER_DESC *
-D3D12_CreateSampler(struct RenderDevice *dev, const struct SamplerDesc *desc)
+D3D12_CreateSampler(struct NeRenderDevice *dev, const struct NeSamplerDesc *desc)
 {
 	D3D12_SAMPLER_DESC *s = Sys_Alloc(sizeof(*s), 1, MH_RenderDriver);
 
@@ -45,7 +45,7 @@ D3D12_CreateSampler(struct RenderDevice *dev, const struct SamplerDesc *desc)
 }
 
 void
-D3D12_DestroySampler(struct RenderDevice *dev, D3D12_SAMPLER_DESC *s)
+D3D12_DestroySampler(struct NeRenderDevice *dev, D3D12_SAMPLER_DESC *s)
 {
 	Sys_Free(s);
 }

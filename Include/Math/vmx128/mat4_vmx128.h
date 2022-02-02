@@ -52,7 +52,7 @@
 static inline struct mat4 *
 m4_simd(struct mat4 *dst, const float *m)
 {
-	ALIGN(16) float data[4];
+	NE_ALIGN(16) float data[4];
 
 	data[0] = m[0]; data[1] = m[1]; data[2] = m[2]; data[3] = m[3];
 	dst->sm[0] = __lvx(data, 0);
@@ -76,7 +76,7 @@ m4f_simd(struct mat4 *dst,
 	float m8, float m9, float m10, float m11,
 	float m12, float m13, float m14, float m15)
 {
-	ALIGN(16) float data[4];
+	NE_ALIGN(16) float data[4];
 
 	data[0] = m0; data[1] = m1; data[2] = m2; data[3] = m3;
 	dst->sm[0] = __lvx(data, 0);
@@ -137,7 +137,7 @@ m4_mul_simd(struct mat4 *dst, const struct mat4 *m1, const struct mat4 *m2)
 static inline struct mat4 *
 m4_muls_simd(struct mat4 *dst, const struct mat4 *m, const float f)
 {
-	ALIGN(16) const float data[4] = { f, f, f, f };
+	NE_ALIGN(16) const float data[4] = { f, f, f, f };
 	const __vector4 scalar = __lvx(data, 0);
 	
 	dst->sm[0] = __vmulfp(m->sm[0], scalar);

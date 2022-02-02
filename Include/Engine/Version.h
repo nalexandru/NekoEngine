@@ -8,19 +8,17 @@
 
 #define E_VER_MAJOR		0
 #define E_VER_MINOR		8
-#define E_VER_BUILD		186
+#define E_VER_BUILD		223
 #define E_VER_REVISION	0
 
-#define E_PGM_NAME		L"NekoEngine"
-#define E_CODENAME		L"Olivia"
-#define E_CPY_STR		L"2015-2021 Alexandru Naiman. All Rights Reserved."
+#define E_PGM_NAME		"NekoEngine"
+#define E_CODENAME		"Olivia"
+#define E_CPY_STR		"2015-2022 Alexandru Naiman. All Rights Reserved."
 
 #if E_VER_REVISION == 0
-#	define E_VER_STR_A		_NESTR(E_VER_MAJOR) "." _NESTR(E_VER_MINOR) "." _NESTR(E_VER_BUILD)
+#	define E_VER_STR		_NESTR(E_VER_MAJOR) "." _NESTR(E_VER_MINOR) "." _NESTR(E_VER_BUILD)
 #else
-#	define E_VER_STR_A		_NESTR(E_VER_MAJOR) "." _NESTR(E_VER_MINOR) "." _NESTR(E_VER_BUILD) "." _NESTR(E_VER_REVISION)
+#	define E_VER_STR		_NESTR(E_VER_MAJOR) "." _NESTR(E_VER_MINOR) "." _NESTR(E_VER_BUILD) "." _NESTR(E_VER_REVISION)
 #endif
-
-#define E_VER_STR		L""E_VER_STR_A
 
 #endif /* _NE_ENGINE_VERSION_H_ */

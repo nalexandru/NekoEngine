@@ -4,21 +4,15 @@
 #include <Render/Types.h>
 #include <Engine/Component.h>
 
-struct Animator
+struct NeAnimator
 {
 	COMPONENT_BASE;
 
-	struct Skeleton *skel;
-	bool playing, oneShot, loop;
+	struct NeSkeleton *skel;
+	bool playing, oneShot, loop, dirty;
 	double time, prevTime;
-	Handle clip, prevClip;
-	BufferHandle skelBuffer;
+	NeHandle clip, prevClip;
+	NeBufferHandle skelBuffer;
 };
-
-bool Anim_InitAnimator(struct Animator *a, const void **args);
-void Anim_TermAnimator(struct Animator *a);
-
-void Anim_BuildSkeleton(void **comp, void *args);
-void Anim_UpdateAnimator(void **comp, void *args);
 
 #endif /* _NE_ANIMATION_ANIMATOR_H_ */

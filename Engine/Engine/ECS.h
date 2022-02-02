@@ -6,54 +6,69 @@
 #include <Engine/Types.h>
 #include <Engine/Entity.h>
 #include <Engine/Component.h>
+#include <Script/Script.h>
 
-struct Entity
+typedef bool (*NeScriptCompInitProc)(void *, const void **, const char *);
+typedef void (*NeScriptCompTermProc)(void *, const char *);
+
+struct NeEntity
 {
 	size_t id;
-	uint32_t comp_count;
-	struct EntityComp comp[MAX_ENTITY_COMPONENTS];
+	uint32_t compCount;
+	struct NeEntityComp comp[MAX_ENTITY_COMPONENTS];
 	uint64_t hash;
-	wchar_t name[MAX_ENTITY_NAME];
+	char name[MAX_ENTITY_NAME];
 };
 
-struct EntityType
+struct NeEntityType
 {
 	uint64_t hash;
-	uint32_t comp_count;
-	CompTypeId comp_types[MAX_ENTITY_COMPONENTS];
+	uint32_t compCount;
+	NeCompTypeId comp_types[MAX_ENTITY_COMPONENTS];
 };
 
-struct CompHandleData
+struct NeCompHandleData
 {
-	CompHandle handle;
-	CompTypeId type;
+	NeCompHandle handle;
+	NeCompTypeId type;
 	size_t index;
 };
 
-struct CompBase
+struct NeCompBase
 {
 	COMPONENT_BASE;
 };
 
-struct CompType
+struct NeCompType
 {
 	size_t size, alignment;
 	uint64_t hash;
-	CompInitProc create;
-	CompTermProc destroy;
+	union {
+		NeCompInitProc init;
+		NeScriptCompInitProc initScript;
+	};
+	union {
+		NeCompTermProc term;
+		NeScriptCompTermProc termScript;
+	};
+	char *script;
 };
 
-struct ECSystem
+struct NeECSystem
 {
-	ECSysExecProc exec;
-	CompTypeId *comp_types;
-	uint64_t name_hash;
-	uint64_t group_hash;
+	NeECSysExecProc exec;
+	lua_State *vm;
+	NeCompTypeId *compTypes;
+	uint64_t nameHash;
+	uint64_t groupHash;
 	int32_t priority;
-	size_t type_count;
+	size_t typeCount;
+	bool singleThread;
 };
 
-typedef bool(*CompSysRegisterAllProc)(void);
+typedef bool (*NeCompSysRegisterAllProc)(void);
+
+size_t E_ComponentSize(struct NeScene *s, const struct NeCompBase *comp);
 
 bool E_InitComponents(void);
 void E_TermComponents(void);
@@ -61,11 +76,11 @@ void E_TermComponents(void);
 bool E_InitEntities(void);
 void E_TermEntities(void);
 
-bool E_InitSceneComponents(struct Scene *s);
-void E_TermSceneComponents(struct Scene *s);
+bool E_InitSceneComponents(struct NeScene *s);
+void E_TermSceneComponents(struct NeScene *s);
 
-bool E_InitSceneEntities(struct Scene *s);
-void E_TermSceneEntities(struct Scene *s);
+bool E_InitSceneEntities(struct NeScene *s);
+void E_TermSceneEntities(struct NeScene *s);
 
 bool E_InitECSystems(void);
 void E_TermECSystems(void);

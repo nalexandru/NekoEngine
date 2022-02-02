@@ -16,26 +16,26 @@ void Sys_TlsFree(uint32_t key);
 
 void Sys_Yield(void);
 
-bool Sys_InitThread(Thread *t, const wchar_t *name, void (*proc)(void *), void *args);
-void Sys_SetThreadAffinity(Thread t, int cpu);
-void Sys_JoinThread(Thread t);
-void Sys_TermThread(Thread t);
+bool Sys_InitThread(NeThread *t, const char *name, void (*proc)(void *), void *args);
+void Sys_SetThreadAffinity(NeThread t, int cpu);
+void Sys_JoinThread(NeThread t);
+void Sys_TermThread(NeThread t);
 
-bool Sys_InitMutex(Mutex *mtx);
-bool Sys_LockMutex(Mutex mtx);
-bool Sys_UnlockMutex(Mutex mtx);
-void Sys_TermMutex(Mutex mtx);
+bool Sys_InitMutex(NeMutex *mtx);
+bool Sys_LockMutex(NeMutex mtx);
+bool Sys_UnlockMutex(NeMutex mtx);
+void Sys_TermMutex(NeMutex mtx);
 
-bool Sys_InitFutex(Futex *ftx);
-bool Sys_LockFutex(Futex ftx);
-bool Sys_UnlockFutex(Futex ftx);
-void Sys_TermFutex(Futex ftx);
+bool Sys_InitFutex(NeFutex *ftx);
+bool Sys_LockFutex(NeFutex ftx);
+bool Sys_UnlockFutex(NeFutex ftx);
+void Sys_TermFutex(NeFutex ftx);
 
-bool Sys_InitConditionVariable(ConditionVariable *cv);
-void Sys_Signal(ConditionVariable cv);
-void Sys_Broadcast(ConditionVariable cv);
-bool Sys_WaitMutex(ConditionVariable cv, Mutex mtx);
-bool Sys_WaitFutex(ConditionVariable cv, Futex ftx);
-void Sys_TermConditionVariable(ConditionVariable cv);
+bool Sys_InitConditionVariable(NeConditionVariable *cv);
+void Sys_Signal(NeConditionVariable cv);
+void Sys_Broadcast(NeConditionVariable cv);
+bool Sys_WaitMutex(NeConditionVariable cv, NeMutex mtx);
+bool Sys_WaitFutex(NeConditionVariable cv, NeFutex ftx);
+void Sys_TermConditionVariable(NeConditionVariable cv);
 
 #endif /* _NE_SYSTEM_THREAD_H_ */

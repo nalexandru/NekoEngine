@@ -3,14 +3,14 @@
 
 #include <Engine/Types.h>
 
-struct ApplicationInfo
+struct NeApplicationInfo
 {
-	const wchar_t name[64];
-	const wchar_t copyright[64];
-	struct Version version;
+	const char name[64];
+	const char copyright[64];
+	struct NeVersion version;
 };
 
-ENGINE_API extern struct ApplicationInfo App_applicationInfo;
+ENGINE_API extern struct NeApplicationInfo App_applicationInfo;
 
 bool App_InitApplication(int argc, char *argv[]);
 void App_Frame(void);

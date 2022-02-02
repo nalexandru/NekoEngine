@@ -6,26 +6,26 @@
 #include <Render/Graph/Pass.h>
 #include <Render/Graph/Graph.h>
 
-struct DepthPrePass;
-static bool _Init(struct DepthPrePass **pass);
-static void _Term(struct DepthPrePass *pass);
-static bool _Setup(struct DepthPrePass *pass, struct Array *resources);
-static void _Execute(struct DepthPrePass *pass, const struct Array *resources);
+struct NeDepthPrePass;
+static bool _Init(struct NeDepthPrePass **pass);
+static void _Term(struct NeDepthPrePass *pass);
+static bool _Setup(struct NeDepthPrePass *pass, struct NeArray *resources);
+static void _Execute(struct NeDepthPrePass *pass, const struct NeArray *resources);
 
-struct RenderPass RP_depthPrePass =
+struct NeRenderPass RP_depthPrePass =
 {
-	.Init = (PassInitProc)_Init,
-	.Term = (PassTermProc)_Term,
-	.Setup = (PassSetupProc)_Setup,
-	.Execute = (PassExecuteProc)_Execute
+	.Init = (NePassInitProc)_Init,
+	.Term = (NePassTermProc)_Term,
+	.Setup = (NePassSetupProc)_Setup,
+	.Execute = (NePassExecuteProc)_Execute
 };
 
-struct DepthPrePass
+struct NeDepthPrePass
 {
-	struct Framebuffer *fb;
-	struct Pipeline *pipeline;
-	struct RenderPassDesc *rpd;
-	uint64_t normalHash, depthHash, instancesHash;
+	struct NeFramebuffer *fb;
+	struct NePipeline *pipeline;
+	struct NeRenderPassDesc *rpd;
+	uint64_t normalHash, depthHash, instancesHash, passSemaphoreHash;
 };
 
 struct Constants
@@ -36,14 +36,14 @@ struct Constants
 };
 
 static bool 
-_Setup(struct DepthPrePass *pass, struct Array *resources)
+_Setup(struct NeDepthPrePass *pass, struct NeArray *resources)
 {
-	struct FramebufferAttachmentDesc fbAtDesc[2] =
+	struct NeFramebufferAttachmentDesc fbAtDesc[2] =
 	{
 		{ .usage = TU_COLOR_ATTACHMENT | TU_INPUT_ATTACHMENT, .format = TF_R16G16B16A16_SFLOAT },
 		{ .usage = TU_DEPTH_STENCIL_ATTACHMENT, .format = TF_D32_SFLOAT }
 	};
-	struct FramebufferDesc fbDesc =
+	struct NeFramebufferDesc fbDesc =
 	{
 		.attachmentCount = 2,
 		.attachments = fbAtDesc,
@@ -55,7 +55,7 @@ _Setup(struct DepthPrePass *pass, struct Array *resources)
 	pass->fb = Re_CreateFramebuffer(&fbDesc);
 	Re_Destroy(pass->fb);
 
-	struct TextureDesc normalDesc =
+	struct NeTextureDesc normalDesc =
 	{
 		.width = *E_screenWidth,
 		.height = *E_screenHeight,
@@ -70,7 +70,7 @@ _Setup(struct DepthPrePass *pass, struct Array *resources)
 	};
 	Re_AddGraphTexture("Re_normalBuffer", &normalDesc, resources);
 
-	struct TextureDesc depthDesc =
+	struct NeTextureDesc depthDesc =
 	{
 		.width = *E_screenWidth,
 		.height = *E_screenHeight,
@@ -89,7 +89,7 @@ _Setup(struct DepthPrePass *pass, struct Array *resources)
 }
 
 static void
-_Execute(struct DepthPrePass *pass, const struct Array *resources)
+_Execute(struct NeDepthPrePass *pass, const struct NeArray *resources)
 {
 	struct Constants constants;
 
@@ -107,8 +107,8 @@ _Execute(struct DepthPrePass *pass, const struct Array *resources)
 
 	for (uint32_t i = 0; i < E_JobWorkerThreads(); ++i) {
 		const uint32_t instanceOffset = Scn_activeScene->collect.instanceOffset[i];
-		const struct Array *drawables = &Scn_activeScene->collect.opaqueDrawableArrays[i];
-		const struct Drawable *d = NULL;
+		const struct NeArray *drawables = &Scn_activeScene->collect.opaqueDrawableArrays[i];
+		const struct NeDrawable *d = NULL;
 
 		if (!drawables->count)
 			continue;
@@ -118,7 +118,7 @@ _Execute(struct DepthPrePass *pass, const struct Array *resources)
 
 			constants.vertexAddress = d->vertexAddress;
 			constants.materialAddress = d->materialAddress;
-			constants.instanceAddress = Re_OffsetAddress(instanceRoot, (((uint64_t)d->instanceId + instanceOffset) * sizeof(struct ModelInstance)));
+			constants.instanceAddress = Re_OffsetAddress(instanceRoot, (((uint64_t)d->instanceId + instanceOffset) * sizeof(struct NeModelInstance)));
 
 			Re_CmdPushConstants(SS_ALL, sizeof(constants), &constants);
 			Re_CmdDrawIndexed(d->indexCount, 1, d->firstIndex, 0, 0);
@@ -126,19 +126,21 @@ _Execute(struct DepthPrePass *pass, const struct Array *resources)
 	}
 
 	Re_CmdEndRenderPass();
-	Re_EndCommandBuffer();
+
+	struct NeSemaphore *passSemaphore = Re_GraphData(pass->passSemaphoreHash, resources);
+	Re_QueueGraphics(Re_EndCommandBuffer(), NULL, passSemaphore);
 }
 
 static bool
-_Init(struct DepthPrePass **pass)
+_Init(struct NeDepthPrePass **pass)
 {
-	*pass = Sys_Alloc(sizeof(struct DepthPrePass), 1, MH_Render);
+	*pass = Sys_Alloc(sizeof(struct NeDepthPrePass), 1, MH_Render);
 	if (!*pass)
 		return false;
 
-	struct Shader *shader = Re_GetShader("Depth");
+	struct NeShader *shader = Re_GetShader("Depth");
 
-	struct AttachmentDesc atDesc =
+	struct NeAttachmentDesc atDesc =
 	{
 		.mayAlias = false,
 		.format = TF_R16G16B16A16_SFLOAT,
@@ -150,7 +152,7 @@ _Init(struct DepthPrePass **pass)
 		.finalLayout = TL_SHADER_READ_ONLY,
 		.clearColor = { 0.f, 0.f, 0.f, 0.f }
 	};
-	struct AttachmentDesc depthDesc =
+	struct NeAttachmentDesc depthDesc =
 	{
 		.mayAlias = false,
 		.format = TF_D32_SFLOAT,
@@ -166,11 +168,11 @@ _Init(struct DepthPrePass **pass)
 	if (!(*pass)->rpd)
 		goto error;
 
-	struct BlendAttachmentDesc blendAttachments[] =
+	struct NeBlendAttachmentDesc blendAttachments[] =
 	{
 		{ .enableBlend = false, .writeMask = RE_WRITE_MASK_RGBA }
 	};
-	struct GraphicsPipelineDesc pipeDesc =
+	struct NeGraphicsPipelineDesc pipeDesc =
 	{
 		.flags = RE_TOPOLOGY_TRIANGLES | RE_POLYGON_FILL |
 					RE_CULL_NONE | RE_FRONT_FACE_CW |
@@ -189,6 +191,7 @@ _Init(struct DepthPrePass **pass)
 	(*pass)->normalHash = Rt_HashString("Re_normalBuffer");
 	(*pass)->depthHash = Rt_HashString("Re_depthBuffer");
 	(*pass)->instancesHash = Rt_HashString("Scn_instances");
+	(*pass)->passSemaphoreHash = Rt_HashString("Re_passSemaphore");
 
 	return true;
 
@@ -202,7 +205,7 @@ error:
 }
 
 static void
-_Term(struct DepthPrePass *pass)
+_Term(struct NeDepthPrePass *pass)
 {
 	Re_DestroyRenderPassDesc(pass->rpd);
 	Sys_Free(pass);

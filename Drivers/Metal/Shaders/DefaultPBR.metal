@@ -53,7 +53,7 @@ DefaultPBR_O_VS(uint vertexId [[vertex_id]],
 	const float4 v = float4(vtx.x, vtx.y, vtx.z, 1.0);
 	const float4 pos = inst->model * v;
 
-	out.color = float4(1.0, 1.0, 1.0, 1.0);
+	out.color = float4(vtx.r, vtx.g, vtx.b, vtx.a);
 	out.uv = float2(vtx.u, vtx.v);
 	out.position = inst->mvp * v;
 	out.vPos = pos.xyz / pos.w;
@@ -82,7 +82,7 @@ DefaultPBR_T_VS(uint vertexId [[vertex_id]],
 	out.biTangent = normalize(normalMat * cross(out.tangent, out.normal));
 	out.uv = float2(vtx.u, vtx.v);
 	out.position = inst->mvp * v;
-	out.color = float4(1.0, 1.0, 1.0, 1.0);
+	out.color = float4(vtx.r, vtx.g, vtx.b, vtx.a);
 
 	out.vPos = pos.xyz / pos.w;
 

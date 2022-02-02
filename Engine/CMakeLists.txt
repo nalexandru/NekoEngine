@@ -24,7 +24,7 @@ set(CMAKE_C_STANDARD 11)
 
 add_library(Engine STATIC ${src})
 target_compile_definitions(Engine PRIVATE _ENGINE_INTERNAL_)
-target_link_libraries(Engine Platform Lua PhysFS OpenAL)
+target_link_libraries(Engine Platform Lua PhysFS OpenAL "-Wl,--whole-archive" VulkanDriver "-Wl,--no-whole-archive")
 
 if (NOT WIN32)
 	target_link_libraries(Engine m dl)

@@ -1,3 +1,4 @@
+#include <Math/Math.h>
 #include <System/Log.h>
 #include <Engine/Asset.h>
 #include <Engine/Config.h>
@@ -8,51 +9,51 @@
 #include <Engine/Resource.h>
 #include <System/AtomicLock.h>
 
-#define MAT_MOD				L"Material"
+#define MAT_MOD				"Material"
 #define MAT_BUFFER_SIZE		2 * 1024 * 1024
 
-struct Block
+struct NeMaterialBlock
 {
 	uint64_t offset;
 	uint32_t size;
 };
 
-struct RenderPassDesc *Re_MaterialRenderPassDesc;
-struct RenderPassDesc *Re_TransparentMaterialRenderPassDesc;
+struct NeRenderPassDesc *Re_MaterialRenderPassDesc;
+struct NeRenderPassDesc *Re_TransparentMaterialRenderPassDesc;
 
-static struct Array _types, _freeList;
-static BufferHandle _materialBuffer;
+static struct NeArray _types, _freeList;
+static NeBufferHandle _materialBuffer;
 static uint8_t *_materialData, *_materialPtr, *_gpuBufferPtr;
 static uint64_t _bufferSize;
-static struct AtomicLock _lock = { 0, 0 };
+static struct NeAtomicLock _lock = { 0, 0 };
 
 // default material
-static bool _initDefaultMaterial(const char **args, struct DefaultMaterial *data);
-static void _termDefaultMaterial(struct DefaultMaterial *data);
+static bool _initDefaultMaterial(const char **args, struct NeDefaultMaterial *data);
+static void _termDefaultMaterial(struct NeDefaultMaterial *data);
 
-static inline struct Pipeline *_createPipeline(const struct MaterialResource *res, struct Shader *shader);
+static inline struct NePipeline *_createPipeline(const struct NeMaterialResource *res, struct NeShader *shader);
 
 // material type
-static inline struct MaterialType *_findMaterialType(const char *name, uint32_t *id);
+static inline struct NeMaterialType *_findMaterialType(const char *name, uint32_t *id);
 static inline bool _allocMaterial(uint32_t size, uint64_t *offset, void **data);
 static inline void _freeMaterial(uint64_t offset, uint32_t size);
 
-static int32_t _cmpFunc(const struct MaterialType *type, uint64_t *hash);
-static int32_t _sortFunc(const struct MaterialType *a, const struct MaterialType *b);
-static int32_t _blockCmpFunc(const struct Block *b, const uint32_t *size);
+static int32_t _cmpFunc(const struct NeMaterialType *type, uint64_t *hash);
+static int32_t _sortFunc(const struct NeMaterialType *a, const struct NeMaterialType *b);
+static int32_t _blockCmpFunc(const struct NeMaterialBlock *b, const uint32_t *size);
 
-static bool _CreateMaterialResource(const char *name, const struct MaterialResourceCreateInfo *ci, struct MaterialResource *tex, Handle h);
-static bool _LoadMaterialResource(struct ResourceLoadInfo *li, const char *args, struct MaterialResource *tex, Handle h);
-static void _UnloadMaterialResource(struct MaterialResource *tex, Handle h);
+static bool _CreateMaterialResource(const char *name, const struct NeMaterialResourceCreateInfo *ci, struct NeMaterialResource *tex, NeHandle h);
+static bool _LoadMaterialResource(struct NeResourceLoadInfo *li, const char *args, struct NeMaterialResource *tex, NeHandle h);
+static void _UnloadMaterialResource(struct NeMaterialResource *tex, NeHandle h);
 
 bool
-Re_InitMaterial(Handle res, struct Material *mat)
+Re_InitMaterial(NeHandle res, struct NeMaterial *mat)
 {
-	struct MaterialResource *mr = E_ResourcePtr(res);
+	struct NeMaterialResource *mr = E_ResourcePtr(res);
 	if (!mr)
 		return false;
 
-	struct MaterialType *mt = Rt_ArrayGet(&_types, mr->typeId);
+	struct NeMaterialType *mt = Rt_ArrayGet(&_types, mr->typeId);
 	if (!mt)
 		return false;
 
@@ -80,34 +81,35 @@ error:
 }
 
 void
-Re_TermMaterial(struct Material *mat)
+Re_TermMaterial(struct NeMaterial *mat)
 {
 	if (mat->type >= _types.count) {
-		Sys_LogEntry(MAT_MOD, LOG_CRITICAL, L"Attempt to free invalid material type for material %s", mat->name);
+		Sys_LogEntry(MAT_MOD, LOG_CRITICAL, "Attempt to free invalid material type for material %s", mat->name);
 		return;
 	}
 
-	struct MaterialType *mt = Rt_ArrayGet(&_types, mat->type);
+	struct NeMaterialType *mt = Rt_ArrayGet(&_types, mat->type);
 	mt->term(mat->data);
 
 	_freeMaterial(mat->offset, mt->dataSize);
 }
 
 uint64_t
-Re_MaterialAddress(struct Material *mat)
+Re_MaterialAddress(struct NeMaterial *mat)
 {
 	return Re_BufferAddress(_materialBuffer, Re_frameId * _bufferSize + mat->offset);
 }
 
 static bool
-_CreateMaterialResource(const char *name, const struct MaterialResourceCreateInfo *ci, struct MaterialResource *mr, Handle h)
+_CreateMaterialResource(const char *name, const struct NeMaterialResourceCreateInfo *ci, struct NeMaterialResource *mr, NeHandle h)
 {
 	mr->alphaBlend = ci->alphaBlend;
+	mr->primitiveType = ci->primitiveType;
 	snprintf(mr->name, sizeof(mr->name), "%s", ci->name);
 
 	uint32_t id;
 	if (!_findMaterialType(ci->type, &id)) {
-		Sys_LogEntry(MAT_MOD, LOG_CRITICAL, L"Failed to create material resource %s, material type %s does not exist", name, ci->type);
+		Sys_LogEntry(MAT_MOD, LOG_CRITICAL, "Failed to create material resource %s, material type %s does not exist", name, ci->type);
 		return false;
 	}
 	mr->typeId = id;
@@ -155,9 +157,9 @@ _CreateMaterialResource(const char *name, const struct MaterialResourceCreateInf
 }
 
 static bool
-_LoadMaterialResource(struct ResourceLoadInfo *li, const char *args, struct MaterialResource *mr, Handle h)
+_LoadMaterialResource(struct NeResourceLoadInfo *li, const char *args, struct NeMaterialResource *mr, NeHandle h)
 {
-	struct Metadata meta =
+	struct NeMetadata meta =
 	{
 		.version = MATERIAL_META_VER,
 		.id = MATERIAL_META_ID
@@ -169,7 +171,9 @@ _LoadMaterialResource(struct ResourceLoadInfo *li, const char *args, struct Mate
 	uint8_t *data = Sys_Alloc(1, meta.jsonSize, MH_Asset);
 	if (!data)
 		return false;
+
 	mr->data = data;
+	mr->primitiveType = args ? clamp_i(atoi(args), PT_TRIANGLES, PT_LINES) : PT_TRIANGLES;
 
 	if (!Rt_InitPtrArray(&mr->args, 10, MH_Asset))
 		return false;
@@ -186,7 +190,7 @@ _LoadMaterialResource(struct ResourceLoadInfo *li, const char *args, struct Mate
 
 			uint32_t id;
 			if (!_findMaterialType(type, &id)) {
-				Sys_LogEntry(MAT_MOD, LOG_CRITICAL, L"Failed to load material resource %hs, material type %hs does not exist", li->path, type);
+				Sys_LogEntry(MAT_MOD, LOG_CRITICAL, "Failed to load material resource %s, material type %s does not exist", li->path, type);
 				return false;
 			}
 			mr->typeId = id;
@@ -215,16 +219,16 @@ _LoadMaterialResource(struct ResourceLoadInfo *li, const char *args, struct Mate
 }
 
 static void
-_UnloadMaterialResource(struct MaterialResource *mr, Handle h)
+_UnloadMaterialResource(struct NeMaterialResource *mr, NeHandle h)
 {
 	Sys_Free(mr->data);
 	Rt_TermArray(&mr->args);
 }
 
 bool
-Re_RegisterMaterialType(const char *name, const char *shader, uint32_t dataSize, MaterialInitProc init, MaterialTermProc term)
+Re_RegisterMaterialType(const char *name, const char *shader, uint32_t dataSize, NeMaterialInitProc init, NeMaterialTermProc term)
 {
-	struct MaterialType mt =
+	struct NeMaterialType mt =
 	{
 		.hash = Rt_HashString(name),
 		.dataSize = dataSize,
@@ -234,7 +238,7 @@ Re_RegisterMaterialType(const char *name, const char *shader, uint32_t dataSize,
 	};
 
 	if (!mt.shader) {
-		Sys_LogEntry(MAT_MOD, LOG_CRITICAL, L"Shader %hs not found for material type %hs", shader, name);
+		Sys_LogEntry(MAT_MOD, LOG_CRITICAL, "Shader %s not found for material type %s", shader, name);
 		return false;
 	}
 
@@ -251,12 +255,12 @@ Re_RegisterMaterialType(const char *name, const char *shader, uint32_t dataSize,
 bool
 Re_InitMaterialSystem(void)
 {
-	if (!E_RegisterResourceType(RES_MATERIAL, sizeof(struct MaterialResource), (ResourceCreateProc)_CreateMaterialResource,
-						(ResourceLoadProc)_LoadMaterialResource, (ResourceUnloadProc)_UnloadMaterialResource))
+	if (!E_RegisterResourceType(RES_MATERIAL, sizeof(struct NeMaterialResource), (NeResourceCreateProc)_CreateMaterialResource,
+						(NeResourceLoadProc)_LoadMaterialResource, (NeResourceUnloadProc)_UnloadMaterialResource))
 		return false;
 
-	_bufferSize = E_GetCVarU64(L"Render_MaterialBufferSize", MAT_BUFFER_SIZE)->u64;
-	struct BufferCreateInfo bci =
+	_bufferSize = E_GetCVarU64("Render_MaterialBufferSize", MAT_BUFFER_SIZE)->u64;
+	struct NeBufferCreateInfo bci =
 	{
 		.desc =
 		{
@@ -277,12 +281,12 @@ Re_InitMaterialSystem(void)
 	_materialData = Sys_Alloc(1, _bufferSize, MH_Render);
 	_materialPtr = _materialData;
 
-	Rt_InitArray(&_types, 10, sizeof(struct MaterialType), MH_Render);
+	Rt_InitArray(&_types, 10, sizeof(struct NeMaterialType), MH_Render);
 
-	Re_RegisterMaterialType("Default", "DefaultPBR_MR", sizeof(struct DefaultMaterial),
-							(MaterialInitProc)_initDefaultMaterial, (MaterialTermProc)_termDefaultMaterial);
+	Re_RegisterMaterialType("Default", "DefaultPBR_MR", sizeof(struct NeDefaultMaterial),
+							(NeMaterialInitProc)_initDefaultMaterial, (NeMaterialTermProc)_termDefaultMaterial);
 
-	struct AttachmentDesc atDesc =
+	struct NeAttachmentDesc atDesc =
 	{
 		.mayAlias = false,
 		.format = Re_SwapchainFormat(Re_swapchain),
@@ -294,18 +298,18 @@ Re_InitMaterialSystem(void)
 		.finalLayout = TL_COLOR_ATTACHMENT,
 		.clearColor = { .3f, .0f, .4f, 1.f }
 	};
-	struct AttachmentDesc depthDesc =
+	struct NeAttachmentDesc depthDesc =
 	{
 		.mayAlias = true,
 		.format = TF_D32_SFLOAT,
 		.loadOp = ATL_LOAD,
 		.storeOp = ATS_STORE,
 		.samples = ASC_1_SAMPLE,
-		.initialLayout = TL_UNKNOWN,
+		.initialLayout = TL_DEPTH_ATTACHMENT,
 		.layout = TL_DEPTH_ATTACHMENT,
 		.finalLayout = TL_DEPTH_ATTACHMENT
 	};
-	struct AttachmentDesc normalDesc =
+	struct NeAttachmentDesc normalDesc =
 	{
 		.mayAlias = false,
 		.format = TF_R16G16B16A16_SFLOAT,
@@ -324,7 +328,7 @@ Re_InitMaterialSystem(void)
 	atDesc.finalLayout = TL_PRESENT_SRC;
 	Re_TransparentMaterialRenderPassDesc = Re_CreateRenderPassDesc(&atDesc, 1, &depthDesc, &normalDesc, 1);
 
-	Rt_InitArray(&_freeList, 10, sizeof(struct Block), MH_Render);
+	Rt_InitArray(&_freeList, 10, sizeof(struct NeMaterialBlock), MH_Render);
 
 	return true;
 }
@@ -350,9 +354,9 @@ Re_TermMaterialSystem(void)
 }
 
 static bool
-_initDefaultMaterial(const char **args, struct DefaultMaterial *data)
+_initDefaultMaterial(const char **args, struct NeDefaultMaterial *data)
 {
-	Handle diffuseMap = E_INVALID_HANDLE, normalMap = E_INVALID_HANDLE,
+	NeHandle diffuseMap = E_INVALID_HANDLE, normalMap = E_INVALID_HANDLE,
 			metallicRoughnessMap = E_INVALID_HANDLE, occlusionMap = E_INVALID_HANDLE,
 			clearCoatMap = E_INVALID_HANDLE, clearCoatRoughnessMap = E_INVALID_HANDLE,
 			clearCoatNormalMap = E_INVALID_HANDLE, emissiveMap = E_INVALID_HANDLE,
@@ -413,7 +417,7 @@ _initDefaultMaterial(const char **args, struct DefaultMaterial *data)
 			data->emissionColor[1] = strtof(ptr + 2, &ptr);
 			data->emissionColor[2] = strtof(ptr + 2, &ptr);
 		} else {
-			Sys_LogEntry(L"DefaultMaterial", LOG_WARNING, L"Unknown property %hs", arg);
+			Sys_LogEntry("DefaultMaterial", LOG_WARNING, "Unknown property %hs", arg);
 			++args;
 		}
 	}
@@ -433,7 +437,7 @@ _initDefaultMaterial(const char **args, struct DefaultMaterial *data)
 }
 
 static void
-_termDefaultMaterial(struct DefaultMaterial *data)
+_termDefaultMaterial(struct NeDefaultMaterial *data)
 {
 #define UNLOAD_TEX(x) if (x) E_UnloadResource(E_GPUHandleToRes(x, RES_TEXTURE))
 	
@@ -449,10 +453,10 @@ _termDefaultMaterial(struct DefaultMaterial *data)
 	UNLOAD_TEX(data->alphaMaskMap);
 }
 
-static inline struct Pipeline *
-_createPipeline(const struct MaterialResource *mr, struct Shader *shader)
+static inline struct NePipeline *
+_createPipeline(const struct NeMaterialResource *mr, struct NeShader *shader)
 {
-	struct BlendAttachmentDesc blendAttachments[] =
+	struct NeBlendAttachmentDesc blendAttachments[] =
 	{
 		{
 			.enableBlend = mr->alphaBlend,
@@ -465,18 +469,24 @@ _createPipeline(const struct MaterialResource *mr, struct Shader *shader)
 			.alphaOp = RE_BOP_ADD
 		}
 	};
-	struct GraphicsPipelineDesc desc =
+	struct NeGraphicsPipelineDesc desc =
 	{
-		.flags = RE_TOPOLOGY_TRIANGLES | RE_POLYGON_FILL |
+		.flags = RE_POLYGON_FILL |
 					RE_CULL_NONE | RE_FRONT_FACE_CW |
 					RE_DEPTH_TEST | RE_DEPTH_WRITE | RE_DEPTH_OP_GREATER_EQUAL,
 		.stageInfo = &shader->opaqueStages,
 		.renderPassDesc = Re_MaterialRenderPassDesc,
-		.pushConstantSize = sizeof(struct MaterialRenderConstants),
+		.pushConstantSize = sizeof(struct NeMaterialRenderConstants),
 		.attachmentCount = sizeof(blendAttachments) / sizeof(blendAttachments[0]),
 		.attachments = blendAttachments,
 		.depthFormat = TF_D32_SFLOAT
 	};
+
+	switch (mr->primitiveType) {
+	case PT_TRIANGLES: desc.flags |= RE_TOPOLOGY_TRIANGLES; break;
+	case PT_POINTS: desc.flags |= RE_TOPOLOGY_POINTS; break;
+	case PT_LINES: desc.flags |= RE_TOPOLOGY_LINES; break;
+	}
 
 	if (mr->alphaBlend && shader->transparentStages.stageCount)
 		desc.stageInfo = &shader->transparentStages;
@@ -484,7 +494,7 @@ _createPipeline(const struct MaterialResource *mr, struct Shader *shader)
 	return Re_GraphicsPipeline(&desc);
 }
 
-static inline struct MaterialType *
+static inline struct NeMaterialType *
 _findMaterialType(const char *name, uint32_t *id)
 {
 	uint64_t hash = Rt_HashString(name);
@@ -511,7 +521,7 @@ _allocMaterial(uint32_t size, uint64_t *offset, void **data)
 	if (_freeList.count) {
 		size_t id = Rt_ArrayFindId(&_freeList, &size, (RtCmpFunc)_blockCmpFunc);
 		if (id != RT_NOT_FOUND) {
-			struct Block *b = Rt_ArrayGet(&_freeList, id);
+			struct NeMaterialBlock *b = Rt_ArrayGet(&_freeList, id);
 			*offset = b->offset;
 			*data = _materialData + *offset;
 			Rt_ArrayRemove(&_freeList, id);
@@ -539,14 +549,14 @@ _freeMaterial(uint64_t offset, uint32_t size)
 {
 	Sys_AtomicLockWrite(&_lock);
 	
-	struct Block b = { .offset = offset, .size = size };
+	struct NeMaterialBlock b = { .offset = offset, .size = size };
 	Rt_ArrayAdd(&_freeList, &b);
 
 	Sys_AtomicUnlockWrite(&_lock);
 }
 
 static int32_t
-_cmpFunc(const struct MaterialType *type, uint64_t *hash)
+_cmpFunc(const struct NeMaterialType *type, uint64_t *hash)
 {
 	if (type->hash > *hash)
 		return 1;
@@ -557,7 +567,7 @@ _cmpFunc(const struct MaterialType *type, uint64_t *hash)
 }
 
 static int32_t
-_sortFunc(const struct MaterialType *a, const struct MaterialType *b)
+_sortFunc(const struct NeMaterialType *a, const struct NeMaterialType *b)
 {
 	if (a->hash > b->hash)
 		return 1;
@@ -568,7 +578,7 @@ _sortFunc(const struct MaterialType *a, const struct MaterialType *b)
 }
 
 static int32_t
-_blockCmpFunc(const struct Block *b, const uint32_t *size)
+_blockCmpFunc(const struct NeMaterialBlock *b, const uint32_t *size)
 {
 	return (b->size == *size) ? 0 : -1;
 }

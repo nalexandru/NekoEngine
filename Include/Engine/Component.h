@@ -3,55 +3,56 @@
 
 #include <Engine/Types.h>
 
-struct ComponentCreationData
+struct NeComponentCreationData
 {
-	CompTypeId type;
-	CompHandle handle;
-	EntityHandle owner;
+	NeCompTypeId type;
+	NeCompHandle handle;
+	NeEntityHandle owner;
 	void *ptr;
 };
 
-#define COMPONENT_BASE		\
-	void *_self;			\
-	EntityHandle _owner
+#define COMPONENT_BASE			\
+	uint64_t _handleId : 56;	\
+	uint64_t _sceneId : 8;		\
+	NeEntityHandle _owner
 
-ENGINE_API extern struct Scene *Scn_activeScene;
+ENGINE_API extern struct NeScene *Scn_activeScene;
 
-CompHandle E_CreateComponentS(struct Scene *s, const wchar_t *typeName, EntityHandle owner, const void **args);
-static inline CompHandle
-E_CreateComponent(const wchar_t *typeName, EntityHandle owner, const void **args) { return E_CreateComponentS(Scn_activeScene, typeName, owner, args); }
+NeCompHandle E_CreateComponentS(struct NeScene *s, const char *typeName, NeEntityHandle owner, const void **args);
+static inline NeCompHandle
+E_CreateComponent(const char *typeName, NeEntityHandle owner, const void **args) { return E_CreateComponentS(Scn_activeScene, typeName, owner, args); }
 
-CompHandle E_CreateComponentIdS(struct Scene *s, CompTypeId id, EntityHandle owner, const void **args);
-static inline CompHandle
-E_CreateComponentId(CompTypeId id, EntityHandle owner, const void **args) { return E_CreateComponentIdS(Scn_activeScene, id, owner, args); }
+NeCompHandle E_CreateComponentIdS(struct NeScene *s, NeCompTypeId id, NeEntityHandle owner, const void **args);
+static inline NeCompHandle
+E_CreateComponentId(NeCompTypeId id, NeEntityHandle owner, const void **args) { return E_CreateComponentIdS(Scn_activeScene, id, owner, args); }
 
-void E_DestroyComponentS(struct Scene *s, CompHandle comp);
-static inline void E_DestroyComponent(CompHandle comp) { E_DestroyComponentS(Scn_activeScene, comp); }
+void E_DestroyComponentS(struct NeScene *s, NeCompHandle comp);
+static inline void E_DestroyComponent(NeCompHandle comp) { E_DestroyComponentS(Scn_activeScene, comp); }
 
-void *E_ComponentPtrS(struct Scene *s, CompHandle comp);
-static inline void *E_ComponentPtr(CompHandle comp) { return E_ComponentPtrS(Scn_activeScene, comp); }
+void *E_ComponentPtrS(struct NeScene *s, NeCompHandle comp);
+static inline void *E_ComponentPtr(NeCompHandle comp) { return E_ComponentPtrS(Scn_activeScene, comp); }
 
-CompHandle E_ComponentHandle(void *ptr);
+NeCompTypeId E_ComponentTypeS(struct NeScene *s, NeCompHandle comp);
+static inline NeCompTypeId E_ComponentType(NeCompHandle comp) { return E_ComponentTypeS(Scn_activeScene, comp); }
 
-CompTypeId E_ComponentTypeS(struct Scene *s, CompHandle comp);
-static inline CompTypeId E_ComponentType(CompHandle comp) { return E_ComponentTypeS(Scn_activeScene, comp); }
+NeCompTypeId E_ComponentTypeId(const char *typeName);
+size_t E_ComponentTypeSize(NeCompTypeId typeId);
 
-CompTypeId E_ComponentTypeId(const wchar_t *type_name);
+size_t E_ComponentCountS(struct NeScene *s, NeCompTypeId type);
+static inline size_t E_ComponentCount(NeCompTypeId type) { return E_ComponentCountS(Scn_activeScene, type); }
 
-size_t E_ComponentCountS(struct Scene *s, CompTypeId type);
-static inline size_t E_ComponentCount(CompTypeId type) { return E_ComponentCountS(Scn_activeScene, type); }
+NeEntityHandle E_ComponentOwnerS(struct NeScene *s, NeCompHandle comp);
+static inline NeEntityHandle E_ComponentOwner(NeCompHandle comp) { return E_ComponentOwnerS(Scn_activeScene, comp); }
 
-EntityHandle E_ComponentOwnerS(struct Scene *s, CompHandle comp);
-static inline EntityHandle E_ComponentOwner(CompHandle comp) { return E_ComponentOwnerS(Scn_activeScene, comp); }
+void E_SetComponentOwnerS(struct NeScene *s, NeCompHandle comp, NeEntityHandle owner);
+static inline void E_SetComponentOwner(NeCompHandle comp, NeEntityHandle owner) { E_SetComponentOwnerS(Scn_activeScene, comp, owner); }
 
-void E_SetComponentOwnerS(struct Scene *s, CompHandle comp, EntityHandle owner);
-static inline void E_SetComponentOwner(CompHandle comp, EntityHandle owner) { E_SetComponentOwnerS(Scn_activeScene, comp, owner); }
+const struct NeArray *E_GetAllComponentsS(struct NeScene *s, NeCompTypeId type);
+static inline const struct NeArray *E_GetAllComponents(NeCompTypeId type) { return E_GetAllComponentsS(Scn_activeScene, type); }
 
-const struct Array *E_GetAllComponentsS(struct Scene *s, CompTypeId type);
-static inline const struct Array *E_GetAllComponents(CompTypeId type) { return E_GetAllComponentsS(Scn_activeScene, type); }
+bool E_RegisterComponent(const char *name, size_t size, size_t alignment, NeCompInitProc init, NeCompTermProc release);
 
-bool E_RegisterComponent(const wchar_t *name, size_t size, size_t alignment, CompInitProc init, CompTermProc release);
-
-#define REGISTER_COMPONENT(name, type, init_proc, release_proc)
+#define E_REGISTER_COMPONENT(name, type, alignment, init, release) \
+	E_INITIALIZER(_NeCompRegister_ ## name) { E_RegisterComponent(name, sizeof(type), alignment, (NeCompInitProc)init, (NeCompTermProc)release); }
 
 #endif /* _NE_ENGINE_COMPONENT_H_ */

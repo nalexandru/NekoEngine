@@ -1,12 +1,19 @@
 #include <Math/Math.h>
 #include <Scene/Light.h>
 #include <Scene/Transform.h>
+#include <Scene/Components.h>
 #include <Engine/Engine.h>
 #include <Engine/Event.h>
 #include <Engine/Events.h>
+#include <Engine/ECSystem.h>
 
-bool
-Scn_InitLight(struct Light *l, const void **args)
+static bool _InitLight(struct NeLight *cam, const void **args);
+static void _TermLight(struct NeLight *cam);
+
+E_REGISTER_COMPONENT(LIGHT_COMP, struct NeLight, 16, _InitLight, _TermLight)
+
+static bool
+_InitLight(struct NeLight *l, const void **args)
 {
 	l->type = LT_DIRECTIONAL;
 	v3_fill(&l->color, 1.f);
@@ -49,23 +56,17 @@ Scn_InitLight(struct Light *l, const void **args)
 	return true;
 }
 
-void
-Scn_TermLight(struct Light *l)
+E_SYSTEM(SCN_COLLECT_LIGHTS, ECSYS_GROUP_MANUAL, 0, true, struct NeCollectLights, 2, TRANSFORM_COMP, LIGHT_COMP)
 {
-}
-
-void
-Scn_CollectLights(void **comp, struct CollectLights *args)
-{
-	struct Transform *xform = comp[0];
-	struct Light *l = comp[1];
+	struct NeTransform *xform = comp[0];
+	struct NeLight *l = comp[1];
 
 	float x = deg_to_rad(quat_roll(&xform->rotation));
 	float y = deg_to_rad(quat_pitch(&xform->rotation));
 
 	const float cosy = cosf(y);
 
-	struct LightData ld =
+	struct NeLightData ld =
 	{
 		.position = { xform->position.x, -xform->position.y, xform->position.z },
 		.type = l->type,
@@ -84,4 +85,9 @@ Scn_CollectLights(void **comp, struct CollectLights *args)
 	};
 
 	Rt_ArrayAdd(&args->lightData, &ld);
+}
+
+static void
+_TermLight(struct NeLight *l)
+{
 }

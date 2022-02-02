@@ -32,6 +32,13 @@ layout(push_constant) uniform SkyDrawInfo
 void
 main()
 {
-	vec4 color = sRGBtoLinear(Re_SampleCubeTexture(DrawInfo.texture, v_uv), DrawInfo.gamma);
+	vec3 v = normalize(v_uv);
+	
+	vec2 uv = vec2(atan(v.z, v.x), asin(v.y));
+	uv *= vec2(0.1591, 0.3183);
+	uv += 0.5;
+
+	vec4 color = sRGBtoLinear(Re_SampleSceneTexture(DrawInfo.texture, uv), DrawInfo.gamma);
+	//vec4 color = sRGBtoLinear(Re_SampleCubeTexture(DrawInfo.texture, v_uv), DrawInfo.gamma);
 	o_fragColor = vec4(tonemap(color.rgb, DrawInfo.exposure, DrawInfo.invGamma), color.a);
 }

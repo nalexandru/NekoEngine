@@ -10,7 +10,7 @@
 
 #pragma pack(push, 1)
 
-struct TGAHeader
+struct NeTGAHeader
 {
 	uint8_t identSize;
 	uint8_t colorMapType;
@@ -33,7 +33,7 @@ struct TGAHeader
 #define IT_UNCOMPRESSED_BW	3
 
 static inline void
-_LoadUncompressed(uint8_t *dst, const uint8_t *src, const struct TGAHeader *hdr)
+_LoadUncompressed(uint8_t *dst, const uint8_t *src, const struct NeTGAHeader *hdr)
 {
 	int32_t i, j;
 	int64_t w = hdr->width;
@@ -68,7 +68,7 @@ _LoadUncompressed(uint8_t *dst, const uint8_t *src, const struct TGAHeader *hdr)
 }
 
 static inline void
-_LoadCompressed(uint8_t *dst, const uint8_t *src, const struct TGAHeader *hdr)
+_LoadCompressed(uint8_t *dst, const uint8_t *src, const struct NeTGAHeader *hdr)
 {
 	int64_t w = hdr->width;
 	int64_t h = hdr->height;
@@ -112,11 +112,11 @@ _LoadCompressed(uint8_t *dst, const uint8_t *src, const struct TGAHeader *hdr)
 }
 
 bool
-E_LoadTGAAsset(struct Stream *stm, struct TextureCreateInfo *tci)
+E_LoadTGAAsset(struct NeStream *stm, struct NeTextureCreateInfo *tci)
 {
 	uint8_t *data = NULL;
 	uint32_t imgSize, dataSize;
-	struct TGAHeader hdr;
+	struct NeTGAHeader hdr;
 
 	E_ReadStream(stm, &hdr, sizeof(hdr));
 	E_StreamSeek(stm, hdr.identSize, IO_SEEK_CUR);

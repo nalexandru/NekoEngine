@@ -34,7 +34,7 @@ SIF_FUNC(CmdPushConstants)
 
 SIF_FUNC(CmdBindIndexBuffer)
 {
-	Re_CmdBindIndexBuffer((BufferHandle)luaL_checkinteger(vm, 1), luaL_checkinteger(vm, 2), (uint32_t)luaL_checkinteger(vm, 3));
+	Re_CmdBindIndexBuffer((NeBufferHandle)luaL_checkinteger(vm, 1), luaL_checkinteger(vm, 2), (uint32_t)luaL_checkinteger(vm, 3));
 	return 0;
 }
 
@@ -139,8 +139,8 @@ SIF_FUNC(CmdTransition)
 
 SIF_FUNC(CmdCopyBuffer)
 {
-	Re_CmdCopyBuffer((BufferHandle)luaL_checkinteger(vm, 1), luaL_checkinteger(vm, 2),
-					(BufferHandle)luaL_checkinteger(vm, 3), luaL_checkinteger(vm, 4),
+	Re_CmdCopyBuffer((NeBufferHandle)luaL_checkinteger(vm, 1), luaL_checkinteger(vm, 2),
+					(NeBufferHandle)luaL_checkinteger(vm, 3), luaL_checkinteger(vm, 4),
 					luaL_checkinteger(vm, 5));
 	return 0;
 }
@@ -170,7 +170,7 @@ SIF_FUNC(GraphicsPipeline)
 {
 	luaL_checktype(vm, 1, LUA_TTABLE);
 
-	struct GraphicsPipelineDesc *desc = Sys_Alloc(sizeof(*desc), 1, MH_Transient);
+	struct NeGraphicsPipelineDesc *desc = Sys_Alloc(sizeof(*desc), 1, MH_Transient);
 
 	desc->flags = SIF_INTFIELD(1, "flags");
 	desc->stageInfo = SIF_LUSRDATAFIELD(1, "stageInfo");
@@ -178,7 +178,7 @@ SIF_FUNC(GraphicsPipeline)
 	desc->pushConstantSize = SIF_INTFIELD(1, "pushConstantSize");
 	desc->attachmentCount = SIF_INTFIELD(1, "attachmentCount");
 
-	struct BlendAttachmentDesc *atDesc = Sys_Alloc(sizeof(*desc->attachments), desc->attachmentCount, MH_Transient);
+	struct NeBlendAttachmentDesc *atDesc = Sys_Alloc(sizeof(*desc->attachments), desc->attachmentCount, MH_Transient);
 	desc->attachments = atDesc;
 
 	int t = SIF_GETFIELD(1, "attachments");
@@ -224,7 +224,7 @@ SIF_FUNC(RayTracingPipeline)
 // Texture
 SIF_FUNC(TextureLayout)
 {
-	lua_pushinteger(vm, Re_TextureLayout((TextureHandle)luaL_checkinteger(vm, 1)));
+	lua_pushinteger(vm, Re_TextureLayout((NeTextureHandle)luaL_checkinteger(vm, 1)));
 	return 1;
 }
 
@@ -233,13 +233,13 @@ SIF_FUNC(CreateBuffer)
 {
 	luaL_checktype(vm, 1, LUA_TTABLE);
 
-	struct BufferCreateInfo *bci = Sys_Alloc(sizeof(*bci), 1, MH_Transient);
+	struct NeBufferCreateInfo *bci = Sys_Alloc(sizeof(*bci), 1, MH_Transient);
 
 	bci->desc.size = SIF_INTFIELD(1, "size");
 	bci->desc.usage = SIF_INTFIELD(1, "usage");
 	bci->desc.memoryType = SIF_INTFIELD(1, "memoryType");
 
-	BufferHandle h;
+	NeBufferHandle h;
 	if (Re_CreateBuffer(bci, &h))
 		lua_pushinteger(vm, h);
 	else
@@ -250,13 +250,13 @@ SIF_FUNC(CreateBuffer)
 
 SIF_FUNC(MapBuffer)
 {
-	lua_pushlightuserdata(vm, Re_MapBuffer((BufferHandle)luaL_checkinteger(vm, 1)));
+	lua_pushlightuserdata(vm, Re_MapBuffer((NeBufferHandle)luaL_checkinteger(vm, 1)));
 	return 1;
 }
 
 SIF_FUNC(UnmapBuffer)
 {
-	Re_UnmapBuffer((BufferHandle)luaL_checkinteger(vm, 1));
+	Re_UnmapBuffer((NeBufferHandle)luaL_checkinteger(vm, 1));
 	return 0;
 }
 
@@ -268,7 +268,7 @@ SIF_FUNC(UpdateBuffer)
 
 SIF_FUNC(DestroyBuffer)
 {
-	Re_DestroyBuffer((BufferHandle)luaL_checkinteger(vm, 1));
+	Re_DestroyBuffer((NeBufferHandle)luaL_checkinteger(vm, 1));
 	return 0;
 }
 
@@ -277,7 +277,7 @@ SIF_FUNC(CreateFramebuffer)
 {
 	luaL_checktype(vm, 1, LUA_TTABLE);
 
-	struct FramebufferDesc *desc = Sys_Alloc(sizeof(*desc), 1, MH_Transient);
+	struct NeFramebufferDesc *desc = Sys_Alloc(sizeof(*desc), 1, MH_Transient);
 
 	desc->attachmentCount = SIF_INTFIELD(1, "attachmentCount");
 	desc->layers = SIF_INTFIELD(1, "layers");
@@ -320,7 +320,7 @@ SIF_FUNC(DestroyFramebuffer)
 	if (!lua_islightuserdata(vm, 1))
 		luaL_argerror(vm, 1, "");
 
-	struct Framebuffer *fb = lua_touserdata(vm, 1);
+	struct NeFramebuffer *fb = lua_touserdata(vm, 1);
 	Re_Destroy(fb);
 
 	return 0;
@@ -335,7 +335,7 @@ SIF_FUNC(CreateRenderPassDesc)
 	if (!lua_istable(vm, 3) && !lua_isnil(vm, 3))
 		luaL_argerror(vm, 3, "");
 
-	struct AttachmentDesc *atDesc = Sys_Alloc(sizeof(*atDesc), count, MH_Transient);
+	struct NeAttachmentDesc *atDesc = Sys_Alloc(sizeof(*atDesc), count, MH_Transient);
 
 	for (uint32_t i = 0; i < count; ++i) {
 		lua_rawgeti(vm, 1, i+1);
@@ -355,7 +355,7 @@ SIF_FUNC(CreateRenderPassDesc)
 		lua_remove(vm, v);
 	}
 
-	struct AttachmentDesc *depthDesc = NULL;
+	struct NeAttachmentDesc *depthDesc = NULL;
 
 	if (lua_istable(vm, 3)) {
 		lua_rawget(vm, 3);
@@ -385,7 +385,7 @@ SIF_FUNC(DestroyRenderPassDesc)
 	if (!lua_islightuserdata(vm, 1))
 		luaL_argerror(vm, 1, "");
 
-	struct RenderPassDesc *rpd = lua_touserdata(vm, 1);
+	struct NeRenderPassDesc *rpd = lua_touserdata(vm, 1);
 	Re_DestroyRenderPassDesc(rpd);
 
 	return 0;

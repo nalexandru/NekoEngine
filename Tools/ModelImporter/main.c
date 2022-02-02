@@ -40,9 +40,9 @@ static inline void _saveMaterial(const cgltf_material *mat, const char *dir, con
 static inline void _saveAnimation(const cgltf_animation *anim, const char *path);
 static inline void _saveImage(const cgltf_image *img, const char *path);
 
-static enum IndexType _it;
+static enum NeIndexType _it;
 static size_t _itSize;
-static struct Vertex *_vertices;
+static struct NeVertex *_vertices;
 static uint8_t *_indices;
 static struct NMeshInfo *_meshes;
 static uint32_t _vertexCount, _indexCount, _meshCount;
@@ -201,7 +201,7 @@ _convertMesh(const cgltf_mesh *mesh, const char *dir)
 		}
 
 		for (uint32_t j = 0; j < dstMesh->vertexCount; ++j) {
-			struct Vertex *v = &_vertices[_vertexCount++];
+			struct NeVertex *v = &_vertices[_vertexCount++];
 
 			if (pos) {
 				v->x = *pos++;

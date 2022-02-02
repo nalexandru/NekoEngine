@@ -2,14 +2,14 @@
 
 static id<MTLHeap> _heap;
 
-struct Texture *
-MTL_CreateTransientTexture(id<MTLDevice> dev, const struct TextureDesc *tDesc, uint16_t location, uint64_t offset, uint64_t *size)
+struct NeTexture *
+MTL_CreateTransientTexture(id<MTLDevice> dev, const struct NeTextureDesc *tDesc, uint16_t location, uint64_t offset, uint64_t *size)
 {
 	MTLTextureDescriptor *desc = MTL_TextureDescriptor(dev, tDesc);
 	if (!desc)
 		return NULL;
 	
-	struct Texture *tex = Sys_Alloc(sizeof(*tex), 1, MH_Frame);
+	struct NeTexture *tex = Sys_Alloc(sizeof(*tex), 1, MH_Frame);
 	if (!tex) {
 		[desc release];
 		return NULL;
@@ -29,10 +29,10 @@ MTL_CreateTransientTexture(id<MTLDevice> dev, const struct TextureDesc *tDesc, u
 	return tex;
 }
 
-struct Buffer *
-MTL_CreateTransientBuffer(id<MTLDevice> dev, const struct BufferDesc *desc, uint16_t location, uint64_t offset, uint64_t *size)
+struct NeBuffer *
+MTL_CreateTransientBuffer(id<MTLDevice> dev, const struct NeBufferDesc *desc, uint16_t location, uint64_t offset, uint64_t *size)
 {
-	struct Buffer *buff = Sys_Alloc(sizeof(*buff), 1, MH_Frame);
+	struct NeBuffer *buff = Sys_Alloc(sizeof(*buff), 1, MH_Frame);
 	if (!buff)
 		return NULL;
 	

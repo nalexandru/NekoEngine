@@ -4,7 +4,6 @@
 #include <limits.h>
 #include <stdint.h>
 #include <string.h>
-#include <wchar.h>
 
 #define RT_DEF_INC	20
 #define RT_NOT_FOUND	(size_t)-1
@@ -40,26 +39,6 @@ Rt_HashString(const char *str)
 
 	while (*str) {
 		hash += *str++;
-		hash += (hash << 10);
-		hash ^= (hash >> 6);
-	}
-
-	hash += (hash << 3);
-	hash ^= (hash >> 11);
-	hash += (hash << 15);
-
-	return hash;
-}
-
-static inline uint64_t
-Rt_HashStringW(const wchar_t *str)
-{
-	uint64_t hash = 0;
-	size_t i = 0;
-	size_t len = wcslen(str);
-
-	for (i = 0; i < len; ++i) {
-		hash += str[i];
 		hash += (hash << 10);
 		hash ^= (hash >> 6);
 	}

@@ -11,21 +11,21 @@ void Re_TermResourceDestructor(void);
 #define DESTROY_PROTO(x) void Re_TDestroy ## x(struct x *)
 #define DESTROYH_PROTO(x) void Re_TDestroyH ## x(x ## Handle)
 
-DESTROY_PROTO(Buffer);
-DESTROY_PROTO(Texture);
-DESTROY_PROTO(Framebuffer);
-DESTROY_PROTO(AccelerationStructure);
-DESTROY_PROTO(Sampler);
+DESTROY_PROTO(NeBuffer);
+DESTROY_PROTO(NeTexture);
+DESTROY_PROTO(NeFramebuffer);
+DESTROY_PROTO(NeAccelerationStructure);
+DESTROY_PROTO(NeSampler);
 
-DESTROYH_PROTO(Buffer);
+DESTROYH_PROTO(NeBuffer);
 
 #define Re_Destroy(x) _Generic((x), \
-	BufferHandle: Re_TDestroyHBuffer, \
-	struct Buffer *: Re_TDestroyBuffer, \
-	struct Texture *: Re_TDestroyTexture, \
-	struct Framebuffer *: Re_TDestroyFramebuffer, \
-	struct AccelerationStructure *: Re_TDestroyAccelerationStructure, \
-	struct Sampler *: Re_TDestroySampler \
+	NeBufferHandle: Re_TDestroyHNeBuffer, \
+	struct NeBuffer *: Re_TDestroyNeBuffer, \
+	struct NeTexture *: Re_TDestroyNeTexture, \
+	struct NeFramebuffer *: Re_TDestroyNeFramebuffer, \
+	struct NeAccelerationStructure *: Re_TDestroyNeAccelerationStructure, \
+	struct NeSampler *: Re_TDestroyNeSampler \
 )(x)
 
 #endif /* _NE_RENDER_DESTROY_RESOURCE_H_ */

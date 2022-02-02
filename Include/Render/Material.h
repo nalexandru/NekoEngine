@@ -8,33 +8,34 @@
 #define MATERIAL_META_VER	1
 #define MATERIAL_META_ID	"NeMaterial"
 
-typedef bool (*MaterialInitProc)(const char **args, void *data);
-typedef void (*MaterialTermProc)(void *data);
+typedef bool (*NeMaterialInitProc)(const char **args, void *data);
+typedef void (*NeMaterialTermProc)(void *data);
 
-struct MaterialType
+struct NeMaterialType
 {
 	uint64_t hash;
 	uint32_t dataSize;
-	struct Shader *shader;
+	struct NeShader *shader;
 
-	MaterialInitProc init;
-	MaterialTermProc term;
+	NeMaterialInitProc init;
+	NeMaterialTermProc term;
 
 	char name[64];
 };
 
-struct MaterialResource
+struct NeMaterialResource
 {
 	size_t typeId;
 	bool alphaBlend;
-	struct Array args;
+	struct NeArray args;
 	char name[64];
+	enum NePrimitiveType primitiveType;
 	void *data;
 };
 
-struct Material
+struct NeMaterial
 {
-	struct Pipeline *pipeline;
+	struct NePipeline *pipeline;
 	uint64_t offset;
 	void *data;
 	uint32_t type;
@@ -42,7 +43,7 @@ struct Material
 	char name[64];
 };
 
-struct DefaultMaterial
+struct NeDefaultMaterial
 {
 	float diffuseColor[4];
 
@@ -70,15 +71,16 @@ struct DefaultMaterial
 	uint32_t alphaMaskMap;
 };
 
-struct MaterialResourceCreateInfo
+struct NeMaterialResourceCreateInfo
 {
+	enum NePrimitiveType primitiveType;
 	bool alphaBlend;
 	char name[64];
 	char type[64];
 	const char **args;
 };
 
-struct MaterialRenderConstants
+struct NeMaterialRenderConstants
 {
 	uint64_t vertexAddress;
 	uint64_t sceneAddress;
@@ -87,14 +89,14 @@ struct MaterialRenderConstants
 	uint64_t materialAddress;
 };
 
-extern struct RenderPassDesc *Re_MaterialRenderPassDesc;
-extern struct RenderPassDesc *Re_TransparentMaterialRenderPassDesc;
+extern struct NeRenderPassDesc *Re_MaterialRenderPassDesc;
+extern struct NeRenderPassDesc *Re_TransparentMaterialRenderPassDesc;
 
-bool Re_InitMaterial(Handle res, struct Material *mat);
-void Re_TermMaterial(struct Material *mat);
+bool Re_InitMaterial(NeHandle res, struct NeMaterial *mat);
+void Re_TermMaterial(struct NeMaterial *mat);
 
-uint64_t Re_MaterialAddress(struct Material *mat);
-bool Re_RegisterMaterialType(const char *name, const char *shader, uint32_t dataSize, MaterialInitProc init, MaterialTermProc term);
+uint64_t Re_MaterialAddress(struct NeMaterial *mat);
+bool Re_RegisterMaterialType(const char *name, const char *shader, uint32_t dataSize, NeMaterialInitProc init, NeMaterialTermProc term);
 
 bool Re_InitMaterialSystem(void);
 void Re_TransferMaterials(void);

@@ -12,11 +12,11 @@
 
 #define X11INMOD	L"X11Input"
 
-enum Button X11_keymap[256];
+enum NeButton X11_keymap[256];
 
 bool __InSys_rawMouseAxis = false;
 
-static inline enum Button _mapKey(const int key);
+static inline enum NeButton _mapKey(const int key);
 
 bool
 In_SysInit(void)
@@ -98,7 +98,7 @@ In_ShowPointer(bool show)
 	In_pointerVisible = show;
 }
 
-enum Button
+enum NeButton
 _mapKey(int key)
 {
 	if (key < 8 || key > 254)
@@ -152,7 +152,7 @@ _mapKey(int key)
 	case XK_Left: return BTN_KEY_LEFT;
 	case XK_Right: return BTN_KEY_RIGHT;
 	case XK_space: return BTN_KEY_SPACE;
-	case XK_plus: return BTN_KEY_PLUS;
+	case XK_plus: return BTN_KEY_EQUAL;
 	case XK_minus: return BTN_KEY_MINUS;
 	case XK_comma: return BTN_KEY_COMMA;
 	case XK_period: return BTN_KEY_PERIOD;

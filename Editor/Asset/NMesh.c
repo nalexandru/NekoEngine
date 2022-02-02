@@ -1,9 +1,64 @@
 #include <stdio.h>
 #include <assert.h>
 
+#include <meshoptimizer/meshoptimizer.h>
+
 #include <Engine/IO.h>
 #include <Editor/Editor.h>
 #include <Editor/Asset/NMesh.h>
+
+void
+Asset_OptimizeNMesh(struct NMesh *nm)
+{
+	uint32_t *idxBuffer = Sys_Alloc(sizeof(*idxBuffer), nm->indexCount, MH_Editor);
+
+	if (nm->indexType == IT_UINT_32) {
+		memcpy(idxBuffer, nm->indices, sizeof(*idxBuffer) * nm->indexCount);
+	} else if (nm->indexType == IT_UINT_16) {
+		uint16_t *u16idx = (uint16_t *)nm->indices;
+		for (uint32_t i = 0; i < nm->indexCount; ++i)
+			idxBuffer[i] = u16idx[i];
+	}
+
+	uint32_t *newIndices = Sys_Alloc(sizeof(*newIndices), nm->indexCount, MH_Editor);
+
+	for (uint32_t i = 0; i < nm->meshCount; ++i) {
+		const struct NMeshSubmesh *subMesh = &nm->meshes[i];
+
+		uint32_t *smIdx = &idxBuffer[subMesh->indexOffset];
+		uint32_t *newIdx = &newIndices[subMesh->indexOffset];
+		struct NeVertex *smVtx = &nm->vertices[subMesh->vertexOffset];
+
+		meshopt_generateVertexRemap(newIdx, smIdx, subMesh->indexCount, smVtx, subMesh->vertexCount, sizeof(*smVtx));
+		meshopt_optimizeVertexCache(newIdx, newIdx, subMesh->indexCount, subMesh->vertexCount);
+		meshopt_optimizeOverdraw(newIdx, newIdx, subMesh->indexCount, &smVtx[0].x, subMesh->vertexCount, sizeof(*smVtx), 1.05f);
+
+		if (!nm->boneCount) {
+			meshopt_optimizeVertexFetch(smVtx, newIdx, subMesh->indexCount, smVtx, subMesh->vertexCount, sizeof(*smVtx));
+		} else {
+			uint32_t *remap = Sys_Alloc(sizeof(*remap), subMesh->vertexCount, MH_Editor);
+			
+			meshopt_optimizeVertexFetchRemap(remap, newIndices, subMesh->indexCount, subMesh->vertexCount);
+
+			meshopt_remapVertexBuffer(smVtx, smVtx, subMesh->vertexCount, sizeof(*smVtx), remap);
+			// remap bone vertex data
+			meshopt_remapIndexBuffer(newIdx, newIdx, subMesh->indexCount, remap);
+
+			Sys_Free(remap);
+		}
+	}
+
+	if (nm->indexType == IT_UINT_32) {
+		memcpy(nm->indices, newIndices, sizeof(*idxBuffer) * nm->indexCount);
+	} else if (nm->indexType == IT_UINT_16) {
+		uint16_t *u16idx = (uint16_t *)nm->indices;
+		for (uint32_t i = 0; i < nm->indexCount; ++i)
+			u16idx[i] = (uint16_t)newIndices[i];
+	}
+
+	Sys_Free(newIndices);
+	Sys_Free(idxBuffer);
+}
 
 void
 Asset_SaveNMesh(const struct NMesh *nm, const char *path)
@@ -34,9 +89,17 @@ Asset_SaveNMesh(const struct NMesh *nm, const char *path)
 	fwrite(nm->indices, nm->indexSize, nm->indexCount, fp);
 	WRITE_GUARD(NMESH_SEC_FOOTER);
 
-	if (nm->boneCount) {
+	if (nm->boneCount && nm->nodeCount) {
 		WRITE_SEC(NMESH_BONE_ID, sizeof(*nm->bones) * nm->boneCount);
 		fwrite(nm->bones, sizeof(*nm->bones), nm->boneCount, fp);
+		WRITE_GUARD(NMESH_SEC_FOOTER);
+
+		WRITE_SEC(NMESH_NODE_ID, sizeof(*nm->nodes) * nm->nodeCount);
+		fwrite(nm->nodes, sizeof(*nm->nodes), nm->nodeCount, fp);
+		WRITE_GUARD(NMESH_SEC_FOOTER);
+
+		WRITE_SEC(NMESH_INVT_ID, sizeof(nm->globalInverseTransform));
+		fwrite(nm->globalInverseTransform, sizeof(nm->globalInverseTransform), 1, fp);
 		WRITE_GUARD(NMESH_SEC_FOOTER);
 	}
 

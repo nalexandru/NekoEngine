@@ -10,7 +10,7 @@
 
 #define FNT_MAGIC	0xB00B5000
 
-struct FontHeader
+struct NeFontHeader
 {
 	uint32_t magic;
 	uint32_t texSize;
@@ -18,9 +18,9 @@ struct FontHeader
 };
 
 bool
-E_LoadFontAsset(struct Stream *stm, struct Font *fnt)
+E_LoadFontAsset(struct NeStream *stm, struct NeFont *fnt)
 {
-	struct FontHeader hdr;
+	struct NeFontHeader hdr;
 
 	if (E_ReadStream(stm, &hdr, sizeof(hdr)) != sizeof(hdr))
 		return false;
@@ -55,7 +55,7 @@ E_LoadFontAsset(struct Stream *stm, struct Font *fnt)
 		}
 	}
 	
-	struct TextureCreateInfo tci =
+	struct NeTextureCreateInfo tci =
 	{
 		.desc.depth = 1,
 		.desc.type = TT_2D,
@@ -68,7 +68,7 @@ E_LoadFontAsset(struct Stream *stm, struct Font *fnt)
 		.keepData = false
 	};
 
-	E_LoadImageAssetComp(stm, &tci, 1);
+	E_LoadImageAssetComp(stm, &tci, false, 1);
 
 	fnt->texture = E_CreateResource("__SysFont_Texture", RES_TEXTURE, &tci);
 	if (fnt->texture == E_INVALID_HANDLE)

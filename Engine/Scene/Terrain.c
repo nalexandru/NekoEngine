@@ -10,9 +10,9 @@
 #include <Render/Components/ModelRender.h>
 #include <System/Log.h>
 
-#define TR_MOD	L"Terrain"
+#define TR_MOD	"Terrain"
 
-struct TerrainVertex
+struct NeTerrainVertex
 {
 	float x, y, z;
 	float nx, ny, nz;
@@ -20,44 +20,44 @@ struct TerrainVertex
 	float tu, tv;
 };
 
-bool _Generate(struct ModelCreateInfo *mci, const struct TerrainCreateInfo *tci, const struct TextureCreateInfo *mapInfo);
-static inline float _SampleHeightmap(const struct TextureCreateInfo *mapInfo, float u, float v);
+bool _Generate(struct NeModelCreateInfo *mci, const struct NeTerrainCreateInfo *tci, const struct NeTextureCreateInfo *mapInfo);
+static inline float _SampleHeightmap(const struct NeTextureCreateInfo *mapInfo, float u, float v);
 
 bool
-Scn_CreateTerrain(struct Scene *scn, const struct TerrainCreateInfo *tci)
+Scn_CreateTerrain(struct NeScene *scn, const struct NeTerrainCreateInfo *tci)
 {
 	bool rc = false;
 	char *name = NULL;
 	size_t len = 0;
-	Handle mdl = E_INVALID_HANDLE;
-	EntityHandle entity = ES_INVALID_ENTITY;
-	struct Stream stm = { 0 };
-	struct ModelRender *mr = NULL;
-	struct ModelCreateInfo mci = { 0 };
-	struct TextureCreateInfo mapInfo = { 0 };
+	NeHandle mdl = E_INVALID_HANDLE;
+	NeEntityHandle entity = ES_INVALID_ENTITY;
+	struct NeStream stm = { 0 };
+	struct NeModelRender *mr = NULL;
+	struct NeModelCreateInfo mci = { 0 };
+	struct NeTextureCreateInfo mapInfo = { 0 };
 
 	if (tci->mapFile) {
 		if (!E_FileStream(tci->mapFile, IO_READ, &stm)) {
-			Sys_LogEntry(TR_MOD, LOG_CRITICAL, L"Cannot open map file %hs", tci->mapFile);
+			Sys_LogEntry(TR_MOD, LOG_CRITICAL, "Cannot open map file %s", tci->mapFile);
 			goto exit;
 		}
 
 		if (!E_LoadTGAAsset(&stm, &mapInfo)) {
-			Sys_LogEntry(TR_MOD, LOG_CRITICAL, L"%hs is not a TGA file", tci->mapFile);
+			Sys_LogEntry(TR_MOD, LOG_CRITICAL, "%s is not a TGA file", tci->mapFile);
 			goto exit;
 		}
 
 		E_CloseStream(&stm);
 
 		if (mapInfo.desc.width != mapInfo.desc.height || mapInfo.desc.format != TF_R8_UNORM) {
-			Sys_LogEntry(TR_MOD, LOG_CRITICAL, L"Invalid map file format");
+			Sys_LogEntry(TR_MOD, LOG_CRITICAL, "Invalid map file format");
 			goto exit;
 		}
 	}
 
 	entity = E_CreateEntityS(scn, NULL);
 	if (!entity) {
-		Sys_LogEntry(TR_MOD, LOG_CRITICAL, L"Failed to create entity");
+		Sys_LogEntry(TR_MOD, LOG_CRITICAL, "Failed to create entity");
 		goto exit;
 	}
 
@@ -66,25 +66,25 @@ Scn_CreateTerrain(struct Scene *scn, const struct TerrainCreateInfo *tci)
 	
 	mr = E_GetComponentS(scn, entity, E_ComponentTypeId(MODEL_RENDER_COMP));
 	if (!mr) {
-		Sys_LogEntry(TR_MOD, LOG_CRITICAL, L"Failed to retrieve ModelRender");
+		Sys_LogEntry(TR_MOD, LOG_CRITICAL, "Failed to retrieve ModelRender");
 		goto exit;
 	}
 
 	if (!_Generate(&mci, tci, &mapInfo)) {
-		Sys_LogEntry(TR_MOD, LOG_CRITICAL, L"Terrain generation failed");
+		Sys_LogEntry(TR_MOD, LOG_CRITICAL, "Terrain generation failed");
 		goto exit;
 	}
 
-	len = wcsnlen(scn->name, sizeof(scn->name) / 2) + 12; // see format string
+	len = strnlen(scn->name, sizeof(scn->name)) + 12; // see format string
 	name = Sys_Alloc(sizeof(*name), len, MH_Transient);
 	if (name)
-		snprintf(name, len, "__%ls__Terrain", scn->name);
+		snprintf(name, len, "__%s__Terrain", scn->name);
 	else
 		name = "__Terrain";
 
 	mdl = E_CreateResource(name, RES_MODEL, &mci);
 	if (mdl == E_INVALID_HANDLE) {
-		Sys_LogEntry(TR_MOD, LOG_CRITICAL, L"Failed to create model resource");
+		Sys_LogEntry(TR_MOD, LOG_CRITICAL, "Failed to create model resource");
 		goto exit;
 	}
 
@@ -108,11 +108,11 @@ exit:
 }
 
 bool
-_Generate(struct ModelCreateInfo *mci, const struct TerrainCreateInfo *tci, const struct TextureCreateInfo *mapInfo)
+_Generate(struct NeModelCreateInfo *mci, const struct NeTerrainCreateInfo *tci, const struct NeTextureCreateInfo *mapInfo)
 {
 	uint32_t *indices, indexCount = 0, vertexCount = 0;
-	//struct TerrainVertex *vertices;
-	struct Vertex *vertices;
+	//struct NeTerrainVertex *vertices;
+	struct NeVertex *vertices;
 	float uvStep = 1.f / (float)tci->tileCount;
 	const float fTileSize = (float)tci->tileSize, halfTiles = (float)tci->tileCount / 2.f;
 	
@@ -128,7 +128,7 @@ _Generate(struct ModelCreateInfo *mci, const struct TerrainCreateInfo *tci, cons
 	// generate geometry
 	for (uint32_t i = 0; i <= tci->tileCount; ++i) {
 		for (uint32_t j = 0; j <= tci->tileCount; ++j) {
-			struct Vertex v;
+			struct NeVertex v;
 
 			v.u = (float)j;
 			v.v = (float)i;
@@ -139,6 +139,7 @@ _Generate(struct ModelCreateInfo *mci, const struct TerrainCreateInfo *tci, cons
 
 			v.nx = 0.f; v.ny = 0.f; v.nz = 0.f;
 			v.tx = 0.f; v.ty = 0.f; v.tz = 0.f;
+			v.r = 1.f; v.g = 1.f; v.b = 1.f; v.a = 1.f;
 
 			*vertices++ = v;
 			++vertexCount;
@@ -159,9 +160,9 @@ _Generate(struct ModelCreateInfo *mci, const struct TerrainCreateInfo *tci, cons
 	
 	// calculate tangents + normals
 	for (uint32_t i = 0; i < indexCount; i += 3) {
-		struct Vertex *vtx0 = &((struct Vertex *)mci->vertices)[indices[i]];
-		struct Vertex *vtx1 = &((struct Vertex *)mci->vertices)[indices[i + 1]];
-		struct Vertex *vtx2 = &((struct Vertex *)mci->vertices)[indices[i + 2]];
+		struct NeVertex *vtx0 = &((struct NeVertex *)mci->vertices)[indices[i]];
+		struct NeVertex *vtx1 = &((struct NeVertex *)mci->vertices)[indices[i + 1]];
+		struct NeVertex *vtx2 = &((struct NeVertex *)mci->vertices)[indices[i + 2]];
 		struct vec3 p0, p1, p2, e1, e2, d;
 
 		v3(&p0, vtx0->x, vtx0->y, vtx0->z);
@@ -202,7 +203,7 @@ _Generate(struct ModelCreateInfo *mci, const struct TerrainCreateInfo *tci, cons
 	}
 
 	for (uint32_t i = 0; i < vertexCount; ++i) {
-		struct Vertex *v = &((struct Vertex *)mci->vertices)[i];
+		struct NeVertex *v = &((struct NeVertex *)mci->vertices)[i];
 		struct vec3 *n = (struct vec3 *)&v->nx;
 		struct vec3 *t = (struct vec3 *)&v->tx;
 
@@ -222,7 +223,7 @@ _Generate(struct ModelCreateInfo *mci, const struct TerrainCreateInfo *tci, cons
 }
 
 static inline float
-_SampleHeightmap(const struct TextureCreateInfo *mapInfo, float u, float v)
+_SampleHeightmap(const struct NeTextureCreateInfo *mapInfo, float u, float v)
 {
 	if (!mapInfo)
 		return 0.f;

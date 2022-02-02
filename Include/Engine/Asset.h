@@ -6,7 +6,7 @@
 
 struct jsmntok;
 
-struct Metadata
+struct NeMetadata
 {
 	char *json;
 	struct jsmntok *tokens;
@@ -18,26 +18,27 @@ struct Metadata
 };
 
 // Metadata
-bool E_LoadMetadata(struct Metadata *meta, const char *file);
-bool E_LoadMetadataFromFile(struct Metadata *meta, File f);
-bool E_LoadMetadataFromStream(struct Metadata *meta, struct Stream *stm);
-void E_LoadMetadataFloatVector(struct Metadata *meta, struct jsmntok *tok, float *out, uint32_t count);
+bool E_LoadMetadata(struct NeMetadata *meta, const char *file);
+bool E_LoadMetadataFromFile(struct NeMetadata *meta, NeFile f);
+bool E_LoadMetadataFromStream(struct NeMetadata *meta, struct NeStream *stm);
+void E_LoadMetadataFloatVector(struct NeMetadata *meta, struct jsmntok *tok, float *out, uint32_t count);
 
 // Models
-bool E_LoadNMeshAsset(struct Stream *stm, struct Model *m);
+bool E_LoadNMeshAsset(struct NeStream *stm, struct NeModel *m);
 
 // Animation
-bool E_LoadNAnimAsset(struct Stream *stm, struct AnimationClip *ac);
+bool E_LoadNAnimAsset(struct NeStream *stm, struct NeAnimationClip *ac);
 
 // Textures
-bool E_LoadImageAssetComp(struct Stream *stm, struct TextureCreateInfo *tex, int rcomp);
-static inline bool E_LoadImageAsset(struct Stream *stm, struct TextureCreateInfo *tex) { return E_LoadImageAssetComp(stm, tex, 4); }
-bool E_LoadTGAAsset(struct Stream *stm, struct TextureCreateInfo *tex);
-bool E_LoadDDSAsset(struct Stream *stm, struct TextureCreateInfo *tex);
+bool E_LoadImageAssetComp(struct NeStream *stm, struct NeTextureCreateInfo *tex, bool flip, int rcomp);
+static inline bool E_LoadImageAsset(struct NeStream *stm, struct NeTextureCreateInfo *tex, bool flip) { return E_LoadImageAssetComp(stm, tex, flip, 4); }
+bool E_LoadHDRAsset(struct NeStream *stm, struct NeTextureCreateInfo *tci, bool flip);
+bool E_LoadTGAAsset(struct NeStream *stm, struct NeTextureCreateInfo *tex);
+bool E_LoadDDSAsset(struct NeStream *stm, struct NeTextureCreateInfo *tex);
 
-bool E_LoadOggAsset(struct Stream *stm, struct AudioClip *clip);
-bool E_LoadWaveAsset(struct Stream *stm, struct AudioClip *clip);
+bool E_LoadOggAsset(struct NeStream *stm, struct NeAudioClip *clip);
+bool E_LoadWaveAsset(struct NeStream *stm, struct NeAudioClip *clip);
 
-bool E_LoadFontAsset(struct Stream *stm, struct Font *font);
+bool E_LoadFontAsset(struct NeStream *stm, struct NeFont *font);
 
 #endif /* _NE_ENGINE_ASSET_H_ */

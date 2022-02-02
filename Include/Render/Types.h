@@ -4,6 +4,7 @@
 #include <Engine/Types.h>
 
 // Resource definitions
+
 #define RES_MODEL				"Model"
 #define RES_MATERIAL			"Material"
 #define RES_TEXTURE				"Texture"
@@ -11,13 +12,13 @@
 
 // Acceleration Structure
 
-enum AccelerationStructureType
+enum NeAccelerationStructureType
 {
 	AS_TOP_LEVEL,
 	AS_BOTTOM_LEVEL
 };
 
-enum AccelerationStructureFlags
+enum NeAccelerationStructureFlags
 {
 	ASF_ALLOW_UPDATE		= 0x00000001,
 	ASF_ALLOW_COMPACTION	= 0x00000002,
@@ -26,37 +27,37 @@ enum AccelerationStructureFlags
 	ASF_LOW_MEMORY			= 0x00000010
 };
 
-enum AccelerationStructureBuildMode
+enum NeAccelerationStructureBuildMode
 {
 	ASB_BUILD	= 0,
 	ASB_UPDATE	= 1
 };
 
-enum AccelerationStructureGeometryType
+enum NeAccelerationStructureGeometryType
 {
 	ASG_TRIANGLES	= 0,
 	ASG_AABBS		= 1,
 	ASG_INSTANCES	= 2
 };
 
-enum AccelerationStructureGeometryFlags
+enum NeAccelerationStructureGeometryFlags
 {
 	ASGF_OPAQUE								= 0x00000001,
 	ASGF_NO_DUPLICATE_ANY_HIT_INVOCATION	= 0x00000002
 };
 
-struct AccelerationStructure;
-struct AccelerationStructureAABB;
-struct AccelerationStructureInstance;
-struct AccelerationStructureGeometryDesc;
-struct AccelerationStructureBuildInfo;
-struct AccelerationStructureRangeInfo;
-struct AccelerationStructureDesc;
-struct AccelerationStructureCreateInfo;
+struct NeAccelerationStructure;
+struct NeAccelerationStructureAABB;
+struct NeAccelerationStructureInstance;
+struct NeAccelerationStructureGeometryDesc;
+struct NeAccelerationStructureBuildInfo;
+struct NeAccelerationStructureRangeInfo;
+struct NeAccelerationStructureDesc;
+struct NeAccelerationStructureCreateInfo;
 
 // Buffer
 
-enum BufferUsage
+enum NeBufferUsage
 {
 	BU_TRANSFER_SRC			= 0x00000001,
 	BU_TRANSFER_DST			= 0x00000002,
@@ -69,61 +70,69 @@ enum BufferUsage
 	BU_SHADER_BINDING_TABLE	= 0x00000400
 };
 
-struct Buffer;
-struct BufferDesc;
-struct BufferCreateInfo;
-typedef uint16_t BufferHandle;
+struct NeBuffer;
+struct NeBufferDesc;
+struct NeBufferCreateInfo;
+typedef uint16_t NeBufferHandle;
 
 // Context
 
-enum IndexType
+enum NeIndexType
 {
 	IT_UINT_16 = 0,
 	IT_UINT_32 = 1
 };
 
-enum ImageFilter
+
+enum NePrimitiveType
+{
+	PT_TRIANGLES = 0,
+	PT_POINTS = 1,
+	PT_LINES = 2
+};
+
+enum NeImageFilter
 {
 	IF_NEAREST,
 	IF_LINEAR,
 	IF_CUBIC
 };
 
-enum ImageAspect
+enum NeImageAspect
 {
 	IA_COLOR	= 0x00000001,
 	IA_DEPTH	= 0x00000002,
 	IA_STENCIL	= 0x00000004
 };
 
-enum RenderCommandContents
+enum NeRenderCommandContents
 {
 	RENDER_COMMANDS_INLINE = 0,
 	RENDER_COMMANDS_SECONDARY_COMMAND_BUFFERS = 1
 };
 
-struct BlitRegion;
-struct BufferImageCopy;
-struct ImageSubresource;
-struct RenderContextProcs;
-struct RenderContext;
-typedef void * CommandBufferHandle;
+struct NeBlitRegion;
+struct NeBufferImageCopy;
+struct NeImageSubresource;
+struct NeRenderContextProcs;
+struct NeRenderContext;
+typedef void *NeCommandBufferHandle;
 
 // Device
 
-struct RenderDevice;
-struct RenderDeviceInfo;
-struct RenderDeviceProcs;
+struct NeRenderDevice;
+struct NeRenderDeviceInfo;
+struct NeRenderDeviceProcs;
 
 // Framebuffer
 
-struct Framebuffer;
-struct FramebufferDesc;
-struct FramebufferAttachmentDesc;
+struct NeFramebuffer;
+struct NeFramebufferDesc;
+struct NeFramebufferAttachmentDesc;
 
 // Memory
 
-enum GPUMemoryType
+enum NeGPUMemoryType
 {
 	MT_GPU_LOCAL,
 	MT_CPU_READ,
@@ -131,17 +140,21 @@ enum GPUMemoryType
 	MT_CPU_COHERENT
 };
 
+// CommandBuffer
+
+struct NeCommandBuffer;
+
 // Model
 
-struct Mesh;
-struct Model;
-struct Vertex;
-struct ModelRender;
-struct ModelCreateInfo;
+struct NeMesh;
+struct NeModel;
+struct NeVertex;
+struct NeModelRender;
+struct NeModelCreateInfo;
 
 // Pipeline
 
-enum BlendFactor
+enum NeBlendFactor
 {
 	RE_BF_ZERO						=  0,
 	RE_BF_ONE						=  1,
@@ -164,7 +177,7 @@ enum BlendFactor
 	RE_BF_ONE_MINUS_SRC1_ALPHA		= 18,
 };
 
-enum BlendOperation
+enum NeBlendOperation
 {
 	RE_BOP_ADD					= 0,
 	RE_BOP_SUBTRACT				= 1,
@@ -174,26 +187,27 @@ enum BlendOperation
 };
 // TODO: See VK_EXT_blend_operation_advanced
 
-struct BlendAttachmentDesc;
-struct GraphicsPipelineDesc;
-struct ComputePipelineDesc;
+struct NePipeline;
+struct NeBlendAttachmentDesc;
+struct NeGraphicsPipelineDesc;
+struct NeComputePipelineDesc;
 
 // Render Pass
 
-enum AttachmentLoadOp
+enum NeAttachmentLoadOp
 {
 	ATL_LOAD = 0,
 	ATL_CLEAR = 1,
 	ATL_DONT_CARE = 2
 };
 
-enum AttachmentStoreOp
+enum NeAttachmentStoreOp
 {
 	ATS_STORE = 0,
 	ATS_DONT_CARE = 1
 };
 
-enum AttachmentSampleCount
+enum NeAttachmentSampleCount
 {
 	ASC_1_SAMPLE		=  1,
 	ASC_2_SAMPLES		=  2,
@@ -202,19 +216,18 @@ enum AttachmentSampleCount
 	ASC_16_SAMPLES		= 16
 };
 
-struct AttachmentDesc;
-struct RenderPass;
-struct RenderPassDesc;
+struct NeAttachmentDesc;
+struct NeRenderPassDesc;
 
 // Sampler
 
-enum SamplerMipmapMode
+enum NeSamplerMipmapMode
 {
 	SMM_NEAREST,
 	SMM_LINEAR
 };
 
-enum SamplerAddressMode
+enum NeSamplerAddressMode
 {
 	SAM_REPEAT,
 	SAM_MIRRORED_REPEAT,
@@ -223,7 +236,7 @@ enum SamplerAddressMode
 	SAM_MIRROR_CLAMP_TO_EDGE
 };
 
-enum CompareOperation
+enum NeCompareOperation
 {
 	CO_NEVER,
 	CO_LESS,
@@ -235,7 +248,7 @@ enum CompareOperation
 	CO_ALWAYS
 };
 
-enum BorderColor
+enum NeBorderColor
 {
 	BC_FLOAT_TRANSPARENT_BLACK,
 	BC_INT_TRANSPARENT_BLACK,
@@ -245,12 +258,12 @@ enum BorderColor
 	BC_INT_OPAQUE_WHITE
 };
 
-struct Sampler;
-struct SamplerDesc;
+struct NeSampler;
+struct NeSamplerDesc;
 
 // Shader
 
-enum ShaderType
+enum NeShaderType
 {
 	ST_GRAPHICS,
 	ST_MESH,
@@ -258,7 +271,7 @@ enum ShaderType
 	ST_RAY_TRACING
 };
 
-enum ShaderStage
+enum NeShaderStage
 {
 	SS_VERTEX		= 0x00000001,
 	SS_TESS_CTRL	= 0x00000002,
@@ -278,12 +291,12 @@ enum ShaderStage
     SS_ALL			= 0x7FFFFFFF
 };
 
-struct Shader;
-struct ShaderStageDesc;
+struct NeShader;
+struct NeShaderStageDesc;
 
 // Shader Binding Table
 
-enum ShaderEntryType
+enum NeShaderEntryType
 {
 	SET_RayGen,
 	SET_Miss,
@@ -291,16 +304,16 @@ enum ShaderEntryType
 	SET_Callable
 };
 
-struct ShaderBindingTable;
+struct NeShaderBindingTable;
 
 // Swapchain
 
-struct Surface;
-struct Swapchain;
+struct NeSurface;
+struct NeSwapchain;
 
 // Texture
 
-enum TextureType
+enum NeTextureType
 {
 	TT_2D,
 	TT_3D,
@@ -308,7 +321,7 @@ enum TextureType
 	TT_2D_Multisample
 };
 
-enum TextureFormat
+enum NeTextureFormat
 {
 	TF_R8G8B8A8_UNORM,
 	TF_R8G8B8A8_SRGB,
@@ -345,7 +358,7 @@ enum TextureFormat
 	TF_INVALID
 };
 
-enum TextureUsage
+enum NeTextureUsage
 {
 	TU_TRANSFER_SRC					= 0x00000001,
 	TU_TRANSFER_DST					= 0x00000002,
@@ -358,7 +371,7 @@ enum TextureUsage
 	TU_FRAGMENT_DENSITY_MAP			= 0x00000200
 };
 
-enum TextureLayout
+enum NeTextureLayout
 {
 	TL_UNKNOWN = 0,
 	TL_COLOR_ATTACHMENT,
@@ -373,25 +386,25 @@ enum TextureLayout
 	TL_PRESENT_SRC
 };
 
-struct Texture;
-struct TextureDesc;
-struct TextureResource;
-struct TextureCreateInfo;
-typedef uint16_t TextureHandle;
+struct NeTexture;
+struct NeTextureDesc;
+struct NeTextureResource;
+struct NeTextureCreateInfo;
+typedef uint16_t NeTextureHandle;
 
 // Graph
-struct RenderGraph;
-struct RenderPass;
-struct GraphResource;
+struct NeRenderGraph;
+struct NeRenderPass;
+struct NeGraphResource;
 
 // Synchronization
-struct Fence;
-struct Semaphore;
-struct MemoryBarrier;
-struct BufferBarrier;
-struct ImageBarrier;
+struct NeFence;
+struct NeSemaphore;
+struct NeMemoryBarrier;
+struct NeBufferBarrier;
+struct NeImageBarrier;
 
-enum PipelineStage
+enum NePipelineStage
 {
     RE_PS_TOP_OF_PIPE = 0x00000001,
     RE_PS_DRAW_INDIRECT = 0x00000002,
@@ -421,14 +434,14 @@ enum PipelineStage
     RE_PS_COMMAND_PREPROCESS = 0x00020000,
 };
 
-enum PipelineDependency
+enum NePipelineDependency
 {
     RE_PD_BY_REGION = 0x00000001,
     RE_PD_DEVICE_GROUP = 0x00000004,
     RE_PD_VIEW_LOCAL = 0x00000002,
 };
 
-enum PipelineAccess
+enum NePipelineAccess
 {
     RE_PA_INDIRECT_COMMAND_READ = 0x00000001,
     RE_PA_INDEX_READ = 0x00000002,
@@ -461,11 +474,16 @@ enum PipelineAccess
     RE_PA_NONE = 0
 };
 
-enum RenderQueue
+enum NeRenderQueue
 {
 	RE_QUEUE_GRAPHICS = 0,
 	RE_QUEUE_TRANSFER = 1,
 	RE_QUEUE_COMPUTE = 2
 };
+
+struct NeDrawable;
+struct NeTerrainCreateInfo;
+
+struct NeRenderInterface;
 
 #endif /* _NE_RENDER_TYPES_H_ */

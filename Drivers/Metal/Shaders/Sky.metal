@@ -1,7 +1,7 @@
 #include <metal_stdlib>
 using namespace metal;
 
-#define SA_CUBE_TEXTURES
+//#define SA_CUBE_TEXTURES
 
 #include "ShaderTypes.h"
 #include "Tonemap.h"
@@ -48,7 +48,15 @@ Sky_FS(struct VsOutput in [[stage_in]],
 		 constant struct ShaderArguments *args [[ buffer(0) ]],
 		 constant struct DrawInfo *drawInfo [[ buffer(1) ]])
 {
-	float4 color = sRGBtoLinear(args->cubeTextures[drawInfo->texture].sample(args->samplers[0], in.uv), drawInfo->gamma);
+	float3 v = normalize(in.uv);
+
+	float2 uv = float2(atan2(v.z, v.x), asin(v.y));
+	uv *= float2(0.1591, 0.3183);
+	uv += 0.5;
+
+	float4 color = sRGBtoLinear(args->textures[drawInfo->texture].sample(args->samplers[0], uv), drawInfo->gamma);
+	//float4 color = sRGBtoLinear(args->cubeTextures[drawInfo->texture].sample(args->samplers[0], in.uv), drawInfo->gamma);
+
 	color.rgb = tonemap(color.rgb, drawInfo->exposure, drawInfo->invGamma);
 	return color;
 }

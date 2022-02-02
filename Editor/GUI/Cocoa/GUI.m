@@ -1,8 +1,6 @@
-#define Handle __EngineHandle
-
 #include <Engine/Engine.h>
 
-#undef Handle
+#include <Editor/Project.h>
 
 #import "Inspector.h"
 #import "AssetManager.h"
@@ -13,6 +11,12 @@ static NSAlert *_progressAlert;
 static EditorController *_controller;
 
 static inline bool _CreateMenu(void);
+
+void
+Ed_ShowProjectDialog(void)
+{
+	Ed_activeProject = (struct NeProject *)1;
+}
 
 bool
 Ed_CreateGUI(void)

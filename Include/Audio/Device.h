@@ -3,7 +3,7 @@
 
 #include <Engine/Types.h>
 
-struct AudioDeviceInfo
+struct NeAudioDeviceInfo
 {
 	char deviceName[256];
 	
@@ -25,6 +25,6 @@ struct AudioDeviceInfo
 	void *private;
 };
 
-extern struct AudioDeviceInfo Au_deviceInfo;
+extern struct NeAudioDeviceInfo Au_deviceInfo;
 
 #endif /* _NE_AUDIO_DEVICE_H_ */

@@ -10,42 +10,42 @@
 
 #include <Render/Render.h>
 
-#define MMOD L"MemoryManager"
-#define MAGIC 0x53544954		// TITS, in little endian format
+#define MMOD					"MemoryManager"
+#define MAGIC					0x53544954		// TITS, in little endian format
 #define DEFAULT_ALIGNMENT		16
 
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #define ROUND_UP(v, powerOf2Alignment) (((v) + (powerOf2Alignment)-1) & ~((powerOf2Alignment)-1))
 #define MUL_NO_OVERFLOW	((size_t)1 << (sizeof(size_t) * 4))
 
-struct Allocation
+struct NeAllocation
 {
 	uint32_t magic;
-	enum MemoryHeap heap;
+	enum NeMemoryHeap heap;
 	uint64_t size;
 };
 
-struct TransientHeap
+struct NeTransientHeap
 {
 	uint8_t *heap, *ptr;
 	uint64_t *size;
 	uint64_t peak;
-	struct AtomicLock lock;
+	struct NeAtomicLock lock;
 };
 
-static inline bool _InitTransientHeap(struct TransientHeap *heap, uint64_t *size);
-static inline void *_TransientAlloc(struct TransientHeap *heap, size_t size);
-static inline void _ResetTransientHeap(struct TransientHeap *heap);
+static inline bool _InitTransientHeap(struct NeTransientHeap *heap, uint64_t *size);
+static inline void *_TransientAlloc(struct NeTransientHeap *heap, size_t size);
+static inline void _ResetTransientHeap(struct NeTransientHeap *heap);
 
-static struct TransientHeap _transientHeap;
-static struct TransientHeap _frameHeap[RE_NUM_FRAMES];
+static struct NeTransientHeap _transientHeap;
+static struct NeTransientHeap _frameHeap[RE_NUM_FRAMES];
 
 void *
-Sys_Alloc(size_t size, size_t count, enum MemoryHeap heap)
+Sys_Alloc(size_t size, size_t count, enum NeMemoryHeap heap)
 {
 	void *ret = NULL;
-	struct Allocation *alloc = NULL;
-	size_t totalSize = size * count + sizeof(struct Allocation);
+	struct NeAllocation *alloc = NULL;
+	size_t totalSize = size * count + sizeof(struct NeAllocation);
 
 	if ((count >= MUL_NO_OVERFLOW || size >= MUL_NO_OVERFLOW) && count > 0 && SIZE_MAX / count < size)
 		return NULL;
@@ -67,7 +67,7 @@ Sys_Alloc(size_t size, size_t count, enum MemoryHeap heap)
 	alloc = ret;
 	alloc->magic = MAGIC;
 	alloc->heap = heap;
-	alloc->size = totalSize - sizeof(struct Allocation);
+	alloc->size = totalSize - sizeof(struct NeAllocation);
 
 	ret = (uint8_t *)ret + sizeof(*alloc);
 
@@ -75,10 +75,10 @@ Sys_Alloc(size_t size, size_t count, enum MemoryHeap heap)
 }
 
 void *
-Sys_ReAlloc(void *mem, size_t size, size_t count, enum MemoryHeap heap)
+Sys_ReAlloc(void *mem, size_t size, size_t count, enum NeMemoryHeap heap)
 {
 	void *new = NULL;
-	struct Allocation *alloc;
+	struct NeAllocation *alloc;
 
 	if (!mem)
 		return Sys_Alloc(size, count, heap);
@@ -87,9 +87,9 @@ Sys_ReAlloc(void *mem, size_t size, size_t count, enum MemoryHeap heap)
 	if ((count >= MUL_NO_OVERFLOW || size >= MUL_NO_OVERFLOW) && count > 0 && SIZE_MAX / count < size)
 		return NULL;
 
-	alloc = (struct Allocation *)((uint8_t *)mem - (sizeof(*alloc)));
+	alloc = (struct NeAllocation *)((uint8_t *)mem - (sizeof(*alloc)));
 	if (alloc->magic != MAGIC) {
-		Sys_LogEntry(MMOD, LOG_DEBUG, L"Sys_ReAlloc called with unrecognized block %p, calling realloc.", mem);
+		Sys_LogEntry(MMOD, LOG_DEBUG, "Sys_ReAlloc called with unrecognized block %p, calling realloc.", mem);
 		return realloc(mem, totalSize);
 	}
 
@@ -116,14 +116,14 @@ Sys_ReAlloc(void *mem, size_t size, size_t count, enum MemoryHeap heap)
 void
 Sys_Free(void *mem)
 {
-	struct Allocation *alloc;
+	struct NeAllocation *alloc;
 
 	if (!mem)
 		return;
 
-	alloc = (struct Allocation *)((uint8_t *)mem - (sizeof(*alloc)));
+	alloc = (struct NeAllocation *)((uint8_t *)mem - (sizeof(*alloc)));
 	if (alloc->magic != MAGIC) {
-		Sys_LogEntry(MMOD, LOG_DEBUG, L"Sys_Free called with unrecognized block %p, calling free.", mem);
+		Sys_LogEntry(MMOD, LOG_DEBUG, "Sys_Free called with unrecognized block %p, calling free.", mem);
 		free(mem);
 		return;
 	}
@@ -143,18 +143,18 @@ Sys_Free(void *mem)
 bool
 Sys_InitMemory(void)
 {
-	if (!_InitTransientHeap(&_transientHeap, &E_GetCVarU64(L"Engine_TransientHeapSize", 6 * 1024 * 1024)->u64))
+	if (!_InitTransientHeap(&_transientHeap, &E_GetCVarU64("Engine_TransientHeapSize", 64 * 1024 * 1024)->u64))
 		return false;
 
 	for (uint32_t i = 0; i < RE_NUM_FRAMES; ++i)
-		if (!_InitTransientHeap(&_frameHeap[i], &E_GetCVarU64(L"Engine_FrameHeapSize", 2 * 1024 * 1024)->u64))
+		if (!_InitTransientHeap(&_frameHeap[i], &E_GetCVarU64("Engine_FrameHeapSize", 12 * 1024 * 1024)->u64))
 			return false;
 
 	return true;
 }
 
 void
-Sys_ResetHeap(enum MemoryHeap heap)
+Sys_ResetHeap(enum NeMemoryHeap heap)
 {
 	if (heap == MH_Transient)
 		_ResetTransientHeap(&_transientHeap);
@@ -166,10 +166,10 @@ void
 Sys_LogMemoryStatistics(void)
 {
 	for (uint32_t i = 0; i < RE_NUM_FRAMES; ++i)
-		Sys_LogEntry(MMOD, LOG_INFORMATION, L"Frame heap peak: %u/%u B (%.02f%%)", _frameHeap[i].peak, *_frameHeap[i].size,
+		Sys_LogEntry(MMOD, LOG_INFORMATION, "Frame heap peak: %u/%u B (%.02f%%)", _frameHeap[i].peak, *_frameHeap[i].size,
 			((double)_frameHeap[i].peak / (double)*_frameHeap[i].size) * 100.0);
 
-	Sys_LogEntry(MMOD, LOG_INFORMATION, L"Transient heap peak: %u/%u B (%.02f%%)", _transientHeap.peak, *_transientHeap.size,
+	Sys_LogEntry(MMOD, LOG_INFORMATION, "Transient heap peak: %u/%u B (%.02f%%)", _transientHeap.peak, *_transientHeap.size,
 		((double)_transientHeap.peak / (double)*_transientHeap.size) * 100.0);
 }
 
@@ -188,7 +188,7 @@ Sys_TermMemory(void)
 }
 
 static inline bool
-_InitTransientHeap(struct TransientHeap *heap, uint64_t *size)
+_InitTransientHeap(struct NeTransientHeap *heap, uint64_t *size)
 {
 	heap->size = size;
 	heap->heap = aligned_alloc(16, (size_t)*heap->size);
@@ -202,7 +202,7 @@ _InitTransientHeap(struct TransientHeap *heap, uint64_t *size)
 }
 
 static inline void *
-_TransientAlloc(struct TransientHeap *heap, size_t size)
+_TransientAlloc(struct NeTransientHeap *heap, size_t size)
 {
 	Sys_AtomicLockWrite(&heap->lock);
 
@@ -217,7 +217,7 @@ _TransientAlloc(struct TransientHeap *heap, size_t size)
 }
 
 static inline void
-_ResetTransientHeap(struct TransientHeap *heap)
+_ResetTransientHeap(struct NeTransientHeap *heap)
 {
 	Sys_AtomicLockWrite(&heap->lock);
 	heap->peak = MAX(heap->peak, (size_t)(heap->ptr - heap->heap));

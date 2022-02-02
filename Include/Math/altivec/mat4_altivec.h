@@ -116,7 +116,7 @@ m4_mul_simd(struct mat4 *dst, const struct mat4 *m1, const struct mat4 *m2)
 static inline struct mat4 *
 m4_muls_simd(struct mat4 *dst, const struct mat4 *m, const float f)
 {
-	ALIGN(16) const float data[4] = { f, f, f, f };
+	NE_ALIGN(16) const float data[4] = { f, f, f, f };
 	const vector float zero = (vector float)vec_splat_u32(0);
 	const vector float scalar = vec_ld(0, data);
 

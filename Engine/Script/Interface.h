@@ -3,7 +3,7 @@
 
 #include <Script/Script.h>
 
-#define SCRIPT_API_VERSION		1
+#define SCRIPT_API_VERSION			2
 
 #define SIF_VOID(name, func)		\
 static int							\
@@ -73,8 +73,8 @@ _sif_getfield(lua_State *vm, int arg, const char *name)
 static inline int
 _sif_intfield(lua_State *vm, int arg, const char *name)
 {
-	int f = SIF_GETFIELD(arg, name);
-	int r = (int)luaL_checkinteger(vm, f);
+	const int f = SIF_GETFIELD(arg, name);
+	const int r = (int)luaL_checkinteger(vm, f);
 	SIF_POPFIELD(f);
 	return r;
 }
@@ -127,5 +127,16 @@ _sif_boolfield(lua_State *vm, int arg, const char *name)
 void SIface_OpenEngine(lua_State *vm);
 void SIface_OpenSystem(lua_State *vm);
 void SIface_OpenRender(lua_State *vm);
+void SIface_OpenConsole(lua_State *vm);
+void SIface_OpenUI(lua_State *vm);
+void SIface_OpenScriptComponent(lua_State *vm);
+void SIface_OpenResource(lua_State *vm);
+void SIface_OpenIO(lua_State *vm);
+void SIface_OpenEvent(lua_State *vm);
+void SIface_OpenInput(lua_State *vm);
+void SIface_OpenTransform(lua_State *vm);
+void SIface_OpenCamera(lua_State *vm);
+void SIface_OpenLight(lua_State *vm);
+void SIface_OpenConfig(lua_State *vm);
 
 #endif /* _NE_SCRIPT_INTERFACE_H_ */

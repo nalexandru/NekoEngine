@@ -5,34 +5,34 @@
 #include <Engine/Types.h>
 #include <Runtime/Runtime.h>
 
-struct AnimVectorKey
+struct NeAnimVectorKey
 {
 	struct vec3 val;
 	double time;
 };
 
-struct AnimQuatKey
+struct NeAnimQuatKey
 {
 	struct quat val;
 	double time;
 };
 
-struct AnimationChannel
+struct NeAnimationChannel
 {
 	uint64_t hash;
-	struct Array positionKeys, rotationKeys, scalingKeys;
+	struct NeArray positionKeys, rotationKeys, scalingKeys;
 	char name[256];
 };
 
-struct AnimationClip
+struct NeAnimationClip
 {
-	struct Array channels;
+	struct NeArray channels;
 	double ticks;
 	double duration;
 	char name[256];
 };
 
-struct AnimationClipCreateInfo
+struct NeAnimationClipCreateInfo
 {
 	char name[256];
 
@@ -44,13 +44,13 @@ struct AnimationClipCreateInfo
 		char name[256];
 
 		uint32_t positionCount;
-		struct AnimVectorKey *positionKeys;
+		struct NeAnimVectorKey *positionKeys;
 
 		uint32_t rotationCount;
-		struct AnimQuatKey *rotationKeys;
+		struct NeAnimQuatKey *rotationKeys;
 
 		uint32_t scalingCount;
-		struct AnimVectorKey *scalingKeys;
+		struct NeAnimVectorKey *scalingKeys;
 	} *channels;
 };
 

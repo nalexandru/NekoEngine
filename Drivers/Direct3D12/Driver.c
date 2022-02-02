@@ -24,25 +24,26 @@ static ID3D12DeviceRemovedExtendedDataSettings *_dredSettings;
 
 static bool _Init(void);
 static void _Term(void);
-static bool _EnumerateDevices(uint32_t *, struct RenderDeviceInfo *);
+static bool _EnumerateDevices(uint32_t *, struct NeRenderDeviceInfo *);
 static inline void _LogDXGIMessages(void);
 
-static struct RenderDriver _drv =
+static struct NeRenderDriver _drv =
 {
-	NE_RENDER_DRIVER_ID,
-	NE_RENDER_DRIVER_API,
-	L"Direct3D 12",
-	_Init,
-	_Term,
-	_EnumerateDevices,
-	D3D12_CreateDevice,
-	D3D12_DestroyDevice
+	.identifier = NE_RENDER_DRIVER_ID,
+	.apiVersion = NE_RENDER_DRIVER_API,
+	.driverName = "Direct3D 12",
+	.graphicsApiId = RE_API_DIRECT3D12,
+	.Init = _Init,
+	.Term = _Term,
+	.EnumerateDevices = _EnumerateDevices,
+	.CreateDevice = D3D12_CreateDevice,
+	.DestroyDevice = D3D12_DestroyDevice
 };
 
-struct Array D3D12d_contexts;
+struct NeArray D3D12d_contexts;
 
 #ifdef RENDER_DRIVER_BUILTIN
-const struct RenderDriver *Re_LoadBuiltinDriver() { return &_drv; }
+const struct NeRenderDriver *Re_LoadBuiltinDriver() { return &_drv; }
 #else
 #ifdef _WIN32
 #	define EXPORT __declspec(dllexport)
@@ -50,7 +51,7 @@ const struct RenderDriver *Re_LoadBuiltinDriver() { return &_drv; }
 #	define EXPORT
 #endif
 
-EXPORT const struct RenderDriver *Re_LoadDriver(void) { return &_drv; }
+EXPORT const struct NeRenderDriver *Re_LoadDirect3D12Driver() { return &_drv; }
 #endif
 
 static bool
@@ -63,7 +64,7 @@ _Init(void)
 			return false;
 	}
 
-	if (E_GetCVarBln(L"D3D12Drv_Debug", true)->bln) {
+	if (E_GetCVarBln("D3D12Drv_Debug", true)->bln) {
 		if (SUCCEEDED(D3D12GetDebugInterface(&IID_ID3D12Debug, &_d3dDebug)))
 			_d3dDebug->lpVtbl->EnableDebugLayer(_d3dDebug);
 
@@ -121,7 +122,7 @@ _Term(void)
 }
 
 static bool
-_EnumerateDevices(uint32_t *count, struct RenderDeviceInfo *info)
+_EnumerateDevices(uint32_t *count, struct NeRenderDeviceInfo *info)
 {
 	uint32_t i = 0;
 	IDXGIAdapter1 *a;
@@ -203,7 +204,7 @@ _LogDXGIMessages(void)
 		case DXGI_INFO_QUEUE_MESSAGE_SEVERITY_MESSAGE: severity = LOG_DEBUG; break;
 		}
 
-		Sys_LogEntry(D3DDRV_MOD, severity, L"%S", msg->pDescription);
+		Sys_LogEntry(D3DDRV_MOD, severity, "%ls", msg->pDescription);
 	}
 
 	nextId = count;

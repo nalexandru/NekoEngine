@@ -5,48 +5,48 @@
 #include <System/Memory.h>
 #include <System/AtomicLock.h>
 
-struct Event
+struct NeEvent
 {
 	uint64_t event;
 	uint64_t timestamp;
 	void *args;
 };
 
-struct EventHandler
+struct NeEventHandler
 {
-	EventHandlerProc proc;
+	NeEventHandlerProc proc;
 	uint64_t timestamp;
 	void *user;
 };
 
-struct EventHandlerInfo
+struct NeEventHandlerInfo
 {
 	uint64_t event;
-	struct Array handlers;
+	struct NeArray handlers;
 };
 
-struct ProcessEventArgs
+struct NeProcessEventArgs
 {
-	struct EventHandler handler;
+	struct NeEventHandler handler;
 	void *args;
 };
 
-static struct Array _handlers, _queue[2], *_currentQueue;
+static struct NeArray _handlers, _queue[2], *_currentQueue;
 static int _currentQueueId;
-static struct AtomicLock _queueLock, _handlerLock;
+static struct NeAtomicLock _queueLock, _handlerLock;
 
-static int32_t _Sort(const struct EventHandlerInfo *a, const struct EventHandlerInfo *b);
-static int32_t _Comp(const struct EventHandlerInfo *m, const uint64_t *Event);
-static void _ProcessEvent(int worker, struct ProcessEventArgs *args);
+static int32_t _Sort(const struct NeEventHandlerInfo *a, const struct NeEventHandlerInfo *b);
+static int32_t _Comp(const struct NeEventHandlerInfo *m, const uint64_t *Event);
+static void _ProcessEvent(int worker, struct NeProcessEventArgs *args);
 
 void
-E_Broadcast(const wchar_t *event, void *args)
+E_Broadcast(const char *event, void *args)
 {
 	if (!_currentQueue)
 		return;
 
-	struct Event evt;
-	evt.event = Rt_HashStringW(event);
+	struct NeEvent evt;
+	evt.event = Rt_HashString(event);
 	evt.args = args;
 	evt.timestamp = Sys_Time();
 
@@ -56,12 +56,12 @@ E_Broadcast(const wchar_t *event, void *args)
 }
 
 uint64_t
-E_RegisterHandler(const wchar_t *event, EventHandlerProc handlerProc, void *user)
+E_RegisterHandler(const char *event, NeEventHandlerProc handlerProc, void *user)
 {
 	bool sort = false;
-	struct EventHandler *handler = NULL;
-	struct EventHandlerInfo *info = NULL;
-	uint64_t hash = Rt_HashStringW(event);
+	struct NeEventHandler *handler = NULL;
+	struct NeEventHandlerInfo *info = NULL;
+	uint64_t hash = Rt_HashString(event);
 	uint32_t idx = 0, handlerIdx = 0;
 
 	Sys_AtomicLockWrite(&_handlerLock);
@@ -71,7 +71,7 @@ E_RegisterHandler(const wchar_t *event, EventHandlerProc handlerProc, void *user
 	if (!info) {
 		info = Rt_ArrayAllocate(&_handlers);
 		info->event = hash;
-		Rt_InitArray(&info->handlers, 5, sizeof(struct EventHandler), MH_System);
+		Rt_InitArray(&info->handlers, 5, sizeof(struct NeEventHandler), MH_System);
 		sort = true;
 	}
 
@@ -95,7 +95,7 @@ E_RegisterHandler(const wchar_t *event, EventHandlerProc handlerProc, void *user
 void
 E_UnregisterHandler(uint64_t handler)
 {
-	struct EventHandlerInfo *info = NULL;
+	struct NeEventHandlerInfo *info = NULL;
 	uint32_t handlerIdx = (uint32_t)((handler & (uint64_t)0xFFFFFFFF00000000) >> 32);
 	uint32_t infoIdx = (uint32_t)(handler & (uint64_t)0x00000000FFFFFFFF);
 
@@ -114,13 +114,13 @@ E_UnregisterHandler(uint64_t handler)
 bool
 E_InitEventSystem(void)
 {
-	if (!Rt_InitArray(&_handlers, 10, sizeof(struct EventHandlerInfo), MH_System))
+	if (!Rt_InitArray(&_handlers, 10, sizeof(struct NeEventHandlerInfo), MH_System))
 		return false;
 
-	if (!Rt_InitArray(&_queue[0], 10, sizeof(struct Event), MH_System))
+	if (!Rt_InitArray(&_queue[0], 10, sizeof(struct NeEvent), MH_System))
 		return false;
 
-	if (!Rt_InitArray(&_queue[1], 10, sizeof(struct Event), MH_System))
+	if (!Rt_InitArray(&_queue[1], 10, sizeof(struct NeEvent), MH_System))
 		return false;
 
 	_currentQueue = &_queue[0];
@@ -136,7 +136,7 @@ void
 E_TermEventSystem(void)
 {
 	size_t i = 0;
-	struct EventHandlerInfo *info;
+	struct NeEventHandlerInfo *info;
 
 	for (i = 0; i < _handlers.count; ++i) {
 		info = Rt_ArrayGet(&_handlers, i);
@@ -152,10 +152,10 @@ void
 E_ProcessEvents(void)
 {
 	size_t i = 0, j = 0;
-	struct Event *evt;
-	struct EventHandlerInfo *info;
-	struct ProcessEventArgs *args;
-	struct Array *queue = _currentQueue;
+	struct NeEvent *evt;
+	struct NeEventHandlerInfo *info;
+	struct NeProcessEventArgs *args;
+	struct NeArray *queue = _currentQueue;
 
 	Sys_AtomicLockWrite(&_queueLock);
 	_currentQueueId = !_currentQueueId;
@@ -171,7 +171,7 @@ E_ProcessEvents(void)
 			continue;
 
 		for (j = 0; j < info->handlers.count; ++j) {
-			struct EventHandler *handler = Rt_ArrayGet(&info->handlers, j);
+			struct NeEventHandler *handler = Rt_ArrayGet(&info->handlers, j);
 
 			if (handler->timestamp > evt->timestamp)
 				continue;
@@ -179,7 +179,7 @@ E_ProcessEvents(void)
 			args = Sys_Alloc(sizeof(*args), 1, MH_Frame);
 			args->handler = *handler;
 			args->args = evt->args;
-			E_ExecuteJob((JobProc)_ProcessEvent, args, NULL);
+			E_ExecuteJob((NeJobProc)_ProcessEvent, args, NULL, NULL);
 		}
 	}
 
@@ -191,19 +191,19 @@ E_ProcessEvents(void)
 }
 
 static int32_t
-_Sort(const struct EventHandlerInfo *a, const struct EventHandlerInfo *b)
+_Sort(const struct NeEventHandlerInfo *a, const struct NeEventHandlerInfo *b)
 {
 	return a->event > b->event ? 1 : (a->event < b->event ? -1 : 0);
 }
 
 static int32_t
-_Comp(const struct EventHandlerInfo *m, const uint64_t *event)
+_Comp(const struct NeEventHandlerInfo *m, const uint64_t *event)
 {
 	return m->event > *event ? 1 : (m->event < *event ? -1 : 0);
 }
 
 void
-_ProcessEvent(int worker, struct ProcessEventArgs *args)
+_ProcessEvent(int worker, struct NeProcessEventArgs *args)
 {
 	args->handler.proc(args->handler.user, args->args);
 }

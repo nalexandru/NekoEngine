@@ -6,33 +6,33 @@
 #include <Render/Graph/Pass.h>
 #include <Render/Graph/Graph.h>
 
-struct OpaquePass;
-static bool _Init(struct OpaquePass **pass);
-static void _Term(struct OpaquePass *pass);
-static bool _Setup(struct OpaquePass *pass, struct Array *resources);
-static void _Execute(struct OpaquePass *pass, const struct Array *resources);
+struct NeOpaquePass;
+static bool _Init(struct NeOpaquePass **pass);
+static void _Term(struct NeOpaquePass *pass);
+static bool _Setup(struct NeOpaquePass *pass, struct NeArray *resources);
+static void _Execute(struct NeOpaquePass *pass, const struct NeArray *resources);
 
-struct RenderPass RP_opaque =
+struct NeRenderPass RP_opaque =
 {
-	.Init = (PassInitProc)_Init,
-	.Term = (PassTermProc)_Term,
-	.Setup = (PassSetupProc)_Setup,
-	.Execute = (PassExecuteProc)_Execute
+	.Init = (NePassInitProc)_Init,
+	.Term = (NePassTermProc)_Term,
+	.Setup = (NePassSetupProc)_Setup,
+	.Execute = (NePassExecuteProc)_Execute
 };
 
-struct OpaquePass
+struct NeOpaquePass
 {
-	struct Framebuffer *fb;
-	uint64_t outputHash, depthHash, normalHash, sceneDataHash, instancesHash;
+	struct NeFramebuffer *fb;
+	uint64_t outputHash, depthHash, normalHash, sceneDataHash, instancesHash, passSemaphoreHash;
 };
 
 static bool
-_Setup(struct OpaquePass *pass, struct Array *resources)
+_Setup(struct NeOpaquePass *pass, struct NeArray *resources)
 {
 //	if (!Re_GraphTexture(pass->depthHash, resources))
 //		return false;
 
-	struct FramebufferAttachmentDesc fbAtDesc[3] =
+	struct NeFramebufferAttachmentDesc fbAtDesc[3] =
 	{
 		{ .usage = 0, .format = 0 },
 		{ .usage = TU_DEPTH_STENCIL_ATTACHMENT, .format = TF_D32_SFLOAT },
@@ -40,7 +40,7 @@ _Setup(struct OpaquePass *pass, struct Array *resources)
 	};
 	Re_SwapchainDesc(Re_swapchain, &fbAtDesc[0]);
 	
-	struct FramebufferDesc fbDesc =
+	struct NeFramebufferDesc fbDesc =
 	{
 		.attachmentCount = 3,
 		.attachments = fbAtDesc,
@@ -56,22 +56,22 @@ _Setup(struct OpaquePass *pass, struct Array *resources)
 }
 
 static void
-_Execute(struct OpaquePass *pass, const struct Array *resources)
+_Execute(struct NeOpaquePass *pass, const struct NeArray *resources)
 {
-	struct MaterialRenderConstants constants;
+	struct NeMaterialRenderConstants constants;
 
 	constants.sceneAddress = Re_GraphBuffer(pass->sceneDataHash, resources, NULL);
 	uint64_t instanceRoot = Re_GraphBuffer(pass->instancesHash, resources, NULL);
 
-	struct Texture *depthTexture = Re_GraphTexture(pass->depthHash, resources);
-	struct Texture *normalTexture = Re_GraphTexture(pass->normalHash, resources);
+	struct NeTexture *depthTexture = Re_GraphTexture(pass->depthHash, resources);
+	struct NeTexture *normalTexture = Re_GraphTexture(pass->normalHash, resources);
 	Re_SetAttachment(pass->fb, 0, Re_GraphTexture(pass->outputHash, resources));
 	Re_SetAttachment(pass->fb, 1, depthTexture);
 	Re_SetAttachment(pass->fb, 2, normalTexture);
 
 	Re_BeginDrawCommandBuffer();
 
-	struct ImageBarrier depthBarrier =
+	struct NeImageBarrier depthBarrier =
 	{
 		.srcAccess = RE_PA_DEPTH_STENCIL_ATTACHMENT_WRITE,
 		.dstAccess = RE_PA_DEPTH_STENCIL_ATTACHMENT_READ,
@@ -87,7 +87,7 @@ _Execute(struct OpaquePass *pass, const struct Array *resources)
 		.subresource.levelCount = 1
 	};
 
-	struct ImageBarrier normalBarrier =
+	struct NeImageBarrier normalBarrier =
 	{
 		.srcAccess = RE_PA_COLOR_ATTACHMENT_WRITE,
 		.dstAccess = RE_PA_INPUT_ATTACHMENT_READ,
@@ -111,10 +111,10 @@ _Execute(struct OpaquePass *pass, const struct Array *resources)
 	Re_CmdSetViewport(0.f, 0.f, (float)*E_screenWidth, (float)*E_screenHeight, 0.f, 1.f);
 	Re_CmdSetScissor(0, 0, *E_screenWidth, *E_screenHeight);
 
-	const struct Drawable *d = NULL;
+	const struct NeDrawable *d = NULL;
 	for (uint32_t i = 0; i < E_JobWorkerThreads(); ++i) {
 		const uint32_t instanceOffset = Scn_activeScene->collect.instanceOffset[i];
-		const struct Array *drawables = &Scn_activeScene->collect.opaqueDrawableArrays[i];
+		const struct NeArray *drawables = &Scn_activeScene->collect.opaqueDrawableArrays[i];
 
 		if (!drawables->count)
 			continue;
@@ -125,7 +125,7 @@ _Execute(struct OpaquePass *pass, const struct Array *resources)
 			
 			constants.vertexAddress = d->vertexAddress;
 			constants.materialAddress = d->materialAddress;
-			constants.instanceAddress = Re_OffsetAddress(instanceRoot, (((uint64_t)d->instanceId + instanceOffset) * sizeof(struct ModelInstance)));
+			constants.instanceAddress = Re_OffsetAddress(instanceRoot, (((uint64_t)d->instanceId + instanceOffset) * sizeof(struct NeModelInstance)));
 
 			Re_CmdPushConstants(SS_ALL, sizeof(constants), &constants);
 			Re_CmdDrawIndexed(d->indexCount, 1, d->firstIndex, 0, 0);
@@ -133,13 +133,15 @@ _Execute(struct OpaquePass *pass, const struct Array *resources)
 	}
 
 	Re_CmdEndRenderPass();
-	Re_EndCommandBuffer();
+
+	struct NeSemaphore *passSemaphore = Re_GraphData(pass->passSemaphoreHash, resources);
+	Re_QueueGraphics(Re_EndCommandBuffer(), passSemaphore, passSemaphore);
 }
 
 static bool
-_Init(struct OpaquePass **pass)
+_Init(struct NeOpaquePass **pass)
 {
-	*pass = Sys_Alloc(sizeof(struct OpaquePass), 1, MH_Render);
+	*pass = Sys_Alloc(sizeof(struct NeOpaquePass), 1, MH_Render);
 	if (!*pass)
 		return false;
 
@@ -148,12 +150,13 @@ _Init(struct OpaquePass **pass)
 	(*pass)->normalHash = Rt_HashString("Re_normalBuffer");
 	(*pass)->sceneDataHash = Rt_HashString("Scn_data");
 	(*pass)->instancesHash = Rt_HashString("Scn_instances");
+	(*pass)->passSemaphoreHash = Rt_HashString("Re_passSemaphore");
 
 	return true;
 }
 
 static void
-_Term(struct OpaquePass *pass)
+_Term(struct NeOpaquePass *pass)
 {
 	Sys_Free(pass);
 }

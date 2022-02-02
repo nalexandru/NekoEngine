@@ -286,7 +286,7 @@
 	#define SYS_PLATFORM_ANDROID
 	#define SYS_PLATFORM_UNIX
 #elif defined(__DEVKITA64__)
-	#define SYS_PLATFORM_SWITCH
+	#define SYS_PLATFORM_NX
 	#define SYS_ARCH_ARM64
 	#define SYS_64BIT
 #elif defined(GEKKO)

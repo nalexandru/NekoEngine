@@ -1,9 +1,9 @@
 #include "D3D12Driver.h"
 
-struct AccelerationStructure *
-D3D12_CreateAccelerationStructure(struct RenderDevice *dev, const struct AccelerationStructureCreateInfo *info)
+struct NeAccelerationStructure *
+D3D12_CreateAccelerationStructure(struct NeRenderDevice *dev, const struct NeAccelerationStructureCreateInfo *info)
 {
-	struct AccelerationStructure *as = Sys_Alloc(1, sizeof(*as), MH_RenderDriver);
+	struct NeAccelerationStructure *as = Sys_Alloc(1, sizeof(*as), MH_RenderDriver);
 	if (!as)
 		return NULL;
 
@@ -28,9 +28,15 @@ D3D12_CreateAccelerationStructure(struct RenderDevice *dev, const struct Acceler
 	return as;
 }
 
-void
-D3D12_DestroyAccelerationStructure(struct RenderDevice *dev, struct AccelerationStructure *as)
+uint64_t
+D3D12_AccelerationStructureHandle(struct NeRenderDevice *dev, const struct NeAccelerationStructure *as)
 {
-//	vkDestroyAccelerationStructureKHR(dev->dev, as->as, Vkd_allocCb);
+	return ID3D12Resource_GetGPUVirtualAddress(as->buffer);
+}
+
+void
+D3D12_DestroyAccelerationStructure(struct NeRenderDevice *dev, struct NeAccelerationStructure *as)
+{
+	ID3D12Resource_Release(as->buffer);
 	Sys_Free(as);
 }

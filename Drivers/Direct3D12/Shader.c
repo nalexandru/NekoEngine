@@ -3,25 +3,25 @@
 
 #include "D3D12Driver.h"
 
-struct ShaderModuleInfo
+struct NeShaderModuleInfo
 {
 	uint64_t hash;
 //	VkShaderModule module;
 };
 
-static struct Array _modules;
+static struct NeArray _modules;
 
 //static VkDevice _dev;
 //static void _load(const char *path);
-static int32_t _sort(const struct ShaderModuleInfo *a, const struct ShaderModuleInfo *b);
-static int32_t _compare(const struct ShaderModuleInfo *item, const uint64_t *hash);
+static int32_t _sort(const struct NeShaderModuleInfo *a, const struct NeShaderModuleInfo *b);
+static int32_t _compare(const struct NeShaderModuleInfo *item, const uint64_t *hash);
 
 void *
-D3D12_ShaderModule(struct RenderDevice *dev, const char *name)
+D3D12_ShaderModule(struct NeRenderDevice *dev, const char *name)
 {
 	uint64_t hash = Rt_HashString(name);
 
-	struct ShaderModuleInfo *info = Rt_ArrayBSearch(&_modules, &hash, (RtCmpFunc)_compare);
+	struct NeShaderModuleInfo *info = Rt_ArrayBSearch(&_modules, &hash, (RtCmpFunc)_compare);
 	if (!info)
 		return NULL;
 
@@ -31,7 +31,7 @@ D3D12_ShaderModule(struct RenderDevice *dev, const char *name)
 /*bool
 D3D12_LoadShaders(VkDevice dev)
 {
-	if (!Rt_InitArray(&_modules, 10, sizeof(struct ShaderModuleInfo), MH_RenderDriver))
+	if (!Rt_InitArray(&_modules, 10, sizeof(struct NeShaderModuleInfo), MH_RenderDriver))
 		return false;
 
 	_dev = dev;
@@ -45,7 +45,7 @@ D3D12_LoadShaders(VkDevice dev)
 void
 D3D12_UnloadShaders(VkDevice dev)
 {
-	struct ShaderModuleInfo *info;
+	struct NeShaderModuleInfo *info;
 	Rt_ArrayForEach(info, &_modules)
 		vkDestroyShaderModule(dev, info->module, Vkd_allocCb);
 	Rt_TermArray(&_modules);
@@ -54,9 +54,9 @@ D3D12_UnloadShaders(VkDevice dev)
 void
 _load(const char *path)
 {
-	struct ShaderModuleInfo info;
+	struct NeShaderModuleInfo info;
 
-	struct Stream stm;
+	struct NeStream stm;
 	if (!E_FileStream(path, IO_READ, &stm))
 		return;
 
@@ -96,7 +96,7 @@ _load(const char *path)
 }*/
 
 static int32_t
-_sort(const struct ShaderModuleInfo *a, const struct ShaderModuleInfo *b)
+_sort(const struct NeShaderModuleInfo *a, const struct NeShaderModuleInfo *b)
 {
 	if (a->hash == b->hash)
 		return 0;
@@ -107,7 +107,7 @@ _sort(const struct ShaderModuleInfo *a, const struct ShaderModuleInfo *b)
 }
 
 static int32_t
-_compare(const struct ShaderModuleInfo *item, const uint64_t *hash)
+_compare(const struct NeShaderModuleInfo *item, const uint64_t *hash)
 {
 	if (item->hash == *hash)
 		return 0;

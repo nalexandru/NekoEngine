@@ -15,7 +15,7 @@ Vk_CheckPresentSupport(VkPhysicalDevice dev, uint32_t family)
 }
 
 VkSurfaceKHR
-Vk_CreateSurface(struct RenderDevice *dev, void *window)
+Vk_CreateSurface(struct NeRenderDevice *dev, void *window)
 {
 	VkWin32SurfaceCreateInfoKHR surfaceInfo =
 	{

@@ -6,9 +6,9 @@
 #include <Engine/Component.h>
 #include <Runtime/Runtime.h>
 
-#define SCN_COLLECT_LIGHTS	L"Scn_CollectLights"
+#define SCN_COLLECT_LIGHTS		"Scn_CollectLights"
 
-enum LightType
+enum NeLightType
 {
 	LT_DIRECTIONAL = 0,
 	LT_POINT = 1,
@@ -17,20 +17,20 @@ enum LightType
 	LT_FORCE_UINT32 = 0xFFFFFFFF
 };
 
-struct Light
+struct NeLight
 {
 	COMPONENT_BASE;
 
 	struct vec3 color;
 	float intensity;
-	enum LightType type;
+	enum NeLightType type;
 
 	float innerRadius, outerRadius;
 	float innerCutoff, outerCutoff;
 };
 
 #pragma pack(push, 1)
-struct LightData
+struct NeLightData
 {
 	float position[3];
 	uint32_t type;
@@ -46,14 +46,9 @@ struct LightData
 };
 #pragma pack(pop)
 
-struct CollectLights
+struct NeCollectLights
 {
-	struct Array lightData;
+	struct NeArray lightData;
 };
-
-bool Scn_InitLight(struct Light *cam, const void **args);
-void Scn_TermLight(struct Light *cam);
-
-void Scn_CollectLights(void **comp, struct CollectLights *args);
 
 #endif /* _NE_SCENE_LIGHT_H_ */

@@ -1,9 +1,9 @@
 #include "VulkanDriver.h"
 
-struct Semaphore *
-Vk_CreateSemaphore(struct RenderDevice *dev)
+struct NeSemaphore *
+Vk_CreateSemaphore(struct NeRenderDevice *dev)
 {
-	struct Semaphore *s = Sys_Alloc(sizeof(*s), 1, MH_RenderDriver);
+	struct NeSemaphore *s = Sys_Alloc(sizeof(*s), 1, MH_RenderDriver);
 	if (!s)
 		return NULL;
 
@@ -27,7 +27,7 @@ Vk_CreateSemaphore(struct RenderDevice *dev)
 }
 
 bool
-Vk_WaitSemaphore(struct RenderDevice *dev, struct Semaphore *s, uint64_t value, uint64_t timeout)
+Vk_WaitSemaphore(struct NeRenderDevice *dev, struct NeSemaphore *s, uint64_t value, uint64_t timeout)
 {
 	struct VkSemaphoreWaitInfo wi =
 	{
@@ -40,7 +40,7 @@ Vk_WaitSemaphore(struct RenderDevice *dev, struct Semaphore *s, uint64_t value, 
 }
 
 bool
-Vk_WaitSemaphores(struct RenderDevice *dev, uint32_t count, struct Semaphore *s, uint64_t *values, uint64_t timeout)
+Vk_WaitSemaphores(struct NeRenderDevice *dev, uint32_t count, struct NeSemaphore *s, uint64_t *values, uint64_t timeout)
 {
 	VkSemaphore *sem = Sys_Alloc(sizeof(*sem), count, MH_Frame);
 	if (!sem)
@@ -57,7 +57,7 @@ Vk_WaitSemaphores(struct RenderDevice *dev, uint32_t count, struct Semaphore *s,
 }
 
 bool
-Vk_SignalSemaphore(struct RenderDevice *dev, struct Semaphore *s, uint64_t value)
+Vk_SignalSemaphore(struct NeRenderDevice *dev, struct NeSemaphore *s, uint64_t value)
 {
 	struct VkSemaphoreSignalInfo si =
 	{
@@ -69,14 +69,14 @@ Vk_SignalSemaphore(struct RenderDevice *dev, struct Semaphore *s, uint64_t value
 }
 
 void
-Vk_DestroySemaphore(struct RenderDevice *dev, struct Semaphore *s)
+Vk_DestroySemaphore(struct NeRenderDevice *dev, struct NeSemaphore *s)
 {
 	vkDestroySemaphore(dev->dev, s->sem, Vkd_allocCb);
 	Sys_Free(s);
 }
 
 VkFence
-Vk_CreateFence(struct RenderDevice *dev, bool createSignaled)
+Vk_CreateFence(struct NeRenderDevice *dev, bool createSignaled)
 {
 	struct VkFenceCreateInfo fci =
 	{
@@ -90,18 +90,18 @@ Vk_CreateFence(struct RenderDevice *dev, bool createSignaled)
 }
 
 void
-Vk_SignalFence(struct RenderDevice *dev, VkFence f)
+Vk_SignalFence(struct NeRenderDevice *dev, VkFence f)
 {
 }
 
 bool
-Vk_WaitForFence(struct RenderDevice *dev, VkFence f, uint64_t timeout)
+Vk_WaitForFence(struct NeRenderDevice *dev, VkFence f, uint64_t timeout)
 {
 	return vkWaitForFences(dev->dev, 1, &f, VK_TRUE, timeout) == VK_SUCCESS;
 }
 
 void
-Vk_DestroyFence(struct RenderDevice *dev, VkFence f)
+Vk_DestroyFence(struct NeRenderDevice *dev, VkFence f)
 {
 	vkDestroyFence(dev->dev, f, Vkd_allocCb);
 }

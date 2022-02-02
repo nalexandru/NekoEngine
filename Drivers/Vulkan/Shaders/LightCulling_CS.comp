@@ -20,8 +20,7 @@ shared uint visibleIndices[1024];
 shared mat4 viewProjection;
 shared mat4 inverseProjection;
 
-#define TILE_SIZE 16
-layout(local_size_x = TILE_SIZE, local_size_y = TILE_SIZE, local_size_z = 1) in;
+layout(local_size_x_id = NE_THREADS_X, local_size_y_id = NE_THREADS_Y, local_size_z_id = NE_THREADS_Z) in;
 
 layout(push_constant) uniform ConstantComputeArgs
 {
@@ -32,6 +31,13 @@ layout(push_constant) uniform ConstantComputeArgs
 
 void
 main()
+{
+//	if (gl_LocalInvocationIndex == 0)
+//		ComputeArgs.visibleLightIndices.data[0] = 1;
+}
+
+void
+main_old()
 {
 	ivec2 location = ivec2(gl_GlobalInvocationID.xy);
 	ivec2 item = ivec2(gl_LocalInvocationID.xy);
@@ -82,7 +88,7 @@ main()
 
 	barrier();
 
-	uint threadCount = TILE_SIZE * TILE_SIZE;
+	uint threadCount = 16 * 16; //TILE_SIZE * TILE_SIZE;
 	uint passCount = (ComputeArgs.scene.lightCount + threadCount - 1) / threadCount;
 
 	for (uint i = 0; i < passCount; ++i) {

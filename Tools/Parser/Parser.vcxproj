@@ -49,6 +49,7 @@
     <LibraryPath>C:\Program Files\LLVM\lib;$(LibraryPath)</LibraryPath>
     <IntDir>$(SolutionDir)\build\$(Configuration)\$(ProjectName)\</IntDir>
     <OutDir>$(SolutionDir)\bin\$(Configuration)\</OutDir>
+    <ExecutablePath>C:\Program Files\LLVM\bin;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>

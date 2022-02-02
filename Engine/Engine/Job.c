@@ -9,56 +9,56 @@
 #include <System/Thread.h>
 #include <System/AtomicLock.h>
 
-#define JOBMOD	L"JobSystem"
+#define JOBMOD	"JobSystem"
 
 #define ST_WAITING	0
 #define ST_RUNNING	1
 #define ST_DONE		2
 
-struct Job
+struct NeJob
 {
-	void *args;
-	JobProc exec;
+	void *args, *completionArgs;
+	NeJobProc exec;
 	uint64_t id;
-	JobCompletedProc completed;
+	NeJobCompletedProc completed;
 };
 
-struct JobQueue
+struct NeJobQueue
 {
-	struct Job *jobs;
+	struct NeJob *jobs;
 	uint64_t head;
 	uint64_t tail;
 	uint64_t size;
-	Futex lock;
+	NeFutex lock;
 };
 
-struct DispatchArgs
+struct NeDispatchArgs
 {
 	uint64_t count;
-	void **args;
-	JobProc exec;
-	uint64_t id, endId;
-	JobCompletedProc completedHandler;
+	void **args, *completionArgs;
+	NeJobProc exec;
+	_Atomic uint64_t *completed;
+	uint64_t id, endId, jobCount;
+	NeJobCompletedProc completedHandler;
 };
 
-static ConditionVariable _wakeCond;
-static Futex _wakeLock;
-static Thread *_threads;
+static NeConditionVariable _wakeCond;
+static NeFutex _wakeLock;
+static NeThread *_threads;
 static uint32_t _numThreads;
 static bool _shutdown;
-static struct JobQueue _jobQueue;
-static ALIGN(16) volatile uint64_t _submittedJobs; 
+static struct NeJobQueue _jobQueue;
+static NE_ALIGN(16) volatile uint64_t _submittedJobs; 
 static THREAD_LOCAL uint32_t _workerId;
 
 static void _ThreadProc(void *args);
-static void _DispatchWrapper(int worker, struct DispatchArgs *args);
-static inline bool _JQ_Push(struct JobQueue *jq, JobProc exec, void *args, JobCompletedProc completed, uint64_t *id);
-
+static void _DispatchWrapper(int worker, struct NeDispatchArgs *args);
+static inline bool _JQ_Push(struct NeJobQueue *jq, NeJobProc exec, void *args, NeJobCompletedProc completed, void *completionArgs, uint64_t *id);
 
 bool
 E_InitJobSystem(void)
 {
-	bool useLogicalCores = E_GetCVarBln(L"Engine_UseLogicalCores", false)->bln;
+	bool useLogicalCores = E_GetCVarBln("Engine_UseLogicalCores", false)->bln;
 	_numThreads = (useLogicalCores ? Sys_CpuThreadCount() : Sys_CpuCount()) - 1;
 	_numThreads = _numThreads > 1 ? _numThreads : 1;
 
@@ -75,7 +75,7 @@ E_InitJobSystem(void)
 
 	Sys_InitFutex(&_jobQueue.lock);
 
-	_threads = Sys_Alloc(_numThreads, sizeof(Thread), MH_System);
+	_threads = Sys_Alloc(_numThreads, sizeof(NeThread), MH_System);
 	if (!_threads)
 		return false;
 
@@ -86,8 +86,8 @@ E_InitJobSystem(void)
 		step = coreId = Sys_CpuCount() == Sys_CpuThreadCount() ? 1 : 2;
 
 	for (uint32_t i = 0; i < _numThreads; ++i) {
-		wchar_t name[10];
-		swprintf(name, sizeof(name) / 2, L"Worker %u", i);
+		char name[10];
+		snprintf(name, sizeof(name), "Worker %u", i);
 		Sys_InitThread(&_threads[i], name, _ThreadProc, &i);
 		Sys_SetThreadAffinity(_threads[i], coreId);
 		coreId += step;
@@ -111,11 +111,11 @@ E_WorkerId(void)
 }
 
 uint64_t
-E_ExecuteJob(JobProc proc, void *args, JobCompletedProc completed)
+E_ExecuteJob(NeJobProc proc, void *args, NeJobCompletedProc completed, void *completionArgs)
 {
 	uint64_t id;
 
-	while (!_JQ_Push(&_jobQueue, proc, args, completed, &id))
+	while (!_JQ_Push(&_jobQueue, proc, args, completed, completionArgs, &id))
 		Sys_Yield();
 	Sys_Signal(_wakeCond);
 
@@ -123,7 +123,7 @@ E_ExecuteJob(JobProc proc, void *args, JobCompletedProc completed)
 }
 
 uint64_t
-E_DispatchJobs(uint64_t count, JobProc proc, void **args, JobCompletedProc completed)
+E_DispatchJobs(uint64_t count, NeJobProc proc, void **args, NeJobCompletedProc completed, void *completionArgs)
 {
 	int i;
 	uint64_t dispatches = 0, id = 0, endId = 0;
@@ -147,15 +147,21 @@ E_DispatchJobs(uint64_t count, JobProc proc, void **args, JobCompletedProc compl
 	}
 	Sys_UnlockFutex(_jobQueue.lock);
 
+	_Atomic uint64_t *completedTasks = Sys_Alloc(sizeof(*completedTasks), 1, MH_Frame);
+	*completedTasks = 0;
+
 	for (i = 0; i < dispatches; ++i) {
-		struct DispatchArgs *dargs = Sys_Alloc(sizeof(*dargs), 1, MH_Transient);
+		struct NeDispatchArgs *dargs = Sys_Alloc(sizeof(*dargs), 1, MH_Frame);
 
 		dargs->exec = proc;
 		dargs->count = jobs;
 		dargs->args = args ? &(args[next_start]) : NULL;
 		dargs->id = id++;
 		dargs->endId = endId;
+		dargs->jobCount = count;
+		dargs->completed = completedTasks;
 		dargs->completedHandler = completed;
+		dargs->completionArgs = completionArgs;
 
 		if (extraJobs) {
 			++dargs->count;
@@ -164,7 +170,7 @@ E_DispatchJobs(uint64_t count, JobProc proc, void **args, JobCompletedProc compl
 
 		next_start += dargs->count;
 
-		while(!_JQ_Push(&_jobQueue, (JobProc)_DispatchWrapper, dargs, NULL, NULL))
+		while(!_JQ_Push(&_jobQueue, (NeJobProc)_DispatchWrapper, dargs, NULL, NULL, NULL))
 			Sys_Yield();
 	}
 
@@ -202,10 +208,10 @@ _ThreadProc(void *args)
 {
 	static volatile _Atomic uint32_t workerId = 0;
 	uint32_t id = atomic_fetch_add_explicit(&workerId, 1, memory_order_acq_rel);
-	struct Job job = { 0, 0 };
+	struct NeJob job = { 0, 0 };
 
 	_workerId = id;
-	Sys_LogEntry(JOBMOD, LOG_INFORMATION, L"Worker %d started", _workerId);
+	Sys_LogEntry(JOBMOD, LOG_INFORMATION, "Worker %d started", _workerId);
 
 	while (!_shutdown) {
 		Sys_LockFutex(_wakeLock);
@@ -225,7 +231,7 @@ _ThreadProc(void *args)
 		if (job.exec) {
 			job.exec(id, job.args);
 			if (job.completed)
-				job.completed(job.id);
+				job.completed(job.id, job.completionArgs);
 
 			memset(&job, 0x0, sizeof(job));
 		}
@@ -233,22 +239,23 @@ _ThreadProc(void *args)
 }
 
 static void
-_DispatchWrapper(int worker, struct DispatchArgs *argPtr)
+_DispatchWrapper(int worker, struct NeDispatchArgs *argPtr)
 {
-	struct DispatchArgs args;
+	struct NeDispatchArgs args;
 	memcpy(&args, argPtr, sizeof(args));
 
 	for (int i = 0; i < args.count; ++i)
 		args.exec(worker, args.args ? args.args[i] : NULL);
 
-	if (!args.completedHandler || args.id != args.endId)
+	uint64_t completed = atomic_fetch_add_explicit(args.completed, args.count, memory_order_acq_rel) + args.count;
+	if (completed != args.jobCount || !args.completedHandler)
 		return;
 
-	args.completedHandler(args.endId);
+	args.completedHandler(args.endId, args.completionArgs);
 }
 
 static inline bool
-_JQ_Push(struct JobQueue *jq, JobProc exec, void *args, JobCompletedProc completed, uint64_t *id)
+_JQ_Push(struct NeJobQueue *jq, NeJobProc exec, void *args, NeJobCompletedProc completed, void *completionArgs, uint64_t *id)
 {
 	bool ret = false;
 	uint64_t next;
@@ -261,6 +268,7 @@ _JQ_Push(struct JobQueue *jq, JobProc exec, void *args, JobCompletedProc complet
 		jq->jobs[jq->head].args = args;
 		jq->jobs[jq->head].exec = exec;
 		jq->jobs[jq->head].completed = completed;
+		jq->jobs[jq->head].completionArgs = completionArgs;
 
 		if (id)
 			*id = jq->jobs[jq->head].id;

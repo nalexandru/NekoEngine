@@ -1,15 +1,27 @@
 #include <Scene/Camera.h>
+#include <Scene/Systems.h>
 #include <Scene/Transform.h>
+#include <Scene/Components.h>
 #include <Engine/Engine.h>
 #include <Engine/Event.h>
 #include <Engine/Events.h>
 
-struct Camera *Scn_activeCamera = NULL;
+struct NeCamera *Scn_activeCamera = NULL;
 
-static void _RebuildProjection(struct Camera *cam, void *args);
+static bool _InitCamera(struct NeCamera *cam, const void **args);
+static void _TermCamera(struct NeCamera *cam);
+static void _RebuildProjection(struct NeCamera *cam, void *args);
 
-bool
-Scn_InitCamera(struct Camera *cam, const void **args)
+E_REGISTER_COMPONENT(CAMERA_COMP, struct NeCamera, 16, _InitCamera, _TermCamera)
+
+void
+Scn_ActivateCamera(struct NeCamera *cam)
+{
+	Scn_activeCamera = cam;
+}
+
+static bool
+_InitCamera(struct NeCamera *cam, const void **args)
 {
 	m4_ident(&cam->viewMatrix);
 
@@ -38,28 +50,15 @@ Scn_InitCamera(struct Camera *cam, const void **args)
 
 	m4_infinite_perspective_rz(&cam->projMatrix, cam->fov, (float)*E_screenWidth / (float)*E_screenHeight, cam->zNear);
 
-	cam->evt = E_RegisterHandler(EVT_SCREEN_RESIZED, (EventHandlerProc)_RebuildProjection, cam);
+	cam->evt = E_RegisterHandler(EVT_SCREEN_RESIZED, (NeEventHandlerProc)_RebuildProjection, cam);
 
 	return true;
 }
 
-void
-Scn_TermCamera(struct Camera *cam)
+E_SYSTEM(SCN_UPDATE_CAMERA, ECSYS_GROUP_PRE_RENDER, ECSYS_PRI_CAM_VIEW, true, void, 2, TRANSFORM_COMP, CAMERA_COMP)
 {
-	E_UnregisterHandler(cam->evt);
-}
-
-void
-Scn_ActivateCamera(struct Camera *cam)
-{
-	Scn_activeCamera = cam;
-}
-
-void
-Scn_UpdateCamera(void **comp, void *args)
-{
-	struct Transform *xform = comp[0];
-	struct Camera *cam = comp[1];
+	struct NeTransform *xform = comp[0];
+	struct NeCamera *cam = comp[1];
 
 	struct mat4 m_rot, m_pos;
 	struct quat q1, q2, rot;
@@ -81,7 +80,13 @@ Scn_UpdateCamera(void **comp, void *args)
 }
 
 static void
-_RebuildProjection(struct Camera *cam, void *args)
+_TermCamera(struct NeCamera *cam)
+{
+	E_UnregisterHandler(cam->evt);
+}
+
+static void
+_RebuildProjection(struct NeCamera *cam, void *args)
 {
 	m4_infinite_perspective_rz(&cam->projMatrix, cam->fov, (float)*E_screenWidth / (float)*E_screenHeight, cam->zNear);
 }

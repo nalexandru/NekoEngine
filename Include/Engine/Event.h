@@ -3,12 +3,12 @@
 
 #include <Engine/Types.h>
 
-typedef void (*EventHandlerProc)(void *user, void *args);
+typedef void (*NeEventHandlerProc)(void *user, void *args);
 
-void E_Broadcast(const wchar_t *event, void *args);
+void E_Broadcast(const char *event, void *args);
 
-uint64_t	E_RegisterHandler(const wchar_t *event, EventHandlerProc handler, void *user);
-void		E_UnregisterHandler(uint64_t handler);
+uint64_t E_RegisterHandler(const char *event, NeEventHandlerProc handler, void *user);
+void E_UnregisterHandler(uint64_t handler);
 
 bool E_InitEventSystem(void);
 void E_TermEventSystem(void);

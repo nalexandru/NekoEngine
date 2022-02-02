@@ -1,9 +1,9 @@
 #include "VulkanDriver.h"
 
-struct AccelerationStructure *
-Vk_CreateAccelerationStructure(struct RenderDevice *dev, const struct AccelerationStructureCreateInfo *info)
+struct NeAccelerationStructure *
+Vk_CreateAccelerationStructure(struct NeRenderDevice *dev, const struct NeAccelerationStructureCreateInfo *info)
 {
-	struct AccelerationStructure *as = Sys_Alloc(1, sizeof(*as), MH_RenderDriver);
+	struct NeAccelerationStructure *as = Sys_Alloc(1, sizeof(*as), MH_RenderDriver);
 	if (!as)
 		return NULL;
 
@@ -29,7 +29,7 @@ Vk_CreateAccelerationStructure(struct RenderDevice *dev, const struct Accelerati
 }
 
 void
-Vk_DestroyAccelerationStructure(struct RenderDevice *dev, struct AccelerationStructure *as)
+Vk_DestroyAccelerationStructure(struct NeRenderDevice *dev, struct NeAccelerationStructure *as)
 {
 	vkDestroyAccelerationStructureKHR(dev->dev, as->as, Vkd_allocCb);
 	Sys_Free(as);

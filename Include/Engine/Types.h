@@ -1,61 +1,80 @@
 #ifndef _NE_ENGINE_TYPES_H_
 #define _NE_ENGINE_TYPES_H_
 
-#include <wchar.h>
 #include <stdint.h>
+#include <stddef.h>
 #include <stdbool.h>
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(RE_BUILTIN)
 #	if defined(_ENGINE_INTERNAL_)
 #		define ENGINE_API	__declspec(dllexport)
+#		define ENGINE_IMP	__declspec(dllimport)
 #	else
 #		define ENGINE_API	__declspec(dllimport)
+#		define APP_API		__declspec(dllexport)
 #	endif
 #else
 #	define ENGINE_API
 #endif
 
-#undef ALIGN
-
 #if defined (__GNUC__) || defined(__clang__)
-#	define ALIGN(x) __attribute__((aligned(x)))
+#	define NE_ALIGN(x) __attribute__((aligned(x)))
+
+#	define E_INITIALIZER(x) \
+		static void x(void) __attribute__((constructor)); \
+		static void x(void)
+
 #elif defined(_MSC_VER)
-#	define ALIGN(x) __declspec(align(x))
+#	define NE_ALIGN(x) __declspec(align(x))
+
+#	pragma section(".CRT$XCU", read)
+#	define _INIT(f, p) \
+		static void f(void); \
+		__declspec(allocate(".CRT$XCU")) void (*f##_)(void) = f; \
+		__pragma(comment(linker, "/include:" p #f "_")) \
+		static void f(void)
+
+#	ifdef _WIN64
+#		define E_INITIALIZER(x)	_INIT(x, "")
+#	else
+#		define E_INITIALIZER(x) _INIT(x, "_")
+#	endif
 #else
 #	error "Unknown compiler"
 #endif
 
 #define E_INVALID_HANDLE (uint64_t)-1
 
-struct Array;
-struct Queue;
+struct NeArray;
+struct NeQueue;
 
-struct Font;
-struct Scene;
-struct Light;
-struct Stream;
-struct Camera;
-struct UIContext;
-struct AudioClip;
-struct AtomicLock;
-struct ResourceLoadInfo;
+struct NeFont;
+struct NeScene;
+struct NeLight;
+struct NeStream;
+struct NeCamera;
+struct NeUIContext;
+struct NeAudioClip;
+struct NeAtomicLock;
+struct NeResourceLoadInfo;
 
-struct AudioDevice;
-struct AudioDeviceInfo;
-struct AudioDeviceProcs;
-struct AudioSource;
-struct AudioSourceProcs;
-struct AudioClip;
+struct NeAudioDevice;
+struct NeAudioDeviceInfo;
+struct NeAudioDeviceProcs;
+struct NeAudioSource;
+struct NeAudioSourceProcs;
+struct NeAudioClip;
+struct NeAudioClipCreateInfo;
 
-struct Bone;
-struct Skeleton;
-struct SkeletonNode;
-struct AnimationClip;
-struct AnimationClipCreateInfo;
+struct NeBone;
+struct NeSkeleton;
+struct NeSkeletonNode;
+struct NeAnimationClip;
+struct NeAnimationClipCreateInfo;
 
-struct ComponentCreationData;
+struct NeComponentCreationData;
 
-struct Version
+struct NeVersion
 {
 	uint8_t major;
 	uint8_t minor;
@@ -63,24 +82,21 @@ struct Version
 	uint8_t revision;
 };
 
-typedef void *File;
-typedef void *Mutex;
-typedef void *Futex;
-typedef void *Thread;
-typedef void *EntityHandle;
-typedef void *ConditionVariable;
+typedef void *NeFile;
+typedef void *NeMutex;
+typedef void *NeFutex;
+typedef void *NeThread;
+typedef void *NeEntityHandle;
+typedef void *NeConditionVariable;
 
-typedef int64_t CompHandle;
-typedef size_t CompTypeId;
-typedef uint64_t Handle;
+typedef int64_t NeCompHandle;
+typedef size_t NeCompTypeId;
+typedef uint64_t NeHandle;
 
-typedef void * CommandAllocator;
-typedef void * CommandList;
+typedef bool (*NeCompInitProc)(void *, const void **);
+typedef void (*NeCompTermProc)(void *);
 
-typedef bool (*CompInitProc)(void *, const void **);
-typedef void (*CompTermProc)(void *);
-
-typedef void (*ECSysExecProc)(void **comp, void *args);
+typedef void (*NeECSysExecProc)(void **comp, void *args);
 
 struct mat3;
 struct mat4;

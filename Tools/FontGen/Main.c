@@ -9,14 +9,14 @@
 
 #define FNT_MAGIC	0xB00B5000
 
-struct Font
+struct NeFont
 {
 	uint32_t magic;
 	uint32_t texSize;
 	uint32_t glyphCount;
 };
 
-struct Glyph
+struct NeGlyph
 {
 	float u, v, tw, th;
 	struct {
@@ -61,8 +61,8 @@ main(int argc, char *argv[])
 	FT_GlyphSlot sizeGlyph, renderGlyph;
 	uint32_t x = 0, y = 0, h = 0, minSize = 128, size = 0;
 	uint8_t *data, *img;
-	struct Font font;
-	struct Glyph *glyphs;
+	struct NeFont font;
+	struct NeGlyph *glyphs;
 
 	if (argc != 4)
 		_usage(argv[0]);

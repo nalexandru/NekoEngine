@@ -1,6 +1,7 @@
 #include <Input/Input.h>
 #include <Engine/IO.h>
 #include <Engine/Engine.h>
+#include <Engine/Console.h>
 #include <Runtime/Runtime.h>
 #include <System/Memory.h>
 #include <System/Log.h>
@@ -12,26 +13,26 @@
 #define CFG_AM		2
 #define CFG_KM		3
 
-struct KeyAxis
+struct NeKeyAxis
 {
-	enum Button max;
-	enum Button min;
+	enum NeButton max;
+	enum NeButton min;
 	uint64_t hash;
 };
 
-struct Map
+struct NeInputMap
 {
 	union {
 		struct {
-			enum Button primary;
+			enum NeButton primary;
 			uint8_t primaryDevice;
-			enum Button secondary;
+			enum NeButton secondary;
 			uint8_t secondaryDevice;
 		} key;
 		struct {
-			enum Axis primary;
+			enum NeAxis primary;
 			uint8_t primaryDevice;
-			enum Axis secondary;
+			enum NeAxis secondary;
 			uint8_t secondaryDevice;
 		} axis;
 	};
@@ -44,15 +45,15 @@ bool In_buttonState[BTN_STATE_COUNT];
 float In_mouseAxis[3] = { 0.f, 0.f, 0.f };
 float In_axisSensivity[255];
 uint8_t In_connectedControllers = 0;
-struct ControllerState In_controllerState[IN_MAX_CONTROLLERS];
+struct NeControllerState In_controllerState[IN_MAX_CONTROLLERS];
 
 bool __InSys_enableMouseAxis = false;
 extern bool __InSys_rawMouseAxis;
 
 static bool _prevButtonState[BTN_STATE_COUNT];
-static struct ControllerState _prevControllerState[IN_MAX_CONTROLLERS];
-static struct Array _map;
-static struct Array _virtualAxis;
+static struct NeControllerState _prevControllerState[IN_MAX_CONTROLLERS];
+static struct NeArray _map;
+static struct NeArray _virtualAxis;
 
 #define GPAD_BTN(x, state) (state.buttons & (1 << (x - BTN_GPAD_BTN_BASE)))
 
@@ -60,8 +61,7 @@ bool
 In_InitInput(void)
 {
 	char *buff = NULL;
-	wchar_t *wbuff = NULL;
-	struct Stream stm;
+	struct NeStream stm;
 	uint8_t mode = CFG_INIT;
 
 	memset(In_buttonState, 0x0, sizeof(In_buttonState));
@@ -80,7 +80,6 @@ In_InitInput(void)
 		return true;
 
 	buff = Sys_Alloc(sizeof(char), BUFF_SZ, MH_Transient);
-	wbuff = Sys_Alloc(sizeof(wchar_t), BUFF_SZ, MH_Transient);
 
 	while (E_ReadStreamLine(&stm, buff, BUFF_SZ)) {
 		size_t len;
@@ -90,7 +89,7 @@ In_InitInput(void)
 		if (*line == 0x0 || *line == ';')
 			continue;
 
-		len = strlen(line);
+		len = strnlen(line, BUFF_SZ);
 
 		if (!strncmp(line, "[VirtualAxis]", len)) {
 			mode = CFG_VA;
@@ -108,8 +107,7 @@ In_InitInput(void)
 				ptr = strchr(ptr, ';') + 1;
 				b = atoi(ptr);
 
-				mbstowcs(wbuff, buff, BUFF_SZ);
-				In_CreateVirtualAxis(wbuff, (enum Button)a, (enum Button)b);
+				In_CreateVirtualAxis(buff, (enum NeButton)a, (enum NeButton)b);
 			} break;
 			case CFG_AM: {
 				ptr = strchr(line, '=');
@@ -125,11 +123,10 @@ In_InitInput(void)
 				ptr = strchr(ptr, ',') + 1;
 				d = atoi(ptr);
 
-				mbstowcs(wbuff, buff, BUFF_SZ);
-				map = In_CreateMap(wbuff);
+				map = In_CreateMap(buff);
 
-				In_MapPrimaryAxis(map, (enum Axis)a, (uint8_t)b);
-				In_MapSecondaryAxis(map, (enum Axis)c, (uint8_t)d);
+				In_MapPrimaryAxis(map, (enum NeAxis)a, (uint8_t)b);
+				In_MapSecondaryAxis(map, (enum NeAxis)c, (uint8_t)d);
 			} break;
 			case CFG_KM: {
 				ptr = strchr(line, '=');
@@ -145,11 +142,10 @@ In_InitInput(void)
 				ptr = strchr(ptr, ',') + 1;
 				d = atoi(ptr);
 
-				mbstowcs(wbuff, buff, BUFF_SZ);
-				map = In_CreateMap(wbuff);
+				map = In_CreateMap(buff);
 
-				In_MapPrimaryButton(map, (enum Button)a, (uint8_t)b);
-				In_MapSecondaryButton(map, (enum Button)c, (uint8_t)d);
+				In_MapPrimaryButton(map, (enum NeButton)a, (uint8_t)b);
+				In_MapSecondaryButton(map, (enum NeButton)c, (uint8_t)d);
 			} break;
 			}
 		}
@@ -175,6 +171,15 @@ In_TermInput(void)
 		In_ShowPointer(true);
 
 	In_SysTerm();
+}
+
+void
+In_Key(enum NeButton key, bool down)
+{
+	if (E_ConsoleKey(key, down))
+		return;
+
+	In_buttonState[key] = down;
 }
 
 void
@@ -221,52 +226,52 @@ In_EnableMouseAxis(bool enable)
 			In_CapturePointer(false);
 			In_ShowPointer(true);
 		}
+		
+		In_SetPointerPosition(*E_screenWidth / 2, *E_screenHeight / 2);
 	}
-
-	In_SetPointerPosition(*E_screenWidth / 2, *E_screenHeight / 2);
 }
 
-enum Axis
-In_CreateVirtualAxis(const wchar_t *name, enum Button min, enum Button max)
+enum NeAxis
+In_CreateVirtualAxis(const char *name, enum NeButton min, enum NeButton max)
 {
 	uint32_t axis = 0;
-	const struct KeyAxis ka = { max, min, Rt_HashStringW(name) };
+	const struct NeKeyAxis ka = { max, min, Rt_HashString(name) };
 
 	if (!_virtualAxis.count)
-		Rt_InitArray(&_virtualAxis, sizeof(struct KeyAxis), 10, MH_System);
+		Rt_InitArray(&_virtualAxis, sizeof(struct NeKeyAxis), 10, MH_System);
 
-	axis = (enum Axis)(_virtualAxis.count + VIRTUAL_AXIS_START);
+	axis = (enum NeAxis)(_virtualAxis.count + VIRTUAL_AXIS_START);
 	Rt_ArrayAdd(&_virtualAxis, &ka);
 
-	return (enum Axis)axis;
+	return (enum NeAxis)axis;
 }
 
-enum Axis
-In_GetVirtualAxis(const wchar_t *name)
+enum NeAxis
+In_GetVirtualAxis(const char *name)
 {
 	size_t i;
-	struct KeyAxis *ka;
-	uint64_t hash = Rt_HashStringW(name);
+	struct NeKeyAxis *ka;
+	uint64_t hash = Rt_HashString(name);
 
 	for (i = 0; i < _virtualAxis.count; ++i) {
 		ka = Rt_ArrayGet(&_virtualAxis, i);
 		if (ka->hash == hash)
-			return (enum Axis)(i + VIRTUAL_AXIS_START);
+			return (enum NeAxis)(i + VIRTUAL_AXIS_START);
 	}
 
 	return AXIS_UNRECOGNIZED;
 }
 
 uint32_t
-In_CreateMap(const wchar_t *name)
+In_CreateMap(const char *name)
 {
 	size_t i;
 	uint32_t id = 0;
-	struct Map m, *em;
-	m.hash = Rt_HashStringW(name);
+	struct NeInputMap m, *em;
+	m.hash = Rt_HashString(name);
 
 	if (!_map.size)
-		Rt_InitArray(&_map, 10, sizeof(struct Map), MH_System);
+		Rt_InitArray(&_map, 10, sizeof(struct NeInputMap), MH_System);
 
 	for (i = 0; i < _map.count; ++i) {
 		em = Rt_ArrayGet(&_map, i);
@@ -281,33 +286,33 @@ In_CreateMap(const wchar_t *name)
 }
 
 void
-In_MapPrimaryButton(uint32_t map, enum Button btn, uint8_t controller)
+In_MapPrimaryButton(uint32_t map, enum NeButton btn, uint8_t controller)
 {
-	struct Map *m = Rt_ArrayGet(&_map, map);
+	struct NeInputMap *m = Rt_ArrayGet(&_map, map);
 	m->key.primary = btn;
 	m->key.primaryDevice = controller;
 }
 
 void
-In_MapSecondaryButton(uint32_t map, enum Button btn, uint8_t controller)
+In_MapSecondaryButton(uint32_t map, enum NeButton btn, uint8_t controller)
 {
-	struct Map *m = Rt_ArrayGet(&_map, map);
+	struct NeInputMap *m = Rt_ArrayGet(&_map, map);
 	m->key.secondary = btn;
 	m->key.secondaryDevice = controller;
 }
 
 void
-In_MapPrimaryAxis(uint32_t map, enum Axis axis, uint8_t controller)
+In_MapPrimaryAxis(uint32_t map, enum NeAxis axis, uint8_t controller)
 {
-	struct Map *m = Rt_ArrayGet(&_map, map);
+	struct NeInputMap *m = Rt_ArrayGet(&_map, map);
 	m->axis.primary = axis;
 	m->axis.primaryDevice = controller;
 }
 
 void
-In_MapSecondaryAxis(uint32_t map, enum Axis axis, uint8_t controller)
+In_MapSecondaryAxis(uint32_t map, enum NeAxis axis, uint8_t controller)
 {
-	struct Map *m = Rt_ArrayGet(&_map, map);
+	struct NeInputMap *m = Rt_ArrayGet(&_map, map);
 	m->axis.secondary = axis;
 	m->axis.secondaryDevice = controller;
 }
@@ -315,39 +320,39 @@ In_MapSecondaryAxis(uint32_t map, enum Axis axis, uint8_t controller)
 bool
 In_Button(uint32_t map)
 {
-	struct Map *m = Rt_ArrayGet(&_map, map);
+	struct NeInputMap *m = Rt_ArrayGet(&_map, map);
 	return In_UnmappedButton(m->key.primary, m->key.primaryDevice) || In_UnmappedButton(m->key.secondary, m->key.secondaryDevice);
 }
 
 bool
 In_ButtonUp(uint32_t map)
 {
-	struct Map *m = Rt_ArrayGet(&_map, map);
+	struct NeInputMap *m = Rt_ArrayGet(&_map, map);
 	return In_UnmappedButtonUp(m->key.primary, m->key.primaryDevice) || In_UnmappedButtonUp(m->key.secondary, m->key.secondaryDevice);
 }
 
 bool
 In_ButtonDown(uint32_t map)
 {
-	struct Map *m = Rt_ArrayGet(&_map, map);
+	struct NeInputMap *m = Rt_ArrayGet(&_map, map);
 	return In_UnmappedButtonDown(m->key.primary, m->key.primaryDevice) || In_UnmappedButtonDown(m->key.secondary, m->key.secondaryDevice);
 }
 
 float
 In_Axis(uint32_t map)
 {
-	struct Map *m = Rt_ArrayGet(&_map, map);
+	struct NeInputMap *m = Rt_ArrayGet(&_map, map);
 	return In_UnmappedAxis(m->axis.primary, m->axis.primaryDevice) + In_UnmappedAxis(m->axis.secondary, m->axis.secondaryDevice);
 }
 
 bool
-In_UnmappedButton(enum Button btn, uint8_t controller)
+In_UnmappedButton(enum NeButton btn, uint8_t controller)
 {
 	return btn < BTN_STATE_COUNT ? In_buttonState[btn] : GPAD_BTN(btn, In_controllerState[controller]);
 }
 
 bool
-In_UnmappedButtonUp(enum Button btn, uint8_t controller)
+In_UnmappedButtonUp(enum NeButton btn, uint8_t controller)
 {
 	const bool prev = btn < BTN_STATE_COUNT ? _prevButtonState[btn] : GPAD_BTN(btn, _prevControllerState[controller]);
 	const bool cur = btn < BTN_STATE_COUNT ? In_buttonState[btn] : GPAD_BTN(btn, In_controllerState[controller]);
@@ -355,7 +360,7 @@ In_UnmappedButtonUp(enum Button btn, uint8_t controller)
 }
 
 bool
-In_UnmappedButtonDown(enum Button btn, uint8_t controller)
+In_UnmappedButtonDown(enum NeButton btn, uint8_t controller)
 {
 	const bool prev = btn < BTN_STATE_COUNT ? _prevButtonState[btn] : GPAD_BTN(btn, _prevControllerState[controller]);
 	const bool cur = btn < BTN_STATE_COUNT ? In_buttonState[btn] : GPAD_BTN(btn, In_controllerState[controller]);
@@ -363,9 +368,9 @@ In_UnmappedButtonDown(enum Button btn, uint8_t controller)
 }
 
 float
-In_UnmappedAxis(enum Axis axis, uint8_t controller)
+In_UnmappedAxis(enum NeAxis axis, uint8_t controller)
 {
-	struct KeyAxis *ka;
+	struct NeKeyAxis *ka;
 	float ret;
 
 	if (axis < CONTROLLER_AXIS_COUNT) {
@@ -385,4 +390,55 @@ In_UnmappedAxis(enum Axis axis, uint8_t controller)
 
 		return ret * In_axisSensivity[axis];
 	}
+}
+
+static char _keycodeMap[] =
+{
+	'0',  '1',  '2',  '3',  '4',  '5',  '6',  '7',  '8',  '9',
+	'a',  'b',  'c',  'd',  'e',  'f',  'g',  'h',  'i',  'j',
+	'k',  'l',  'm',  'n',  'o',  'p',  'q',  'r',  's',  't',
+	'u',  'v',  'w',  'x',  'y',  'z',  0x0,  0x0,  0x0,  0x0,
+	' ',  '`',  '\t', 0x0,  '\r', 0x0,  0x0,  0x0,  0x0,  0x0,
+	0x0,  0x0,  0x0,  '/',  '\\', ',',  '.',  ';',  '\'', 0x0,
+	'=',  '-',  0x0,  '[',  ']',  0x0,  0x0,  0x0,  0x0,  0x0,
+	0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,
+	0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,
+	0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  '0',
+	'1',  '2',  '3',  '4',  '5',  '6',  '7',  '8',  '9',  '+',
+	'-',  '.',  '/',  '*',  '\r', 0x0
+};
+
+char
+In_KeycodeToChar(enum NeButton key, bool shift)
+{
+	char ch = _keycodeMap[key];
+
+	if (shift) {
+		if (ch > 0x60 && ch < 0x7B) {
+			ch -= 0x20;
+		} else if (ch > 0x5A && ch < 0x5E) {
+			ch += 0x20;
+		} else {
+			switch (ch) {
+			case 0x3D: return 0x2B;
+			case 0x2C: return 0x3C;
+			case 0x2D: return 0x5F;
+			case 0x2E: return 0x3E;
+			case 0x2F: return 0x3F;
+			case 0x30: return 0x29;
+			case 0x31: return 0x21;
+			case 0x32: return 0x40;
+			case 0x33: return 0x23;
+			case 0x34: return 0x24;
+			case 0x35: return 0x25;
+			case 0x36: return 0x5E;
+			case 0x37: return 0x26;
+			case 0x38: return 0x2A;
+			case 0x39: return 0x28;
+			case '\'': return '"';
+			}
+		}
+	}
+
+	return ch;
 }

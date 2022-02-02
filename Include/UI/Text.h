@@ -3,7 +3,7 @@
 
 #include <Engine/Types.h>
 
-void UI_DrawText(struct UIContext *ctx, const wchar_t *text, float px, float py, float size, struct Font *font);
+void UI_DrawText(struct NeUIContext *ctx, const char *text, float px, float py, float size, struct NeFont *font);
 
 bool UI_InitText(void);
 void UI_TermText(void);

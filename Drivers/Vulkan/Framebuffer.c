@@ -4,12 +4,12 @@
 
 #include "VulkanDriver.h"
 
-struct Framebuffer *
-Vk_CreateFramebuffer(struct RenderDevice *dev, const struct FramebufferDesc *desc)
+struct NeFramebuffer *
+Vk_CreateFramebuffer(struct NeRenderDevice *dev, const struct NeFramebufferDesc *desc)
 {
-	enum MemoryHeap heap = MH_Frame;
+	enum NeMemoryHeap heap = MH_Frame;
 
-	struct Framebuffer *fb = Sys_Alloc(1, sizeof(*fb), heap);
+	struct NeFramebuffer *fb = Sys_Alloc(1, sizeof(*fb), heap);
 	if (!fb)
 		return NULL;
 
@@ -64,17 +64,22 @@ Vk_CreateFramebuffer(struct RenderDevice *dev, const struct FramebufferDesc *des
 	fb->height = desc->height;
 	fb->layers = desc->layers;
 
+#ifdef _DEBUG
+	if (desc->name)
+		Vkd_SetObjectName(dev->dev, fb->fb, VK_OBJECT_TYPE_FRAMEBUFFER, desc->name);
+#endif
+
 	return fb;
 }
 
 void
-Vk_SetAttachment(struct Framebuffer *fb, uint32_t pos, struct Texture *tex)
+Vk_SetAttachment(struct NeFramebuffer *fb, uint32_t pos, struct NeTexture *tex)
 {
 	fb->attachments[pos] = tex->imageView;
 }
 
 void
-Vk_DestroyFramebuffer(struct RenderDevice *dev, struct Framebuffer *fb)
+Vk_DestroyFramebuffer(struct NeRenderDevice *dev, struct NeFramebuffer *fb)
 {
 	vkDestroyFramebuffer(dev->dev, fb->fb, Vkd_allocCb);
 

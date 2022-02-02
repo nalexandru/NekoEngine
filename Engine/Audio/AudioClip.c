@@ -17,7 +17,7 @@
 #include <Engine/Resource.h>
 
 bool
-Au_CreateClip(const char *name, const struct AudioClipCreateInfo *ci, struct AudioClip *ac, Handle h)
+Au_CreateClip(const char *name, const struct NeAudioClipCreateInfo *ci, struct NeAudioClip *ac, NeHandle h)
 {
 /*	ac->data = ci->samples;
 	ac->byteSize = ci->sampleCount * 2;
@@ -27,7 +27,7 @@ Au_CreateClip(const char *name, const struct AudioClipCreateInfo *ci, struct Aud
 }
 
 bool
-Au_LoadClip(struct ResourceLoadInfo *li, const char *args, struct AudioClip *ac, Handle h)
+Au_LoadClip(struct NeResourceLoadInfo *li, const char *args, struct NeAudioClip *ac, NeHandle h)
 {
 /*	if (!E_LoadWaveAsset(&li->stm, ac))
 		return false;
@@ -37,7 +37,7 @@ Au_LoadClip(struct ResourceLoadInfo *li, const char *args, struct AudioClip *ac,
 }
 
 void
-Au_UnloadClip(struct AudioClip *ac, Handle h)
+Au_UnloadClip(struct NeAudioClip *ac, NeHandle h)
 {
 //	Au_TermClip(ac);
 
@@ -45,13 +45,13 @@ Au_UnloadClip(struct AudioClip *ac, Handle h)
 }
 
 bool
-Au_InitClip(struct AudioClip *clip)
+Au_InitClip(struct NeAudioClip *clip)
 {
 	return false;
 }
 
 void
-Au_TermClip(struct AudioClip *clip)
+Au_TermClip(struct NeAudioClip *clip)
 {
 }
 

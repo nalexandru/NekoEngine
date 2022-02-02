@@ -4,16 +4,12 @@
 
 #include <unistd.h>
 
-#define Handle __EngineHandle
-
 #include <System/Window.h>
 #include <System/Memory.h>
 #include <Engine/Engine.h>
 //#include <Render/Render.h>
 
 //#include "MacXPlatform.h"
-
-#undef Handle
 
 #import <UIKit/UIKit.h>
 
@@ -40,7 +36,7 @@ Sys_CreateWindow(void)
 }
 
 void
-Sys_SetWindowTitle(const wchar_t *name)
+Sys_SetWindowTitle(const char *name)
 {
 	(void)name;
 }

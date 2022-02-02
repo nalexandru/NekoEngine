@@ -3,14 +3,14 @@
 
 #include <Engine/Types.h>
 
-bool Au_InitSource(struct AudioSource *src);
-void Au_TermSource(struct AudioSource *src);
+bool Au_InitSource(struct NeAudioSource *src);
+void Au_TermSource(struct NeAudioSource *src);
 
-void Au_SetClip(struct AudioSource *src, Handle clip);
-void Au_Play(struct AudioSource *src);
-void Au_Gain(struct AudioSource *src, float gain);
+void Au_SetClip(struct NeAudioSource *src, NeHandle clip);
+void Au_Play(struct NeAudioSource *src);
+void Au_Gain(struct NeAudioSource *src, float gain);
 
-bool Au_InitSourceComponent(struct AudioSource *src, const void **);
-void Au_TermSourceComponent(struct AudioSource *src);
+bool Au_InitSourceComponent(struct NeAudioSource *src, const void **);
+void Au_TermSourceComponent(struct NeAudioSource *src);
 
 #endif /* _NE_AUDIO_SOURCE_H_ */

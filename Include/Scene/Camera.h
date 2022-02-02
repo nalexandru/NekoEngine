@@ -5,13 +5,13 @@
 #include <Engine/Types.h>
 #include <Engine/Component.h>
 
-enum ProjectionType
+enum NeProjectionType
 {
 	PT_Perspective,
 	PT_Orthographic
 };
 
-struct Camera
+struct NeCamera
 {
 	COMPONENT_BASE;
 
@@ -20,18 +20,13 @@ struct Camera
 
 	struct vec3 rotation;
 	float fov, zNear, zFar, aperture;
-	enum ProjectionType projection;
+	enum NeProjectionType projection;
 	
 	uint64_t evt;
 };
 
-ENGINE_API extern struct Camera *Scn_activeCamera;
+ENGINE_API extern struct NeCamera *Scn_activeCamera;
 
-bool Scn_InitCamera(struct Camera *cam, const void **args);
-void Scn_TermCamera(struct Camera *cam);
-
-void Scn_ActivateCamera(struct Camera *cam);
-
-void Scn_UpdateCamera(void **comp, void *args);
+void Scn_ActivateCamera(struct NeCamera *cam);
 
 #endif /* _NE_SCENE_CAMERA_H_ */

@@ -1,9 +1,9 @@
 #include "D3D12Driver.h"
 
-struct RenderDevice *
-D3D12_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devProcs, struct RenderContextProcs *ctxProcs)
+struct NeRenderDevice *
+D3D12_CreateDevice(struct NeRenderDeviceInfo *info, struct NeRenderDeviceProcs *devProcs, struct NeRenderContextProcs *ctxProcs)
 {
-	struct RenderDevice *dev = Sys_Alloc(sizeof(*dev), 1, MH_RenderDriver);
+	struct NeRenderDevice *dev = Sys_Alloc(sizeof(*dev), 1, MH_RenderDriver);
 
 	if (FAILED(IDXGIFactory1_EnumAdapters1(D3D12_dxgiFactory, (UINT)(uint64_t)info->private, &dev->adapter)))
 		goto error;
@@ -61,8 +61,8 @@ D3D12_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devP
 	devProcs->TextureLayout = D3D12_TextureLayout;
 	devProcs->DestroyTexture = D3D12_DestroyTexture;
 
-	devProcs->CreateSampler = (struct Sampler *(*)(struct RenderDevice *, const struct SamplerDesc *))D3D12_CreateSampler;
-	devProcs->DestroySampler = (void (*)(struct RenderDevice *dev, struct Sampler *))D3D12_DestroySampler;
+	devProcs->CreateSampler = (struct NeSampler *(*)(struct NeRenderDevice *, const struct NeSamplerDesc *))D3D12_CreateSampler;
+	devProcs->DestroySampler = (void (*)(struct NeRenderDevice *dev, struct NeSampler *))D3D12_DestroySampler;
 
 	devProcs->CreateBuffer = D3D12_CreateBuffer;
 	devProcs->UpdateBuffer = D3D12_UpdateBuffer;
@@ -79,11 +79,11 @@ D3D12_CreateDevice(struct RenderDeviceInfo *info, struct RenderDeviceProcs *devP
 	devProcs->DestroyContext = D3D12_DestroyContext;
 
 	// TODO: detect UWP
-	devProcs->CreateSurface = (struct Surface *(*)(struct RenderDevice *, void *))D3D12_CreateWin32Surface;
-	devProcs->DestroySurface = (void (*)(struct RenderDevice *, struct Surface *))D3D12_DestroyWin32Surface;
+	devProcs->CreateSurface = (struct NeSurface *(*)(struct NeRenderDevice *, void *))D3D12_CreateWin32Surface;
+	devProcs->DestroySurface = (void (*)(struct NeRenderDevice *, struct NeSurface *))D3D12_DestroyWin32Surface;
 
-	devProcs->CreateSwapchain = (struct Swapchain *(*)(struct RenderDevice *dev, struct Surface *, bool))D3D12_CreateSwapchain;
-	devProcs->DestroySwapchain = (void(*)(struct RenderDevice *dev, struct Swapchain *))D3D12_DestroySwapchain;
+	devProcs->CreateSwapchain = (struct NeSwapchain *(*)(struct NeRenderDevice *dev, struct NeSurface *, bool))D3D12_CreateSwapchain;
+	devProcs->DestroySwapchain = (void(*)(struct NeRenderDevice *dev, struct NeSwapchain *))D3D12_DestroySwapchain;
 
 	devProcs->CreateFramebuffer = D3D12_CreateFramebuffer;
 	devProcs->SetAttachment = D3D12_SetAttachment;
@@ -150,13 +150,13 @@ error:
 }
 
 bool
-D3D12_Execute(struct RenderDevice *dev, struct RenderContext *ctx, bool wait)
+D3D12_Execute(struct NeRenderDevice *dev, struct NeRenderContext *ctx, bool wait)
 {
 	return false;
 }
 
 void
-D3D12_WaitIdle(struct RenderDevice *dev)
+D3D12_WaitIdle(struct NeRenderDevice *dev)
 {
 	for (int i = 0; i < RE_NUM_FRAMES; ++i) {
 		ID3D12CommandQueue_Signal(dev->graphicsQueue, dev->renderFence[i], ++dev->fenceValue[i]);
@@ -169,7 +169,7 @@ D3D12_WaitIdle(struct RenderDevice *dev)
 }
 
 void
-D3D12_DestroyDevice(struct RenderDevice *dev)
+D3D12_DestroyDevice(struct NeRenderDevice *dev)
 {
 	ID3D12CommandQueue_Release(dev->computeQueue);
 	ID3D12CommandQueue_Release(dev->copyQueue);

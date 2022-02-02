@@ -1,7 +1,7 @@
 #ifndef _NE_INPUT_CODES_H_
 #define _NE_INPUT_CODES_H_
 
-enum Button 
+enum NeButton 
 {
 	BTN_KEY_0 = 0x00,
 	BTN_KEY_1 = 0x01,
@@ -63,7 +63,7 @@ enum Button
 	BTN_KEY_SEMICOLON = 0x39,
 	BTN_KEY_QUOTE = 0x3A,
 	BTN_KEY_DELETE = 0x3B,
-	BTN_KEY_PLUS = 0x3C,
+	BTN_KEY_EQUAL = 0x3C,
 	BTN_KEY_MINUS = 0x3D,
 	BTN_KEY_BKSPACE = 0x3E,
 	BTN_KEY_LBRACKET = 0x3F,
@@ -151,7 +151,7 @@ enum Button
 	BTN_FORCE_UINT = 0xFFFFFFFF
 };
 
-enum Axis
+enum NeAxis
 {
 	AXIS_LSTICK_X = 0,
 	AXIS_LSTICK_Y = 1,

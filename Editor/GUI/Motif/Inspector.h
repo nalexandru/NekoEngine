@@ -4,7 +4,7 @@
 #include <Engine/Types.h>
 
 void GUI_InspectScene(void);
-void GUI_InspectEntity(EntityHandle handle);
+void GUI_InspectEntity(NeEntityHandle handle);
 
 bool GUI_InitInspector(int x, int y, int width, int height);
 void GUI_ShowInspector(void);

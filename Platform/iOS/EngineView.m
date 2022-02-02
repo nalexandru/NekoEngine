@@ -1,10 +1,8 @@
-#define Handle __EngineHandle
 #include <Input/Input.h>
-#undef Handle
 
 #import "EngineView.h"
 
-extern enum Button iOS_keymap[256];
+extern enum NeButton iOS_keymap[256];
 
 @implementation EngineView
 
@@ -14,7 +12,7 @@ extern enum Button iOS_keymap[256];
 		if (!p.key)
 			continue;
 		
-		In_buttonState[iOS_keymap[[p.key keyCode]]] = true;
+		In_Key(iOS_keymap[[p.key keyCode]], true);
 	}
 }
 
@@ -24,7 +22,7 @@ extern enum Button iOS_keymap[256];
 		if (!p.key)
 			continue;
 		
-		In_buttonState[iOS_keymap[[p.key keyCode]]] = false;
+		In_Key(iOS_keymap[[p.key keyCode]], false);
 	}
 }
 
