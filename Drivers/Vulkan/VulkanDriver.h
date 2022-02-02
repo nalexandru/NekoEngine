@@ -9,7 +9,7 @@
  * This option has no effect when compiling for systems other than Windows or Linux
  */
 #ifndef ENABLE_AFTERMATH
-#	define ENABLE_AFTERMATH 1
+#	define ENABLE_AFTERMATH 0
 #endif
 
 // End build configuration
