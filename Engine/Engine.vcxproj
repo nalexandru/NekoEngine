@@ -50,11 +50,11 @@
     <ClInclude Include="..\Include\Animation\Skeleton.h" />
     <ClInclude Include="..\Include\Audio\Audio.h" />
     <ClInclude Include="..\Include\Audio\Clip.h" />
-    <ClInclude Include="..\Include\Audio\Device.h" />
     <ClInclude Include="..\Include\Audio\Driver.h" />
     <ClInclude Include="..\Include\Audio\Source.h" />
     <ClInclude Include="..\Include\Engine\Application.h" />
     <ClInclude Include="..\Include\Engine\Asset.h" />
+    <ClInclude Include="..\Include\Engine\BuildConfig.h" />
     <ClInclude Include="..\Include\Engine\Component.h" />
     <ClInclude Include="..\Include\Engine\Config.h" />
     <ClInclude Include="..\Include\Engine\Console.h" />
@@ -69,14 +69,15 @@
     <ClInclude Include="..\Include\Engine\Resource.h" />
     <ClInclude Include="..\Include\Engine\Types.h" />
     <ClInclude Include="..\Include\Engine\Version.h" />
+    <ClInclude Include="..\Include\Engine\XR.h" />
     <ClInclude Include="..\Include\Input\Input.h" />
     <ClInclude Include="..\Include\Input\Codes.h" />
-    <ClInclude Include="..\Include\Math\aabb2.h" />
-    <ClInclude Include="..\Include\Math\aabb3.h" />
+    <ClInclude Include="..\Include\Math\aabb.h" />
     <ClInclude Include="..\Include\Math\altivec\mat4_altivec.h" />
     <ClInclude Include="..\Include\Math\altivec\vec4_altivec.h" />
     <ClInclude Include="..\Include\Math\debug.h" />
     <ClInclude Include="..\Include\Math\defs.h" />
+    <ClInclude Include="..\Include\Math\frustum.h" />
     <ClInclude Include="..\Include\Math\func.h" />
     <ClInclude Include="..\Include\Math\mat3.h" />
     <ClInclude Include="..\Include\Math\mat4.h" />
@@ -85,8 +86,7 @@
     <ClInclude Include="..\Include\Math\neon\vec4_neon.h" />
     <ClInclude Include="..\Include\Math\plane.h" />
     <ClInclude Include="..\Include\Math\quat.h" />
-    <ClInclude Include="..\Include\Math\ray2.h" />
-    <ClInclude Include="..\Include\Math\ray3.h" />
+    <ClInclude Include="..\Include\Math\ray.h" />
     <ClInclude Include="..\Include\Math\sanity.h" />
     <ClInclude Include="..\Include\Math\sse\mat4_sse.h" />
     <ClInclude Include="..\Include\Math\sse\vec4_sse.h" />
@@ -95,21 +95,21 @@
     <ClInclude Include="..\Include\Math\vec4.h" />
     <ClInclude Include="..\Include\Math\vmx128\mat4_vmx128.h" />
     <ClInclude Include="..\Include\Math\vmx128\vec4_vmx128.h" />
+    <ClInclude Include="..\Include\Network\Network.h" />
+    <ClInclude Include="..\Include\Render\Backend.h" />
     <ClInclude Include="..\Include\Render\Components\ModelRender.h" />
+    <ClInclude Include="..\Include\Render\Context.h" />
+    <ClInclude Include="..\Include\Render\Core.h" />
     <ClInclude Include="..\Include\Render\DestroyResource.h" />
-    <ClInclude Include="..\Include\Render\Driver\Context.h" />
-    <ClInclude Include="..\Include\Render\Driver\Core.h" />
-    <ClInclude Include="..\Include\Render\Driver\Device.h" />
-    <ClInclude Include="..\Include\Render\Driver\Driver.h" />
-    <ClInclude Include="..\Include\Render\Driver\RayTracing.h" />
-    <ClInclude Include="..\Include\Render\Driver\RenderPassDesc.h" />
-    <ClInclude Include="..\Include\Render\Driver\TransientResources.h" />
+    <ClInclude Include="..\Include\Render\Device.h" />
     <ClInclude Include="..\Include\Render\Graph\Graph.h" />
     <ClInclude Include="..\Include\Render\Graph\Pass.h" />
     <ClInclude Include="..\Include\Render\Material.h" />
     <ClInclude Include="..\Include\Render\Model.h" />
+    <ClInclude Include="..\Include\Render\RayTracing.h" />
     <ClInclude Include="..\Include\Render\Render.h" />
     <ClInclude Include="..\Include\Render\Systems.h" />
+    <ClInclude Include="..\Include\Render\TransientResources.h" />
     <ClInclude Include="..\Include\Render\Types.h" />
     <ClInclude Include="..\Include\Runtime\Array.h" />
     <ClInclude Include="..\Include\Runtime\Queue.h" />
@@ -136,6 +136,8 @@
     <ClInclude Include="..\Platform\Win32\Compat\stdatomic.h" />
     <ClInclude Include="..\Platform\Win32\Win32Platform.h" />
     <ClInclude Include="Engine\ECS.h" />
+    <ClInclude Include="Render\Backend\Vulkan\volk.h" />
+    <ClInclude Include="Render\Backend\Vulkan\VulkanBackend.h" />
     <ClInclude Include="Render\Internal.h" />
     <ClInclude Include="Script\Interface.h" />
     <ClInclude Include="UI\Internal.h" />
@@ -225,17 +227,48 @@
     <ClCompile Include="Engine\Job.c" />
     <ClCompile Include="Engine\Plugin.c" />
     <ClCompile Include="Engine\Resource.c" />
+    <ClCompile Include="Engine\XR.c" />
     <ClCompile Include="Input\Input.c" />
+    <ClCompile Include="Network\Network.c" />
+    <ClCompile Include="Render\Backend\Buffer.c" />
+    <ClCompile Include="Render\Backend\DestroyResource.c" />
+    <ClCompile Include="Render\Backend\Pipeline.c" />
+    <ClCompile Include="Render\Backend\Shader.c" />
+    <ClCompile Include="Render\Backend\Texture.c" />
+    <ClCompile Include="Render\Backend\Vulkan\Platform\VkDirectStorage.c" />
+    <ClCompile Include="Render\Backend\Vulkan\VkAccelerationStructure.c" />
+    <ClCompile Include="Render\Backend\Vulkan\VkBuffer.c" />
+    <ClCompile Include="Render\Backend\Vulkan\VkContext.c" />
+    <ClCompile Include="Render\Backend\Vulkan\VkDebug.c" />
+    <ClCompile Include="Render\Backend\Vulkan\VkDescriptorSet.c" />
+    <ClCompile Include="Render\Backend\Vulkan\VkDevice.c" />
+    <ClCompile Include="Render\Backend\Vulkan\VkBackend.c" />
+    <ClCompile Include="Render\Backend\Vulkan\VkFramebuffer.c" />
+    <ClCompile Include="Render\Backend\Vulkan\VkMemory.c" />
+    <ClCompile Include="Render\Backend\Vulkan\VkPipeline.c" />
+    <ClCompile Include="Render\Backend\Vulkan\Platform\VkWin32.c" />
+    <ClCompile Include="Render\Backend\Vulkan\VkRenderPass.c" />
+    <ClCompile Include="Render\Backend\Vulkan\VkSampler.c" />
+    <ClCompile Include="Render\Backend\Vulkan\VkShader.c" />
+    <ClCompile Include="Render\Backend\Vulkan\VkShaderBindingTable.c" />
+    <ClCompile Include="Render\Backend\Vulkan\VkStaging.c" />
+    <ClCompile Include="Render\Backend\Vulkan\VkSwapchain.c" />
+    <ClCompile Include="Render\Backend\Vulkan\VkSynchronization.c" />
+    <ClCompile Include="Render\Backend\Vulkan\VkTexture.c" />
+    <ClCompile Include="Render\Backend\Vulkan\VkTransientResources.c" />
+    <ClCompile Include="Render\Backend\Vulkan\VkXR.c" />
+    <ClCompile Include="Render\Backend\Vulkan\volk.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="Render\Components\ModelRender.c" />
-    <ClCompile Include="Render\DestroyResource.c" />
-    <ClCompile Include="Render\Driver\Buffer.c" />
-    <ClCompile Include="Render\Driver\Pipeline.c" />
-    <ClCompile Include="Render\Driver\Shader.c" />
-    <ClCompile Include="Render\Driver\Texture.c" />
     <ClCompile Include="Render\Frame.c" />
     <ClCompile Include="Render\Graph\Graph.c" />
     <ClCompile Include="Render\Material.c" />
     <ClCompile Include="Render\Model.c" />
+    <ClCompile Include="Render\Pass\AccelerationStructureBuild.c" />
+    <ClCompile Include="Render\Pass\Debug\DebugBounds.c" />
+    <ClCompile Include="Render\Pass\Debug\LightBounds.c" />
     <ClCompile Include="Render\Pass\Depth.c" />
     <ClCompile Include="Render\Pass\LightCulling.c" />
     <ClCompile Include="Render\Pass\Opaque.c" />
@@ -246,6 +279,7 @@
     <ClCompile Include="Render\Systems.c" />
     <ClCompile Include="Scene\Camera.c" />
     <ClCompile Include="Scene\Light.c" />
+    <ClCompile Include="Scene\Primitive.c" />
     <ClCompile Include="Scene\Scene.c" />
     <ClCompile Include="Scene\Terrain.c" />
     <ClCompile Include="Scene\Transform.c" />
@@ -276,6 +310,57 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Exports.def" />
+    <CustomBuild Include="Render\Backend\Vulkan\Shaders\LightCulling_CS.comp">
+      <FileType>Document</FileType>
+    </CustomBuild>
+    <None Include="Render\Backend\Vulkan\Shaders\Constants.glsl" />
+    <CustomBuild Include="Render\Backend\Vulkan\Shaders\DefaultPBR_MR_O_FS.frag">
+      <FileType>Document</FileType>
+    </CustomBuild>
+    <CustomBuild Include="Render\Backend\Vulkan\Shaders\DefaultPBR_MR_T_FS.frag">
+      <FileType>Document</FileType>
+    </CustomBuild>
+    <CustomBuild Include="Render\Backend\Vulkan\Shaders\DefaultPBR_O_VS.vert">
+      <FileType>Document</FileType>
+    </CustomBuild>
+    <CustomBuild Include="Render\Backend\Vulkan\Shaders\DefaultPBR_T_VS.vert">
+      <FileType>Document</FileType>
+    </CustomBuild>
+    <CustomBuild Include="Render\Backend\Vulkan\Shaders\DebugBounds_FS.frag">
+      <FileType>Document</FileType>
+    </CustomBuild>
+    <CustomBuild Include="Render\Backend\Vulkan\Shaders\DebugBounds_VS.vert">
+      <FileType>Document</FileType>
+    </CustomBuild>
+    <None Include="Render\Backend\Vulkan\Shaders\DepthDrawInfo.glsl" />
+    <CustomBuild Include="Render\Backend\Vulkan\Shaders\Depth_FS.frag">
+      <FileType>Document</FileType>
+    </CustomBuild>
+    <CustomBuild Include="Render\Backend\Vulkan\Shaders\Depth_VS.vert">
+      <FileType>Document</FileType>
+    </CustomBuild>
+    <None Include="Render\Backend\Vulkan\Shaders\DrawInfo.glsl" />
+    <None Include="Render\Backend\Vulkan\Shaders\Light.glsl" />
+    <None Include="Render\Backend\Vulkan\Shaders\Material.glsl" />
+    <None Include="Render\Backend\Vulkan\Shaders\PBR.glsl" />
+    <None Include="Render\Backend\Vulkan\Shaders\Scene.glsl" />
+    <CustomBuild Include="Render\Backend\Vulkan\Shaders\Sky_FS.frag">
+      <FileType>Document</FileType>
+    </CustomBuild>
+    <CustomBuild Include="Render\Backend\Vulkan\Shaders\Sky_VS.vert">
+      <FileType>Document</FileType>
+    </CustomBuild>
+    <None Include="Render\Backend\Vulkan\Shaders\Texture.glsl" />
+    <None Include="Render\Backend\Vulkan\Shaders\Tonemap.glsl" />
+    <None Include="Render\Backend\Vulkan\Shaders\Types.glsl" />
+    <None Include="Render\Backend\Vulkan\Shaders\UIDrawInfo.glsl" />
+    <CustomBuild Include="Render\Backend\Vulkan\Shaders\UI_FS.frag">
+      <FileType>Document</FileType>
+    </CustomBuild>
+    <CustomBuild Include="Render\Backend\Vulkan\Shaders\UI_VS.vert">
+      <FileType>Document</FileType>
+    </CustomBuild>
+    <None Include="Render\Backend\Vulkan\Shaders\Vertex.glsl" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
@@ -313,17 +398,21 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(SolutionDir)Include;$(SolutionDir)Deps;$(SolutionDir)Deps\PhysFS;$(SolutionDir)Deps\Lua;$(SolutionDir)Deps\OpenAL\include;$(SolutionDir)Platform\Win32\Compat;$(IncludePath)</IncludePath>
+    <IncludePath>$(VK_SDK_PATH)\Include;$(SolutionDir)\Deps\Aftermath\include;$(SolutionDir)\Deps\OpenXR\include;$(SolutionDir)Include;$(SolutionDir)Deps;$(SolutionDir)Deps\PhysFS;$(SolutionDir)Deps\Lua;$(SolutionDir)Deps\OpenAL\include;$(SolutionDir)Platform\Win32\Compat;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)\bin\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\build\$(Configuration)\$(ProjectName)\</IntDir>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <LibraryPath>$(SolutionDir)Deps\Aftermath\lib\x64;$(SolutionDir)Deps\OpenXR\x64\lib;$(LibraryPath)</LibraryPath>
+    <CustomBuildBeforeTargets>PreBuildEvent</CustomBuildBeforeTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)Include;$(SolutionDir)Deps;$(SolutionDir)Deps\PhysFS;$(SolutionDir)Deps\Lua;$(SolutionDir)Deps\OpenAL\include;$(SolutionDir)Platform\Win32\Compat;$(IncludePath)</IncludePath>
+    <IncludePath>$(VK_SDK_PATH)\Include;$(SolutionDir)\Deps\Aftermath\include;$(SolutionDir)\Deps\OpenXR\include;$(SolutionDir)Include;$(SolutionDir)Deps;$(SolutionDir)Deps\PhysFS;$(SolutionDir)Deps\Lua;$(SolutionDir)Deps\OpenAL\include;$(SolutionDir)Platform\Win32\Compat;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)\bin\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\build\$(Configuration)\$(ProjectName)\</IntDir>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <LibraryPath>$(SolutionDir)Deps\Aftermath\lib\x64;$(SolutionDir)Deps\OpenXR\x64\lib;$(LibraryPath)</LibraryPath>
+    <CustomBuildBeforeTargets>PreBuildEvent</CustomBuildBeforeTargets>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -354,11 +443,30 @@
     </Lib>
     <PreBuildEvent>
       <Command>powershell "Compress-Archive -Force $(SolutionDir)Resources\Engine\* $(IntDir)EngineRes.zip"
-$(OutDir)bin2c.exe -c $(IntDir)EngineRes.zip $(IntDir)EngineRes.h</Command>
+$(OutDir)bin2c.exe -c $(IntDir)EngineRes.zip $(IntDir)EngineRes.h
+$(OutDir)bin2c.exe -c $(IntDir)Shaders.zip $(IntDir)Shaders.h</Command>
     </PreBuildEvent>
     <PreBuildEvent>
       <Message>Generating resources...</Message>
     </PreBuildEvent>
+    <CustomBuild>
+      <Outputs>$(IntDir)Shaders\Vulkan\%(Filename).spv</Outputs>
+      <Message>glslc %(Filename)</Message>
+      <TreatOutputAsContent>true</TreatOutputAsContent>
+      <Command>glslc -O0 -g --target-env=vulkan1.2 %(FullPath) -o $(IntDir)Shaders\Vulkan\%(Filename).spv</Command>
+    </CustomBuild>
+    <CustomBuildStep>
+      <Command>powershell "Compress-Archive -Force $(IntDir)Shaders $(IntDir)Shaders.zip"</Command>
+      <Message>Building shader archive</Message>
+      <Outputs>$(IntDir)Shaders.zip</Outputs>
+      <TreatOutputAsContent>true</TreatOutputAsContent>
+    </CustomBuildStep>
+    <PostBuildEvent>
+      <Command>del $(IntDir)EngineRes.zip
+del $(IntDir)EngineRes.h
+del $(IntDir)Shaders.zip
+del $(IntDir)Shaders.h</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -379,9 +487,9 @@ $(OutDir)bin2c.exe -c $(IntDir)EngineRes.zip $(IntDir)EngineRes.h</Command>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
-      <DebugInformationFormat>None</DebugInformationFormat>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
-      <Optimization>MaxSpeed</Optimization>
+      <Optimization>Disabled</Optimization>
       <RemoveUnreferencedCodeData>false</RemoveUnreferencedCodeData>
     </ClCompile>
     <Link>
@@ -397,11 +505,30 @@ $(OutDir)bin2c.exe -c $(IntDir)EngineRes.zip $(IntDir)EngineRes.h</Command>
     </Lib>
     <PreBuildEvent>
       <Command>powershell "Compress-Archive -Force $(SolutionDir)Resources\Engine\* $(IntDir)EngineRes.zip"
-$(OutDir)bin2c.exe -c $(IntDir)EngineRes.zip $(IntDir)EngineRes.h</Command>
+$(OutDir)bin2c.exe -c $(IntDir)EngineRes.zip $(IntDir)EngineRes.h
+$(OutDir)bin2c.exe -c $(IntDir)Shaders.zip $(IntDir)Shaders.h</Command>
     </PreBuildEvent>
     <PreBuildEvent>
       <Message>Generating resources...</Message>
     </PreBuildEvent>
+    <CustomBuild>
+      <Outputs>$(IntDir)Shaders\Vulkan\%(Filename).spv</Outputs>
+      <Message>glslc %(Filename)</Message>
+      <TreatOutputAsContent>true</TreatOutputAsContent>
+      <Command>glslc -O --target-env=vulkan1.2 %(FullPath) -o $(IntDir)Shaders\Vulkan\%(Filename).spv</Command>
+    </CustomBuild>
+    <CustomBuildStep>
+      <Command>powershell "Compress-Archive -Force $(IntDir)Shaders $(IntDir)Shaders.zip"</Command>
+      <Message>Building shader archive</Message>
+      <Outputs>$(IntDir)Shaders.zip</Outputs>
+      <TreatOutputAsContent>true</TreatOutputAsContent>
+    </CustomBuildStep>
+    <PostBuildEvent>
+      <Command>del $(IntDir)EngineRes.zip
+del $(IntDir)EngineRes.h
+del $(IntDir)Shaders.zip
+del $(IntDir)Shaders.h</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

@@ -91,6 +91,12 @@ E_TermConfig(void)
 	}
 }
 
+const struct NeCVar *
+E_RootCVar(void)
+{
+	return _cvars;
+}
+
 struct NeCVar *
 E_GetCVar(const char *name)
 {

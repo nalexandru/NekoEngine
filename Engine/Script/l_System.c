@@ -68,6 +68,12 @@ SIF_FUNC(LogEntry)
 
 SIF_BOOL(BigEndian, Sys_BigEndian());
 
+SIF_FUNC(Rand)
+{
+	lua_pushnumber(vm, rand());
+	return 1;
+}
+
 /*void *Sys_LoadLibrary(const char *path);
 void *Sys_GetProcAddress(void *lib, const char *name);
 void Sys_UnloadLibrary(void *lib);*/
@@ -77,12 +83,13 @@ SIface_OpenSystem(lua_State *vm)
 {
 	luaL_Reg reg[] =
 	{
-		SIF_REG(ScreenVisible),
 		SIF_REG(Time),
 		SIF_REG(Sleep),
 		SIF_REG(MSleep),
 		SIF_REG(USleep),
 		SIF_REG(LogEntry),
+		SIF_REG(Rand),
+		SIF_REG(ScreenVisible),
 		SIF_REG(MessageBox),
 		SIF_REG(Hostname),
 		SIF_REG(Machine),

@@ -192,7 +192,11 @@ Rt_ResizeArray(struct NeArray *a, size_t size)
 		}
 
 		memcpy(a->data, ptr, Rt_ArrayUsedByteSize(a));
+#ifndef SYS_PLATFORM_WINDOWS
 		free(ptr);
+#else
+		_aligned_free(ptr);
+#endif
 	} else {
 		if ((a->data = Sys_ReAlloc(a->data, size, a->elemSize, a->heap)) == NULL) {
 			a->data = ptr;

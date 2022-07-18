@@ -109,6 +109,7 @@ SIF_FUNC(CmdDrawIndexedIndirect)
 
 SIF_FUNC(CmdDispatch)
 {
+	Re_CmdDispatch((int32_t)luaL_checkinteger(vm, 1), (int32_t)luaL_checkinteger(vm, 2), (int32_t)luaL_checkinteger(vm, 3));
 	return 0;
 }
 
@@ -178,6 +179,8 @@ SIF_FUNC(GraphicsPipeline)
 	desc->pushConstantSize = SIF_INTFIELD(1, "pushConstantSize");
 	desc->attachmentCount = SIF_INTFIELD(1, "attachmentCount");
 
+	// TODO: desc->vertexDesc
+
 	struct NeBlendAttachmentDesc *atDesc = Sys_Alloc(sizeof(*desc->attachments), desc->attachmentCount, MH_Transient);
 	desc->attachments = atDesc;
 
@@ -199,16 +202,26 @@ SIF_FUNC(GraphicsPipeline)
 	}
 	SIF_POPFIELD(t);
 
+	desc->depthFormat = SIF_INTFIELD(1, "depthFormat");
+	// TODO: desc->name
+
 	lua_pushlightuserdata(vm, Re_GraphicsPipeline(desc));
 	return 1;
 }
 
 SIF_FUNC(ComputePipeline)
 {
-	if (!lua_islightuserdata(vm, 1))
-		luaL_argerror(vm, 1, "");
+	luaL_checktype(vm, 1, LUA_TTABLE);
 
-	lua_pushlightuserdata(vm, Re_ComputePipeline(lua_touserdata(vm, 1)));
+	struct NeComputePipelineDesc *desc = Sys_Alloc(sizeof(*desc), 1, MH_Transient);
+
+	desc->stageInfo = SIF_LUSRDATAFIELD(1, "stageInfo");
+	desc->threadsPerThreadgroup.x = SIF_INTFIELD(1, "threadsPerThreadgroupX");
+	desc->threadsPerThreadgroup.y = SIF_INTFIELD(1, "threadsPerThreadgroupY");
+	desc->threadsPerThreadgroup.z = SIF_INTFIELD(1, "threadsPerThreadgroupZ");
+	desc->pushConstantSize = SIF_INTFIELD(1, "pushConstantSize");
+
+	lua_pushlightuserdata(vm, Re_ComputePipeline(desc));
 	return 1;
 }
 
@@ -361,6 +374,7 @@ SIF_FUNC(CreateRenderPassDesc)
 		lua_rawget(vm, 3);
 		int v = lua_gettop(vm);
 
+		depthDesc = Sys_Alloc(sizeof(*depthDesc), 1, MH_Transient);
 		depthDesc->mayAlias = SIF_BOOLFIELD(v, "mayAlias");
 		depthDesc->format = SIF_INTFIELD(v, "format");
 		depthDesc->loadOp = SIF_INTFIELD(v, "loadOp");

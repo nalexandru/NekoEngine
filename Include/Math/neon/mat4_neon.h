@@ -1,42 +1,3 @@
-/* NekoEngine
- *
- * mat4_neon.h
- * Author: Alexandru Naiman
- *
- * 4x4 matrix functions NEON implementation
- *
- * -----------------------------------------------------------------------------
- *
- * Copyright (c) 2015-2020, Alexandru Naiman
- *
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice,
- * this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * 3. Neither the name of the copyright holder nor the names of its contributors
- * may be used to endorse or promote products derived from this software without
- * specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
- * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-
 #ifndef _NE_MATH_NEON_MAT4_H_
 #define _NE_MATH_NEON_MAT4_H_
 
@@ -48,8 +9,8 @@
 
 #define M4_INVERSE_NOSIMD
 
-static inline struct mat4 *
-m4_simd(struct mat4 *dst, const float *m)
+static inline struct NeMatrix *
+M_Matrix_SIMD(struct NeMatrix *dst, const float *m)
 {
 	dst->sm[0] = vld1q_f32(&m[0]);
 	dst->sm[1] = vld1q_f32(&m[4]);
@@ -58,8 +19,8 @@ m4_simd(struct mat4 *dst, const float *m)
 	return dst;
 }
 
-static inline struct mat4 *
-m4f_simd(struct mat4 *dst,
+static inline struct NeMatrix *
+M_MatrixF_SIMD(struct NeMatrix *dst,
 	float m0, float m1, float m2, float m3,
 	float m4, float m5, float m6, float m7,
 	float m8, float m9, float m10, float m11,
@@ -72,8 +33,8 @@ m4f_simd(struct mat4 *dst,
 	return dst;
 }
 
-static inline struct mat4 *
-m4_copy_simd(struct mat4 *dst, const struct mat4 *src)
+static inline struct NeMatrix *
+M_CopyMatrix_SIMD(struct NeMatrix *dst, const struct NeMatrix *src)
 {
 	dst->sm[0] = vld1q_f32(&src->r[0][0]);
 	dst->sm[1] = vld1q_f32(&src->r[1][0]);
@@ -83,11 +44,11 @@ m4_copy_simd(struct mat4 *dst, const struct mat4 *src)
 	return dst;
 }
 
-static inline struct mat4 *
-m4_mul_simd(struct mat4 *dst, const struct mat4 *m1, const struct mat4 *m2)
+static inline struct NeMatrix *
+M_MulMatrix_SIMD(struct NeMatrix *dst, const struct NeMatrix *m1, const struct NeMatrix *m2)
 {
-    float32x4_t zero = vmovq_n_f32(0.f);
-    float32x4_t r0, r1, r2, r3;
+	float32x4_t zero = vmovq_n_f32(0.f);
+	float32x4_t r0, r1, r2, r3;
 
 	// TODO: profile instruction order
 	r0 = vmlaq_f32(zero, vdupq_n_f32(m2->r[0][0]), m1->sm[0]);
@@ -118,8 +79,8 @@ m4_mul_simd(struct mat4 *dst, const struct mat4 *m1, const struct mat4 *m2)
 	return dst;
 }
 
-static inline struct mat4 *
-m4_muls_simd(struct mat4 *dst, const struct mat4 *m, const float f)
+static inline struct NeMatrix *
+M_MulMatrixS_SIMD(struct NeMatrix *dst, const struct NeMatrix *m, const float f)
 {
 	float32x4_t scalar = vdupq_n_f32(f);
 
@@ -131,9 +92,9 @@ m4_muls_simd(struct mat4 *dst, const struct mat4 *m, const float f)
 	return dst;
 }
 
-static inline struct mat4 *
-m4_transpose_simd(struct mat4 *dst, const struct mat4 *src)
-{	
+static inline struct NeMatrix *
+M_TransposeMatrix_SIMD(struct NeMatrix *dst, const struct NeMatrix *src)
+{
 	const float32x4_t r0 = vtrn1q_f32(src->sm[0], src->sm[1]);
 	const float32x4_t r1 = vtrn2q_f32(src->sm[0], src->sm[1]);
 	const float32x4_t r2 = vtrn1q_f32(src->sm[2], src->sm[3]);
@@ -147,21 +108,21 @@ m4_transpose_simd(struct mat4 *dst, const struct mat4 *src)
 	return dst;
 }
 
-static inline struct mat4 *
-m4_inverse_simd(struct mat4 *dst, const struct mat4 *src)
+static inline struct NeMatrix *
+M_InverseMatrix_SIMD(struct NeMatrix *dst, const struct NeMatrix *src)
 {
 	(void)src; // TODO
 	return dst;
 }
 
 
-static inline struct vec4 *
-v4_mul_m4_simd(struct vec4 *dst, const struct vec4 *v, const struct mat4 *m)
+static inline struct NeVec4 *
+M_MulVec4MatrixSIMD(struct NeVec4 *dst, const struct NeVec4 *v, const struct NeMatrix *m)
 {
-	struct mat4 tr;
+	struct NeMatrix tr;
 	float32x4_t v0, v1;
 
-	m4_transpose_simd(&tr, m);
+	M_TransposeMatrix_SIMD(&tr, m);
 
 	v0 = vmulq_f32(vdupq_n_f32(v->x), tr.sm[0]);
 	v0 = vmlaq_f32(v0, vdupq_n_f32(v->y), tr.sm[1]);
@@ -173,6 +134,53 @@ v4_mul_m4_simd(struct vec4 *dst, const struct vec4 *v, const struct mat4 *m)
 	return dst;
 }
 
+static inline struct NeVec4 *
+M_MulMatrixVec4SIMD(struct NeVec4 *dst, const struct NeMatrix *m, const struct NeVec4 *v)
+{
+	// FIXME
+	return M_MulVec4MatrixSIMD(dst, v, m);
+}
+
 #endif
 
 #endif /* _NE_MATH_NEON_MAT4_H_ */
+
+/* NekoEngine
+ *
+ * mat4_neon.h
+ * Author: Alexandru Naiman
+ *
+ * 4x4 matrix functions NEON implementation
+ *
+ * -----------------------------------------------------------------------------
+ *
+ * Copyright (c) 2015-2022, Alexandru Naiman
+ *
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * -----------------------------------------------------------------------------
+ */

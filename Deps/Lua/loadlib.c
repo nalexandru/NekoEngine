@@ -291,6 +291,7 @@ static int noenv (lua_State *L) {
 }
 #endif
 
+
 /*
 ** Set a path
 */
@@ -307,7 +308,7 @@ static void setpath (lua_State *L, const char *fieldname,
   if (path == NULL || noenv(L))  /* no environment variable? */
     lua_pushstring(L, dft);  /* use default */
 #else
-  const char *path = NULL;
+  const char* path = NULL;
   if (1)
     lua_pushstring(L, dft);
 #endif

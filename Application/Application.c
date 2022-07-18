@@ -3,6 +3,7 @@
 #include <Scene/Transform.h>
 #include <Scene/Components.h>
 #include <Engine/Job.h>
+#include <Engine/Entity.h>
 #include <Engine/Engine.h>
 #include <Engine/Events.h>
 #include <Engine/Version.h>
@@ -27,7 +28,7 @@ static uint64_t _sceneLoadedEvt;
 
 struct FlyController
 {
-	COMPONENT_BASE;
+	NE_COMPONENT_BASE;
 
 	float movementSpeed, hRotationSpeed, vRotationSpeed;
 	uint32_t moveForward, moveRight, moveUp, rotateHorizontal, rotateVertical;
@@ -36,7 +37,7 @@ struct FlyController
 
 struct Statistics
 {
-	COMPONENT_BASE;
+	NE_COMPONENT_BASE;
 
 	uint32_t frames;
 	double time;
@@ -88,8 +89,10 @@ App_InitApplication(int argc, char *argv[])
 //	Scn_StartSceneLoad("/Scenes/Helmet.scn");
 //	Scn_StartSceneLoad("/Scenes/Sphere.scn");
 //	Scn_StartSceneLoad("/Scenes/Main.scn");
-	Scn_StartSceneLoad("/Scenes/Terrain.scn");
+//	Scn_StartSceneLoad("/Scenes/Terrain.scn");
 //	Scn_StartSceneLoad("/Scenes/IBL.scn");
+	Scn_StartSceneLoad("/Scenes/Sponza.scn");
+//	Scn_StartSceneLoad("/Scenes/LightTest.scn");
 
 	volatile bool jobCompleted = false;
 
@@ -163,7 +166,7 @@ App_FlyController(void **comp, void *args)
 	cam->rotation.x += In_Axis(ctrl->rotateVertical) * vRot;
 	cam->rotation.y += In_Axis(ctrl->rotateHorizontal) * hRot;
 
-	xform_rotate(xform, In_Axis(ctrl->rotateHorizontal) * hRot, &v3_neg_y);
+	xform_rotate(xform, In_Axis(ctrl->rotateHorizontal) * hRot, &M_Vec3NegativeY);
 	xform_update_orientation(xform);
 
 	xform_rotate(xform, In_Axis(ctrl->rotateVertical) * vRot, &xform->right);

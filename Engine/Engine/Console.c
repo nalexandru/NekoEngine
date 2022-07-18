@@ -11,6 +11,7 @@ static bool _open, _enabled;
 static lua_State *_consoleVM;
 static struct NeArray _text, _line, _history;
 static uint32_t _lineLength = 81;
+static size_t _historyId = 0;
 static uint32_t *_screenBufferSize = NULL;
 static struct NeUIContext *_consoleCtx = NULL;
 
@@ -40,6 +41,7 @@ E_InitConsole(void)
 
 	Rt_InitArray(&_text, *_screenBufferSize, sizeof(char) * _lineLength, MH_System);
 	Rt_InitArray(&_line, _lineLength, sizeof(char), MH_System);
+	Rt_InitArray(&_history, 10, _lineLength * sizeof(char), MH_System);
 
 	_consoleCtx = UI_CreateStandaloneContext(4000, 6000, *_screenBufferSize + 2);
 
@@ -121,16 +123,30 @@ E_ConsoleExec(const char *line)
 		const struct NeCVar *cv = E_GetCVar(name);
 		if (cv) {
 			switch (cv->type) {
-			case CV_String: E_ConsolePrint("%hs [string] = %hs", name, cv->str); break;
-			case CV_Int32: E_ConsolePrint("%hs [int32] = %d", name, cv->i32); break;
-			case CV_UInt32: E_ConsolePrint("%hs [uint32] = %u", name, cv->u32); break;
-			case CV_UInt64: E_ConsolePrint("%hs [uint64] = %llu", name, cv->u64); break;
-			case CV_Float: E_ConsolePrint("%hs [float] = %f", name, cv->flt); break;
-			case CV_Bool: E_ConsolePrint("%hs [bool] = %ls", name, cv->bln ? "true" : "false"); break;
+			case CV_String: E_ConsolePrint("%s [string] = %hs", name, cv->str); break;
+			case CV_Int32: E_ConsolePrint("%s [int32] = %d", name, cv->i32); break;
+			case CV_UInt32: E_ConsolePrint("%s [uint32] = %u", name, cv->u32); break;
+			case CV_UInt64: E_ConsolePrint("%s [uint64] = %llu", name, cv->u64); break;
+			case CV_Float: E_ConsolePrint("%s [float] = %f", name, cv->flt); break;
+			case CV_Bool: E_ConsolePrint("%s [bool] = %s", name, cv->bln ? "true" : "false"); break;
 			}
 		}
 		else {
 			E_ConsolePrint("ERROR: Variable %hs does not exist", name);
+		}
+	} else if (!strncmp(line, "getall", 6)) {
+		const struct NeCVar *cv = E_RootCVar();
+		while (cv) {
+			switch (cv->type) {
+			case CV_String: E_ConsolePrint("%s [string] = %hs", cv->name, cv->str); break;
+			case CV_Int32: E_ConsolePrint("%s [int32] = %d", cv->name, cv->i32); break;
+			case CV_UInt32: E_ConsolePrint("%s [uint32] = %u", cv->name, cv->u32); break;
+			case CV_UInt64: E_ConsolePrint("%s [uint64] = %llu", cv->name, cv->u64); break;
+			case CV_Float: E_ConsolePrint("%s [float] = %f", cv->name, cv->flt); break;
+			case CV_Bool: E_ConsolePrint("%s [bool] = %s", cv->name, cv->bln ? "true" : "false"); break;
+			}
+
+			cv = cv->next;
 		}
 	} else if (!strncmp(line, "exec ", 5)) {
 		const char *err = Sc_ExecuteFile(_consoleVM, line + 5);
@@ -177,13 +193,41 @@ E_ConsoleKey(enum NeButton key, bool down)
 
 	if (down) {
 		switch (key) {
-		case BTN_KEY_UP: break;
-		case BTN_KEY_DOWN: break;
+		case BTN_KEY_UP:
+			if (!_history.count)
+				break;
+
+			Rt_ClearArray(&_line, false);
+			snprintf((char *)_line.data, Rt_ArrayByteSize(&_line), "%s", (const char *)Rt_ArrayGet(&_history, _historyId));
+			_line.count = strlen((const char *)_line.data);
+
+			if (_historyId) --_historyId;
+		break;
+		case BTN_KEY_DOWN:
+			if (!_history.count)
+				break;
+
+			if (_historyId == _history.count - 1) {
+				Rt_ClearArray(&_line, false);
+				memset(_line.data, 0x0, Rt_ArrayByteSize(&_line));
+				break;
+			}
+
+			if (_historyId < _history.count - 1) ++_historyId;
+
+			Rt_ClearArray(&_line, false);
+			snprintf((char *)_line.data, Rt_ArrayByteSize(&_line), "%s", (const char *)Rt_ArrayGet(&_history, _historyId));
+			_line.count = strlen((const char *)_line.data);
+		break;
 		case BTN_KEY_LEFT: break;
 		case BTN_KEY_RIGHT: break;
 		case BTN_KEY_RETURN:
 			Rt_ArrayAdd(&_line, &ch);
 			E_ConsoleExec((const char *)_line.data);
+
+			Rt_ArrayAdd(&_history, _line.data);
+			_historyId = _history.count - 1;
+
 			Rt_ClearArray(&_line, false);
 			memset(_line.data, 0x0, Rt_ArrayByteSize(&_line));
 		break;
@@ -218,6 +262,7 @@ E_TermConsole(void)
 		return;
 
 	UI_DestroyStandaloneContext(_consoleCtx);
+	Rt_TermArray(&_history);
 	Rt_TermArray(&_line);
 	Rt_TermArray(&_text);
 	Sc_DestroyVM(_consoleVM);

@@ -4,39 +4,31 @@
 #include <System/Log.h>
 #include <System/System.h>
 #include <System/Thread.h>
+#include <Engine/XR.h>
 #include <Engine/IO.h>
 #include <Engine/Job.h>
 #include <Engine/Config.h>
 #include <Engine/Engine.h>
 #include <Engine/Resource.h>
+#include <Render/Core.h>
 #include <Render/Model.h>
 #include <Render/Render.h>
 #include <Render/Graph/Graph.h>
-#include <Render/Driver/Driver.h>
+#include <Render/Backend.h>
+
+// This is not part of the exposed IO API
+const char *E_RealPath(const char *path);
 
 #define RE_MOD "Render"
 #define CHK_FAIL(x, y) if (!x) { Sys_LogEntry(RE_MOD, LOG_CRITICAL, y); return false; }
 
-#ifdef SYS_PLATFORM_APPLE
-#	define DEFAULT_RENDER_DRIVER	"Metal"
-#else
-#	define DEFAULT_RENDER_DRIVER	"Vulkan"
-#endif
-
 struct NeRenderDevice *Re_device;
 struct NeRenderDeviceInfo Re_deviceInfo = { 0 };
-struct NeRenderDeviceProcs Re_deviceProcs = { 0 };
-struct NeRenderContextProcs Re_contextProcs = { 0 };
 
 struct NeSurface *Re_surface = NULL;
 struct NeSwapchain *Re_swapchain = NULL;
 THREAD_LOCAL struct NeRenderContext *Re_context = NULL;
-const struct NeRenderDriver *Re_driver = NULL;
 struct NeRenderContext **Re_contexts = NULL;
-
-#ifdef USE_STATIC_RENDER_DRIVER
-const struct NeRenderDriver *Re_LoadStaticDriver(void);
-#endif
 
 bool
 Re_InitRender(void)
@@ -47,33 +39,17 @@ Re_InitRender(void)
 	if (E_GetCVarBln("Render_WaitForDebugger", false)->bln)
 		Sys_MessageBox("NekoEngine", "Attach the graphics debugger now", MSG_ICON_INFO);
 
-#ifndef USE_STATIC_RENDER_DRIVER
-	ReLoadDriverProc loadDriver = NULL;
-	void *module = Sys_LoadLibrary(NULL);
-	CHK_FAIL(module, "Failed to load executable");
-
-	const char *drvName = E_GetCVarStr("Render_Driver", DEFAULT_RENDER_DRIVER)->str;
-
-	char name[256];
-	snprintf(name, sizeof(name), "Re_Load%sDriver", drvName);
-
-	loadDriver = Sys_GetProcAddress(module, name);
-	CHK_FAIL(loadDriver, "The specified driver does not exist");
-
-	Re_driver = loadDriver();
-#else
-	Re_driver = Re_LoadStaticDriver();
+#ifndef SYS_PLATFORM_APPLE
+	if (CVAR_BOOL("Engine_EnableXR"))
+		CHK_FAIL(E_InitXR(), "Failed to create OpenXR instance");
 #endif
 
-	CHK_FAIL(Re_driver, "Failed to load driver");
-	CHK_FAIL((Re_driver->identifier == NE_RENDER_DRIVER_ID), "The library is not a valid driver");
-	CHK_FAIL((Re_driver->apiVersion == NE_RENDER_DRIVER_API), "Driver version mismatch");
-	CHK_FAIL(Re_driver->Init(), "Failed to initialize driver");
-	CHK_FAIL(Re_driver->EnumerateDevices(&devCount, NULL), "Failed to enumerate devices");
+	CHK_FAIL(Re_InitBackend(), "Failed to initialize backend");
+	CHK_FAIL(Re_EnumerateDevices(&devCount, NULL), "Failed to enumerate devices");
 
 	info = Sys_Alloc(sizeof(*info), devCount, MH_Transient);
 	CHK_FAIL(info, "Failed to enumerate devices");
-	CHK_FAIL(Re_driver->EnumerateDevices(&devCount, info), "Failed to enumerate devices");
+	CHK_FAIL(Re_EnumerateDevices(&devCount, info), "Failed to enumerate devices");
 
 	if (E_GetCVarI32("Render_Adapter", -1)->i32 != -1) {
 		int32_t i = E_GetCVarI32("Render_Adapter", -1)->i32;
@@ -107,12 +83,12 @@ Re_InitRender(void)
 
 	memcpy(&Re_deviceInfo, selected, sizeof(Re_deviceInfo));
 
-	Re_device = Re_driver->CreateDevice(&Re_deviceInfo, &Re_deviceProcs, &Re_contextProcs);
+	Re_device = Re_CreateDevice(&Re_deviceInfo);
 	CHK_FAIL(Re_device, "Failed to create device");
 
 	Sys_LogEntry(RE_MOD, LOG_INFORMATION, "GPU: %s (%hX:%hX)", Re_deviceInfo.deviceName,
 											Re_deviceInfo.hardwareInfo.vendorId, Re_deviceInfo.hardwareInfo.deviceId);
-	Sys_LogEntry(RE_MOD, LOG_INFORMATION, "\tAPI: %s", Re_driver->driverName);
+	Sys_LogEntry(RE_MOD, LOG_INFORMATION, "\tAPI: %s", Re_backendName);
 	Sys_LogEntry(RE_MOD, LOG_INFORMATION, "\tMemory: %llu MB", Re_deviceInfo.localMemorySize / 1024 / 1024);
 	Sys_LogEntry(RE_MOD, LOG_INFORMATION, "\tRay Tracing: %s", Re_deviceInfo.features.rayTracing ? "yes" : "no");
 	Sys_LogEntry(RE_MOD, LOG_INFORMATION, "\tMesh Shading: %s", Re_deviceInfo.features.meshShading ? "yes" : "no");
@@ -122,7 +98,7 @@ Re_InitRender(void)
 	Re_surface = Re_CreateSurface(E_screen);
 	CHK_FAIL(Re_surface, "Failed to create surface");
 
-	Re_swapchain = Re_CreateSwapchain(Re_surface, E_GetCVarBln("Render_VerticalSync", false)->bln);
+	Re_swapchain = Re_CreateSwapchain(Re_surface, E_GetCVarBln("Render_VerticalSync", true)->bln);
 	CHK_FAIL(Re_swapchain, "Failed to create swapchain");
 
 	CHK_FAIL(Re_LoadShaders(), "Failed to load shaders");
@@ -147,6 +123,21 @@ Re_InitRender(void)
 			"Failed to register model resource");
 
 	return true;
+}
+
+NeDirectIOHandle
+Re_OpenFile(const char *path)
+{
+	const char *realPath = E_RealPath(path);
+	if (!realPath)
+		return NULL;	// This can happen if the file is inside an archive
+	return Re_BkOpenFile(path);
+}
+
+void
+Re_CloseFile(NeDirectIOHandle handle)
+{
+	Re_BkCloseFile(handle);
 }
 
 void
@@ -175,6 +166,9 @@ Re_TermRender(void)
 	Re_DestroySwapchain(Re_swapchain);
 	Re_DestroySurface(Re_surface);
 
-	Re_driver->DestroyDevice(Re_device);
-	Re_driver->Term();
+	Re_DestroyDevice(Re_device);
+	Re_TermBackend();
+
+	if (E_xrInstance)
+		E_TermXR();
 }

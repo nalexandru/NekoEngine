@@ -1,6 +1,7 @@
 #ifndef _NE_RENDER_MODEL_H_
 #define _NE_RENDER_MODEL_H_
 
+#include <Math/Math.h>
 #include <Render/Types.h>
 #include <Render/Material.h>
 #include <Runtime/Runtime.h>
@@ -22,7 +23,24 @@ struct NeVertexWeight
 	uint32_t boneCount;
 	uint32_t reserved;
 };
+
+struct NeMeshlet
+{
+	uint32_t vertexOffset;
+	uint32_t vertexCount;
+	uint32_t indexOffset;
+	uint32_t indexCount;
+};
 #pragma pack(pop)
+
+struct NeBounds
+{
+	struct {
+		struct NeVec3 center;
+		float radius;
+	} sphere;
+	struct NeAABB aabb;
+};
 
 struct NeMesh
 {
@@ -32,11 +50,13 @@ struct NeMesh
 	uint32_t indexOffset;
 	uint32_t indexCount;
 	NeHandle materialResource;
+	struct NeBounds bounds;
 };
 
 struct NeModel
 {
 	struct NeMesh *meshes;
+	struct NeBounds bounds;
 	uint32_t meshCount;
 	enum NeIndexType indexType;
 	bool dynamic;
@@ -58,7 +78,7 @@ struct NeModel
 	} cpu;
 
 	struct {
-		struct mat4 globalInverseTransform;
+		struct NeMatrix globalInverseTransform;
 		struct NeArray bones;
 		struct NeArray nodes;
 	} skeleton;
@@ -89,9 +109,9 @@ struct NeModelCreateInfo
 #pragma pack(push, 1)
 struct NeModelInstance
 {
-	struct mat4 mvp;
-	struct mat4 model;
-	struct mat4 normal;
+	struct NeMatrix mvp;
+	struct NeMatrix model;
+	struct NeMatrix normal;
 	uint64_t vertexAddress;
 	uint64_t materialAddress;
 } NE_ALIGN(16);
@@ -100,5 +120,7 @@ struct NeModelInstance
 bool Re_CreateModelResource(const char *name, const struct NeModelCreateInfo *ci, struct NeModel *mdl, NeHandle h);
 bool Re_LoadModelResource(struct NeResourceLoadInfo *li, const char *args, struct NeModel *mdl, NeHandle h);
 void Re_UnloadModelResource(struct NeModel *mdl, NeHandle h);
+
+void Re_BuildMeshBounds(struct NeBounds *b, const struct NeVertex *vertices, uint32_t startVertex, uint32_t vertexCount);
 
 #endif /* _NE_RENDER_MODEL_H_ */

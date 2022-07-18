@@ -6,11 +6,24 @@
 #include <Audio/Clip.h>
 #include <Audio/Source.h>
 
-bool Au_Init(void);
-void Au_Term(void);
+enum NeDistanceModel
+{
+	DM_INVERSE_DISTANCE,
+	DM_INVERSE_DISTANCE_CLAMPED,
+	DM_LINEAR_DISTANCE,
+	DM_LINEAR_DISTANCE_CLAMPED,
+	DM_EXPONENT_DISTANCE,
+	DM_EXPONENT_DISTANCE_CLAMPED
+};
 
-// Implemented by the sound library
-bool Au_InitLib(void);
-void Au_TermLib(void);
+bool Au_Init(void);
+
+void Au_DistanceModel(enum NeDistanceModel model);
+
+void Au_ListenerPosition(struct NeVec3 *v);
+void Au_ListenerVelocity(struct NeVec3 *v);
+void Au_ListenerOrientation(float *orientation);
+
+void Au_Term(void);
 
 #endif /* _NE_AUDIO_AUDIO_H_ */

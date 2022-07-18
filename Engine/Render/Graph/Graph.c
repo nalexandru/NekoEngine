@@ -4,7 +4,7 @@
 #include <Render/Graph/Graph.h>
 #include <Render/Graph/Pass.h>
 #include <Render/DestroyResource.h>
-#include <Render/Driver/TransientResources.h>
+#include <Render/TransientResources.h>
 
 #include "../Internal.h"
 
@@ -22,7 +22,10 @@ struct NeGraphResource
 	uint64_t hash;
 	struct {
 		enum NeGraphResourceType type;
-		struct NeTextureDesc texture;
+		struct {
+			struct NeTextureDesc texture;
+			uint16_t location;
+		};
 		struct NeBufferDesc buffer;
 	} info;
 	union {
@@ -45,9 +48,9 @@ struct NePassData
 static struct NeGraphResource *_GetResource(uint64_t hash, const struct NeArray *resources);
 
 bool
-Re_AddGraphTexture(const char *name, const struct NeTextureDesc *desc, struct NeArray *resources)
+Re_AddGraphTexture(const char *name, const struct NeTextureDesc *desc, uint16_t location, struct NeArray *resources)
 {
-	struct NeGraphResource res = { .hash = Rt_HashString(name), .info.type = PRT_TEXTURE, .info.texture = *desc };
+	struct NeGraphResource res = { .hash = Rt_HashString(name), .info.type = PRT_TEXTURE, .info.texture = *desc, .info.location = location };
 	if (_GetResource(res.hash, resources))
 		return false;
 
@@ -81,6 +84,15 @@ Re_GraphTexture(uint64_t hash, const struct NeArray *resources)
 	if (!res)
 		return 0;
 	return res->info.type == PRT_TEXTURE ? res->handle.texture : NULL;
+}
+
+uint16_t
+Re_GraphTextureLocation(uint64_t hash, const struct NeArray *resources)
+{
+	struct NeGraphResource *res = _GetResource(hash, resources);
+	if (!res)
+		return 0;
+	return res->info.type == PRT_TEXTURE ? res->info.location : 0;
 }
 
 uint64_t
@@ -150,7 +162,7 @@ Re_BuildGraph(struct NeRenderGraph *g, struct NeTexture *output)
 	struct NeGraphResource *gr;
 	Rt_ArrayForEach(gr, &g->resources) {
 		if (gr->info.type == PRT_TEXTURE) {
-			gr->handle.texture = Re_CreateTransientTexture(&gr->info.texture, offset, &size);
+			gr->handle.texture = Re_CreateTransientTexture(&gr->info.texture, gr->info.location, offset, &size);
 			Re_Destroy(gr->handle.texture);
 		} else if (gr->info.type == PRT_BUFFER) {
 			if (!gr->handle.buffer)

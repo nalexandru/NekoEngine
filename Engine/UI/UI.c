@@ -26,7 +26,7 @@ struct NeUIConstants
 	uint64_t vertexAddress;
 	uint32_t texture;
 	uint32_t __padding;
-	struct mat4 mvp;
+	struct NeMatrix mvp;
 };
 
 struct NeFont UI_sysFont;

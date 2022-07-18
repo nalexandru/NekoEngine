@@ -100,12 +100,6 @@
     <Filter Include="Header Files\Render\Graph">
       <UniqueIdentifier>{63ef7c67-fbdd-4c68-8769-6c6b0b3e2098}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Render\Driver">
-      <UniqueIdentifier>{be849537-2896-421d-8261-40cdf33e34e1}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Render\Driver">
-      <UniqueIdentifier>{111cfef9-0150-40bb-af27-51629c0e2882}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\Render\Graph">
       <UniqueIdentifier>{c3e7f9ab-45d3-4569-8e49-5eb3410ea621}</UniqueIdentifier>
     </Filter>
@@ -126,6 +120,39 @@
     </Filter>
     <Filter Include="Header Files\Math\vmx128">
       <UniqueIdentifier>{f2f08e2c-e7f5-490d-ae88-1af920bbc524}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Render\Backend">
+      <UniqueIdentifier>{111cfef9-0150-40bb-af27-51629c0e2882}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Render\Backend\Vulkan">
+      <UniqueIdentifier>{567f7749-9855-42ad-abb8-290b3c518f13}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Render\Backend\Vulkan\Platform">
+      <UniqueIdentifier>{93228f8a-5e96-4f0c-b403-01d1c4667157}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Render\Backend\Vulkan\Shaders">
+      <UniqueIdentifier>{14cea6e6-89ce-4e13-aa3e-20f1178814d1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Render\Backend\Vulkan\Shaders\Compute">
+      <UniqueIdentifier>{8beb06f2-1770-4daa-9149-56d6e701130c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Render\Backend\Vulkan\Shaders\Fragment">
+      <UniqueIdentifier>{6080449a-fcab-4735-8945-42395d6d1089}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Render\Backend\Vulkan\Shaders\Include">
+      <UniqueIdentifier>{f8d88782-06f7-4d8c-baa6-97fd417a11ff}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Render\Backend\Vulkan\Shaders\Vertex">
+      <UniqueIdentifier>{83aae71b-6cef-4922-98b0-3a06c2bd0b1f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Network">
+      <UniqueIdentifier>{4bb81eab-595d-423d-aea6-5f7d8da52287}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Network">
+      <UniqueIdentifier>{a9da3a5f-d0c4-440e-9435-09a49c64d5d4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Render\Pass\Debug">
+      <UniqueIdentifier>{85018d9e-db99-4290-a5ad-759019989187}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -207,10 +234,7 @@
     <ClInclude Include="..\Include\Scene\Components.h">
       <Filter>Header Files\Scene</Filter>
     </ClInclude>
-    <ClInclude Include="..\Include\Math\aabb2.h">
-      <Filter>Header Files\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Math\aabb3.h">
+    <ClInclude Include="..\Include\Math\aabb.h">
       <Filter>Header Files\Math</Filter>
     </ClInclude>
     <ClInclude Include="..\Include\Math\debug.h">
@@ -234,10 +258,7 @@
     <ClInclude Include="..\Include\Math\quat.h">
       <Filter>Header Files\Math</Filter>
     </ClInclude>
-    <ClInclude Include="..\Include\Math\ray2.h">
-      <Filter>Header Files\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Math\ray3.h">
+    <ClInclude Include="..\Include\Math\ray.h">
       <Filter>Header Files\Math</Filter>
     </ClInclude>
     <ClInclude Include="..\Include\Math\vec2.h">
@@ -417,9 +438,6 @@
     <ClInclude Include="..\Include\Audio\Driver.h">
       <Filter>Header Files\Audio</Filter>
     </ClInclude>
-    <ClInclude Include="..\Include\Audio\Device.h">
-      <Filter>Header Files\Audio</Filter>
-    </ClInclude>
     <ClInclude Include="..\Include\Render\Types.h">
       <Filter>Header Files\Render</Filter>
     </ClInclude>
@@ -431,27 +449,6 @@
     </ClInclude>
     <ClInclude Include="..\Include\Render\DestroyResource.h">
       <Filter>Header Files\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Render\Driver\Driver.h">
-      <Filter>Header Files\Render\Driver</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Render\Driver\Context.h">
-      <Filter>Header Files\Render\Driver</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Render\Driver\Core.h">
-      <Filter>Header Files\Render\Driver</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Render\Driver\Device.h">
-      <Filter>Header Files\Render\Driver</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Render\Driver\RayTracing.h">
-      <Filter>Header Files\Render\Driver</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Render\Driver\TransientResources.h">
-      <Filter>Header Files\Render\Driver</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Render\Driver\RenderPassDesc.h">
-      <Filter>Header Files\Render\Driver</Filter>
     </ClInclude>
     <ClInclude Include="..\Include\Render\Components\ModelRender.h">
       <Filter>Header Files\Render\Components</Filter>
@@ -512,6 +509,42 @@
     </ClInclude>
     <ClInclude Include="..\Include\Engine\Plugin.h">
       <Filter>Header Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Engine\BuildConfig.h">
+      <Filter>Header Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Engine\XR.h">
+      <Filter>Header Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\Backend\Vulkan\volk.h">
+      <Filter>Source Files\Render\Backend\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\Backend\Vulkan\VulkanBackend.h">
+      <Filter>Source Files\Render\Backend\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Render\Backend.h">
+      <Filter>Header Files\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Render\Core.h">
+      <Filter>Header Files\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Render\RayTracing.h">
+      <Filter>Header Files\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Render\TransientResources.h">
+      <Filter>Header Files\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Render\Device.h">
+      <Filter>Header Files\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Network\Network.h">
+      <Filter>Header Files\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Render\Context.h">
+      <Filter>Header Files\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Math\frustum.h">
+      <Filter>Header Files\Math</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -794,21 +827,6 @@
     <ClCompile Include="Render\Material.c">
       <Filter>Source Files\Render</Filter>
     </ClCompile>
-    <ClCompile Include="Render\Driver\Buffer.c">
-      <Filter>Source Files\Render\Driver</Filter>
-    </ClCompile>
-    <ClCompile Include="Render\Driver\Pipeline.c">
-      <Filter>Source Files\Render\Driver</Filter>
-    </ClCompile>
-    <ClCompile Include="Render\Driver\Shader.c">
-      <Filter>Source Files\Render\Driver</Filter>
-    </ClCompile>
-    <ClCompile Include="Render\Driver\Texture.c">
-      <Filter>Source Files\Render\Driver</Filter>
-    </ClCompile>
-    <ClCompile Include="Render\DestroyResource.c">
-      <Filter>Source Files\Render\Driver</Filter>
-    </ClCompile>
     <ClCompile Include="Render\Graph\Graph.c">
       <Filter>Source Files\Render\Graph</Filter>
     </ClCompile>
@@ -902,10 +920,189 @@
     <ClCompile Include="Engine\Plugin.c">
       <Filter>Source Files\Engine</Filter>
     </ClCompile>
+    <ClCompile Include="Render\Backend\Buffer.c">
+      <Filter>Source Files\Render\Backend</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Backend\Pipeline.c">
+      <Filter>Source Files\Render\Backend</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Backend\Shader.c">
+      <Filter>Source Files\Render\Backend</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Backend\Texture.c">
+      <Filter>Source Files\Render\Backend</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Backend\DestroyResource.c">
+      <Filter>Source Files\Render\Backend</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Backend\Vulkan\volk.c">
+      <Filter>Source Files\Render\Backend\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Backend\Vulkan\VkAccelerationStructure.c">
+      <Filter>Source Files\Render\Backend\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Backend\Vulkan\VkBuffer.c">
+      <Filter>Source Files\Render\Backend\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Backend\Vulkan\VkContext.c">
+      <Filter>Source Files\Render\Backend\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Backend\Vulkan\VkDebug.c">
+      <Filter>Source Files\Render\Backend\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Backend\Vulkan\VkDescriptorSet.c">
+      <Filter>Source Files\Render\Backend\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Backend\Vulkan\VkDevice.c">
+      <Filter>Source Files\Render\Backend\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Backend\Vulkan\VkBackend.c">
+      <Filter>Source Files\Render\Backend\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Backend\Vulkan\VkFramebuffer.c">
+      <Filter>Source Files\Render\Backend\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Backend\Vulkan\VkMemory.c">
+      <Filter>Source Files\Render\Backend\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Backend\Vulkan\VkPipeline.c">
+      <Filter>Source Files\Render\Backend\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Backend\Vulkan\VkRenderPass.c">
+      <Filter>Source Files\Render\Backend\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Backend\Vulkan\VkSampler.c">
+      <Filter>Source Files\Render\Backend\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Backend\Vulkan\VkShader.c">
+      <Filter>Source Files\Render\Backend\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Backend\Vulkan\VkShaderBindingTable.c">
+      <Filter>Source Files\Render\Backend\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Backend\Vulkan\VkStaging.c">
+      <Filter>Source Files\Render\Backend\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Backend\Vulkan\VkSwapchain.c">
+      <Filter>Source Files\Render\Backend\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Backend\Vulkan\VkSynchronization.c">
+      <Filter>Source Files\Render\Backend\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Backend\Vulkan\VkTexture.c">
+      <Filter>Source Files\Render\Backend\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Backend\Vulkan\VkTransientResources.c">
+      <Filter>Source Files\Render\Backend\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Backend\Vulkan\Platform\VkWin32.c">
+      <Filter>Source Files\Render\Backend\Vulkan\Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Backend\Vulkan\VkXR.c">
+      <Filter>Source Files\Render\Backend\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\XR.c">
+      <Filter>Source Files\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Network\Network.c">
+      <Filter>Source Files\Network</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Backend\Vulkan\Platform\VkDirectStorage.c">
+      <Filter>Source Files\Render\Backend\Vulkan\Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Pass\Debug\DebugBounds.c">
+      <Filter>Source Files\Render\Pass\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Primitive.c">
+      <Filter>Source Files\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Pass\Debug\LightBounds.c">
+      <Filter>Source Files\Render\Pass\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Pass\AccelerationStructureBuild.c">
+      <Filter>Source Files\Render\Pass</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Exports.def">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="Render\Backend\Vulkan\Shaders\Constants.glsl">
+      <Filter>Source Files\Render\Backend\Vulkan\Shaders\Include</Filter>
+    </None>
+    <None Include="Render\Backend\Vulkan\Shaders\DepthDrawInfo.glsl">
+      <Filter>Source Files\Render\Backend\Vulkan\Shaders\Include</Filter>
+    </None>
+    <None Include="Render\Backend\Vulkan\Shaders\DrawInfo.glsl">
+      <Filter>Source Files\Render\Backend\Vulkan\Shaders\Include</Filter>
+    </None>
+    <None Include="Render\Backend\Vulkan\Shaders\Light.glsl">
+      <Filter>Source Files\Render\Backend\Vulkan\Shaders\Include</Filter>
+    </None>
+    <None Include="Render\Backend\Vulkan\Shaders\Material.glsl">
+      <Filter>Source Files\Render\Backend\Vulkan\Shaders\Include</Filter>
+    </None>
+    <None Include="Render\Backend\Vulkan\Shaders\PBR.glsl">
+      <Filter>Source Files\Render\Backend\Vulkan\Shaders\Include</Filter>
+    </None>
+    <None Include="Render\Backend\Vulkan\Shaders\Scene.glsl">
+      <Filter>Source Files\Render\Backend\Vulkan\Shaders\Include</Filter>
+    </None>
+    <None Include="Render\Backend\Vulkan\Shaders\Texture.glsl">
+      <Filter>Source Files\Render\Backend\Vulkan\Shaders\Include</Filter>
+    </None>
+    <None Include="Render\Backend\Vulkan\Shaders\Tonemap.glsl">
+      <Filter>Source Files\Render\Backend\Vulkan\Shaders\Include</Filter>
+    </None>
+    <None Include="Render\Backend\Vulkan\Shaders\Types.glsl">
+      <Filter>Source Files\Render\Backend\Vulkan\Shaders\Include</Filter>
+    </None>
+    <None Include="Render\Backend\Vulkan\Shaders\UIDrawInfo.glsl">
+      <Filter>Source Files\Render\Backend\Vulkan\Shaders\Include</Filter>
+    </None>
+    <None Include="Render\Backend\Vulkan\Shaders\Vertex.glsl">
+      <Filter>Source Files\Render\Backend\Vulkan\Shaders\Include</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="Render\Backend\Vulkan\Shaders\LightCulling_CS.comp">
+      <Filter>Source Files\Render\Backend\Vulkan\Shaders\Compute</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Render\Backend\Vulkan\Shaders\DefaultPBR_O_VS.vert">
+      <Filter>Source Files\Render\Backend\Vulkan\Shaders\Vertex</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Render\Backend\Vulkan\Shaders\DefaultPBR_T_VS.vert">
+      <Filter>Source Files\Render\Backend\Vulkan\Shaders\Vertex</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Render\Backend\Vulkan\Shaders\Depth_VS.vert">
+      <Filter>Source Files\Render\Backend\Vulkan\Shaders\Vertex</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Render\Backend\Vulkan\Shaders\Sky_VS.vert">
+      <Filter>Source Files\Render\Backend\Vulkan\Shaders\Vertex</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Render\Backend\Vulkan\Shaders\UI_VS.vert">
+      <Filter>Source Files\Render\Backend\Vulkan\Shaders\Vertex</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Render\Backend\Vulkan\Shaders\DefaultPBR_MR_O_FS.frag">
+      <Filter>Source Files\Render\Backend\Vulkan\Shaders\Fragment</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Render\Backend\Vulkan\Shaders\DefaultPBR_MR_T_FS.frag">
+      <Filter>Source Files\Render\Backend\Vulkan\Shaders\Fragment</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Render\Backend\Vulkan\Shaders\Depth_FS.frag">
+      <Filter>Source Files\Render\Backend\Vulkan\Shaders\Fragment</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Render\Backend\Vulkan\Shaders\Sky_FS.frag">
+      <Filter>Source Files\Render\Backend\Vulkan\Shaders\Fragment</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Render\Backend\Vulkan\Shaders\UI_FS.frag">
+      <Filter>Source Files\Render\Backend\Vulkan\Shaders\Fragment</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Render\Backend\Vulkan\Shaders\DebugBounds_FS.frag">
+      <Filter>Source Files\Render\Backend\Vulkan\Shaders\Fragment</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Render\Backend\Vulkan\Shaders\DebugBounds_VS.vert">
+      <Filter>Source Files\Render\Backend\Vulkan\Shaders\Vertex</Filter>
+    </CustomBuild>
   </ItemGroup>
 </Project>

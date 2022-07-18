@@ -1,0 +1,133 @@
+#version 460 core
+
+#extension GL_EXT_buffer_reference : require
+#extension GL_EXT_shader_16bit_storage : require
+#extension GL_GOOGLE_include_directive : require
+#extension GL_EXT_nonuniform_qualifier : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int16 : require
+
+#include "Types.glsl"
+#include "Scene.glsl"
+#include "Light.glsl"
+#include "Texture.glsl"
+
+shared uint minDepthI;
+shared uint maxDepthI;
+shared vec4 frustum[6];
+
+shared uint visibleLights;
+shared uint visibleIndices[4096];
+
+shared mat4 viewProjection;
+shared mat4 inverseProjection;
+
+layout(local_size_x_id = NE_THREADS_X, local_size_y_id = NE_THREADS_Y, local_size_z_id = NE_THREADS_Z) in;
+
+layout(push_constant) uniform ConstantComputeArgs
+{
+	SceneBuffer scene;
+	VisibleLightIndicesBuffer visibleLightIndices;
+	mat4 view;
+	uint depthMap;
+	uint threadCount;
+} ComputeArgs;
+
+void
+main()
+{
+	ivec2 location = ivec2(gl_GlobalInvocationID.xy);
+	ivec2 item = ivec2(gl_LocalInvocationID.xy);
+	ivec2 tile = ivec2(gl_WorkGroupID.xy);
+	ivec2 tileCount = ivec2(gl_NumWorkGroups.xy);
+	uint index = tile.y * tileCount.x + tile.x;
+
+	if (gl_LocalInvocationIndex == 0) {
+		minDepthI = 0;
+		maxDepthI = 0xFFFFFFFF;
+		visibleLights = 0;
+		viewProjection = ComputeArgs.scene.viewProjection;
+		inverseProjection = ComputeArgs.scene.inverseProjection;
+	}
+
+	barrier();
+
+	float maxDepth, minDepth;
+	float depth = 1.f - Re_TexelFetch(ComputeArgs.depthMap, location, 0).r;
+	depth =  1.f / (depth * inverseProjection[2][3] + inverseProjection[3][3]);
+
+	uint depthInt = floatBitsToUint(depth);
+	atomicMin(minDepthI, depthInt);
+	atomicMax(maxDepthI, depthInt);
+
+	barrier();
+
+	if (gl_LocalInvocationIndex == 0) {
+		minDepth = uintBitsToFloat(minDepthI);
+		maxDepth = uintBitsToFloat(maxDepthI);
+
+		vec2 neg = (2.0 * vec2(tile)) / vec2(tileCount);
+		vec2 pos = (2.0 * vec2(tile + ivec2(1, 1))) / vec2(tileCount);
+
+		frustum[0]  = vec4(1.0, 0.0, 0.0, 1.0 - neg.x) * viewProjection;
+		frustum[0] /= length(frustum[0].xyz);
+		frustum[1]  = vec4(-1.0, 0.0, 0.0, -1.0 + pos.x) * viewProjection;
+		frustum[1] /= length(frustum[1].xyz);
+		frustum[2]  = vec4(0.0, -1.0, 0.0, 1.0 - neg.y) * viewProjection;
+		frustum[2] /= length(frustum[2].xyz);
+		frustum[3]  = vec4(0.0, 1.0, 0.0, -1.0 + pos.y) * viewProjection;
+		frustum[3] /= length(frustum[3].xyz);
+		frustum[4]  = vec4(0.0, 0.0, -1.0, -minDepth) * ComputeArgs.view;
+		frustum[4] /= length(frustum[4].xyz);
+		frustum[5]  = vec4(0.0, 0.0, 1.0, maxDepth) * ComputeArgs.view;
+		frustum[5] /= length(frustum[5].xyz);
+	}
+
+	barrier();
+
+	uint threadCount = ComputeArgs.threadCount;
+	uint passCount = (ComputeArgs.scene.lightCount + threadCount - 1) / threadCount;
+
+	for (uint i = 0; i < passCount; ++i) {
+		uint lightIndex = i * threadCount + gl_LocalInvocationIndex;
+
+		if (lightIndex >= ComputeArgs.scene.lightCount)
+			break;
+
+		const Light light = ComputeArgs.scene.lights[lightIndex];
+		const vec4 lPos = vec4(light.position.xyz, 1.0);
+
+		if (light.type != LT_DIRECTIONAL) {
+			if (dot(frustum[0], lPos) < -light.outerRadius)
+				continue;
+
+			if (dot(frustum[1], lPos) < -light.outerRadius)
+				continue;
+
+			if (dot(frustum[2], lPos) < -light.outerRadius)
+				continue;
+
+			if (dot(frustum[3], lPos) < -light.outerRadius)
+				continue;
+
+			if (dot(frustum[4], lPos) < -light.outerRadius)
+				continue;
+
+			if (dot(frustum[5], lPos) < -light.outerRadius)
+				continue;
+		}
+
+		uint offset = atomicAdd(visibleLights, 1);
+		visibleIndices[offset] = lightIndex;
+	}
+
+	barrier();
+
+	if (gl_LocalInvocationIndex == 0) {
+		const uint offset = index * ComputeArgs.scene.lightCount;
+		for (uint i = 0; i < visibleLights; ++i)
+			ComputeArgs.visibleLightIndices.data[offset + i] = visibleIndices[i];
+
+		if (visibleLights != ComputeArgs.scene.lightCount)
+			ComputeArgs.visibleLightIndices.data[offset + visibleLights] = uint(-1);
+	}
+}

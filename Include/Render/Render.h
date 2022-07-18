@@ -2,11 +2,10 @@
 #define _NE_RENDER_RENDER_H_
 
 #include <Render/Types.h>
-#include <Render/Driver/Core.h>
-#include <Render/Driver/Device.h>
-#include <Render/Driver/Context.h>
-#include <Render/Driver/RenderPassDesc.h>
-#include <Render/Driver/TransientResources.h>
+#include <Render/Core.h>
+#include <Render/Device.h>
+#include <Render/Context.h>
+#include <Render/TransientResources.h>
 
 #include <Render/Model.h>
 #include <Render/Material.h>

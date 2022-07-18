@@ -30,14 +30,40 @@ SIF_FUNC(FindEntity)
 
 SIF_FUNC(CreateEntity)
 {
-	const char *type = NULL;
+	const char *name = NULL, *type = NULL;
 
 	if (lua_isstring(vm, 1))
-		type = lua_tostring(vm, 1);
+		name = lua_tostring(vm, 1);
 	else if (!lua_isnil(vm, 1))
+		luaL_argerror(vm, 1, "name must be a string");
+
+	if (lua_isstring(vm, 2))
+		type = lua_tostring(vm, 2);
+	else if (!lua_isnil(vm, 2))
+		luaL_argerror(vm, 2, "type must be a string");
+
+	lua_pushlightuserdata(vm, E_CreateEntity(name, type));
+	return 1;
+}
+
+SIF_FUNC(CreateEntityS)
+{
+	const char *name = NULL, *type = NULL;
+
+	if (!lua_islightuserdata(vm, 1))
 		luaL_argerror(vm, 1, "");
 
-	lua_pushlightuserdata(vm, E_CreateEntity(type));
+	if (lua_isstring(vm, 2))
+		name = lua_tostring(vm, 2);
+	else if (!lua_isnil(vm, 2))
+		luaL_argerror(vm, 2, "name must be a string");
+
+	if (lua_isstring(vm, 3))
+		type = lua_tostring(vm, 3);
+	else if (!lua_isnil(vm, 3))
+		luaL_argerror(vm, 3, "type must be a string");
+
+	lua_pushlightuserdata(vm, E_CreateEntityS(lua_touserdata(vm, 1), name, type));
 	return 1;
 }
 
@@ -147,7 +173,6 @@ SIF_FUNC(ComponentCount)
 	return 1;
 }
 
-// 
 // TODO: E_GetAllComponents
 
 SIF_FUNC(Shutdown)
@@ -164,6 +189,7 @@ SIface_OpenEngine(lua_State *vm)
 		// Entity
 		SIF_REG(FindEntity),
 		SIF_REG(CreateEntity),
+		SIF_REG(CreateEntityS),
 		SIF_REG(AddComponent),
 		SIF_REG(AddNewComponent),
 		SIF_REG(RemoveComponent),

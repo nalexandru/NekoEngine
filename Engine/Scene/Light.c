@@ -16,7 +16,7 @@ static bool
 _InitLight(struct NeLight *l, const void **args)
 {
 	l->type = LT_DIRECTIONAL;
-	v3_fill(&l->color, 1.f);
+	M_Fill(&l->color, 1.f);
 	l->intensity = 1.f;
 
 	l->innerRadius = l->outerRadius = l->innerCutoff = l->outerCutoff = 0.f;
@@ -47,9 +47,9 @@ _InitLight(struct NeLight *l, const void **args)
 		} else if (!strncmp(arg, "OuterRadius", len)) {
 			l->outerRadius = (float)atof(*(++args));
 		} else if (!strncmp(arg, "InnerCutoff", len)) {
-			l->innerCutoff = cosf(deg_to_rad((float)atof(*(++args))));
+			l->innerCutoff = cosf(M_DegToRad((float)atof(*(++args))));
 		} else if (!strncmp(arg, "OuterCutoff", len)) {
-			l->outerCutoff = cosf(deg_to_rad((float)atof(*(++args))));
+			l->outerCutoff = cosf(M_DegToRad((float)atof(*(++args))));
 		}
 	}
 
@@ -61,14 +61,16 @@ E_SYSTEM(SCN_COLLECT_LIGHTS, ECSYS_GROUP_MANUAL, 0, true, struct NeCollectLights
 	struct NeTransform *xform = comp[0];
 	struct NeLight *l = comp[1];
 
-	float x = deg_to_rad(quat_roll(&xform->rotation));
-	float y = deg_to_rad(quat_pitch(&xform->rotation));
+	float x = M_DegToRad(M_QuatRoll(&xform->rotation));
+	float y = M_DegToRad(M_QuatPitch(&xform->rotation));
 
 	const float cosy = cosf(y);
 
+	const float yPos = l->type != LT_DIRECTIONAL ? xform->position.y : -xform->position.y;
+
 	struct NeLightData ld =
 	{
-		.position = { xform->position.x, -xform->position.y, xform->position.z },
+		.position = { xform->position.x, yPos, xform->position.z },
 		.type = l->type,
 		.direction =
 		{

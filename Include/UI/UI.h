@@ -11,7 +11,7 @@
 
 struct NeUIContext
 {
-	COMPONENT_BASE;
+	NE_COMPONENT_BASE;
 
 	struct NeArray vertices, indices, draws;
 };

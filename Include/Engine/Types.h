@@ -43,6 +43,10 @@
 #	error "Unknown compiler"
 #endif
 
+#ifndef _SID_COMPILER_
+#	define SID(x)	x
+#endif
+
 #define E_INVALID_HANDLE (uint64_t)-1
 
 struct NeArray;
@@ -53,18 +57,16 @@ struct NeScene;
 struct NeLight;
 struct NeStream;
 struct NeCamera;
+struct NeFrustum;
 struct NeUIContext;
 struct NeAudioClip;
 struct NeAtomicLock;
 struct NeResourceLoadInfo;
 
-struct NeAudioDevice;
-struct NeAudioDeviceInfo;
-struct NeAudioDeviceProcs;
-struct NeAudioSource;
-struct NeAudioSourceProcs;
 struct NeAudioClip;
 struct NeAudioClipCreateInfo;
+struct NeAudioSource;
+struct NeAudioListener;
 
 struct NeBone;
 struct NeSkeleton;
@@ -98,8 +100,8 @@ typedef void (*NeCompTermProc)(void *);
 
 typedef void (*NeECSysExecProc)(void **comp, void *args);
 
-struct mat3;
-struct mat4;
+struct NeMat3;
+struct NeMatrix;
 
 /*#if defined(__PARSER__)
 #	define Attribute(...) __attribute__((annotate(#__VA_ARGS__)))

@@ -41,7 +41,7 @@ _Setup(struct NeDepthPrePass *pass, struct NeArray *resources)
 	struct NeFramebufferAttachmentDesc fbAtDesc[2] =
 	{
 		{ .usage = TU_COLOR_ATTACHMENT | TU_INPUT_ATTACHMENT, .format = TF_R16G16B16A16_SFLOAT },
-		{ .usage = TU_DEPTH_STENCIL_ATTACHMENT, .format = TF_D32_SFLOAT }
+		{ .usage = TU_DEPTH_STENCIL_ATTACHMENT | TU_SAMPLED, .format = TF_D32_SFLOAT }
 	};
 	struct NeFramebufferDesc fbDesc =
 	{
@@ -68,7 +68,7 @@ _Setup(struct NeDepthPrePass *pass, struct NeArray *resources)
 		.gpuOptimalTiling = true,
 		.memoryType = MT_GPU_LOCAL
 	};
-	Re_AddGraphTexture("Re_normalBuffer", &normalDesc, resources);
+	Re_AddGraphTexture(RE_NORMAL_BUFFER, &normalDesc, 0, resources);
 
 	struct NeTextureDesc depthDesc =
 	{
@@ -76,14 +76,14 @@ _Setup(struct NeDepthPrePass *pass, struct NeArray *resources)
 		.height = *E_screenHeight,
 		.depth = 1,
 		.type = TT_2D,
-		.usage = TU_DEPTH_STENCIL_ATTACHMENT,
+		.usage = TU_DEPTH_STENCIL_ATTACHMENT | TU_SAMPLED,
 		.format = TF_D32_SFLOAT,
 		.arrayLayers = 1,
 		.mipLevels = 1,
 		.gpuOptimalTiling = true,
 		.memoryType = MT_GPU_LOCAL
 	};
-	Re_AddGraphTexture("Re_depthBuffer", &depthDesc, resources);
+	Re_AddGraphTexture(RE_DEPTH_BUFFER, &depthDesc, RE_DEPTH_BUFFER_LOCATION, resources);
 
 	return true;
 }
@@ -114,6 +114,7 @@ _Execute(struct NeDepthPrePass *pass, const struct NeArray *resources)
 			continue;
 
 		Rt_ArrayForEach(d, drawables) {
+			Re_CmdBindVertexBuffer(d->vertexBuffer, d->vertexOffset);
 			Re_CmdBindIndexBuffer(d->indexBuffer, 0, d->indexType);
 
 			constants.vertexAddress = d->vertexAddress;
@@ -137,6 +138,20 @@ _Init(struct NeDepthPrePass **pass)
 	*pass = Sys_Alloc(sizeof(struct NeDepthPrePass), 1, MH_Render);
 	if (!*pass)
 		return false;
+
+	struct NeVertexAttribute attribs[] =
+	{
+		{ 0, 0, VF_FLOAT3, 0 },						//float x, y, z;
+		{ 1, 0, VF_FLOAT3, sizeof(float) * 3 },		//float nx, ny, nz;
+		{ 2, 0, VF_FLOAT3, sizeof(float) * 6 },		//float tx, ty, tz;
+		{ 3, 0, VF_FLOAT2, sizeof(float) * 9 },		//float u, v;
+		{ 4, 0, VF_FLOAT4, sizeof(float) * 11 }		//float r, g, b, a;
+	};
+
+	struct NeVertexBinding bindings[] =
+	{
+		{ 0, sizeof(struct NeVertex), VIR_VERTEX }
+	};
 
 	struct NeShader *shader = Re_GetShader("Depth");
 
@@ -175,23 +190,28 @@ _Init(struct NeDepthPrePass **pass)
 	struct NeGraphicsPipelineDesc pipeDesc =
 	{
 		.flags = RE_TOPOLOGY_TRIANGLES | RE_POLYGON_FILL |
-					RE_CULL_NONE | RE_FRONT_FACE_CW |
+					RE_CULL_BACK | RE_FRONT_FACE_CCW |
 					RE_DEPTH_TEST | RE_DEPTH_WRITE | RE_DEPTH_OP_GREATER_EQUAL,
 		.stageInfo = &shader->opaqueStages,
 		.renderPassDesc = (*pass)->rpd,
 		.pushConstantSize = sizeof(struct Constants),
 		.attachmentCount = sizeof(blendAttachments) / sizeof(blendAttachments[0]),
 		.attachments = blendAttachments,
-		.depthFormat = TF_D32_SFLOAT
+		.depthFormat = TF_D32_SFLOAT,
+
+		.vertexDesc.attributes = attribs,
+		.vertexDesc.attributeCount = sizeof(attribs) / sizeof(attribs[0]),
+		.vertexDesc.bindings = bindings,
+		.vertexDesc.bindingCount = sizeof(bindings) / sizeof(bindings[0])
 	};
 	(*pass)->pipeline = Re_GraphicsPipeline(&pipeDesc);
 	if (!(*pass)->pipeline)
 		goto error;
 
-	(*pass)->normalHash = Rt_HashString("Re_normalBuffer");
-	(*pass)->depthHash = Rt_HashString("Re_depthBuffer");
-	(*pass)->instancesHash = Rt_HashString("Scn_instances");
-	(*pass)->passSemaphoreHash = Rt_HashString("Re_passSemaphore");
+	(*pass)->normalHash = Rt_HashString(RE_NORMAL_BUFFER);
+	(*pass)->depthHash = Rt_HashString(RE_DEPTH_BUFFER);
+	(*pass)->instancesHash = Rt_HashString(RE_SCENE_INSTANCES);
+	(*pass)->passSemaphoreHash = Rt_HashString(RE_PASS_SEMAPHORE);
 
 	return true;
 

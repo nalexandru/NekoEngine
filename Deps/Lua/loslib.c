@@ -23,8 +23,8 @@
 
 #ifdef __APPLE__
 // I'm too lazy to figgure out what #define is needed so ima just put these here
-struct tm *gmtime_r(const time_t *, struct tm *);
-struct tm *localtime_r(const time_t *, struct tm *);
+struct tm* gmtime_r(const time_t*, struct tm*);
+struct tm* localtime_r(const time_t*, struct tm*);
 #endif
 
 /*
@@ -157,7 +157,7 @@ static int os_execute (lua_State *L) {
     return 1;
   }
 #else
-  return 1;
+    return 1;
 #endif
 }
 

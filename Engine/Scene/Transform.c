@@ -11,9 +11,9 @@ E_REGISTER_COMPONENT(TRANSFORM_COMP, struct NeTransform, 16, _InitTransform, _Te
 static bool
 _InitTransform(struct NeTransform *xform, const void **args)
 {
-	v3(&xform->position, 0.f, 0.f, 0.f);
-	v3(&xform->scale, 1.f, 1.f, 1.f);
-	quat_ident(&xform->rotation);
+	M_Vec3(&xform->position, 0.f, 0.f, 0.f);
+	M_Vec3(&xform->scale, 1.f, 1.f, 1.f);
+	M_Identity(&xform->rotation);
 
 	for (; args && *args; ++args) {
 		const char *arg = *args;
@@ -30,12 +30,12 @@ _InitTransform(struct NeTransform *xform, const void **args)
 			xform->position.y = strtof(ptr + 2, &ptr);
 			xform->position.z = strtof(ptr + 2, &ptr);
 		} else if (!strncmp(arg, "Rotation", len)) {
-			struct vec3 r;
+			struct NeVec3 r;
 			char *ptr = (char *)*(++args);
 			r.x = strtof(ptr, &ptr);
 			r.y = strtof(ptr + 2, &ptr);
 			r.z = strtof(ptr + 2, &ptr);
-			quat_rot_pitch_yaw_roll(&xform->rotation, r.x, r.y, r.z);
+			M_QuatRotationPitchYawRoll(&xform->rotation, r.x, r.y, r.z);
 		} else if (!strncmp(arg, "Scale", len)) {
 			char *ptr = (char *)*(++args);
 			xform->scale.x = strtof(ptr, &ptr);
@@ -44,7 +44,7 @@ _InitTransform(struct NeTransform *xform, const void **args)
 		}
 	}
 
-	m4_ident(&xform->mat);
+	M_Identity(&xform->mat);
 	xform_update(xform);
 
 	return true;

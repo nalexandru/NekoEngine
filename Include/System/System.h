@@ -25,7 +25,8 @@ enum NeMachineType
 	MT_SWITCH,
 	MT_WII,
 	MT_MOBILE,
-	MT_PS4
+	MT_PS4,
+	MT_PS3
 };
 
 enum NeSystemCapabilityFlags

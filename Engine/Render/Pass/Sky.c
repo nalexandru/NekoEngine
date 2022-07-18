@@ -59,7 +59,7 @@ struct Constants
 	float exposure;
 	float gamma;
 	float invGamma;
-	struct mat4 mvp;
+	struct NeMatrix mvp;
 	uint64_t vertexAddress;
 };
 
@@ -72,7 +72,7 @@ _Setup(struct NeSkyPass *pass, struct NeArray *resources)
 	struct NeFramebufferAttachmentDesc fbAtDesc[2] =
 	{
 		{ .usage = 0, .format = 0 },
-		{ .usage = TU_DEPTH_STENCIL_ATTACHMENT, .format = TF_D32_SFLOAT },
+		{ .usage = TU_DEPTH_STENCIL_ATTACHMENT | TU_SAMPLED, .format = TF_D32_SFLOAT },
 	};
 	Re_SwapchainDesc(Re_swapchain, &fbAtDesc[0]);
 
@@ -116,11 +116,11 @@ _Execute(struct NeSkyPass *pass, const struct NeArray *resources)
 	Re_CmdBindIndexBuffer(pass->indexBuffer, 0, IT_UINT_16);
 	
 	constants.invGamma = 1.f / constants.gamma;
-	m4_mul(&constants.mvp, &Scn_activeCamera->projMatrix, &Scn_activeCamera->viewMatrix);
+	M_MulMatrix(&constants.mvp, &Scn_activeCamera->projMatrix, &Scn_activeCamera->viewMatrix);
 
-	struct mat4 tmp;
-	m4_scale(&tmp, 100000.0, 100000.0, 100000.0);
-	m4_mul(&constants.mvp, &constants.mvp, &tmp);
+	struct NeMatrix tmp;
+	M_ScaleMatrix(&tmp, 100000.0, 100000.0, 100000.0);
+	M_MulMatrix(&constants.mvp, &constants.mvp, &tmp);
 
 	Re_CmdPushConstants(SS_ALL, sizeof(constants), &constants);
 	Re_CmdDrawIndexed(sizeof(_indices) / sizeof(_indices[0]), 1, 0, 0, 0);
@@ -188,9 +188,9 @@ _Init(struct NeSkyPass **pass)
 	if (!(*pass)->pipeline)
 		goto error;
 
-	(*pass)->depthHash = Rt_HashString("Re_depthBuffer");
-	(*pass)->outputHash = Rt_HashString("Re_output");
-	(*pass)->passSemaphoreHash = Rt_HashString("Re_passSemaphore");
+	(*pass)->depthHash = Rt_HashString(RE_DEPTH_BUFFER);
+	(*pass)->outputHash = Rt_HashString(RE_OUTPUT);
+	(*pass)->passSemaphoreHash = Rt_HashString(RE_PASS_SEMAPHORE);
 
 	///////////////// FIXME
 

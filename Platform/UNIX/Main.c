@@ -4,7 +4,8 @@
 int
 main(int argc, char *argv[])
 {
-	E_Init(argc, argv);
+	if (!E_Init(argc, argv))
+		return -1;
 
 	return E_Run();
 }

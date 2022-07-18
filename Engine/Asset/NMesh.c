@@ -108,6 +108,8 @@ E_LoadNMeshAsset(struct NeStream *stm, struct NeModel *m)
 				m->meshes[i].indexOffset = info.indexOffset;
 				m->meshes[i].indexCount = info.indexCount;
 				m->meshes[i].materialResource = E_LoadResource(matName, RES_MATERIAL);
+
+				Re_BuildMeshBounds(&m->meshes[i].bounds, m->cpu.vertices, info.vertexOffset, info.vertexCount);
 			}
 		} else if (a.id == NMESH_END_ID) {
 			E_StreamSeek(stm, -((int64_t)sizeof(a)), IO_SEEK_CUR);

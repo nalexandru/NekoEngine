@@ -496,6 +496,7 @@ void
 Sys_ExecutableLocation(char *buff, uint32_t len)
 {
 	GetModuleFileNameA(NULL, buff, len);
+	*(strrchr(buff, '\\') + 1) = 0x0;
 }
 
 void

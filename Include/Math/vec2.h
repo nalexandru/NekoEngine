@@ -1,3 +1,258 @@
+#ifndef _NE_MATH_VEC2_H_
+#define _NE_MATH_VEC2_H_
+
+#include <Math/defs.h>
+
+static inline struct NeVec2 *
+M_Vec2(struct NeVec2 *v, float x, float y)
+{
+	v->x = x;
+	v->y = y;
+
+	return v;
+}
+
+static inline struct NeVec2 *
+M_FillVec2(struct NeVec2 *v, float f)
+{
+	v->x = v->y = f;
+
+	return v;
+}
+
+static inline struct NeVec2 *
+M_CopyVec2(struct NeVec2 *dst, const struct NeVec2 *src)
+{
+	dst->x = src->x;
+	dst->y = src->y;
+
+	return dst;
+}
+
+static inline struct NeVec2 *
+M_ZeroVec2(struct NeVec2 *v)
+{
+	v->x = 0.f;
+	v->y = 0.f;
+	
+	return v;
+}
+
+static inline float
+M_Vec2LengthSquared(const struct NeVec2 *v)
+{
+	return (v->x * v->x) + (v->y * v->y);
+}
+
+static inline float
+M_Vec2Length(const struct NeVec2 *v)
+{
+	return sqrtf((v->x * v->x) + (v->y * v->y));
+}
+
+static inline struct NeVec2 *
+M_NormalizeVec2(struct NeVec2 *dst, const struct NeVec2 *v)
+{
+	const float l = 1.0f / M_Vec2Length(v);
+
+	dst->x = v->x * l;
+	dst->y = v->y * l;
+
+	return dst;
+}
+
+static inline struct NeVec2 *
+M_LerpVec2(struct NeVec2 *dst, const struct NeVec2 *v1,
+	const struct NeVec2 *v2, float t)
+{
+	dst->x = v1->x + t * (v2->x - v1->x);
+	dst->y = v1->y + t * (v2->y - v1->y);
+
+	return dst;
+}
+
+static inline struct NeVec2 *
+M_AddVec2(struct NeVec2 *dst, const struct NeVec2 *v1, const struct NeVec2 *v2)
+{
+	dst->x = v1->x + v2->x;
+	dst->y = v1->y + v2->y;
+
+	return dst;
+}
+
+static inline struct NeVec2 *
+M_AddVec2S(struct NeVec2 *dst, const struct NeVec2 *v1, const float s)
+{
+	dst->x = v1->x + s;
+	dst->y = v1->y + s;
+
+	return dst;
+}
+
+static inline struct NeVec2 *
+M_SubVec2(struct NeVec2 *dst, const struct NeVec2 *v1, const struct NeVec2 *v2)
+{
+	dst->x = v1->x - v2->x;
+	dst->y = v1->y - v2->y;
+
+	return dst;
+}
+
+static inline struct NeVec2 *
+M_SubVec2S(struct NeVec2 *dst, const struct NeVec2 *v1, const float s)
+{
+	dst->x = v1->x - s;
+	dst->y = v1->y - s;
+
+	return dst;
+}
+
+static inline struct NeVec2 *
+M_MulVec2(struct NeVec2 *dst, const struct NeVec2 *v1, const struct NeVec2 *v2)
+{
+	dst->x = v1->x * v2->x;
+	dst->y = v1->y * v2->y;
+
+	return dst;
+}
+
+static inline struct NeVec2 *
+M_MulVec2S(struct NeVec2 *dst, const struct NeVec2 *v1, const float s)
+{
+	dst->x = v1->x * s;
+	dst->y = v1->y * s;
+
+	return dst;
+}
+
+static inline struct NeVec2 *
+M_DivVec2(struct NeVec2 *dst, const struct NeVec2 *v1, const struct NeVec2 *v2)
+{
+	dst->x = v1->x / v2->x;
+	dst->y = v1->y / v2->y;
+
+	return dst;
+}
+
+static inline struct NeVec2 *
+M_DivVec2S(struct NeVec2 *dst, const struct NeVec2 *v1, const float s)
+{
+	dst->x = v1->x / s;
+	dst->y = v1->y / s;
+
+	return dst;
+}
+
+static inline float
+M_DotVec2(const struct NeVec2 *v1, const struct NeVec2 *v2)
+{
+	return v1->x * v2->x + v1->y * v2->y;
+}
+
+static inline float
+M_CrossVec2(const struct NeVec2 *v1, const struct NeVec2 *v2)
+{
+	return v1->x * v2->y - v1->y * v2->x;
+}
+
+static inline struct NeVec2 *
+M_MulVec2M3(struct NeVec2 *dst, const struct NeVec2 *v, const struct NeMat3 *m)
+{
+	dst->x = v->x * m->mat[0] + v->y * m->mat[3] + m->mat[6];
+	dst->y = v->x * m->mat[1] + v->y * m->mat[4] + m->mat[7];
+
+	return dst;
+}
+
+static inline struct NeVec2 *
+M_ScaleVec2(struct NeVec2 *dst, const struct NeVec2 *v, const float s)
+{
+	return M_MulVec2S(dst, M_NormalizeVec2(dst, v), s);
+}
+
+static inline bool
+M_Vec2Equal(const struct NeVec2 *v1, const struct NeVec2 *v2)
+{
+	return M_FloatEqual(v1->x, v2->x) && M_FloatEqual(v1->y, v2->y);
+}
+
+static inline float
+M_Vec2Angle(const struct NeVec2 *v1, const struct NeVec2 *v2)
+{
+	struct NeVec2 t1, t2;
+	float cross;
+	float dot;
+
+	if (M_Vec2Equal(v1, v2))
+		return 0.f;
+
+	M_NormalizeVec2(&t1, v1);
+	M_NormalizeVec2(&t2, v2);
+
+	cross = M_CrossVec2(&t1, &t2);
+	dot = M_DotVec2(&t1, &t2);
+
+	/*
+	 * acos is only defined for -1 to 1. Outside the range we
+	 * get NaN even if that's just because of a floating point error
+	 * so we clamp to the -1 - 1 range
+	 */
+
+	if (dot > 1.f) dot = 1.f;
+	if (dot < -1.f) dot = -1.f;
+
+	return M_RadToDeg(atan2f(cross, dot));
+}
+
+static inline float
+M_Vec2Distance(const struct NeVec2 *v1, const struct NeVec2 *v2)
+{
+	struct NeVec2 diff;
+	M_SubVec2(&diff, v2, v1);
+	return fabsf(M_Vec2Length(&diff));
+}
+
+static inline struct NeVec2 *
+M_Vec2Middle(struct NeVec2 *dst, const struct NeVec2 *v1, const struct NeVec2 *v2)
+{
+	struct NeVec2 sum;
+
+	M_AddVec2(&sum, v1, v2);
+	
+	dst->x = sum.x / 2.f;
+	dst->y = sum.y / 2.f;
+
+	return dst;
+}
+
+static inline struct NeVec2 *
+M_ReflectVec2(struct NeVec2 *dst, const struct NeVec2 *v, const struct NeVec2 *n)
+{
+	struct NeVec2 tmp;
+
+	return M_SubVec2(dst, v, M_ScaleVec2(&tmp, n, 2.0f * M_DotVec2(v, n)));
+}
+
+static inline void
+M_SwapVec2( struct NeVec2 *v1, struct NeVec2 *v2)
+{
+	float x = v1->x;
+	float y = v1->y;
+	
+	v1->x = v2->x;
+	v1->y = v2->y;
+
+	v2->x = x;
+	v2->y = y;
+}
+
+static const struct NeVec2 M_Vec2PositiveY = {  0.f,  1.f };
+static const struct NeVec2 M_Vec2NegativeY = {  0.f, -1.f };
+static const struct NeVec2 M_Vec2NegativeX = { -1.f,  0.f };
+static const struct NeVec2 M_Vec2PositiveX = {  1.f,  0.f };
+
+#endif /* _NE_MATH_VEC2_H_ */
+
 /* NekoEngine
  *
  * vec2.h
@@ -7,7 +262,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (c) 2015-2021, Alexandru Naiman
+ * Copyright (c) 2015-2022, Alexandru Naiman
  *
  * All rights reserved.
  *
@@ -44,11 +299,11 @@ All rights reserved.
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
 
-    * Redistributions of source code must retain the above copyright notice,
-      this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above copyright notice,
-      this list of conditions and the following disclaimer in the documentation
-      and/or other materials provided with the distribution.
+	* Redistributions of source code must retain the above copyright notice,
+	  this list of conditions and the following disclaimer.
+	* Redistributions in binary form must reproduce the above copyright notice,
+	  this list of conditions and the following disclaimer in the documentation
+	  and/or other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -61,258 +316,3 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-
-#ifndef _NE_MATH_VEC2_H_
-#define _NE_MATH_VEC2_H_
-
-#include <Math/defs.h>
-
-static inline struct vec2 *
-v2(struct vec2 *v, float x, float y)
-{
-	v->x = x;
-	v->y = y;
-
-	return v;
-}
-
-static inline struct vec2 *
-v2_fill(struct vec2 *v, float f)
-{
-	v->x = v->y = f;
-
-	return v;
-}
-
-static inline struct vec2 *
-v2_copy(struct vec2 *dst, const struct vec2 *src)
-{
-	dst->x = src->x;
-	dst->y = src->y;
-
-	return dst;
-}
-
-static inline struct vec2 *
-v2_zero(struct vec2 *v)
-{
-	v->x = 0.f;
-	v->y = 0.f;
-	
-	return v;
-}
-
-static inline float
-v2_len_sq(const struct vec2 *v)
-{
-	return (v->x * v->x) + (v->y * v->y);
-}
-
-static inline float
-v2_len(const struct vec2 *v)
-{
-	return sqrtf((v->x * v->x) + (v->y * v->y));
-}
-
-static inline struct vec2 *
-v2_norm(struct vec2 *dst, const struct vec2 *v)
-{
-	const float l = 1.0f / v2_len(v);
-
-	dst->x = v->x * l;
-	dst->y = v->y * l;
-
-	return dst;
-}
-
-static inline struct vec2 *
-v2_lerp(struct vec2 *dst, const struct vec2 *v1,
-	const struct vec2 *v2, float t)
-{
-	dst->x = v1->x + t * (v2->x - v1->x);
-	dst->y = v1->y + t * (v2->y - v1->y);
-
-	return dst;
-}
-
-static inline struct vec2 *
-v2_add(struct vec2 *dst, const struct vec2 *v1, const struct vec2 *v2)
-{
-	dst->x = v1->x + v2->x;
-	dst->y = v1->y + v2->y;
-
-	return dst;
-}
-
-static inline struct vec2 *
-v2_adds(struct vec2 *dst, const struct vec2 *v1, const float s)
-{
-	dst->x = v1->x + s;
-	dst->y = v1->y + s;
-
-	return dst;
-}
-
-static inline struct vec2 *
-v2_sub(struct vec2 *dst, const struct vec2 *v1, const struct vec2 *v2)
-{
-	dst->x = v1->x - v2->x;
-	dst->y = v1->y - v2->y;
-
-	return dst;
-}
-
-static inline struct vec2 *
-v2_subs(struct vec2 *dst, const struct vec2 *v1, const float s)
-{
-	dst->x = v1->x - s;
-	dst->y = v1->y - s;
-
-	return dst;
-}
-
-static inline struct vec2 *
-v2_mul(struct vec2 *dst, const struct vec2 *v1, const struct vec2 *v2)
-{
-	dst->x = v1->x * v2->x;
-	dst->y = v1->y * v2->y;
-
-	return dst;
-}
-
-static inline struct vec2 *
-v2_muls(struct vec2 *dst, const struct vec2 *v1, const float s)
-{
-	dst->x = v1->x * s;
-	dst->y = v1->y * s;
-
-	return dst;
-}
-
-static inline struct vec2 *
-v2_div(struct vec2 *dst, const struct vec2 *v1, const struct vec2 *v2)
-{
-	dst->x = v1->x / v2->x;
-	dst->y = v1->y / v2->y;
-
-	return dst;
-}
-
-static inline struct vec2 *
-v2_divs(struct vec2 *dst, const struct vec2 *v1, const float s)
-{
-	dst->x = v1->x / s;
-	dst->y = v1->y / s;
-
-	return dst;
-}
-
-static inline float
-v2_dot(const struct vec2 *v1, const struct vec2 *v2)
-{
-	return v1->x * v2->x + v1->y * v2->y;
-}
-
-static inline float
-v2_cross(const struct vec2 *v1, const struct vec2 *v2)
-{
-	return v1->x * v2->y - v1->y * v2->x;
-}
-
-static inline struct vec2 *
-v2_mul_m3(struct vec2 *dst, const struct vec2 *v, const struct mat3 *m)
-{
-	dst->x = v->x * m->mat[0] + v->y * m->mat[3] + m->mat[6];
-	dst->y = v->x * m->mat[1] + v->y * m->mat[4] + m->mat[7];
-
-	return dst;
-}
-
-static inline struct vec2 *
-v2_scale(struct vec2 *dst, const struct vec2 *v, const float s)
-{
-	return v2_muls(dst, v2_norm(dst, v), s);
-}
-
-static inline bool
-v2_equal(const struct vec2 *v1, const struct vec2 *v2)
-{
-	return float_equal(v1->x, v2->x) && float_equal(v1->y, v2->y);
-}
-
-static inline float
-v2_angle(const struct vec2 *v1, const struct vec2 *v2)
-{
-	struct vec2 t1, t2;
-	float cross;
-	float dot;
-
-	if (v2_equal(v1, v2))
-		return 0.f;
-
-	v2_norm(&t1, v1);
-	v2_norm(&t2, v2);
-
-	cross = v2_cross(&t1, &t2);
-	dot = v2_dot(&t1, &t2);
-
-	/*
-	 * acos is only defined for -1 to 1. Outside the range we
-	 * get NaN even if that's just because of a floating point error
-	 * so we clamp to the -1 - 1 range
-	 */
-
-	if (dot > 1.f) dot = 1.f;
-	if (dot < -1.f) dot = -1.f;
-
-	return rad_to_deg(atan2f(cross, dot));
-}
-
-static inline float
-v2_distance(const struct vec2 *v1, const struct vec2 *v2)
-{
-	struct vec2 diff;
-	v2_sub(&diff, v2, v1);
-	return fabsf(v2_len(&diff));
-}
-
-static inline struct vec2 *
-v2_mid(struct vec2 *dst, const struct vec2 *v1, const struct vec2 *v2)
-{
-	struct vec2 sum;
-
-	v2_add(&sum, v1, v2);
-	
-	dst->x = sum.x / 2.f;
-	dst->y = sum.y / 2.f;
-
-	return dst;
-}
-
-static inline struct vec2 *
-v2_reflect(struct vec2 *dst, const struct vec2 *v, const struct vec2 *n)
-{
-	struct vec2 tmp;
-
-	return v2_sub(dst, v, v2_scale(&tmp, n, 2.0f * v2_dot(v, n)));
-}
-
-static inline void
-v2_swap( struct vec2 *v1, struct vec2 *v2)
-{
-	float x = v1->x;
-	float y = v1->y;
-	
-	v1->x = v2->x;
-	v1->y = v2->y;
-
-	v2->x = x;
-	v2->y = y;
-}
-
-static const struct vec2 v2_pos_y = {  0.f,  1.f };
-static const struct vec2 v2_neg_y = {  0.f, -1.f };
-static const struct vec2 v2_neg_x = { -1.f,  0.f };
-static const struct vec2 v2_pos_x = {  1.f,  0.f };
-
-#endif /* _NE_MATH_VEC2_H_ */

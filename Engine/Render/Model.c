@@ -70,6 +70,8 @@ Re_LoadModelResource(struct NeResourceLoadInfo *li, const char *args, struct NeM
 	if (args && strstr(args, "dynamic"))
 		mdl->dynamic = true;
 
+	Re_BuildMeshBounds(&mdl->bounds, mdl->cpu.vertices, 0, mdl->cpu.vertexSize / sizeof(struct NeVertex));
+
 	return _InitModel(mdl);
 }
 
@@ -95,6 +97,33 @@ Re_UnloadModelResource(struct NeModel *mdl, NeHandle h)
 	}
 }
 
+void
+Re_BuildMeshBounds(struct NeBounds *b, const struct NeVertex *vertices, uint32_t startVertex, uint32_t vertexCount)
+{
+	M_Vec3(&b->sphere.center, 0.f, 0.f, 0.f);
+	M_Vec3(&b->aabb.min, 0.f, 0.f, 0.f);
+	M_Vec3(&b->aabb.max, 0.f, 0.f, 0.f);
+
+	uint32_t endVertex = startVertex + vertexCount;
+	for (uint32_t i = startVertex; i < endVertex; ++i) {
+		struct NeVec3 v;
+
+		M_Add(&b->sphere.center, &b->sphere.center, M_Vec3(&v, vertices[i].x, vertices[i].y, vertices[i].z));
+		M_Vec3Min(&b->aabb.min, &b->aabb.min, &v);
+		M_Vec3Max(&b->aabb.max, &b->aabb.max, &v);
+	}
+
+	M_DivS(&b->sphere.center, &b->sphere.center, (float)vertexCount);
+
+	for (uint32_t i = startVertex; i < endVertex; ++i) {
+		struct NeVec3 v;
+
+		const float dist = M_Vec3Distance(&b->sphere.center, M_Vec3(&v, vertices[i].x, vertices[i].y, vertices[i].z));
+		if (dist > b->sphere.radius)
+			b->sphere.radius = dist;
+	}
+}
+
 static inline bool
 _InitModel(struct NeModel *mdl)
 {
@@ -103,7 +132,7 @@ _InitModel(struct NeModel *mdl)
 		.desc =
 		{
 			.size = mdl->cpu.vertexSize,
-			.usage = BU_STORAGE_BUFFER | BU_TRANSFER_DST,
+			.usage = BU_VERTEX_BUFFER | BU_STORAGE_BUFFER | BU_TRANSFER_DST,
 			.memoryType = MT_GPU_LOCAL
 		},
 		.data = mdl->cpu.vertices,

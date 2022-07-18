@@ -23,7 +23,7 @@
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.games</string>
 	<key>NSHumanReadableCopyright</key>
-	<string>© Alexandru Naiman, 2015-2021</string>
+	<string>© Alexandru Naiman, 2015-2022</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 </dict>

@@ -63,12 +63,14 @@ Sys_InitThread(NeThread *t, const char *name, void (*proc)(void *), void *args)
 		k32_SetThreadDescription(thread, NeWin32_UTF8toUCS2(name));
 
 	info.szName = name;
-	
+
+#ifdef MSC_VER
 	__try {
 		RaiseException(0x406D1388, 0, sizeof(info) / sizeof(ULONG_PTR), (const ULONG_PTR *)&info);
 	}
 	__except (EXCEPTION_EXECUTE_HANDLER) {
 	}
+#endif
 
 	*t = thread;
 

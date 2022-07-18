@@ -13,7 +13,7 @@ Cross-platform game engine.
 Supported platforms:
 * Windows 7 64-bit or newer
 * Linux x86_64
-* macOS 11.0 or newer arm64 (x86_64 with a Metal 2 (MSL 2.3) GPU should work too)
+* macOS 12.4 or newer arm64 (x86_64 with a Metal 2 (MSL 2.3) GPU should work too)
 * iOS 14.0 or newer
 * FreeBSD 13.0 amd64
 * OpenBSD 6.9 amd64
@@ -30,7 +30,7 @@ This repository is a mirror which is not frequently updated.
 
 #### Prerequisites
 * Visual Studio 2022
-* Vulkan SDK 1.2.189.2 or later
+* Vulkan SDK 1.3.216 or later
 * (Optional) FreeType for building the FontGen tool
 
 #### Build
@@ -47,11 +47,11 @@ This repository is a mirror which is not frequently updated.
 * shaderc or glslang
 * For Arch based systems run the following:
 ```
-pacman -S gcc libx11 vulkan-devel cmake shaderc
+pacman -S gcc libx11 vulkan-devel cmake shaderc openal
 ```
 * For FreeBSD:
 ```
-pkg install vulkan-headers vulkan-loader vulkan-tools vulkan-validation-layers cmake shaderc
+pkg install vulkan-headers vulkan-loader vulkan-tools vulkan-validation-layers cmake shaderc openal-soft
 ```
 
 #### Build
@@ -62,7 +62,7 @@ pkg install vulkan-headers vulkan-loader vulkan-tools vulkan-validation-layers c
 ### macOS / iOS
 
 #### Prerequisites
-* Xcode 13
+* Xcode 14 beta
 
 #### Build
 1. Clone the repository
@@ -80,9 +80,7 @@ pkg install vulkan-headers vulkan-loader vulkan-tools vulkan-validation-layers c
 * Jsmn - https://github.com/zserge/jsmn
 * stb_image, stb_image_write, stb_vorbis - https://github.com/nothings/stb
 * uthash - https://troydhanson.github.io/uthash/
-* glad - https://glad.dav1d.de/
 * volk - https://github.com/zeux/volk
 * simple-stdatomic-for-VS-Clang - https://github.com/zenny-chen/simple-stdatomic-for-VS-Clang
-* D3D12 Helper Library - https://github.com/Microsoft/DirectX-Graphics-Samples/tree/master/Libraries/D3DX12
 * OpenAL Soft - https://github.com/kcat/openal-soft
 * meshoptimizer - https://github.com/zeux/meshoptimizer

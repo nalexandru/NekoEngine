@@ -34,12 +34,13 @@
 struct NeSceneData
 {
 	struct {
-		struct mat4 viewProjection;
-		struct vec4 cameraPosition;
+		struct NeMatrix viewProjection;
+		struct NeMatrix inverseProjection;
+		struct NeVec4 cameraPosition;
 	} NE_ALIGN(16) camera;
 
 	struct {
-		struct vec4 sunPosition;
+		struct NeVec4 sunPosition;
 		uint32_t enviornmentMap;
 		uint32_t irradianceMap;
 		uint32_t aoMap;
@@ -168,11 +169,14 @@ void
 Scn_StartDrawableCollection(struct NeScene *s, const struct NeCamera *c)
 {
 	s->collect.nextArray = 0;
-	m4_mul(&s->collect.vp, &c->projMatrix, &c->viewMatrix);
+	M_MulMatrix(&s->collect.vp, &c->projMatrix, &c->viewMatrix);
+
+	M_FrustumFromVP(&s->collect.camFrustum, &c->viewMatrix, &c->projMatrix);
+//	memcpy(&s->collect.camFrustum, &c->frustum, sizeof(s->collect.camFrustum));
 
 	const NeEntityHandle camEnt = c->_owner;
 	const struct NeTransform *camXform = E_GetComponentS(s, camEnt, E_ComponentTypeId(TRANSFORM_COMP));
-	v3_copy(&s->collect.camPos, &camXform->position);
+	M_Copy(&s->collect.camPos, &camXform->position);
 
 	for (uint32_t i = 0; i < E_JobWorkerThreads(); ++i) {
 		Rt_ClearArray(&s->collect.opaqueDrawableArrays[i], false);
@@ -221,6 +225,8 @@ Scn_StartDataUpdate(struct NeScene *s, const struct NeCamera *c)
 	const NeEntityHandle camEnt = c->_owner;
 	const struct NeTransform *camXform = E_GetComponentS(s, camEnt, E_ComponentTypeId(TRANSFORM_COMP));
 
+	const uint32_t tileSize = E_GetCVarU32(SID("Render_LightCullingTileSize"), 16)->u32;
+
 	struct NeSceneData data =
 	{
 		.camera =
@@ -235,7 +241,7 @@ Scn_StartDataUpdate(struct NeScene *s, const struct NeCamera *c)
 		.lighting =
 		{
 			.lightCount = (uint32_t)collect.lightData.count,
-			.xTileCount = *E_screenWidth + (*E_screenWidth % 16) / 16
+			.xTileCount = (*E_screenWidth + (*E_screenWidth % tileSize)) / tileSize
 		},
 		.settings =
 		{
@@ -244,14 +250,22 @@ Scn_StartDataUpdate(struct NeScene *s, const struct NeCamera *c)
 			.sampleCount = 1
 		}
 	};
-	m4_mul(&data.camera.viewProjection, &c->projMatrix, &c->viewMatrix);
+	M_MulMatrix(&data.camera.viewProjection, &c->projMatrix, &c->viewMatrix);
+	M_InverseMatrix(&data.camera.inverseProjection, &c->projMatrix);
 
 	data.settings.invGamma = 1.f / data.settings.gamma;
 
 	memcpy(dst, &data, sizeof(data));
 	memcpy(dst + sizeof(data), collect.lightData.data, Rt_ArrayUsedByteSize(&collect.lightData));
 
+	s->lightCount = data.lighting.lightCount;
 	s->dataTransfered = true;
+}
+
+const struct NeLightData * const
+Scn_VisibleLights(struct NeScene *scn)
+{
+	return (const struct NeLightData * const)(scn->dataPtr + _DataOffset(scn) + sizeof(struct NeSceneData));
 }
 
 bool
@@ -373,6 +387,19 @@ _LoadJob(int wid, struct NeScene *s)
 	E_ExecuteSystemS(s, ANIM_BUILD_SKELETON, NULL);
 
 	s->loaded = true;
+	if (s->postLoad[0]) {
+		lua_State *vm = Sc_CreateVM();
+
+		lua_pushlightuserdata(vm, s);
+		lua_setglobal(vm, "LoadedScene");
+
+		const char *err = Sc_ExecuteFile(vm, s->postLoad);
+		if (err)
+			Sys_LogEntry(SCNMOD, LOG_CRITICAL, "PostLoad script execution failed for scene %s: %s", s->path, err);
+
+		Sc_DestroyVM(vm);
+	}
+
 	E_Broadcast(EVT_SCENE_LOADED, s);
 
 	Rt_TermArray(&args);
@@ -400,6 +427,9 @@ _ReadSceneInfo(struct NeScene *s, struct NeStream *stm, char *data)
 			s->environmentMap = E_LoadResource(file, RES_TEXTURE);
 		} else if (!strncmp(line, "MaxLights", 9)) {
 			s->maxLights = atoi(strchr(line, '=') + 1);
+		} else if (!strncmp(line, "PostLoad", 8)) {
+			char *postLoad = strchr(line, '=') + 1;
+			snprintf(s->postLoad, sizeof(s->postLoad), "%s", postLoad);
 		} else if (!strncmp(line, "EndSceneInfo", len)) {
 			break;
 		}
@@ -461,10 +491,13 @@ _ReadEntity(struct NeScene *s, char *name, struct NeStream *stm, char *data, str
 
 		if (!strncmp(line, "Component=", 10)) {
 			char *type = strchr(line, '=') + 1;
+			if (!type)
+				continue;
+
 			strncpy(compType, type, BUFF_SZ);
 
 			if (!entity)
-				entity = E_CreateEntityS(s, NULL);
+				entity = E_CreateEntityS(s, entityName, NULL);
 
 			Rt_ZeroArray(args);
 		} else if (!strncmp(line, "EndComponent", len)) {
@@ -481,29 +514,25 @@ _ReadEntity(struct NeScene *s, char *name, struct NeStream *stm, char *data, str
 		} else if (!strncmp(line, "EndEntity", len)) {
 			break;
 		} else if (compType[0] == 0x0) {
-			if (!strncmp(line, "Type=", 5))
-				entity = E_CreateEntityS(s, line);
+			if (!strncmp(line, "Type=", 5)) {
+				char *type = strchr(line, '=') + 1;
+				if (!type)
+					continue;
+
+				entity = E_CreateEntityS(s, entityName, type);
+			}
 		} else {
-			char *arg = line, *dst = NULL;
+			char *arg = line;
 			char *val = strchr(line, '=');
 			if (!val)
 				continue;
 
 			*val++ = 0x0;
 
-			len = strnlen(arg, BUFF_SZ) + 1;
-			dst = Sys_Alloc(sizeof(char), len, MH_Transient);
-			strncpy(dst, arg, len);
-			Rt_ArrayAddPtr(args, dst);
-
-			len = strnlen(val, BUFF_SZ) + 1;
-			dst = Sys_Alloc(sizeof(char), len, MH_Transient);
-			strncpy(dst, val, len);
-			Rt_ArrayAddPtr(args, dst);
+			Rt_ArrayAddPtr(args, Rt_StrNDup(arg, BUFF_SZ, MH_Transient));
+			Rt_ArrayAddPtr(args, Rt_StrNDup(val, BUFF_SZ, MH_Transient));
 		}
 	}
-
-	E_RenameEntity(entity, entityName);
 }
 
 static inline uint64_t
@@ -522,4 +551,3 @@ _SortDrawables(const struct NeDrawable *a, const struct NeDrawable *b)
 	else
 		return 0;
 }
-

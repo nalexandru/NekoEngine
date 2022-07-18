@@ -26,6 +26,8 @@ Re_RenderFrame(void)
 		Re_AddPass(Re_activeGraph, &RP_opaque);
 		Re_AddPass(Re_activeGraph, &RP_sky);
 		Re_AddPass(Re_activeGraph, &RP_transparent);
+//		Re_AddPass(Re_activeGraph, &RP_debugBounds);
+//		Re_AddPass(Re_activeGraph, &RP_lightBounds);
 		Re_AddPass(Re_activeGraph, &RP_ui);
 	}
 	///////////////////////////////////

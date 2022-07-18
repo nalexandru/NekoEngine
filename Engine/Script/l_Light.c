@@ -23,7 +23,7 @@ SIF_FUNC(SetColor)
 	if (!lua_islightuserdata(vm, 1))
 		luaL_argerror(vm, 1, "Must be light user data");
 
-	struct vec3 new =
+	struct NeVec3 new =
 	{
 		(float)luaL_checknumber(vm, 2),
 		(float)luaL_checknumber(vm, 3),
@@ -32,7 +32,7 @@ SIF_FUNC(SetColor)
 
 	struct NeLight *l = lua_touserdata(vm, 1);
 
-	v3_copy(&l->color, &new);
+	M_CopyVec3(&l->color, &new);
 	return 0;
 }
 

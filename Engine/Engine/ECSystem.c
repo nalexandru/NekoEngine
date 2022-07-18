@@ -2,7 +2,7 @@
 #include <System/System.h>
 #include <System/Thread.h>
 #include <Runtime/Runtime.h>
-
+#include <Scene/Scene.h>
 #include <Engine/IO.h>
 #include <Engine/Job.h>
 #include <Engine/ECSystem.h>
@@ -18,6 +18,12 @@ struct NeExecArgs
 	struct NeECSystem *sys;
 	void *components[MAX_ENTITY_COMPONENTS];
 	void *args;
+};
+
+struct NeJobCompletedArgs
+{
+	bool done;
+	struct NeScene *scene;
 };
 
 struct NeSystemInitInfo
@@ -39,7 +45,7 @@ static inline void _SysExec(struct NeScene *s, struct NeECSystem *sys, void *arg
 static inline bool *_SysExecJobs(struct NeScene *s, struct NeECSystem *sys, void *args);
 static inline void _FilterEntities(struct NeScene *s, struct NeArray *ent, NeCompTypeId *compTypes, size_t typeCount);
 static void _ExecJob(int worker, struct NeExecArgs *ea);
-static void _JobCompleted(uint64_t id, bool *done);
+static void _JobCompleted(uint64_t id, struct NeJobCompletedArgs *jca);
 static inline void _Exec(struct NeECSystem *sys, void **components, void *args);
 static void _LoadScript(const char *path);
 
@@ -55,8 +61,13 @@ E_RegisterSystem(const char *name, const char *group,
 		return false;
 
 	if (_systems.data) {
-		for (size_t i = 0; i < numComp; ++i)
+		for (size_t i = 0; i < numComp; ++i) {
 			types[i] = E_ComponentTypeId(comp[i]);
+			if (types[i] == E_INVALID_HANDLE) {
+				Sys_LogEntry(ECSYS_MOD, LOG_CRITICAL, "Failed to register system %s. Component type for %s not found.", name, comp[i]);
+				return false;
+			}
+		}
 
 		return E_RegisterSystemId(name, group, types, numComp, proc, priority, singleThread);
 	} else {
@@ -313,11 +324,13 @@ _SysExec(struct NeScene *s, struct NeECSystem *sys, void *args)
 	NeEntityHandle handle = 0;
 	void *components[MAX_ENTITY_COMPONENTS];
 
+	Sys_AtomicLockRead(&s->compLock);
+
 	if (sys->typeCount == 1) {
 		comp = E_GetAllComponentsS(s, sys->compTypes[0]);
 
 		if (!comp)
-			return;
+			goto exit;
 
 		for (i = 0; i < comp->count; ++i) {
 			ptr = Rt_ArrayGet(comp, i);
@@ -335,6 +348,9 @@ _SysExec(struct NeScene *s, struct NeECSystem *sys, void *args)
 			_Exec(sys, components, args);
 		}
 	}
+
+exit:
+	Sys_AtomicUnlockRead(&s->compLock);
 }
 
 static inline bool *
@@ -345,11 +361,13 @@ _SysExecJobs(struct NeScene *s, struct NeECSystem *sys, void *args)
 	struct NeExecArgs **ea;
 	size_t count;
 
+	Sys_AtomicLockRead(&s->compLock);
+
 	if (sys->typeCount == 1) {
 		comp = E_GetAllComponentsS(s, sys->compTypes[0]);
 
 		if (!comp || !comp->count)
-			return NULL;
+			goto exit;
 
 		count = comp->count;
 		ea = Sys_Alloc(sizeof(*ea), count, MH_Frame);
@@ -363,7 +381,7 @@ _SysExecJobs(struct NeScene *s, struct NeECSystem *sys, void *args)
 		_FilterEntities(s, &_filteredEntities, sys->compTypes, sys->typeCount);
 
 		if (!_filteredEntities.count)
-			return NULL;
+			goto exit;
 
 		count = _filteredEntities.count;
 		ea = Sys_Alloc(sizeof(*ea), count, MH_Frame);
@@ -378,10 +396,16 @@ _SysExecJobs(struct NeScene *s, struct NeECSystem *sys, void *args)
 		}
 	}
 
-	bool *done = Sys_Alloc(sizeof(*done), 1, MH_Frame);
-	E_DispatchJobs(count, (NeJobProc)_ExecJob, (void **)ea, (NeJobCompletedProc)_JobCompleted, done);
+	struct NeJobCompletedArgs *jca = Sys_Alloc(sizeof(*jca), 1, MH_Frame);
+	jca->done = false;
+	jca->scene = s;
+	E_DispatchJobs(count, (NeJobProc)_ExecJob, (void **)ea, (NeJobCompletedProc)_JobCompleted, jca);
 
-	return done;
+	return &jca->done;
+
+exit:
+	Sys_AtomicUnlockRead(&s->compLock);
+	return NULL;
 }
 
 static inline void
@@ -443,9 +467,10 @@ _ExecJob(int worker, struct NeExecArgs *ea)
 }
 
 static void
-_JobCompleted(uint64_t id, bool *done)
+_JobCompleted(uint64_t id, struct NeJobCompletedArgs *args)
 {
-	*done = true;
+	Sys_AtomicUnlockRead(&args->scene->compLock);
+	args->done = true;
 }
 
 static inline void

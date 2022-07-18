@@ -23,7 +23,7 @@ struct NeRenderPass RP_transparent =
 struct NeTransparentPass
 {
 	struct NeFramebuffer *fb;
-	uint64_t outputHash, depthHash, normalHash, sceneDataHash, instancesHash, passSemaphoreHash;
+	uint64_t outputHash, depthHash, normalHash, sceneDataHash, instancesHash, passSemaphoreHash, visibleLightIndicesHash;
 };
 
 static bool
@@ -35,7 +35,7 @@ _Setup(struct NeTransparentPass *pass, struct NeArray *resources)
 	struct NeFramebufferAttachmentDesc fbAtDesc[3] =
 	{
 		{ .usage = 0, .format = 0 },
-		{ .usage = TU_DEPTH_STENCIL_ATTACHMENT, .format = TF_D32_SFLOAT },
+		{ .usage = TU_DEPTH_STENCIL_ATTACHMENT | TU_SAMPLED, .format = TF_D32_SFLOAT },
 		{ .usage = TU_COLOR_ATTACHMENT | TU_INPUT_ATTACHMENT, .format = TF_R16G16B16A16_SFLOAT }
 	};
 	Re_SwapchainDesc(Re_swapchain, &fbAtDesc[0]);
@@ -61,6 +61,7 @@ _Execute(struct NeTransparentPass *pass, const struct NeArray *resources)
 	struct NeMaterialRenderConstants constants;
 
 	constants.sceneAddress = Re_GraphBuffer(pass->sceneDataHash, resources, NULL);
+	constants.visibleIndicesAddress = Re_GraphBuffer(pass->visibleLightIndicesHash, resources, NULL);
 	uint64_t instanceRoot = Re_GraphBuffer(pass->instancesHash, resources, NULL);
 
 	struct NeTexture *depthTexture = Re_GraphTexture(pass->depthHash, resources);
@@ -114,6 +115,7 @@ _Execute(struct NeTransparentPass *pass, const struct NeArray *resources)
 	const struct NeDrawable *d = NULL;
 	Rt_ArrayForEach(d, &Scn_activeScene->collect.blendedDrawables) {
 		Re_CmdBindPipeline(d->material->pipeline);
+		Re_CmdBindVertexBuffer(d->vertexBuffer, d->vertexOffset);
 		Re_CmdBindIndexBuffer(d->indexBuffer, 0, d->indexType);
 		
 		constants.vertexAddress = d->vertexAddress;
@@ -137,12 +139,13 @@ _Init(struct NeTransparentPass **pass)
 	if (!*pass)
 		return false;
 
-	(*pass)->outputHash = Rt_HashString("Re_output");
-	(*pass)->depthHash = Rt_HashString("Re_depthBuffer");
-	(*pass)->normalHash = Rt_HashString("Re_normalBuffer");
-	(*pass)->sceneDataHash = Rt_HashString("Scn_data");
-	(*pass)->instancesHash = Rt_HashString("Scn_instances");
-	(*pass)->passSemaphoreHash = Rt_HashString("Re_passSemaphore");
+	(*pass)->outputHash = Rt_HashString(RE_OUTPUT);
+	(*pass)->depthHash = Rt_HashString(RE_DEPTH_BUFFER);
+	(*pass)->normalHash = Rt_HashString(RE_NORMAL_BUFFER);
+	(*pass)->sceneDataHash = Rt_HashString(RE_SCENE_DATA);
+	(*pass)->instancesHash = Rt_HashString(RE_SCENE_INSTANCES);
+	(*pass)->passSemaphoreHash = Rt_HashString(RE_PASS_SEMAPHORE);
+	(*pass)->visibleLightIndicesHash = Rt_HashString(RE_VISIBLE_LIGHT_INDICES);
 
 	return true;
 }

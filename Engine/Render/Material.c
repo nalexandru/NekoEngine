@@ -173,7 +173,7 @@ _LoadMaterialResource(struct NeResourceLoadInfo *li, const char *args, struct Ne
 		return false;
 
 	mr->data = data;
-	mr->primitiveType = args ? clamp_i(atoi(args), PT_TRIANGLES, PT_LINES) : PT_TRIANGLES;
+	mr->primitiveType = args ? M_ClampI(atoi(args), PT_TRIANGLES, PT_LINES) : PT_TRIANGLES;
 
 	if (!Rt_InitPtrArray(&mr->args, 10, MH_Asset))
 		return false;
@@ -456,6 +456,20 @@ _termDefaultMaterial(struct NeDefaultMaterial *data)
 static inline struct NePipeline *
 _createPipeline(const struct NeMaterialResource *mr, struct NeShader *shader)
 {
+	struct NeVertexAttribute attribs[] =
+	{
+		{ 0, 0, VF_FLOAT3, 0 },						// float x, y, z;
+		{ 1, 0, VF_FLOAT3, sizeof(float) * 3 },		// float nx, ny, nz;
+		{ 2, 0, VF_FLOAT3, sizeof(float) * 6 },		// float tx, ty, tz;
+		{ 3, 0, VF_FLOAT2, sizeof(float) * 9 },		// float u, v;
+		{ 4, 0, VF_FLOAT4, sizeof(float) * 11 }		// float r, g, b, a;
+	};
+
+	struct NeVertexBinding bindings[] =
+	{
+		{ 0, sizeof(struct NeVertex), VIR_VERTEX }
+	};
+
 	struct NeBlendAttachmentDesc blendAttachments[] =
 	{
 		{
@@ -472,14 +486,20 @@ _createPipeline(const struct NeMaterialResource *mr, struct NeShader *shader)
 	struct NeGraphicsPipelineDesc desc =
 	{
 		.flags = RE_POLYGON_FILL |
-					RE_CULL_NONE | RE_FRONT_FACE_CW |
-					RE_DEPTH_TEST | RE_DEPTH_WRITE | RE_DEPTH_OP_GREATER_EQUAL,
+					RE_CULL_BACK | RE_FRONT_FACE_CCW |
+					RE_DEPTH_TEST /*| RE_DEPTH_WRITE*/ |
+					(mr->alphaBlend ? RE_DEPTH_OP_GREATER_EQUAL : RE_DEPTH_OP_EQUAL),
 		.stageInfo = &shader->opaqueStages,
 		.renderPassDesc = Re_MaterialRenderPassDesc,
 		.pushConstantSize = sizeof(struct NeMaterialRenderConstants),
 		.attachmentCount = sizeof(blendAttachments) / sizeof(blendAttachments[0]),
 		.attachments = blendAttachments,
-		.depthFormat = TF_D32_SFLOAT
+		.depthFormat = TF_D32_SFLOAT,
+
+		.vertexDesc.attributes = attribs,
+		.vertexDesc.attributeCount = sizeof(attribs) / sizeof(attribs[0]),
+		.vertexDesc.bindings = bindings,
+		.vertexDesc.bindingCount = sizeof(bindings) / sizeof(bindings[0])
 	};
 
 	switch (mr->primitiveType) {

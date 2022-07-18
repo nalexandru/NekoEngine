@@ -15,7 +15,7 @@ struct NeScene
 	struct NeArray entities, compData, compHandle;
 	struct NeCollectDrawablesArgs collect;
 	NeBufferHandle sceneData;
-	uint32_t maxLights, maxInstances;
+	uint32_t maxLights, maxInstances, lightCount;
 	size_t sceneDataSize, lightDataSize, instanceDataSize;
 	struct NeAtomicLock compLock;
 
@@ -27,6 +27,7 @@ struct NeScene
 
 	char name[64];
 	char path[256];
+	char postLoad[256];
 	uint8_t id;
 };
 
@@ -53,6 +54,10 @@ void Scn_DataAddress(const struct NeScene *s, uint64_t *sceneAddress, uint64_t *
 void Scn_StartDrawableCollection(struct NeScene *s, const struct NeCamera *c);
 void Scn_StartDataUpdate(struct NeScene *s, const struct NeCamera *c);
 
+const struct NeLightData * const Scn_VisibleLights(struct NeScene *scn);
+
 bool Scn_CreateTerrain(struct NeScene *scn, const struct NeTerrainCreateInfo *tci);
+
+uint32_t Scn_LightCount(struct NeScene *scn);
 
 #endif /* _NE_SCENE_SCENE_H_ */

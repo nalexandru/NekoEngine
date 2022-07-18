@@ -881,6 +881,7 @@ LUALIB_API lua_Integer luaL_len (lua_State *L, int idx) {
 
 
 LUALIB_API const char *luaL_tolstring (lua_State *L, int idx, size_t *len) {
+  idx = lua_absindex(L,idx);
   if (luaL_callmeta(L, idx, "__tostring")) {  /* metafield? */
     if (!lua_isstring(L, -1))
       luaL_error(L, "'__tostring' must return a string");
@@ -1103,11 +1104,11 @@ LUALIB_API void luaL_checkversion_ (lua_State *L, lua_Number ver, size_t sz) {
                   (LUAI_UACNUMBER)ver, (LUAI_UACNUMBER)v);
 }
 
-LUALIB_API lua_State *luaL_newstate_alloc (lua_Alloc alloc) {
-  lua_State *L = lua_newstate(alloc, NULL);
-  if (l_likely(L)) {
-    lua_atpanic(L, &panic);
-    lua_setwarnf(L, warnfoff, L);  /* default is warnings off */
-  }
-  return L;
+LUALIB_API lua_State* luaL_newstate_alloc(lua_Alloc alloc) {
+    lua_State* L = lua_newstate(alloc, NULL);
+    if (l_likely(L)) {
+        lua_atpanic(L, &panic);
+        lua_setwarnf(L, warnfoff, L);  /* default is warnings off */
+    }
+    return L;
 }

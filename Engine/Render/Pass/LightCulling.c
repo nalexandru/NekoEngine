@@ -10,9 +10,10 @@
 
 struct NeLightCulling
 {
-	uint32_t tileSize;
+	uint32_t *tileSize, xTiles, yTiles;
 	struct NePipeline *pipeline;
-	uint64_t sceneDataHash, visibleLightIndicesHash, passSemaphoreHash;
+	uint64_t depthHash, sceneDataHash, visibleLightIndicesHash, passSemaphoreHash;
+	uint64_t bufferSize;
 };
 
 static bool _Init(struct NeLightCulling **pass);
@@ -32,19 +33,25 @@ struct Constants
 {
 	uint64_t sceneAddress;
 	uint64_t visibleLightIndicesAddress;
-	struct mat4 view;
+	struct NeMatrix view;
+	uint32_t depthMap;
+	uint32_t threadCount;
 };
 
 static bool
 _Setup(struct NeLightCulling *pass, struct NeArray *resources)
 {
+	pass->xTiles = (*E_screenWidth + (*E_screenWidth % *pass->tileSize)) / *pass->tileSize;
+	pass->yTiles = ((*E_screenHeight + (*E_screenHeight % *pass->tileSize)) / *pass->tileSize) + 1;
+	pass->bufferSize = sizeof(int32_t) * pass->xTiles * pass->yTiles * 4096;//Scn_activeScene->lightCount;
+
 	struct NeBufferDesc bd =
 	{
-		.size = 100,
+		.size = pass->bufferSize,
 		.usage = BU_STORAGE_BUFFER,
 		.memoryType = MT_GPU_LOCAL
 	};
-	return Re_AddGraphBuffer("Re_visibleLightIndices", &bd, resources);
+	return Re_AddGraphBuffer(RE_VISIBLE_LIGHT_INDICES, &bd, resources);
 }
 
 static void
@@ -53,17 +60,17 @@ _Execute(struct NeLightCulling *pass, const struct NeArray *resources)
 	struct Constants constants;
 	struct NeBuffer *visibleIndicesPtr;
 
+	constants.threadCount = *pass->tileSize * *pass->tileSize;
 	constants.sceneAddress = Re_GraphBuffer(pass->sceneDataHash, resources, NULL);
 	constants.visibleLightIndicesAddress = Re_GraphBuffer(pass->visibleLightIndicesHash, resources, &visibleIndicesPtr);
-	m4_copy(&constants.view, &Scn_activeCamera->viewMatrix);
+	constants.depthMap = Re_GraphTextureLocation(pass->depthHash, resources);
+
+	M_Copy(&constants.view, &Scn_activeCamera->viewMatrix);
 
 	Re_BeginComputeCommandBuffer();
 
 	Re_CmdBindPipeline(pass->pipeline);
 	Re_CmdPushConstants(SS_COMPUTE, sizeof(constants), &constants);
-
-	uint32_t x = (*E_screenWidth + (*E_screenWidth % pass->tileSize)) / pass->tileSize;
-	uint32_t y = (*E_screenHeight + (*E_screenHeight % pass->tileSize)) / pass->tileSize;
 
 /*	struct NeBufferBarrier barrier1 =
 	{
@@ -73,11 +80,11 @@ _Execute(struct NeLightCulling *pass, const struct NeArray *resources)
 		.dstAccess = RE_PA_MEMORY_READ,
 		.buffer = visibleIndicesPtr,
 		.offset = 0,
-		.size = 100
+		.size = pass->bufferSize
 	};
 	Re_Barrier(RE_PS_FRAGMENT_SHADER, RE_PS_COMPUTE_SHADER, RE_PD_BY_REGION, 0, NULL, 1, &barrier1, 0, NULL);*/
 
-	Re_CmdDispatch(x, ++y, 1);
+	Re_CmdDispatch(pass->xTiles, pass->yTiles, 1);
 
 /*	struct NeBufferBarrier barrier2 =
 	{
@@ -87,7 +94,7 @@ _Execute(struct NeLightCulling *pass, const struct NeArray *resources)
 		.dstAccess = RE_PA_MEMORY_READ,
 		.buffer = visibleIndicesPtr,
 		.offset = 0,
-		.size = 100
+		.size = pass->bufferSize;
 	};
 	Re_Barrier(RE_PS_COMPUTE_SHADER, RE_PS_FRAGMENT_SHADER, RE_PD_BY_REGION, 0, NULL, 1, &barrier2, 0, NULL);*/
 
@@ -102,11 +109,11 @@ _Init(struct NeLightCulling **pass)
 	if (!*pass)
 		return false;
 
-	(*pass)->tileSize = E_GetCVarU32("Render_LightCullingTileSize", 16)->u32;
+	(*pass)->tileSize = &E_GetCVarU32(SID("Render_LightCullingTileSize"), 16)->u32;
 
 	struct NeComputePipelineDesc desc = {
 		.stageInfo = (struct NeShaderStageInfo *)&Re_GetShader("LightCulling")->stageCount,
-		.threadsPerThreadgroup = { (*pass)->tileSize, (*pass)->tileSize, 1 },
+		.threadsPerThreadgroup = { *(*pass)->tileSize, *(*pass)->tileSize, 1 },
 		.pushConstantSize = sizeof(struct Constants)
 	};
 	
@@ -114,9 +121,12 @@ _Init(struct NeLightCulling **pass)
 	if (!(*pass)->pipeline)
 		return false;
 
-	(*pass)->sceneDataHash = Rt_HashString("Scn_data");
-	(*pass)->visibleLightIndicesHash = Rt_HashString("Re_visibleLightIndices");
-	(*pass)->passSemaphoreHash = Rt_HashString("Re_passSemaphore");
+	(*pass)->bufferSize = 1024 * 1024;
+
+	(*pass)->depthHash = Rt_HashString(RE_DEPTH_BUFFER);
+	(*pass)->sceneDataHash = Rt_HashString(RE_SCENE_DATA);
+	(*pass)->visibleLightIndicesHash = Rt_HashString(RE_VISIBLE_LIGHT_INDICES);
+	(*pass)->passSemaphoreHash = Rt_HashString(RE_PASS_SEMAPHORE);
 
 	return true;
 }

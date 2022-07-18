@@ -28,7 +28,7 @@ struct NeUIConstants
 	uint64_t vertexAddress;
 	uint32_t texture;
 	uint32_t __padding;
-	struct mat4 mvp;
+	struct NeMatrix mvp;
 };
 
 struct NeUIPass
@@ -64,7 +64,7 @@ _Setup(struct NeUIPass *pass, struct NeArray *resources)
 	pass->updated = false;
 	E_ExecuteJob((NeJobProc)_UIUpdateJob, pass, NULL, NULL);
 
-	m4_ortho(&pass->constants.mvp, 0.f, (float)*E_screenWidth, (float)*E_screenHeight, 0.f, 0.f, 1.f);
+	M_OrthographicMatrix(&pass->constants.mvp, 0.f, (float)*E_screenWidth, (float)*E_screenHeight, 0.f, 0.f, 1.f);
 
 	return true;
 }
@@ -149,8 +149,8 @@ _Init(struct NeUIPass **pass)
 	if (!(*pass)->pipeline)
 		goto error;
 
-	(*pass)->outputHash = Rt_HashString("Re_output");
-	(*pass)->passSemaphoreHash = Rt_HashString("Re_passSemaphore");
+	(*pass)->outputHash = Rt_HashString(RE_OUTPUT);
+	(*pass)->passSemaphoreHash = Rt_HashString(RE_PASS_SEMAPHORE);
 
 	return true;
 

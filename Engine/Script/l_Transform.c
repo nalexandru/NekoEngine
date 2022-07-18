@@ -62,7 +62,7 @@ SIF_FUNC(Move)
 	if (!lua_islightuserdata(vm, 1))
 		luaL_argerror(vm, 1, "Must be light user data");
 
-	struct vec3 movement =
+	struct NeVec3 movement =
 	{
 		(float)luaL_checknumber(vm, 2),
 		(float)luaL_checknumber(vm, 3),
@@ -79,7 +79,7 @@ SIF_FUNC(Rotate)
 		luaL_argerror(vm, 1, "Must be light user data");
 
 	const float angle = (float)luaL_checknumber(vm, 2);
-	struct vec3 axis =
+	struct NeVec3 axis =
 	{
 		(float)luaL_checknumber(vm, 3),
 		(float)luaL_checknumber(vm, 4),
@@ -95,7 +95,7 @@ SIF_FUNC(Scale)
 	if (!lua_islightuserdata(vm, 1))
 		luaL_argerror(vm, 1, "Must be light user data");
 
-	struct vec3 scale =
+	struct NeVec3 scale =
 	{
 		(float)luaL_checknumber(vm, 2),
 		(float)luaL_checknumber(vm, 3),
@@ -111,7 +111,7 @@ SIF_FUNC(SetPosition)
 	if (!lua_islightuserdata(vm, 1))
 		luaL_argerror(vm, 1, "Must be light user data");
 
-	struct vec3 pos =
+	struct NeVec3 pos =
 	{
 		(float)luaL_checknumber(vm, 2),
 		(float)luaL_checknumber(vm, 3),
@@ -127,7 +127,7 @@ SIF_FUNC(SetScale)
 	if (!lua_islightuserdata(vm, 1))
 		luaL_argerror(vm, 1, "Must be light user data");
 
-	struct vec3 scale =
+	struct NeVec3 scale =
 	{
 		(float)luaL_checknumber(vm, 2),
 		(float)luaL_checknumber(vm, 3),

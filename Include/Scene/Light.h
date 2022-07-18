@@ -19,9 +19,9 @@ enum NeLightType
 
 struct NeLight
 {
-	COMPONENT_BASE;
+	NE_COMPONENT_BASE;
 
-	struct vec3 color;
+	struct NeVec3 color;
 	float intensity;
 	enum NeLightType type;
 

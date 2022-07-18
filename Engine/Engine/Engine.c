@@ -1,3 +1,4 @@
+#include <time.h>
 #include <stdio.h>
 #include <stdbool.h>
 
@@ -17,16 +18,16 @@
 #include <Scene/Scene.h>
 #include <Scene/Camera.h>
 #include <Render/Render.h>
-#include <Render/Driver/Driver.h>
+#include <Render/Backend.h>
+#include <Engine/XR.h>
 #include <Engine/Event.h>
 #include <Engine/Events.h>
-#include <Engine/Entity.h>
 #include <Engine/Console.h>
 #include <Engine/Version.h>
 #include <Engine/Resource.h>
 #include <Engine/ECSystem.h>
-#include <Engine/Component.h>
 #include <Engine/Application.h>
+#include <Network/Network.h>
 #include <Script/Script.h>
 #include <UI/UI.h>
 
@@ -44,8 +45,6 @@ double E_deltaTime = 0.0;
 static bool _shutdown;
 static double _startTime, _prevTime;
 static int32_t *_frameLimiter = NULL;
-
-#include <Math/sanity.h>
 
 struct NeEngineSubsystem
 {
@@ -71,7 +70,8 @@ static struct NeEngineSubsystem _subsystems[] =
 	{ "Resource Purge", NULL, E_PurgeResources, -1 },
 	{ "Input", In_InitInput, In_TermInput, NEP_LOAD_PRE_INPUT },
 	{ "UI", UI_InitUI, UI_TermUI, -1 },
-	{ "Console", E_InitConsole, E_TermConsole, -1 }
+	{ "Console", E_InitConsole, E_TermConsole, -1 },
+	{ "Network", Net_Init, Net_Term, NEP_LOAD_PRE_NETWORK }
 };
 static const int32_t _subsystemCount = sizeof(_subsystems) / sizeof(_subsystems[0]);
 
@@ -82,8 +82,9 @@ E_Init(int argc, char *argv[])
 	const char *configFile = E_CONFIG_FILE;
 	const char *logFile = NULL;
 	const char *dataDir = NULL;
+	bool waitForDebugger = false;
 
-	while ((opt = getopt(argc, argv, "c:d:l:n")) != -1) {
+	while ((opt = getopt(argc, argv, "c:d:l:w")) != -1) {
 		switch (opt) {
 		case 'c':
 			configFile = optarg;
@@ -94,14 +95,22 @@ E_Init(int argc, char *argv[])
 		case 'l':
 			logFile = optarg;
 			break;
+		case 'w':
+			waitForDebugger = true;
+			break;
 		}
 	}
+
+	srand((unsigned int)time(NULL));
 
 	E_InitConfig(configFile);
 
 	Sys_Init();
 	Sys_InitMemory();
 	Sys_InitLog(logFile);
+
+	if (waitForDebugger)
+		Sys_MessageBox("Waiting for Debugger", "Attach the debugger and click OK", MSG_ICON_INFO);
 
 	if (dataDir)
 		E_SetCVarStr("Engine_DataDir", dataDir);
@@ -146,8 +155,8 @@ E_Init(int argc, char *argv[])
 			continue;
 
 		if (!_subsystems[i].init()) {
-			char *msg = Sys_Alloc(sizeof(*msg), 256, MH_Transient);
-			snprintf(msg, 256, "Failed to initialize %s. The program will now exit.", _subsystems[i].name);
+			char *msg = Sys_Alloc(sizeof(*msg), 512, MH_Transient);
+			snprintf(msg, 512, "Failed to initialize %s. The program will now exit.", _subsystems[i].name);
 			Sys_MessageBox("Fatal Error", msg, MSG_ICON_ERROR);
 
 			Sys_LogEntry(EMOD, LOG_CRITICAL, "Failed to initialize %s", _subsystems[i].name);
@@ -173,7 +182,7 @@ E_Init(int argc, char *argv[])
 			".%u", E_VER_REVISION);
 
 	snprintf(titleBuff + strnlen(titleBuff, sizeof(titleBuff)), sizeof(titleBuff) - strnlen(titleBuff, sizeof(titleBuff)),
-		" - GPU: %s (%s)", Re_deviceInfo.deviceName, Re_driver->driverName);
+		" - GPU: %s (%s)", Re_deviceInfo.deviceName, Re_backendName);
 
 	Sys_SetWindowTitle(titleBuff);
 #else
@@ -208,6 +217,11 @@ E_Run(void)
 {
 	while (!_shutdown) {
 		if (!Sys_ProcessEvents()) {
+			_shutdown = true;
+			break;
+		}
+
+		if (!E_ProcessXrEvents()) {
 			_shutdown = true;
 			break;
 		}
@@ -251,7 +265,10 @@ E_Frame(void)
 	E_DrawConsole();
 
 	E_ExecuteSystemGroupS(Scn_activeScene, ECSYS_GROUP_PRE_RENDER);
+
 	Re_RenderFrame();
+	E_XrPresent();
+
 	E_ExecuteSystemGroupS(Scn_activeScene, ECSYS_GROUP_POST_RENDER);
 
 	In_Update();
@@ -281,7 +298,7 @@ E_ScreenResized(uint32_t width, uint32_t height)
 	*E_screenHeight = height;
 
 	if (Re_device)
-		Re_deviceProcs.ScreenResized(Re_device, Re_swapchain);
+		Re_ScreenResized(Re_swapchain);
 
 	E_Broadcast(EVT_SCREEN_RESIZED, NULL);
 }

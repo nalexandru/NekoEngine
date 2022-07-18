@@ -1,3 +1,4 @@
+#include <Engine/IO.h>
 #include <Engine/Types.h>
 #include <Engine/Entity.h>
 #include <Engine/Events.h>
@@ -15,9 +16,10 @@ static struct NeArray _entityTypes;
 static int _TypeCmp(const void *, const void *);
 static inline bool _AddComponent(struct NeScene *s, struct NeEntity *, NeCompTypeId, NeCompHandle);
 static inline bool _CreateComponent(struct NeScene *s, struct NeEntity *ent, NeCompTypeId type, const void **args);
+static void _LoadEntity(const char *path);
 
 NeEntityHandle
-E_CreateEntityS(struct NeScene *s, const char *typeName)
+E_CreateEntityS(struct NeScene *s, const char *name, const char *typeName)
 {
 	uint64_t hash = 0;
 	struct NeEntity *ent = NULL;
@@ -26,14 +28,19 @@ E_CreateEntityS(struct NeScene *s, const char *typeName)
 	if (typeName) {
 		hash = Rt_HashString(typeName);
 		type = Rt_ArrayFind(&_entityTypes, &hash, _TypeCmp);
-		ent = E_CreateEntityWithArgsS(s, type->comp_types, NULL, type->compCount);
+		if (!type) {
+			Sys_LogEntry(ENT_MOD, LOG_CRITICAL, "Entity type %s not found");
+			return ES_INVALID_ENTITY;
+		}
+
+		ent = E_CreateEntityWithArgArrayS(s, name, type->compTypes, type->initialArguments, type->compCount);
 	} else {
 		ent = Sys_Alloc(1, sizeof(*ent), MH_Scene);
 
 		if (!ent)
 			return ES_INVALID_ENTITY;
 
-		E_RenameEntity(ent, "unnamed");
+		E_RenameEntity(ent, name ? name : "unnamed");
 		if (!Rt_ArrayAddPtr(&s->entities, ent)) {
 			Sys_Free(ent);
 			return ES_INVALID_ENTITY;
@@ -46,7 +53,7 @@ E_CreateEntityS(struct NeScene *s, const char *typeName)
 }
 
 NeEntityHandle
-E_CreateEntityWithArgsS(struct NeScene *s, const NeCompTypeId *compTypes, const void ***compArgs, uint8_t count)
+E_CreateEntityWithArgsS(struct NeScene *s, const char *name, const NeCompTypeId *compTypes, const void ***compArgs, uint8_t count)
 {
 	uint8_t i = 0;
 	struct NeEntity *ent = NULL;
@@ -65,7 +72,7 @@ E_CreateEntityWithArgsS(struct NeScene *s, const NeCompTypeId *compTypes, const 
 		}
 	}
 
-	E_RenameEntity(ent, "unnamed");
+	E_RenameEntity(ent, name ? name : "unnamed");
 	if (!Rt_ArrayAddPtr(&s->entities, ent)) {
 		Sys_Free(ent);
 		return ES_INVALID_ENTITY;
@@ -77,7 +84,38 @@ E_CreateEntityWithArgsS(struct NeScene *s, const NeCompTypeId *compTypes, const 
 }
 
 NeEntityHandle
-E_CreateEntityVS(struct NeScene *s, int count, const struct NeEntityCompInfo *info)
+E_CreateEntityWithArgArrayS(struct NeScene *s, const char *name, const NeCompTypeId *compTypes, const struct NeArray *compArgs, uint8_t count)
+{
+	uint8_t i = 0;
+	struct NeEntity *ent = NULL;
+
+	if (count > MAX_ENTITY_COMPONENTS)
+		return ES_INVALID_ENTITY;
+
+	ent = Sys_Alloc(1, sizeof(*ent), MH_Scene);
+	if (!ent)
+		return ES_INVALID_ENTITY;
+
+	for (i = 0; i < count; ++i) {
+		if (!_CreateComponent(s, ent, compTypes[i], compArgs ? (const void **)compArgs[i].data : NULL)) {
+			Sys_Free(ent);
+			return ES_INVALID_ENTITY;
+		}
+	}
+
+	E_RenameEntity(ent, name ? name : "unnamed");
+	if (!Rt_ArrayAddPtr(&s->entities, ent)) {
+		Sys_Free(ent);
+		return ES_INVALID_ENTITY;
+	}
+
+	E_Broadcast(EVT_ENTITY_CREATED, ent);
+
+	return ent;
+}
+
+NeEntityHandle
+E_CreateEntityVS(struct NeScene *s, const char *name, int count, const struct NeEntityCompInfo *info)
 {
 	uint8_t i = 0;
 	struct NeEntity *ent = NULL;
@@ -96,7 +134,7 @@ E_CreateEntityVS(struct NeScene *s, int count, const struct NeEntityCompInfo *in
 		}
 	}
 
-	E_RenameEntity(ent, "unnamed");
+	E_RenameEntity(ent, name ? name : "unnamed");
 	if (!Rt_ArrayAddPtr(&s->entities, ent)) {
 		Sys_Free(ent);
 		return ES_INVALID_ENTITY;
@@ -108,7 +146,7 @@ E_CreateEntityVS(struct NeScene *s, int count, const struct NeEntityCompInfo *in
 }
 
 NeEntityHandle
-E_CreateEntityWithComponentsS(struct NeScene *s, int count, ...)
+E_CreateEntityWithComponentsS(struct NeScene *s, const char *name, int count, ...)
 {
 	va_list va;
 	struct NeEntity *ent = NULL;
@@ -132,7 +170,7 @@ E_CreateEntityWithComponentsS(struct NeScene *s, int count, ...)
 		}
 	}
 
-	E_RenameEntity(ent, "unnamed");
+	E_RenameEntity(ent, name ? name : "unnamed");
 	if (!Rt_ArrayAddPtr(&s->entities, ent)) {
 		Sys_Free(ent);
 		return ES_INVALID_ENTITY;
@@ -230,7 +268,7 @@ E_RegisterEntityType(const char *typeName, const NeCompTypeId *compTypes, uint8_
 
 	type.hash = Rt_HashString(typeName);
 	type.compCount = typeCount;
-	memcpy(type.comp_types, compTypes, sizeof(NeCompTypeId) * typeCount);
+	memcpy(type.compTypes, compTypes, sizeof(NeCompTypeId) * typeCount);
 
 	return Rt_ArrayAdd(&_entityTypes, &type);
 }
@@ -284,12 +322,26 @@ E_InitEntities(void)
 	if (!Rt_InitArray(&_entityTypes, 10, sizeof(struct NeEntityType), MH_System))
 		return false;
 
+	E_ProcessFiles("/Entities", "ent", true, _LoadEntity);
+
 	return true;
 }
 
 void
 E_TermEntities(void)
 {
+	for (size_t i = 0; i < _entityTypes.count; ++i) {
+		struct NeEntityType *type = Rt_ArrayGet(&_entityTypes, i);
+		for (uint32_t j = 0; j < type->compCount; ++j) {
+			if (!type->initialArguments[j].data)
+				continue;
+
+			for (size_t k = 0; k < type->initialArguments[j].count; ++k)
+				Sys_Free(Rt_ArrayGetPtr(&type->initialArguments[j], k));
+
+			Rt_TermArray(&type->initialArguments[j]);
+		}
+	}
 	Rt_TermArray(&_entityTypes);
 }
 
@@ -346,4 +398,70 @@ _CreateComponent(struct NeScene *s, struct NeEntity *ent, NeCompTypeId type, con
 	}
 
 	return true;
+}
+
+static void
+_LoadEntity(const char *path)
+{
+	char buff[512];
+	struct NeStream stm = { 0 };
+	struct NeEntityType type = { 0 };
+	struct NeArray *args = NULL;
+
+	if (!E_FileStream(path, IO_READ, &stm))
+		return;
+
+	E_ReadStreamLine(&stm, buff, sizeof(buff));
+	if (strnlen(buff, sizeof(buff)) <= 10 || strncmp(buff, "EntityDef=", 10))
+		goto exit;
+
+	type.hash = Rt_HashString(&buff[10]);
+
+	while (!E_EndOfStream(&stm)) {
+		char *line = E_ReadStreamLine(&stm, buff, sizeof(buff));
+		size_t len;
+
+		if (!*(line = Rt_SkipWhitespace(line)) || line[0] == '#')
+			continue;
+
+		len = strnlen(line, sizeof(buff));
+
+		if (!strncmp(line, "Component=", 10)) {
+			char *typeName = strchr(line, '=') + 1;
+			if (!typeName)
+				continue;
+
+			if (type.compCount == MAX_ENTITY_COMPONENTS)
+				break;
+
+			args = &type.initialArguments[type.compCount];
+			type.compTypes[type.compCount++] = E_ComponentTypeId(typeName);
+		} else if (!strncmp(line, "EndDefinition", len)) {
+			break;
+		} else if (!strncmp(line, "EndComponent", len)) {
+			if (args && args->data) {
+				void *guard = NULL;
+				Rt_ArrayAddPtr(args, guard);
+			}
+			args = NULL;
+		} else {
+			char *arg = line;
+			char *val = strchr(line, '=');
+			if (!args || !val)
+				continue;
+
+			*val++ = 0x0;
+
+			if (!args->data)
+				Rt_InitPtrArray(args, 2, MH_Asset);
+
+			Rt_ArrayAddPtr(args, Rt_StrNDup(arg, sizeof(buff), MH_Asset));
+			Rt_ArrayAddPtr(args, Rt_StrNDup(val, sizeof(buff), MH_Asset));
+		}
+	}
+
+	Rt_ArrayAdd(&_entityTypes, &type);
+
+exit:
+	E_CloseStream(&stm);
 }

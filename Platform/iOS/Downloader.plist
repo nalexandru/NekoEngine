@@ -3,6 +3,6 @@
 <plist version="1.0">
 <dict>
 	<key>AssetURL</key>
-	<string>http://192.168.7.6:9000/GameData.zip</string>
+	<string>https://nalexandru.xyz/GameData.zip</string>
 </dict>
 </plist>

@@ -1,3 +1,70 @@
+#ifndef _NE_MATH_FUNC_H_
+#define _NE_MATH_FUNC_H_
+
+#include <Math/defs.h>
+
+static inline float
+M_DegToRad(float degrees)
+{
+	return degrees * M_PI_180;
+}
+
+static inline float
+M_RadToDeg(float radians)
+{
+	return radians * M_180_PI;
+}
+
+static inline bool
+M_FloatEqual(float lhs, float rhs)
+{
+	return (fabsf(lhs - rhs) <= FLT_EPSILON * fmaxf(1.f, fmaxf(lhs, rhs)));
+}
+
+static inline float
+M_Lerp(float x, float y, float t)
+{
+	return x + t * (y - x);
+}
+
+static inline double 
+M_Mod(double x, double y)
+{
+	return x + y * floor(x / y);
+}
+
+static inline float
+M_Max(float a, float b)
+{
+	return a > b ? a : b;
+}
+
+static inline float
+M_Min(float a, float b)
+{
+	return a < b ? a : b;
+}
+
+static inline float
+M_ClampF(float x, float min, float max)
+{
+	return x < min ? min : (x > max ? max : x);
+}
+
+static inline int32_t
+M_ClampI(int32_t x, int32_t min, int32_t max)
+{
+	return x < min ? min : (x > max ? max : x);
+}
+
+static inline uint32_t
+M_ClampUI(uint32_t x, uint32_t min, uint32_t max)
+{
+	return x < min ? min : (x > max ? max : x);
+}
+
+#endif /* _NE_MATH_FUNC_H_ */
+
 /* NekoEngine
  *
  * func.h
@@ -7,7 +74,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (c) 2015-2021, Alexandru Naiman
+ * Copyright (c) 2015-2022, Alexandru Naiman
  *
  * All rights reserved.
  *
@@ -35,71 +102,5 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * -----------------------------------------------------------------------------
  */
-
-#ifndef _NE_MATH_FUNC_H_
-#define _NE_MATH_FUNC_H_
-
-#include <Math/defs.h>
-
-static inline float
-deg_to_rad(float degrees)
-{
-	return degrees * M_PI_180;
-}
-
-static inline float
-rad_to_deg(float radians)
-{
-	return radians * M_180_PI;
-}
-
-static inline bool
-float_equal(float lhs, float rhs)
-{
-	return (fabsf(lhs - rhs) <= FLT_EPSILON * fmaxf(1.f, fmaxf(lhs, rhs)));
-}
-
-static inline float
-clamp(float x, float min, float max)
-{
-	return x < min ? min : (x > max ? max : x);
-}
-
-static inline float
-lerp(float x, float y, float t)
-{
-	return x + t * (y - x);
-}
-
-static inline double 
-mod(double x, double y)
-{
-	return x + y * floor(x / y);
-}
-
-static inline float
-m_max(float a, float b)
-{
-	return a > b ? a : b;
-}
-
-static inline float
-m_min(float a, float b)
-{
-	return a < b ? a : b;
-}
-
-static inline int32_t
-clamp_i(int32_t x, int32_t min, int32_t max)
-{
-	return x < min ? min : (x > max ? max : x);
-}
-
-static inline uint32_t
-clamp_ui(uint32_t x, uint32_t min, uint32_t max)
-{
-	return x < min ? min : (x > max ? max : x);
-}
-
-#endif /* _NE_MATH_FUNC_H_ */

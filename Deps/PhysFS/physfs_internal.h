@@ -69,7 +69,7 @@ extern "C" {
    All file-private symbols need to be marked "static".
    Everything shared between PhysicsFS sources needs to be in this
    file between the visibility pragma blocks. */
-#if PHYSFS_MINIMUM_GCC_VERSION(4,0) || defined(__clang__)
+#if !defined(_WIN32) && !defined(__OS2__) && (PHYSFS_MINIMUM_GCC_VERSION(4,0) || defined(__clang__))
 #define PHYSFS_HAVE_PRAGMA_VISIBILITY 1
 #endif
 
@@ -116,6 +116,15 @@ __PHYSFS_COMPILE_TIME_ASSERT(LongEqualsInt, sizeof (int) == sizeof (long));
 #elif defined(__clang__) || (defined(__GNUC__) && (((__GNUC__ * 10000) + (__GNUC_MINOR__ * 100)) >= 40100))
 #define __PHYSFS_ATOMIC_INCR(ptrval) __sync_fetch_and_add(ptrval, 1)
 #define __PHYSFS_ATOMIC_DECR(ptrval) __sync_fetch_and_add(ptrval, -1)
+#elif defined(__WATCOMC__) && defined(__386__)
+extern __inline int _xadd_watcom(volatile int* a, int v);
+#pragma aux _xadd_watcom = \
+  "lock xadd [ecx], eax" \
+  parm [ecx] [eax] \
+  value [eax] \
+  modify exact [eax];
+#define __PHYSFS_ATOMIC_INCR(ptrval) _xadd_watcom(ptrval, 1)
+#define __PHYSFS_ATOMIC_DECR(ptrval) _xadd_watcom(ptrval, -1)
 #else
 #define PHYSFS_NEED_ATOMIC_OP_FALLBACK 1
 int __PHYSFS_ATOMIC_INCR(int *ptrval);

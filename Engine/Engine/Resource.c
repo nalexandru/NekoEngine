@@ -23,6 +23,7 @@ struct NeResType
 	NeResourceLoadProc load;
 	NeResourceUnloadProc unload;
 	NeResourceCreateProc create;
+	size_t size;
 };
 
 struct NeResInfo
@@ -30,6 +31,7 @@ struct NeResInfo
 	uint64_t pathHash;
 	uint32_t id;
 	int32_t references;
+	uint32_t mutable;
 	char path[256];
 };
 
@@ -41,7 +43,7 @@ struct NeResource
 
 static struct NeArray _ResTypes;
 
-static inline NeHandle _NewResource(const char *path, const char *type, const void *ci, bool create);
+static inline NeHandle _NewResource(const char *path, const char *type, const void *ci, bool create, bool mutable);
 static inline struct NeResource *_DecodeHandle(NeHandle res, struct NeResType **rt);
 static inline void _RealUnload(struct NeResType *rt, struct NeResource *res);
 static int32_t _ResTypeCmp(const void *, const void *);
@@ -64,6 +66,7 @@ E_RegisterResourceType(const char *name, size_t size, NeResourceCreateProc creat
 	rt.load = load;
 	rt.unload = unload;
 	rt.create = create;
+	rt.size = size;
 
 	ert = Rt_ArrayFind(&_ResTypes, &rt, _ResTypeCmp);
 	if (ert) {
@@ -83,13 +86,19 @@ E_RegisterResourceType(const char *name, size_t size, NeResourceCreateProc creat
 NeHandle
 E_CreateResource(const char *name, const char *type, const void *info)
 {
-	return _NewResource(name, type, info, true);
+	return _NewResource(name, type, info, true, false);
 }
 
 NeHandle
 E_LoadResource(const char *path, const char *type)
 {
-	return _NewResource(path, type, NULL, false);
+	return _NewResource(path, type, NULL, false, false);
+}
+
+NeHandle
+E_AllocateResource(const char *name, const char *type)
+{
+	return _NewResource(name, type, NULL, false, true);
 }
 
 void *
@@ -137,6 +146,20 @@ E_GPUHandleToRes(uint16_t handle, const char *type)
 		return (uint32_t)-1;
 
 	return (uint64_t)handle | (uint64_t)rtId << 32;
+}
+
+bool
+E_UpdateResource(NeHandle res, const void *data)
+{
+	struct NeResType *rt;
+	struct NeResource *rptr = _DecodeHandle(res, &rt);
+
+	if (!rptr || !rptr->info.mutable)
+		return false;
+
+	memcpy(&rptr->dataStart, data, rt->size);
+
+	return true;
 }
 
 void
@@ -191,7 +214,7 @@ E_TermResourceSystem(void)
 }
 
 static inline NeHandle
-_NewResource(const char *path, const char *type, const void *ci, bool create)
+_NewResource(const char *path, const char *type, const void *ci, bool create, bool mutable)
 {
 	bool rc = false;
 	uint32_t rt_id = 0;
@@ -238,33 +261,37 @@ _NewResource(const char *path, const char *type, const void *ci, bool create)
 	res->info.id = (uint32_t)ret;
 	res->info.references = 1;
 
-	if (create) {
-		rc = rt->create == NULL ? true : rt->create(path, ci, &res->dataStart, ret);
-	} else {
-		char *args = NULL;
-		char path_str[256] = { 0 };
+	if (!mutable) {
+		if (create) {
+			rc = rt->create == NULL ? true : rt->create(path, ci, &res->dataStart, ret);
+		} else {
+			char *args = NULL;
+			char path_str[256] = { 0 };
 
-		if (rt->load) {
-			if ((args = strchr(path, ':'))) {
-				snprintf(path_str, sizeof(path_str), "%s", path);
+			if (rt->load) {
+				if ((args = strchr(path, ':'))) {
+					snprintf(path_str, sizeof(path_str), "%s", path);
 
-				args = path_str + (args - path);
-				path = path_str;
-				*args++ = 0x0;
+					args = path_str + (args - path);
+					path = path_str;
+					*args++ = 0x0;
+				}
+
+				li.path = path;
+
+				if (!E_FileStream(path, IO_READ, &li.stm)) {
+					Sys_LogEntry(RES_MOD, LOG_DEBUG, "Failed to open file [%s] for resource of type [%s]", path, type);
+					rc = false;
+					goto exit;
+				}
+
+				rc = rt->load(&li, args, &res->dataStart, ret);
+
+				E_CloseStream(&li.stm);
 			}
-
-			li.path = path;
-
-			if (!E_FileStream(path, IO_READ, &li.stm)) {
-				Sys_LogEntry(RES_MOD, LOG_DEBUG, "Failed to open file [%s] for resource of type [%s]", path, type);
-				rc = false;
-				goto exit;
-			}
-
-			rc = rt->load(&li, args, &res->dataStart, ret);
-
-			E_CloseStream(&li.stm);
 		}
+	} else {
+		rc = true;
 	}
 
 exit:

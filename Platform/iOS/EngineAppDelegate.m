@@ -55,17 +55,15 @@ extern NSURL *Darwin_appSupportURL;
 		NSURLSessionDownloadTask *task = [[NSURLSession sharedSession] downloadTaskWithURL: [NSURL URLWithString: url]
 																		 completionHandler:^(NSURL * _Nullable location, NSURLResponse * _Nullable response, NSError * _Nullable error) {
 			if (error) {
+				NSLog(@"Download error: %@", error);
 			} else {
-				char buff[4096];
-				Sys_DirectoryPath(SD_APP_DATA, buff, sizeof(buff));
-
 				[[NSFileManager defaultManager] moveItemAtURL: location toURL: dest error: nil];
-
 				[weakSelf setDownloadCompleted: true];
 			}
 
 			[weakSelf setDownloadRequestFinished: true];
 		}];
+
 	
 		[self setDownloadCompleted: false];
 		[self setDownloadRequestFinished: false];
@@ -95,7 +93,7 @@ extern NSURL *Darwin_appSupportURL;
 	
 	bool rc = E_Init(argc, argv);
 	if (!rc) {
-		Sys_MessageBox(L"Fatal Error", L"Failed to initialize engine", MSG_ICON_ERROR);
+		Sys_MessageBox("Fatal Error", "Failed to initialize engine", MSG_ICON_ERROR);
 		return false;
 	}
 	

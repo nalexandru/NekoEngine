@@ -50,7 +50,7 @@ E_SYSTEM(ANIM_BUILD_SKELETON, ECSYS_GROUP_MANUAL, 0, false, void, 2, ANIMATOR_CO
 	struct NeBufferCreateInfo bci = 
 	{
 		.desc = {
-			.size = sizeof(struct mat4) * m->skeleton.bones.count,
+			.size = sizeof(struct NeMatrix) * m->skeleton.bones.count,
 			.usage = BU_TRANSFER_DST | BU_STORAGE_BUFFER,
 			.memoryType = MT_GPU_LOCAL
 		}

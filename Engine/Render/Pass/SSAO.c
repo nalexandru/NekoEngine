@@ -41,7 +41,7 @@ _Setup(struct NeSSAOPass *pass, struct NeArray *resources)
 		.gpuOptimalTiling = true,
 		.memoryType = MT_GPU_LOCAL
 	};
-	Re_AddGraphTexture("Re_aoBuffer", &aoDesc, resources);
+	Re_AddGraphTexture(RE_AO_BUFFER, &aoDesc, 0, resources);
 
 	//	Re_CreatePassBuffer(res, "", &bci)
 	return false;

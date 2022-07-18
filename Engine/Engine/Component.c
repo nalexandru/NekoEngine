@@ -235,9 +235,11 @@ E_ComponentTypeS(struct NeScene *s, NeCompHandle comp)
 NeCompTypeId
 E_ComponentTypeId(const char *typeName)
 {
+	size_t id = 0;
 	uint64_t hash = 0;
 	hash = Rt_HashString(typeName);
-	return Rt_ArrayFindId(&_componentTypes, &hash, _CompType_cmp);
+	id = Rt_ArrayFindId(&_componentTypes, &hash, _CompType_cmp);
+	return id != RT_NOT_FOUND ? id : E_INVALID_HANDLE;
 }
 
 size_t
@@ -287,8 +289,10 @@ E_RegisterComponent(const char *name, size_t size, size_t alignment, NeCompInitP
 	type.init = init;
 	type.term = term;
 
-	if (size < sizeof(struct NeCompBase))
+	if (size < sizeof(struct NeCompBase)) {
+		Sys_LogEntry(COMP_MOD, LOG_CRITICAL, "Failed to register component %s: invalid size", name);
 		return false;
+	}
 
 	if (!_componentTypes.data)
 		if (!_InitArray())

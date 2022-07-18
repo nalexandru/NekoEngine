@@ -1,67 +1,3 @@
-/* NekoEngine
- *
- * quat.h
- * Author: Alexandru Naiman
- *
- * Quaternion functions
- *
- * -----------------------------------------------------------------------------
- *
- * Copyright (c) 2015-2021, Alexandru Naiman
- *
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice,
- * this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * 3. Neither the name of the copyright holder nor the names of its contributors
- * may be used to endorse or promote products derived from this software without
- * specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
- * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * -----------------------------------------------------------------------------
- * Original copyright:
-
-Copyright (c) 2008, Luke Benstead.
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
-
-    * Redistributions of source code must retain the above copyright notice,
-      this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above copyright notice,
-      this list of conditions and the following disclaimer in the documentation
-      and/or other materials provided with the distribution.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
-
 #ifndef _NE_MATH_QUATERNION_H_
 #define _NE_MATH_QUATERNION_H_
 
@@ -72,61 +8,61 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #	include <Math/vec4.h>
 #endif
 
-static inline struct quat *
-quat(struct quat *q, float x, float y, float z, float w)
+static inline struct NeQuaternion *
+M_Quat(struct NeQuaternion *q, float x, float y, float z, float w)
 {
-	return (struct quat *)v4((struct vec4 *)q, x, y, z, w);
+	return (struct NeQuaternion *)M_Vec4((struct NeVec4 *)q, x, y, z, w);
 }
 
-static inline struct quat *
-quat_copy(struct quat *dst, const struct quat *src)
+static inline struct NeQuaternion *
+M_CopyQuat(struct NeQuaternion *dst, const struct NeQuaternion *src)
 {
-	return (struct quat *)v4_copy((struct vec4 *)dst, (struct vec4 *)src);
+	return (struct NeQuaternion *)M_CopyVec4((struct NeVec4 *)dst, (struct NeVec4 *)src);
 }
 
-static inline struct quat *
-quat_ident(struct quat *q)
+static inline struct NeQuaternion *
+M_QuatIdentity(struct NeQuaternion *q)
 {
-	return (struct quat *)v4((struct vec4 *)q, 0.f, 0.f, 0.f, 1.f);
-}
-
-static inline float
-quat_len_sq(const struct quat *q)
-{
-	return v4_len_sq((const struct vec4 *)q);
+	return (struct NeQuaternion *)M_Vec4((struct NeVec4 *)q, 0.f, 0.f, 0.f, 1.f);
 }
 
 static inline float
-quat_len(const struct quat *q)
+M_QuatLengthSquared(const struct NeQuaternion *q)
 {
-	return v4_len((const struct vec4 *)q);
+	return M_Vec4LengthSquared((const struct NeVec4 *)q);
 }
 
-static inline struct quat *
-quat_norm(struct quat *dst, const struct quat *src)
+static inline float
+M_QuatLength(const struct NeQuaternion *q)
 {
-	return (struct quat *)v4_norm((struct vec4 *)dst, (struct vec4 *)src);
+	return M_Vec4Length((const struct NeVec4 *)q);
 }
 
-static inline struct quat *
-quat_add(struct quat *dst, const struct quat *q1, const struct quat *q2)
+static inline struct NeQuaternion *
+M_NormalizeQuat(struct NeQuaternion *dst, const struct NeQuaternion *src)
 {
-	return (struct quat *)v4_add((struct vec4 *)dst, (struct vec4 *)q1, (struct vec4 *)q2);
+	return (struct NeQuaternion *)M_NormalizeVec4((struct NeVec4 *)dst, (struct NeVec4 *)src);
 }
 
-static inline struct quat *
-quat_sub(struct quat *dst, const struct quat *q1, const struct quat *q2)
+static inline struct NeQuaternion *
+M_AddQuat(struct NeQuaternion *dst, const struct NeQuaternion *q1, const struct NeQuaternion *q2)
 {
-	return (struct quat *)v4_sub((struct vec4 *)dst, (struct vec4 *)q1, (struct vec4 *)q2);
+	return (struct NeQuaternion *)M_AddVec4((struct NeVec4 *)dst, (struct NeVec4 *)q1, (struct NeVec4 *)q2);
 }
 
-static inline struct quat *
-quat_mul(struct quat *dst, const struct quat *qu1, const struct quat *qu2)
+static inline struct NeQuaternion *
+M_SubQuat(struct NeQuaternion *dst, const struct NeQuaternion *q1, const struct NeQuaternion *q2)
 {
-	struct quat q1, q2;
+	return (struct NeQuaternion *)M_SubVec4((struct NeVec4 *)dst, (struct NeVec4 *)q1, (struct NeVec4 *)q2);
+}
 
-	quat_copy(&q1, qu1);
-	quat_copy(&q2, qu2);
+static inline struct NeQuaternion *
+M_MulQuat(struct NeQuaternion *dst, const struct NeQuaternion *qu1, const struct NeQuaternion *qu2)
+{
+	struct NeQuaternion q1, q2;
+
+	M_CopyQuat(&q1, qu1);
+	M_CopyQuat(&q2, qu2);
 
 	dst->x = q1.w * q2.x + q1.x * q2.w + q1.y * q2.z - q1.z * q2.y;
 	dst->y = q1.w * q2.y + q1.y * q2.w + q1.z * q2.x - q1.x * q2.z;
@@ -137,87 +73,87 @@ quat_mul(struct quat *dst, const struct quat *qu1, const struct quat *qu2)
 }
 
 static inline float
-quat_dot(const struct quat *q1, const struct quat *q2)
+M_DotQuat(const struct NeQuaternion *q1, const struct NeQuaternion *q2)
 {
-	return v4_dot((struct vec4 *)q1, (struct vec4 *)q2);
+	return M_DotVec4((struct NeVec4 *)q1, (struct NeVec4 *)q2);
 }
 
-static inline struct quat *
-quat_scale(struct quat *dst, const struct quat *src, float s)
+static inline struct NeQuaternion *
+M_ScaleQuat(struct NeQuaternion *dst, const struct NeQuaternion *src, float s)
 {
-	return (struct quat *)v4_muls((struct vec4 *)dst, (const struct vec4 *)src, s);
+	return (struct NeQuaternion *)M_MulVec4S((struct NeVec4 *)dst, (const struct NeVec4 *)src, s);
 }
 
-static inline struct quat *
-quat_slerp(struct quat *dst, const struct quat *q1, const struct quat *q2, float t)
+static inline struct NeQuaternion *
+M_SlerpQuat(struct NeQuaternion *dst, const struct NeQuaternion *q1, const struct NeQuaternion *q2, float t)
 {
-	struct quat tmp;
-	struct quat t1, t2;
+	struct NeQuaternion tmp;
+	struct NeQuaternion t1, t2;
 
 	float theta_0;
 	float theta;
 
-	float dot = quat_dot(q1, q2);
+	float dot = M_DotQuat(q1, q2);
 
 	if (dot > 0.9995f) {
-		quat_sub(&tmp, q2, q1);
-		quat_scale(&tmp, &tmp, t);
+		M_SubQuat(&tmp, q2, q1);
+		M_ScaleQuat(&tmp, &tmp, t);
 
-		quat_add(dst, q1, &tmp);
-		return quat_norm(dst, dst);
+		M_AddQuat(dst, q1, &tmp);
+		return M_NormalizeQuat(dst, dst);
 	}
 
-	dot = clamp(dot, -1.f, 1.f);
+	dot = M_ClampF(dot, -1.f, 1.f);
 
 	theta_0 = acosf(dot);
 	theta = theta_0 * t;
 
-	quat_scale(&tmp, q1, dot);
-	quat_sub(&tmp, q2, &tmp);
-	quat_norm(&tmp, &tmp);
+	M_ScaleQuat(&tmp, q1, dot);
+	M_SubQuat(&tmp, q2, &tmp);
+	M_NormalizeQuat(&tmp, &tmp);
 
-	quat_scale(&t1, q1, cosf(theta));
-	quat_scale(&t2, &tmp, sinf(theta));
+	M_ScaleQuat(&t1, q1, cosf(theta));
+	M_ScaleQuat(&t2, &tmp, sinf(theta));
 
-	return quat_add(dst, &t1, &t2);
+	return M_AddQuat(dst, &t1, &t2);
 }
 
-static inline struct vec3 *
-quat_mul_vec3(struct vec3 *dst, const struct quat *q, const struct vec3 *v)
+static inline struct NeVec3 *
+M_QuatMulVec3(struct NeVec3 *dst, const struct NeQuaternion *q, const struct NeVec3 *v)
 {
-	struct vec3 uv, uuv, qv;
+	struct NeVec3 uv, uuv, qv;
 
 	qv.x = q->x;
 	qv.y = q->y;
 	qv.z = q->z;
 	
-	v3_cross(&uv, &qv, v);
-	v3_cross(&uuv, &qv, &uv);
+	M_CrossVec3(&uv, &qv, v);
+	M_CrossVec3(&uuv, &qv, &uv);
 
-	v3_scale(&uv, &uv, (2.f * q->w));
-	v3_scale(&uuv, &uuv, 2.f);
+	M_ScaleVec3(&uv, &uv, (2.f * q->w));
+	M_ScaleVec3(&uuv, &uuv, 2.f);
 
-	v3_add(dst, v, &uv);
+	M_AddVec3(dst, v, &uv);
 
-	return v3_add(dst, dst, &uuv);
+	return M_AddVec3(dst, dst, &uuv);
 }
 
-static inline struct quat *
-quat_conjugate(struct quat *dst, const struct quat *src)
+static inline struct NeQuaternion *
+M_ConjugateQuat(struct NeQuaternion *dst, const struct NeQuaternion *src)
 {
-	struct vec4 inv = { -1.f, -1.f, -1.f, 1.f };
-	return (struct quat *)v4_mul((struct vec4 *)dst, (struct vec4 *)src, &inv);
+	struct NeVec4 inv = { -1.f, -1.f, -1.f, 1.f };
+	return (struct NeQuaternion *)M_MulVec4((struct NeVec4 *)dst, (struct NeVec4 *)src, &inv);
 }
 
-static inline struct quat *
-quat_from_axis_angle_r(struct quat *q, const struct vec3 *v, float rad)
+static inline struct NeQuaternion *
+M_QuatFromAxisAngleR(struct NeQuaternion *q, const struct NeVec3 *v, float rad)
 {
-	struct vec3 axis;
+	struct NeVec3 axis;
 
 	const float angle = rad * 0.5f;
 	const float scale = sinf(angle);
 
-	v3_norm(&axis, v);
+	M_NormalizeVec3(&axis, v);
 
 	q->x = axis.x * scale;
 	q->y = axis.y * scale;
@@ -227,32 +163,32 @@ quat_from_axis_angle_r(struct quat *q, const struct vec3 *v, float rad)
 	return q;
 }
 
-static inline struct quat *
-quat_from_axis_angle(struct quat *q, const struct vec3 *v, float deg)
+static inline struct NeQuaternion *
+M_QuatFromAxisAngle(struct NeQuaternion *q, const struct NeVec3 *v, float deg)
 {
-	return quat_from_axis_angle_r(q, v, deg_to_rad(deg));
+	return M_QuatFromAxisAngleR(q, v, M_DegToRad(deg));
 }
 
-static inline struct quat *
-quat_rot_axis_angle_r(struct quat *q, const struct vec3 *v, float rad)
+static inline struct NeQuaternion *
+M_QuatRotationAxisAngleR(struct NeQuaternion *q, const struct NeVec3 *v, float rad)
 {
-	struct quat tmp;
-	quat_from_axis_angle_r(&tmp, v, rad);
-	return quat_norm(q, quat_mul(q, q, &tmp));
+	struct NeQuaternion tmp;
+	M_QuatFromAxisAngleR(&tmp, v, rad);
+	return M_NormalizeQuat(q, M_MulQuat(q, q, &tmp));
 }
 
-static inline struct quat *
-quat_rot_axis_angle(struct quat *q, const struct vec3 *v, float deg)
+static inline struct NeQuaternion *
+M_QuatRotationAxisAngle(struct NeQuaternion *q, const struct NeVec3 *v, float deg)
 {
-	return quat_rot_axis_angle_r(q, v, deg_to_rad(deg));
+	return M_QuatRotationAxisAngleR(q, v, M_DegToRad(deg));
 }
 
-static inline struct quat *
-quat_rot_pitch_yaw_roll(struct quat *q, float pitchd, float yawd, float rolld)
+static inline struct NeQuaternion *
+M_QuatRotationPitchYawRoll(struct NeQuaternion *q, float pitchd, float yawd, float rolld)
 {
-	const float pitch = deg_to_rad(pitchd) * .5f;
-	const float yaw = deg_to_rad(yawd) * .5f;
-	const float roll = deg_to_rad(rolld) * .5f;
+	const float pitch = M_DegToRad(pitchd) * .5f;
+	const float yaw = M_DegToRad(yawd) * .5f;
+	const float roll = M_DegToRad(rolld) * .5f;
 
 	const float cx = cosf(pitch);
 	const float sx = sinf(pitch);
@@ -269,8 +205,8 @@ quat_rot_pitch_yaw_roll(struct quat *q, float pitchd, float yawd, float rolld)
 	return q;
 }
 
-static inline struct quat *
-quat_rot_m3(struct quat *q, const struct mat3 *m)
+static inline struct NeQuaternion *
+M_QuatRotationMat3(struct NeQuaternion *q, const struct NeMat3 *m)
 {
 	/*
 	 *	Note: The OpenGL matrices are transposed from the description below
@@ -379,96 +315,96 @@ quat_rot_m3(struct quat *q, const struct mat3 *m)
 	return q;
 }
 
-static inline struct quat *
-quat_look_at(struct quat *q, const struct vec3 *direction, const struct vec3 *up)
+static inline struct NeQuaternion *
+M_QuatLookAt(struct NeQuaternion *q, const struct NeVec3 *direction, const struct NeVec3 *up)
 {
-	struct mat3 rot;
-	struct vec3 tmp;
+	struct NeMat3 rot;
+	struct NeVec3 tmp;
 
-	v3_muls((struct vec3 *)&rot.mat[6], v3_norm(&tmp, direction), -1);
-	v3_norm((struct vec3 *)&rot.mat[0], v3_cross(&tmp, up, (struct vec3 *)&rot.mat[6]));
-	v3_cross((struct vec3 *)&rot.mat[3], (struct vec3 *)&rot.mat[6], (struct vec3 *)&rot.mat[0]);
+	M_MulVec3S((struct NeVec3 *)&rot.mat[6], M_NormalizeVec3(&tmp, direction), -1);
+	M_NormalizeVec3((struct NeVec3 *)&rot.mat[0], M_CrossVec3(&tmp, up, (struct NeVec3 *)&rot.mat[6]));
+	M_CrossVec3((struct NeVec3 *)&rot.mat[3], (struct NeVec3 *)&rot.mat[6], (struct NeVec3 *)&rot.mat[0]);
 
-	quat_rot_m3(q, &rot);
-	return quat_norm(q, q);
+	M_QuatRotationMat3(q, &rot);
+	return M_NormalizeQuat(q, q);
 }
 
-static inline struct vec3 *
-quat_up(struct vec3 *v, const struct quat *q)
+static inline struct NeVec3 *
+M_QuatUp(struct NeVec3 *v, const struct NeQuaternion *q)
 {
-	 return quat_mul_vec3(v, q, &v3_pos_y);
+	 return M_QuatMulVec3(v, q, &M_Vec3PositiveY);
 }
 
-static inline struct vec3 *
-quat_fwd_rh(struct vec3 *v, const struct quat *q)
+static inline struct NeVec3 *
+M_QuatForwardRH(struct NeVec3 *v, const struct NeQuaternion *q)
 {
-	return quat_mul_vec3(v, q, &v3_neg_z);
+	return M_QuatMulVec3(v, q, &M_Vec3NegativeZ);
 }
 
-static inline struct vec3 *
-quat_fwd_lh(struct vec3 *v, const struct quat *q)
+static inline struct NeVec3 *
+M_QuatForwardLH(struct NeVec3 *v, const struct NeQuaternion *q)
 {
-	return quat_mul_vec3(v, q, &v3_pos_z);
+	return M_QuatMulVec3(v, q, &M_Vec3PositiveZ);
 }
 
-static inline struct vec3 *
-quat_right(struct vec3 *v, const struct quat *q)
+static inline struct NeVec3 *
+M_QuatRight(struct NeVec3 *v, const struct NeQuaternion *q)
 {
-	return quat_mul_vec3(v, q, &v3_pos_x);
+	return M_QuatMulVec3(v, q, &M_Vec3PositiveX);
 }
 
 static inline float
-quat_roll(const struct quat *q)
+M_QuatRoll(const struct NeQuaternion *q)
 {
-	const struct vec2 v0 = { 0.f, 0.f };
-	const struct vec2 v =
+	const struct NeVec2 v0 = { 0.f, 0.f };
+	const struct NeVec2 v =
 	{
 		2.f * (q->x * q->y + q->w * q->z),
 		q->w * q->w + q->x * q->x - q->y * q->y - q->z * q->z
 	};
 
-	if (v2_equal(&v, &v0))
+	if (M_Vec2Equal(&v, &v0))
 		return 0.f;
 
-	return rad_to_deg(atan2f(v.x, v.y));
+	return M_RadToDeg(atan2f(v.x, v.y));
 }
 
 static inline float
-quat_pitch(const struct quat *q)
+M_QuatPitch(const struct NeQuaternion *q)
 {
-	const struct vec2 v0 = { 0.f, 0.f };
-	const struct vec2 v =
+	const struct NeVec2 v0 = { 0.f, 0.f };
+	const struct NeVec2 v =
 	{
 		2.f * (q->y * q->z + q->w * q->x),
 		q->w * q->w - q->x * q->x - q->y * q->y + q->z * q->z
 	};
 
-	if (v2_equal(&v, &v0))
-		return rad_to_deg(2.f * atan2f(q->x, q->w));
+	if (M_Vec2Equal(&v, &v0))
+		return M_RadToDeg(2.f * atan2f(q->x, q->w));
 
-	return rad_to_deg(atan2f(v.x, v.y));
+	return M_RadToDeg(atan2f(v.x, v.y));
 }
 
 static inline float
-quat_yaw(const struct quat *q)
+M_QuatYaw(const struct NeQuaternion *q)
 {
-	const float a = clamp(-2.f * (q->x * q->z - q->w * q->y), -1.f, 1.f);
-	return rad_to_deg(asinf(a));
+	const float a = M_ClampF(-2.f * (q->x * q->z - q->w * q->y), -1.f, 1.f);
+	return M_RadToDeg(asinf(a));
 }
 
 /*
  * Get the axis and angle of rotation from a quaternion
  */
 static inline void
-quat_to_axis_angle(const struct quat *q, struct vec3 *axis, float *angle)
+M_QuatToAxisAngle(const struct NeQuaternion *q, struct NeVec3 *axis, float *angle)
 {
 	float scale;
-	struct quat tmp;
+	struct NeQuaternion tmp;
 
 	if (q->w > 1.f)
-		quat_norm(&tmp, q);
+		M_NormalizeQuat(&tmp, q);
 	else
-		quat_copy(&tmp, q);
+		M_CopyQuat(&tmp, q);
 
 	*angle = 2.f * acosf(tmp.w);
 	scale = sqrtf(1.f - (tmp.w * tmp.w));
@@ -482,7 +418,7 @@ quat_to_axis_angle(const struct quat *q, struct vec3 *axis, float *angle)
 		axis->x = tmp.x / scale;
 		axis->y = tmp.y / scale;
 		axis->z = tmp.z / scale;
-		v3_norm(axis, axis);
+		M_NormalizeVec3(axis, axis);
 	}
 }
 
@@ -491,43 +427,43 @@ quat_to_axis_angle(const struct quat *q, struct vec3 *axis, float *angle)
  * the axis into pOut as another quaternion. Uses the swing-twist
  * decomposition.
  */
-static inline struct quat *
-quat_extract_rot(const struct quat *q, const struct vec3 *axis, struct quat *dst)
+static inline struct NeQuaternion *
+M_QuatExtractRotation(const struct NeQuaternion *q, const struct NeVec3 *axis, struct NeQuaternion *dst)
 {
 	/*
 	 * http://stackoverflow.com/questions/3684269/component-of-a-quaternion-rotation-around-an-axis/22401169?noredirect=1#comment34098058_22401169
 	 */
-	struct vec3 qv;
+	struct NeVec3 qv;
 	float d;
 	
 	qv.x = q->x;
 	qv.y = q->y;
 	qv.z = q->z;
 	
-	d = v3_dot(&qv, axis);
+	d = M_DotVec3(&qv, axis);
 
-	quat(dst, axis->x * d, axis->y * d, axis->z * d, q->w);
-	return quat_norm(dst, dst);
+	M_Quat(dst, axis->x * d, axis->y * d, axis->z * d, q->w);
+	return M_NormalizeQuat(dst, dst);
 }
 
 /*
  * Returns a Quaternion representing the angle between two vectors
  */
-static inline struct quat *
-quat_between_v3(struct quat *dst, const struct vec3 *u, const struct vec3 *v)
+static inline struct NeQuaternion *
+M_QuatBetweenVec3(struct NeQuaternion *dst, const struct NeVec3 *u, const struct NeVec3 *v)
 {
-	struct vec3 w;
+	struct NeVec3 w;
 	float len;
-	struct quat q;
+	struct NeQuaternion q;
 
-	if (v3_equal(u, v))
-		return quat_ident(dst);
+	if (M_Vec3Equal(u, v))
+		return M_QuatIdentity(dst);
 
-	len = sqrtf(v3_len_sq(u) * v3_len_sq(v));
-	v3_cross(&w, u, v);
+	len = sqrtf(M_Vec3LengthSquared(u) * M_Vec3LengthSquared(v));
+	M_CrossVec3(&w, u, v);
 
-	quat(&q, w.x, w.y, w.z, v3_dot(u, v) + len);
-	return quat_norm(dst, &q);
+	M_Quat(&q, w.x, w.y, w.z, M_DotVec3(u, v) + len);
+	return M_NormalizeQuat(dst, &q);
 }
 
 /*
@@ -539,67 +475,131 @@ quat_between_v3(struct quat *dst, const struct vec3 *u, const struct vec3 *v)
  * (if specified, or a generated axis if not) since in this case ANY
  * axis of rotation is valid.
  */
-static inline struct quat *
-quat_rot_between_v3(struct quat *q,
-	const struct vec3 *vec1, const struct vec3 *vec2,
-	const struct vec3 *fallback)
+static inline struct NeQuaternion *
+M_QuatRotationBetweenVec3(struct NeQuaternion *q,
+	const struct NeVec3 *vec1, const struct NeVec3 *NeVec2,
+	const struct NeVec3 *fallback)
 {
-	struct vec3 v1, v2;
+	struct NeVec3 v1, v2;
 	float a;
 
-	v3_copy(&v1, vec1);
-	v3_copy(&v2, vec2);
+	M_CopyVec3(&v1, vec1);
+	M_CopyVec3(&v2, NeVec2);
 
-	v3_norm(&v1, &v1);
-	v3_norm(&v2, &v2);
+	M_NormalizeVec3(&v1, &v1);
+	M_NormalizeVec3(&v2, &v2);
 
-	a = v3_dot(&v1, &v2);
+	a = M_DotVec3(&v1, &v2);
 
 	if (a >= 1.f)
-		return quat_ident(q);
+		return M_QuatIdentity(q);
 
 	if (a < (1e-6f - 1.f)) {
-		if (fabsf(v3_len_sq(fallback)) < FLT_EPSILON) {
-			quat_rot_axis_angle_r(q, fallback, PI);
+		if (fabsf(M_Vec3LengthSquared(fallback)) < FLT_EPSILON) {
+			M_QuatRotationAxisAngleR(q, fallback, PI);
 		} else {
-			struct vec3 axis;
-			struct vec3 X;
+			struct NeVec3 axis;
+			struct NeVec3 X;
 			X.x = 1.f;
 			X.y = 0.f;
 			X.z = 0.f;
 
-			v3_cross(&axis, &X, vec1);
+			M_CrossVec3(&axis, &X, vec1);
 
 			// If axis is zero
-			if (fabsf(v3_len_sq(&axis)) < FLT_EPSILON) {
-				struct vec3 Y;
+			if (fabsf(M_Vec3LengthSquared(&axis)) < FLT_EPSILON) {
+				struct NeVec3 Y;
 				Y.x = 0.f;
 				Y.y = 1.f;
 				Y.z = 0.f;
 
-				v3_cross(&axis, &Y, vec1);
+				M_CrossVec3(&axis, &Y, vec1);
 			}
 
-			v3_norm(&axis, &axis);
+			M_NormalizeVec3(&axis, &axis);
 
-			quat_rot_axis_angle_r(q, &axis, PI);
+			M_QuatRotationAxisAngleR(q, &axis, PI);
 		}
 	} else {
 		float s = sqrtf((1.f + a) * 2.f);
 		float invs = 1.f / s;
 
-		struct vec3 c;
-		v3_cross(&c, &v1, &v2);
+		struct NeVec3 c;
+		M_CrossVec3(&c, &v1, &v2);
 
 		q->x = c.x * invs;
 		q->y = c.y * invs;
 		q->z = c.z * invs;
 		q->w = s * .5f;
 
-		quat_norm(q, q);
+		M_NormalizeQuat(q, q);
 	}
 
 	return q;
 }
 
 #endif /* _NE_MATH_QUATERNION_H_ */
+
+/* NekoEngine
+ *
+ * quat.h
+ * Author: Alexandru Naiman
+ *
+ * Quaternion functions
+ *
+ * -----------------------------------------------------------------------------
+ *
+ * Copyright (c) 2015-2022, Alexandru Naiman
+ *
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * -----------------------------------------------------------------------------
+ * Original copyright:
+
+Copyright (c) 2008, Luke Benstead.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+	* Redistributions of source code must retain the above copyright notice,
+	  this list of conditions and the following disclaimer.
+	* Redistributions in binary form must reproduce the above copyright notice,
+	  this list of conditions and the following disclaimer in the documentation
+	  and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/

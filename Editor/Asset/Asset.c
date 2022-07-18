@@ -64,13 +64,6 @@ _OpenMesh(const char *path)
 	snprintf(buff, 2048, "Loading %s...", path);
 	EdGUI_ShowProgressDialog(buff);
 
-	NeEntityHandle eh = E_CreateEntity(NULL);
-
-	E_AddNewComponent(eh, E_ComponentTypeId(TRANSFORM_COMP), NULL);
-
-	const void *args[] = { "Model", path, NULL };
-	E_AddNewComponent(eh, E_ComponentTypeId(MODEL_RENDER_COMP), args);
-
 	char *str = Rt_TransientStrDup(path);
 	char *name = strrchr(str, '/');
 	*name++ = 0x0;
@@ -78,7 +71,12 @@ _OpenMesh(const char *path)
 	char *ptr = strrchr(name, '.');
 	*ptr = 0x0;
 
-	E_RenameEntity(eh, name);
+	NeEntityHandle eh = E_CreateEntity(name, NULL);
+
+	E_AddNewComponent(eh, E_ComponentTypeId(TRANSFORM_COMP), NULL);
+
+	const void *args[] = { "Model", path, NULL };
+	E_AddNewComponent(eh, E_ComponentTypeId(MODEL_RENDER_COMP), args);
 
 	EdGUI_HideProgressDialog();
 

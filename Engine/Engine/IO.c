@@ -14,6 +14,7 @@
 
 #ifndef USE_PLATFORM_RESOURCES
 #	include "EngineRes.h"
+#	include "Shaders.h"
 #else
 bool Sys_MountPlatformResources(void);
 void Sys_UnmountPlatformResources(void);
@@ -373,7 +374,8 @@ E_InitIOSystem(void)
 	}
 
 #ifndef USE_PLATFORM_RESOURCES
-	if (!PHYSFS_mountMemory(EngineRes_zip, sizeof(EngineRes_zip), 0, "EngineRes.zip", "/", 0)) {
+	if (!PHYSFS_mountMemory(EngineRes_zip, sizeof(EngineRes_zip), 0, "EngineRes.zip", "/", 0) ||
+		!PHYSFS_mountMemory(Shaders_zip, sizeof(Shaders_zip), 0, "Shaders.zip", "/", 0)) {
 #else
 	if (!Sys_MountPlatformResources()) {
 #endif
@@ -426,7 +428,7 @@ void
 E_TermIOSystem(void)
 {
 #ifndef USE_PLATFORM_RESOURCES
-	if (!PHYSFS_unmount("EngineRes.zip"))
+	if (!PHYSFS_unmount("EngineRes.zip") || !PHYSFS_unmount("Shaders.zip"))
 		Sys_LogEntry(IO_MODULE, LOG_DEBUG, "Failed to unmount EngineRes.zip");
 #else
 	Sys_UnmountPlatformResources();

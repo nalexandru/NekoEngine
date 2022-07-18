@@ -35,6 +35,7 @@ struct NeCVar
 void E_InitConfig(const char *file);
 void E_TermConfig(void);
 
+const struct NeCVar *E_RootCVar(void);
 struct NeCVar *E_GetCVar(const char *name);
 
 #define CVAR_STRING(x) E_GetCVarStr(x, NULL)->str

@@ -6,7 +6,7 @@
 
 struct NeModelRender
 {
-	COMPONENT_BASE;
+	NE_COMPONENT_BASE;
 
 	NeHandle model;
 	NeBufferHandle vertexBuffer;

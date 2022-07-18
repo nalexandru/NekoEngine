@@ -55,7 +55,7 @@ Scn_CreateTerrain(struct NeScene *scn, const struct NeTerrainCreateInfo *tci)
 		}
 	}
 
-	entity = E_CreateEntityS(scn, NULL);
+	entity = E_CreateEntityS(scn, "Terrain", NULL);
 	if (!entity) {
 		Sys_LogEntry(TR_MOD, LOG_CRITICAL, "Failed to create entity");
 		goto exit;
@@ -163,23 +163,23 @@ _Generate(struct NeModelCreateInfo *mci, const struct NeTerrainCreateInfo *tci, 
 		struct NeVertex *vtx0 = &((struct NeVertex *)mci->vertices)[indices[i]];
 		struct NeVertex *vtx1 = &((struct NeVertex *)mci->vertices)[indices[i + 1]];
 		struct NeVertex *vtx2 = &((struct NeVertex *)mci->vertices)[indices[i + 2]];
-		struct vec3 p0, p1, p2, e1, e2, d;
+		struct NeVec3 p0, p1, p2, e1, e2, d;
 
-		v3(&p0, vtx0->x, vtx0->y, vtx0->z);
-		v3(&p1, vtx1->x, vtx1->y, vtx1->z);
-		v3(&p2, vtx2->x, vtx2->y, vtx2->z);
+		M_Vec3(&p0, vtx0->x, vtx0->y, vtx0->z);
+		M_Vec3(&p1, vtx1->x, vtx1->y, vtx1->z);
+		M_Vec3(&p2, vtx2->x, vtx2->y, vtx2->z);
 
-		v3_sub(&e1, &p1, &p0);
-		v3_sub(&e2, &p2, &p0);
+		M_Sub(&e1, &p1, &p0);
+		M_Sub(&e2, &p2, &p0);
 
-		struct vec3 *d0 = (struct vec3 *)&vtx0->nx;
-		struct vec3 *d1 = (struct vec3 *)&vtx1->nx;
-		struct vec3 *d2 = (struct vec3 *)&vtx2->nx;
+		struct NeVec3 *d0 = (struct NeVec3 *)&vtx0->nx;
+		struct NeVec3 *d1 = (struct NeVec3 *)&vtx1->nx;
+		struct NeVec3 *d2 = (struct NeVec3 *)&vtx2->nx;
 
-		v3_cross(&d, &e1, &e2);
-		v3_add(d0, d0, &d);
-		v3_add(d1, d2, &d);
-		v3_add(d2, d2, &d);
+		M_Cross(&d, &e1, &e2);
+		M_Add(d0, d0, &d);
+		M_Add(d1, d2, &d);
+		M_Add(d2, d2, &d);
 
 		const float dU1 = vtx1->u - vtx0->u;
 		const float dV1 = vtx1->v - vtx0->v;
@@ -188,27 +188,27 @@ _Generate(struct NeModelCreateInfo *mci, const struct NeTerrainCreateInfo *tci, 
 
 		const float f = 1.f / (dU1 * dV2 - dU2 * dV1);
 
-		struct vec3 tgt;
+		struct NeVec3 tgt;
 		tgt.x = f * (dV2 * e1.x - dV1 * e2.x);
 		tgt.y = f * (dV2 * e1.y - dV1 * e2.y);
 		tgt.z = f * (dV2 * e1.z - dV1 * e2.z);
 
-		d0 = (struct vec3 *)&vtx0->tx;
-		d1 = (struct vec3 *)&vtx1->tx;
-		d2 = (struct vec3 *)&vtx2->tx;
+		d0 = (struct NeVec3 *)&vtx0->tx;
+		d1 = (struct NeVec3 *)&vtx1->tx;
+		d2 = (struct NeVec3 *)&vtx2->tx;
 
-		v3_add(d0, d0, &tgt);
-		v3_add(d1, d2, &tgt);
-		v3_add(d2, d2, &tgt);
+		M_Add(d0, d0, &tgt);
+		M_Add(d1, d2, &tgt);
+		M_Add(d2, d2, &tgt);
 	}
 
 	for (uint32_t i = 0; i < vertexCount; ++i) {
 		struct NeVertex *v = &((struct NeVertex *)mci->vertices)[i];
-		struct vec3 *n = (struct vec3 *)&v->nx;
-		struct vec3 *t = (struct vec3 *)&v->tx;
+		struct NeVec3 *n = (struct NeVec3 *)&v->nx;
+		struct NeVec3 *t = (struct NeVec3 *)&v->tx;
 
-		v3_norm(n, n);
-		v3_norm(t, t);
+		M_Normalize(n, n);
+		M_Normalize(t, t);
 	}
 
 	mci->meshes = Sys_Alloc(sizeof(*mci->meshes), 1, MH_Scene);
@@ -228,8 +228,8 @@ _SampleHeightmap(const struct NeTextureCreateInfo *mapInfo, float u, float v)
 	if (!mapInfo)
 		return 0.f;
 
-	uint32_t x = clamp_ui((uint32_t)(u * mapInfo->desc.width), 0, mapInfo->desc.width - 1);
-	uint32_t y = clamp_ui((uint32_t)(v * mapInfo->desc.height), 0, mapInfo->desc.height - 1);
+	uint32_t x = M_Clamp((uint32_t)(u * mapInfo->desc.width), 0, mapInfo->desc.width - 1);
+	uint32_t y = M_Clamp((uint32_t)(v * mapInfo->desc.height), 0, mapInfo->desc.height - 1);
 	uint32_t val = *((uint8_t *)mapInfo->data + (y * mapInfo->desc.width) + x);
 
 	return (float)val / 255.f;

@@ -49,7 +49,7 @@
     <IncludePath>$(SolutionDir)Include;$(SolutionDir)Platform\Win32\Compat;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)\bin\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\build\$(Configuration)\$(ProjectName)\</IntDir>
-    <LibraryPath>$(SolutionDir)Bin\$(Configuration);$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)Deps\OpenXR\x64\lib;$(SolutionDir)Bin\$(Configuration);$(LibraryPath)</LibraryPath>
     <TargetName>NekoEngine</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -57,7 +57,7 @@
     <IncludePath>$(SolutionDir)Include;$(SolutionDir)Platform\Win32\Compat;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)\bin\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\build\$(Configuration)\$(ProjectName)\</IntDir>
-    <LibraryPath>$(SolutionDir)Bin\$(Configuration);$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)Deps\OpenXR\x64\lib;$(SolutionDir)Bin\$(Configuration);$(LibraryPath)</LibraryPath>
     <TargetName>NekoEngine</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -73,8 +73,9 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <DelayLoadDLLs>d3d12.dll;opengl32.lib</DelayLoadDLLs>
-      <AdditionalDependencies>setupapi.lib;opengl32.lib;OpenGLDriver.lib;NullGraphicsDriver.lib;Direct3D12Driver.lib;VulkanDriver.lib;/WHOLEARCHIVE:Engine.lib;d3d12.lib;dxgi.lib;dxguid.lib;xinput9_1_0.lib;shell32.lib;ole32.lib;advapi32.lib;gdi32.lib;user32.lib;kernel32.lib;ntdll.lib</AdditionalDependencies>
+      <DelayLoadDLLs>
+      </DelayLoadDLLs>
+      <AdditionalDependencies>OpenAL.lib;/WHOLEARCHIVE:Engine.lib;xinput9_1_0.lib;shell32.lib;ole32.lib;advapi32.lib;gdi32.lib;user32.lib;kernel32.lib;ntdll.lib</AdditionalDependencies>
       <ModuleDefinitionFile>$(SolutionDir)Engine\Exports.def</ModuleDefinitionFile>
     </Link>
     <Manifest>
@@ -105,8 +106,9 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <DelayLoadDLLs>d3d12.dll;opengl32.lib</DelayLoadDLLs>
-      <AdditionalDependencies>setupapi.lib;opengl32.lib;OpenGLDriver.lib;NullGraphicsDriver.lib;Direct3D12Driver.lib;VulkanDriver.lib;/WHOLEARCHIVE:Engine.lib;d3d12.lib;dxgi.lib;dxguid.lib;xinput9_1_0.lib;shell32.lib;ole32.lib;advapi32.lib;gdi32.lib;user32.lib;kernel32.lib;ntdll.lib</AdditionalDependencies>
+      <DelayLoadDLLs>
+      </DelayLoadDLLs>
+      <AdditionalDependencies>OpenAL.lib;/WHOLEARCHIVE:Engine.lib;xinput9_1_0.lib;shell32.lib;ole32.lib;advapi32.lib;gdi32.lib;user32.lib;kernel32.lib;ntdll.lib</AdditionalDependencies>
       <ModuleDefinitionFile>$(SolutionDir)Engine\Exports.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>

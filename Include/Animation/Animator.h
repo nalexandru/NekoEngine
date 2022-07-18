@@ -6,7 +6,7 @@
 
 struct NeAnimator
 {
-	COMPONENT_BASE;
+	NE_COMPONENT_BASE;
 
 	struct NeSkeleton *skel;
 	bool playing, oneShot, loop, dirty;

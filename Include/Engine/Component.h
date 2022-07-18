@@ -11,7 +11,7 @@ struct NeComponentCreationData
 	void *ptr;
 };
 
-#define COMPONENT_BASE			\
+#define NE_COMPONENT_BASE		\
 	uint64_t _handleId : 56;	\
 	uint64_t _sceneId : 8;		\
 	NeEntityHandle _owner

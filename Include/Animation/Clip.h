@@ -7,13 +7,13 @@
 
 struct NeAnimVectorKey
 {
-	struct vec3 val;
+	struct NeVec3 val;
 	double time;
 };
 
 struct NeAnimQuatKey
 {
-	struct quat val;
+	struct NeQuaternion val;
 	double time;
 };
 

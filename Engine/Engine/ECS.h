@@ -24,7 +24,8 @@ struct NeEntityType
 {
 	uint64_t hash;
 	uint32_t compCount;
-	NeCompTypeId comp_types[MAX_ENTITY_COMPONENTS];
+	NeCompTypeId compTypes[MAX_ENTITY_COMPONENTS];
+	struct NeArray initialArguments[MAX_ENTITY_COMPONENTS];
 };
 
 struct NeCompHandleData
@@ -36,7 +37,7 @@ struct NeCompHandleData
 
 struct NeCompBase
 {
-	COMPONENT_BASE;
+	NE_COMPONENT_BASE;
 };
 
 struct NeCompType

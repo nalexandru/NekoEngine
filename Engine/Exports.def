@@ -10,11 +10,6 @@ EXPORTS
 	Re_contexts DATA
 	Re_deviceInfo DATA
 
-	Re_LoadVulkanDriver
-	Re_LoadDirect3D12Driver
-	Re_LoadOpenGLDriver
-	Re_LoadNullDriver
-
 	reallocarray
 
 	stbi_load_from_memory

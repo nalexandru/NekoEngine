@@ -8,14 +8,14 @@
 
 struct NeTransform
 {
-	COMPONENT_BASE;
+	NE_COMPONENT_BASE;
 
-	struct mat4 mat;
+	struct NeMatrix mat;
 	bool dirty;
-	struct vec3 position, scale;
-	struct quat rotation;
+	struct NeVec3 position, scale;
+	struct NeQuaternion rotation;
 	
-	struct vec3 forward, right, up;
+	struct NeVec3 forward, right, up;
 
 	struct NeTransform *parent;
 	struct NeArray children;
@@ -24,39 +24,40 @@ struct NeTransform
 void Scn_UpdateTransform(void **comp, void *args);
 
 static inline void
-xform_move(struct NeTransform *t, struct vec3 *movement)
+xform_move(struct NeTransform *t, struct NeVec3 *movement)
 {
-	v3_add(&t->position, &t->position, movement);
+	M_Add(&t->position, &t->position, movement);
 	t->dirty = true;
 }
 
 static inline void
-xform_rotate(struct NeTransform *t, float angle, const struct vec3 *axis)
+xform_rotate(struct NeTransform *t, float angle, const struct NeVec3 *axis)
 {
-	struct quat tmp;
-	quat_from_axis_angle(&tmp, axis, angle);
-	quat_mul(&t->rotation, &t->rotation, &tmp);
+	struct NeQuaternion tmp;
+	M_QuatFromAxisAngle(&tmp, axis, angle);
+	M_Mul(&t->rotation, &t->rotation, &tmp);
 	t->dirty = true;
 }
 
 static inline void
-xform_scale(struct NeTransform *t, const struct vec3 *scale)
+xform_scale(struct NeTransform *t, const struct NeVec3 *scale)
 {
-	v3_mul(&t->scale, &t->scale, scale);
+	M_Mul(&t->scale, &t->scale, scale);
+	//M_MulVec3(&t->scale, &t->scale, scale);
 	t->dirty = true;
 }
 
 static inline void
-xform_set_pos(struct NeTransform *t, const struct vec3 *pos)
+xform_set_pos(struct NeTransform *t, const struct NeVec3 *pos)
 {
-	v3_copy(&t->position, pos);
+	M_Copy(&t->position, pos);
 	t->dirty = true;
 }
 
 static inline void
-xform_set_scale(struct NeTransform *t, const struct vec3 *scale)
+xform_set_scale(struct NeTransform *t, const struct NeVec3 *scale)
 {
-	v3_copy(&t->scale, scale);
+	M_Copy(&t->scale, scale);
 	t->scale.x = fmaxf(t->scale.x, .0000001f);
 	t->scale.y = fmaxf(t->scale.y, .0000001f);
 	t->scale.z = fmaxf(t->scale.z, .0000001f);
@@ -64,52 +65,52 @@ xform_set_scale(struct NeTransform *t, const struct vec3 *scale)
 }
 
 static inline void
-xform_look_at(struct NeTransform *t, struct vec3 *target, struct vec3 *up)
+xform_look_at(struct NeTransform *t, struct NeVec3 *target, struct NeVec3 *up)
 {
 	//
 }
 
 static inline void
-xform_update_orientation_mat(struct NeTransform *t, struct mat4 *rot)
+xform_update_orientation_mat(struct NeTransform *t, struct NeMatrix *rot)
 {
-	struct vec4 tmp;
+	struct NeVec4 tmp;
 
-	v4_mul_m4(&tmp, v4(&tmp, 0.f, 0.f, 1.f, 1.f), rot);
-	v3(&t->forward, tmp.x, tmp.y, tmp.z);
+	M_MulVec4Matrix(&tmp, M_Vec4(&tmp, 0.f, 0.f, 1.f, 1.f), rot);
+	M_Vec3(&t->forward, tmp.x, tmp.y, tmp.z);
 
-	v4_mul_m4(&tmp, v4(&tmp, 1.f, 0.f, 0.f, 1.f), rot);
-	v3(&t->right, tmp.x, tmp.y, tmp.z);
+	M_MulVec4Matrix(&tmp, M_Vec4(&tmp, 1.f, 0.f, 0.f, 1.f), rot);
+	M_Vec3(&t->right, tmp.x, tmp.y, tmp.z);
 
-	v4_mul_m4(&tmp, v4(&tmp, 0.f, 1.f, 0.f, 1.f), rot);
-	v3(&t->up, tmp.x, tmp.y, tmp.z);
+	M_MulVec4Matrix(&tmp, M_Vec4(&tmp, 0.f, 1.f, 0.f, 1.f), rot);
+	M_Vec3(&t->up, tmp.x, tmp.y, tmp.z);
 }
 
 static inline void
 xform_update_orientation(struct NeTransform *t)
 {
-	struct mat4 rot;
-	m4_rot_quat(&rot, &t->rotation);
+	struct NeMatrix rot;
+	M_RotationMatrixFromQuat(&rot, &t->rotation);
 	xform_update_orientation_mat(t, &rot);
 }
 
 static inline void
 xform_update(struct NeTransform *t)
 {
-	struct mat4 m1;
-	struct mat4 m2;
+	struct NeMatrix m1;
+	struct NeMatrix m2;
 	size_t i;
 
 	if ((t->parent && !t->parent->dirty) && !t->dirty)
 		return;
 
-	m4_rot_quat(&m1, &t->rotation);
+	M_RotationMatrixFromQuat(&m1, &t->rotation);
 	xform_update_orientation_mat(t, &m1);
 
-	m4_translate(&m2, t->position.x, t->position.y, t->position.z);
-	m4_mul(&m1, &m2, &m1);
+	M_TranslationMatrix(&m2, t->position.x, t->position.y, t->position.z);
+	M_MulMatrix(&m1, &m2, &m1);
 
-	m4_scale(&m2, t->scale.x, t->scale.y, t->scale.z);
-	m4_mul(&t->mat, &m1, &m2);
+	M_ScaleMatrix(&m2, t->scale.x, t->scale.y, t->scale.z);
+	M_MulMatrix(&t->mat, &m1, &m2);
 
 	for (i = 0; i < t->children.count; ++i)
 		xform_update((struct NeTransform *)Rt_ArrayGetPtr(&t->children, i));
@@ -117,13 +118,13 @@ xform_update(struct NeTransform *t)
 	t->dirty = false;
 }
 
-static inline struct vec3 *
-xform_position(const struct NeTransform *t, struct vec3 *pos)
+static inline struct NeVec3 *
+xform_position(const struct NeTransform *t, struct NeVec3 *pos)
 {
 	if (t->parent) {
-		struct vec3 tmp;
+		struct NeVec3 tmp;
 		xform_position(t->parent, &tmp);
-		v3_add(pos, &tmp, &t->position);
+		M_Add(pos, &tmp, &t->position);
 	} else {
 		memcpy(pos, &t->position, sizeof(*pos));
 	}
@@ -131,13 +132,13 @@ xform_position(const struct NeTransform *t, struct vec3 *pos)
 	return pos;
 }
 
-static inline struct quat *
-xform_rotation(const struct NeTransform *t, struct quat *rot)
+static inline struct NeQuaternion *
+xform_rotation(const struct NeTransform *t, struct NeQuaternion *rot)
 {
 	if (t->parent) {
-		struct quat tmp;
+		struct NeQuaternion tmp;
 		xform_rotation(t->parent, &tmp);
-		quat_mul(rot, &tmp, &t->rotation);
+		M_Mul(rot, &tmp, &t->rotation);
 	} else {
 		memcpy(rot, &t->rotation, sizeof(*rot));
 	}
@@ -148,28 +149,28 @@ xform_rotation(const struct NeTransform *t, struct quat *rot)
 static inline void
 xform_rotation_angles_f(const struct NeTransform *t, float *pitch, float *yaw, float *roll)
 {
-	struct quat q;
+	struct NeQuaternion q;
 	xform_rotation(t, &q);
 
 	if (pitch)
-		*pitch = quat_pitch(&q);
+		*pitch = M_QuatPitch(&q);
 
 	if (yaw)
-		*yaw = quat_yaw(&q);
+		*yaw = M_QuatYaw(&q);
 
 	if (roll)
-		*roll = quat_roll(&q);
+		*roll = M_QuatRoll(&q);
 }
 
-static inline struct vec3 *
-xform_rotation_angles(const struct NeTransform *t, struct vec3 *rot)
+static inline struct NeVec3 *
+xform_rotation_angles(const struct NeTransform *t, struct NeVec3 *rot)
 {
-	struct quat q;
+	struct NeQuaternion q;
 	xform_rotation(t, &q);
 
-	rot->x = quat_pitch(&q);
-	rot->y = quat_yaw(&q);
-	rot->z = quat_roll(&q);
+	rot->x = M_QuatPitch(&q);
+	rot->y = M_QuatYaw(&q);
+	rot->z = M_QuatRoll(&q);
 
 	xform_rotation_angles_f(t, &rot->x, &rot->y, &rot->z);
 
@@ -179,8 +180,8 @@ xform_rotation_angles(const struct NeTransform *t, struct vec3 *rot)
 static inline void
 xform_move_forward(struct NeTransform *t, float distance)
 {
-	struct vec3 tmp;
-	v3_add(&t->position, &t->position, v3_muls(&tmp, &t->forward, distance));
+	struct NeVec3 tmp;
+	M_Add(&t->position, &t->position, M_MulVec3S(&tmp, &t->forward, distance));
 	t->dirty = true;
 }
 
@@ -193,8 +194,8 @@ xform_move_backward(struct NeTransform *t, float distance)
 static inline void
 xform_move_right(struct NeTransform *t, float distance)
 {
-	struct vec3 tmp;
-	v3_add(&t->position, &t->position, v3_muls(&tmp, &t->right, distance));
+	struct NeVec3 tmp;
+	M_Add(&t->position, &t->position, M_MulVec3S(&tmp, &t->right, distance));
 	t->dirty = true;
 }
 
@@ -207,8 +208,8 @@ xform_move_left(struct NeTransform *t, float distance)
 static inline void
 xform_move_up(struct NeTransform *t, float distance)
 {
-	struct vec3 tmp;
-	v3_add(&t->position, &t->position, v3_muls(&tmp, &t->up, distance));
+	struct NeVec3 tmp;
+	M_Add(&t->position, &t->position, M_MulVec3S(&tmp, &t->up, distance));
 	t->dirty = true;
 }
 

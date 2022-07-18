@@ -9,6 +9,7 @@
 #include <sys/time.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <sys/sysctl.h>
 #include <sys/utsname.h>
 
 #include <Input/Input.h>
@@ -431,7 +432,30 @@ Sys_CreateDirectory(const char *path)
 void
 Sys_ExecutableLocation(char *buff, uint32_t len)
 {
-	//GetModuleFileNameA(NULL, buff, len);
+#if defined(SYS_PLATFORM_LINUX)
+	char tmp[4096];
+	snprintf(tmp, sizeof(tmp), "/proc/%d/exe", getpid());
+	readlink(tmp, buff, len);
+#elif defined(SYS_PLATFORM_FREEBSD)
+	int mib[] = { CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1 };
+	size_t size = len;
+	sysctl(mib, sizeof(mib) / sizeof(mib[0]), buff, &size, NULL, 0);
+#elif defined(SYS_PLATFORM_OPENBSD)
+	memset(buff, 0x0, len);	// TODO
+#elif defined(SYS_PLATFORM_SUNOS)
+	snprintf(buff, len, "%s", getexecname());
+#elif defined(SYS_PLATFORM_NETBSD)
+	char tmp[4096];
+	snprintf(tmp, sizeof(tmp), "/proc/%d/exe", getpid());
+	readlink(tmp, buff, len);
+#elif defined(SYS_PLATFORM_DRAGONFLY)
+	char tmp[4096];
+	snprintf(tmp, sizeof(tmp), "/proc/%d/file", getpid());
+	readlink(tmp, buff, len);
+#endif
+
+	char *p = strrchr(buff, '/');
+	if (p) *p++ = 0x0;
 }
 
 void *

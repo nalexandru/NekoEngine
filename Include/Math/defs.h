@@ -1,42 +1,3 @@
-/* NekoEngine
- *
- * defs.h
- * Author: Alexandru Naiman
- *
- * Math data structures and constants
- *
- * -----------------------------------------------------------------------------
- *
- * Copyright (c) 2015-2021, Alexandru Naiman
- *
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice,
- * this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * 3. Neither the name of the copyright holder nor the names of its contributors
- * may be used to endorse or promote products derived from this software without
- * specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
- * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-
 #ifndef _NE_MATH_DEFS_H_
 #define _NE_MATH_DEFS_H_
 
@@ -132,20 +93,20 @@
 
 #pragma pack(push, 1)
 
-struct vec2
+struct NeVec2
 {
 	float x;
 	float y;
 } NE_ALIGN(16);
 
-struct vec3
+struct NeVec3
 {
 	float x;
 	float y;
 	float z;
 } NE_ALIGN(16);
 
-struct vec4
+struct NeVec4
 {
 	union {
 		struct {
@@ -166,7 +127,7 @@ struct vec4
 	};
 } NE_ALIGN(16);
 
-struct quat
+struct NeQuaternion
 {
 	union {
 		struct {
@@ -187,12 +148,12 @@ struct quat
 	};
 } NE_ALIGN(16);
 
-struct mat3
+struct NeMat3
 {
 	float mat[9];
 } NE_ALIGN(16);
 
-struct mat4
+struct NeMatrix
 {
 	union {
 		float r[4][4];
@@ -209,41 +170,31 @@ struct mat4
 	};
 } NE_ALIGN(16);
 
-struct ray2
+struct NeRay
 {
-	struct vec2 start;
-	struct vec2 dir;
-} NE_ALIGN(16);
-
-struct ray3
-{
-	struct vec3 start;
-	struct vec3 dir;
+	struct NeVec3 start;
+	struct NeVec3 dir;
 } NE_ALIGN(16);
 
 /*
  * A struture that represents an axis-aligned
  * bounding box.
  */
-struct aabb2
+struct NeAABB
 {
-	struct vec2 min; /** The max corner of the box */
-	struct vec2 max; /** The min corner of the box */
+	struct NeVec3 min; /** The max corner of the box */
+	struct NeVec3 max; /** The min corner of the box */
 } NE_ALIGN(16);
 
-/*
- * A struture that represents an axis-aligned
- * bounding box.
- */
-struct aabb3
+struct NePlane
 {
-	struct vec3 min; /** The max corner of the box */
-	struct vec3 max; /** The min corner of the box */
+	struct NeVec3 normal;
+	float distance;
 } NE_ALIGN(16);
 
-struct plane
+struct NeFrustum
 {
-	float a, b, c, d;
+	struct NePlane planes[6];
 } NE_ALIGN(16);
 
 #pragma pack(pop)
@@ -264,3 +215,43 @@ struct plane
 #define M_180_PI			57.29577951308232087684f
 
 #endif /* _NE_MATH_DEFS_H_ */
+
+/* NekoEngine
+ *
+ * defs.h
+ * Author: Alexandru Naiman
+ *
+ * Math data structures and constants
+ *
+ * -----------------------------------------------------------------------------
+ *
+ * Copyright (c) 2015-2022, Alexandru Naiman
+ *
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * -----------------------------------------------------------------------------
+ */

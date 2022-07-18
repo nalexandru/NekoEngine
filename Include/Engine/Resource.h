@@ -3,6 +3,7 @@
 
 #include <Engine/IO.h>
 #include <Engine/Types.h>
+#include <Render/Types.h>
 
 struct NeResourceLoadInfo
 {
@@ -18,6 +19,7 @@ bool E_RegisterResourceType(const char *name, size_t size, NeResourceCreateProc 
 
 NeHandle E_CreateResource(const char *name, const char *type, const void *info);
 NeHandle E_LoadResource(const char *path, const char *type);
+NeHandle E_AllocateResource(const char *name, const char *type);
 
 void *E_ResourcePtr(NeHandle res);
 
@@ -27,6 +29,8 @@ void	E_ReleaseResource(NeHandle res);
 
 static inline uint16_t	E_ResHandleToGPU(NeHandle h) { return (uint16_t)(h & (uint64_t)0x000000000000FFFF); }
 NeHandle				E_GPUHandleToRes(uint16_t id, const char *type);
+
+bool	E_UpdateResource(NeHandle res, const void *data);
 
 void	E_UnloadResource(NeHandle res);
 

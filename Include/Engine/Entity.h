@@ -26,17 +26,21 @@ struct NeEntityComp
 
 ENGINE_API extern struct NeScene *Scn_activeScene;
 
-NeEntityHandle E_CreateEntityS(struct NeScene *s, const char *type);
-static inline NeEntityHandle E_CreateEntity(const char *type) { return E_CreateEntityS(Scn_activeScene, type); }
+NeEntityHandle E_CreateEntityS(struct NeScene *s, const char *name, const char *type);
+static inline NeEntityHandle E_CreateEntity(const char *name, const char *type) { return E_CreateEntityS(Scn_activeScene, name, type); }
 
-NeEntityHandle E_CreateEntityWithArgsS(struct NeScene *s, const NeCompTypeId *compTypes, const void ***compArgs, uint8_t typeCount);
-static inline NeEntityHandle E_CreateEntityWithArgs(const NeCompTypeId *compTypes, const void ***compArgs, uint8_t typeCount)
-{ return E_CreateEntityWithArgsS(Scn_activeScene, compTypes, compArgs, typeCount); }
+NeEntityHandle E_CreateEntityWithArgsS(struct NeScene *s, const char *name, const NeCompTypeId *compTypes, const void ***compArgs, uint8_t typeCount);
+static inline NeEntityHandle E_CreateEntityWithArgs(const char *name, const NeCompTypeId *compTypes, const void ***compArgs, uint8_t typeCount)
+{ return E_CreateEntityWithArgsS(Scn_activeScene, name, compTypes, compArgs, typeCount); }
 
-NeEntityHandle E_CreateEntityVS(struct NeScene *s, int count, const struct NeEntityCompInfo *info);
-static inline NeEntityHandle E_CreateEntityV(int count, const struct NeEntityCompInfo *info) { return E_CreateEntityVS(Scn_activeScene, count, info); }
+NeEntityHandle E_CreateEntityWithArgArrayS(struct NeScene *s, const char *name, const NeCompTypeId *compTypes, const struct NeArray *compArgs, uint8_t typeCount);
+static inline NeEntityHandle E_CreateEntityWithArgArray(const char *name, const NeCompTypeId *compTypes, const struct NeArray *compArgs, uint8_t typeCount)
+{ return E_CreateEntityWithArgArrayS(Scn_activeScene, name, compTypes, compArgs, typeCount); }
 
-NeEntityHandle E_CreateEntityWithComponentsS(struct NeScene *s, int count, ...);
+NeEntityHandle E_CreateEntityVS(struct NeScene *s, const char *name, int count, const struct NeEntityCompInfo *info);
+static inline NeEntityHandle E_CreateEntityV(const char *name, int count, const struct NeEntityCompInfo *info) { return E_CreateEntityVS(Scn_activeScene, name, count, info); }
+
+NeEntityHandle E_CreateEntityWithComponentsS(struct NeScene *s, const char *name, int count, ...);
 
 bool E_AddComponentS(struct NeScene *s, NeEntityHandle ent, NeCompTypeId type, NeCompHandle comp);
 static inline bool E_AddComponent(NeEntityHandle ent, NeCompTypeId type, NeCompHandle comp) { return E_AddComponentS(Scn_activeScene, ent, type, comp); }

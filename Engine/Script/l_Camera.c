@@ -23,7 +23,7 @@ SIF_FUNC(SetRotation)
 	if (!lua_islightuserdata(vm, 1))
 		luaL_argerror(vm, 1, "Must be light user data");
 
-	struct vec3 new =
+	struct NeVec3 new =
 	{
 		(float)luaL_checknumber(vm, 2),
 		(float)luaL_checknumber(vm, 3),
@@ -32,7 +32,7 @@ SIF_FUNC(SetRotation)
 
 	struct NeCamera *cam = lua_touserdata(vm, 1);
 
-	v3_copy(&cam->rotation, &new);
+	M_CopyVec3(&cam->rotation, &new);
 	return 0;
 }
 
