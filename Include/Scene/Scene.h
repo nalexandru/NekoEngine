@@ -12,7 +12,7 @@
 
 struct NeScene
 {
-	struct NeArray entities, compData, compHandle;
+	struct NeArray entities, compData, compFree;
 	struct NeCollectDrawablesArgs collect;
 	NeBufferHandle sceneData;
 	uint32_t maxLights, maxInstances, lightCount;

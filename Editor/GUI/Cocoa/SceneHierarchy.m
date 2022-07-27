@@ -205,7 +205,7 @@ _SceneActivated(SceneHierarchy *sh, struct NeScene *scn)
 
 	const struct NeTransform *xform = NULL;
 	Rt_ArrayForEach(xform, transforms)
-		if (!xform->parent)
+		if (xform->parent == E_INVALID_HANDLE)
 			_AddTransform(xform, sh, sh.rootNode);
 
 	[sh.treeController insertObject: sh.rootNode atArrangedObjectIndexPath: [NSIndexPath indexPathWithIndex: 0]];
@@ -223,11 +223,13 @@ _EntityCreated(SceneHierarchy *sh, NeEntityHandle eh)
 		return;
 
 	TreeNode *parent = NULL;
-	if (!xform->parent)
+	if (xform->parent == E_INVALID_HANDLE) {
 		parent = sh.rootNode;
-	else
-		parent = [sh findNode: xform->parent->_owner]->node;
-
+	} else {
+		struct NeCompBase *p = E_ComponentPtr(xform->parent);
+		parent = [sh findNode: p->_owner]->node;
+	}
+	
 	_AddTransform(xform, sh, parent);
 
 	dispatch_async(dispatch_get_main_queue(), ^{

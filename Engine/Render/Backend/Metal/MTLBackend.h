@@ -96,8 +96,8 @@ struct NeRenderContext
 		struct NeArray graphics, compute, xfer;
 	} submitted;
 	id<MTLParallelRenderCommandEncoder> parallelEncoder;
-	id<MTLIOCommandQueue> ioQueue;
-	id<MTLIOCommandBuffer> ioCmdBuffer;
+	id<MTLIOCommandQueue> ioQueue API_AVAILABLE(macosx(13), ios(16));
+	id<MTLIOCommandBuffer> ioCmdBuffer API_AVAILABLE(macosx(13), ios(16));
 };
 
 struct NeFramebuffer

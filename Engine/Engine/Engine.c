@@ -24,6 +24,7 @@
 #include <Engine/Events.h>
 #include <Engine/Console.h>
 #include <Engine/Version.h>
+#include <Engine/Profiler.h>
 #include <Engine/Resource.h>
 #include <Engine/ECSystem.h>
 #include <Engine/Application.h>
@@ -229,6 +230,7 @@ E_Run(void)
 		if (Sys_ScreenVisible())
 			E_Frame();
 
+	//	Prof_Reset();
 		Sys_ResetHeap(MH_Transient);
 	}
 
@@ -258,22 +260,33 @@ E_Frame(void)
 		return;
 	}
 
+	Prof_BeginRegion("Logic", 1.f, 1.f, 1.f);
+
 	E_ExecuteSystemGroupS(Scn_activeScene, ECSYS_GROUP_LOGIC);
 	E_ProcessEvents();
+	Prof_EndRegion();
+
 	E_ExecuteSystemGroupS(Scn_activeScene, ECSYS_GROUP_POST_LOGIC);
 
 	E_DrawConsole();
 
+	Prof_BeginRegion("Render", 1.f, 1.f, 1.f);
+
 	E_ExecuteSystemGroupS(Scn_activeScene, ECSYS_GROUP_PRE_RENDER);
+	Prof_InsertMarker("PreRender");
 
 	Re_RenderFrame();
 	E_XrPresent();
 
+	Prof_InsertMarker("RenderFrame");
 	E_ExecuteSystemGroupS(Scn_activeScene, ECSYS_GROUP_POST_RENDER);
+	Prof_EndRegion();
 
 	In_Update();
 
+	Prof_BeginRegion("Application", 1.f, 1.f, 1.f);
 	App_Frame();
+	Prof_EndRegion();
 
 	if (*_frameLimiter)
 		nextFrame = now + (1.0 / *_frameLimiter);

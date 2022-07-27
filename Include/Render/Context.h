@@ -122,8 +122,9 @@ void Re_BeginDirectIO(void);
 bool Re_SubmitDirectIO(bool *completed);
 bool Re_ExecuteDirectIO(void);
 
-void Re_Barrier(enum NePipelineStage srcStage, enum NePipelineStage dstStage, enum NePipelineDependency dep,
-	uint32_t memBarrierCount, const struct NeMemoryBarrier *memBarriers, uint32_t bufferBarrierCount, const struct NeBufferBarrier *bufferBarriers,
+void Re_Barrier(enum NePipelineDependency dep,
+	uint32_t memBarrierCount, const struct NeMemoryBarrier *memBarriers,
+	uint32_t bufferBarrierCount, const struct NeBufferBarrier *bufferBarriers,
 	uint32_t imageBarrierCount, const struct NeImageBarrier *imageBarriers);
 
 #endif /* _NE_RENDER_DRIVER_CONTEXT_H_ */

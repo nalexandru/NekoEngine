@@ -13,9 +13,7 @@ layout(location = 0) out vec3 o_wsNormals;
 
 layout(location = 0) in vec3 v_pos;
 layout(location = 1) in vec2 v_uv;
-layout(location = 2) in vec3 v_t;
-layout(location = 3) in vec3 v_b;
-layout(location = 4) in vec3 v_n;
+layout(location = 2) in vec3 v_normal;
 
 layout(early_fragment_tests) in;
 
@@ -29,7 +27,7 @@ main()
 //	}
 
 	if (DrawInfo.material.data.normalMap == 0) {
-		o_wsNormals = normalize(v_n);
+		o_wsNormals = normalize(v_normal);
 		return;
 	}
 
@@ -41,10 +39,18 @@ main()
 	const vec2 st1 = dFdx(v_uv);
 	const vec2 st2 = dFdy(v_uv);
 
-	const vec3 n = normalize(v_n);
+	const vec3 n = normalize(v_normal);
 	const vec3 t = normalize(q1 * st2.t - q2 * st1.t);
-	const vec3 b = -normalize(cross(n, t));
+	const vec3 b = normalize(cross(t, n));
 	const mat3 tbn = mat3(t, b, n);
+
+	// FIXME
+	/*
+	const vec3 n = normalize(v_normal);
+	const vec3 t = normalize(v_tangent);
+	const vec3 b = normalize(cross(t, n));
+	const mat3 tbn = mat3(t, b, n);
+	*/
 
 	o_wsNormals = normalize(tbn * texnm);
 }

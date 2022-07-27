@@ -1,6 +1,5 @@
 #include <Script/Script.h>
 #include <Scene/Transform.h>
-#include <Runtime/Runtime.h>
 
 #include "Interface.h"
 

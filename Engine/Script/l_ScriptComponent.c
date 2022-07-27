@@ -23,9 +23,8 @@ _DataPtr(lua_State *vm)
 	struct NeScene *s = Scn_GetScene((uint8_t)comp->_sceneId);
 	if (s->loaded)
 		Sys_AtomicLockRead(&s->compLock);
-	
-	const struct NeCompHandleData *handle = Rt_ArrayGet(&s->compHandle, comp->_handleId);
-	size_t compSize = E_ComponentTypeSize(handle->type);
+
+	size_t compSize = E_ComponentTypeSize(comp->_typeId);
 	
 	if (s->loaded)
 		Sys_AtomicUnlockRead(&s->compLock);

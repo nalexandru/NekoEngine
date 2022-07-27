@@ -371,8 +371,9 @@ Re_CmdBuildAccelerationStructures(uint32_t count, struct NeAccelerationStructure
 }
 
 void
-Re_Barrier(enum NePipelineStage srcStage, enum NePipelineStage dstStage, enum NePipelineDependency dep,
-	uint32_t memBarrierCount, const struct NeMemoryBarrier *memBarriers, uint32_t bufferBarrierCount, const struct NeBufferBarrier *bufferBarriers,
+Re_Barrier(enum NePipelineDependency dep,
+	uint32_t memBarrierCount, const struct NeMemoryBarrier *memBarriers,
+	uint32_t bufferBarrierCount, const struct NeBufferBarrier *bufferBarriers,
 	uint32_t imageBarrierCount, const struct NeImageBarrier *imageBarriers)
 {
 //	struct NeRenderContext *ctx = Re_CurrentContext();

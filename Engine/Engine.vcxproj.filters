@@ -546,6 +546,9 @@
     <ClInclude Include="..\Include\Math\frustum.h">
       <Filter>Header Files\Math</Filter>
     </ClInclude>
+    <ClInclude Include="..\Include\Engine\Profiler.h">
+      <Filter>Header Files\Engine</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="System\System.c">
@@ -1021,6 +1024,9 @@
     </ClCompile>
     <ClCompile Include="Render\Pass\AccelerationStructureBuild.c">
       <Filter>Source Files\Render\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Profiler.c">
+      <Filter>Source Files\Engine</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

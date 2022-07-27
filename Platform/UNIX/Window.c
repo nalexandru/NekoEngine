@@ -1,13 +1,12 @@
-#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
 #include <unistd.h>
 
 #include <System/Window.h>
 #include <System/Memory.h>
 #include <Engine/Engine.h>
-#include <Render/Render.h>
 
 #include "UNIXPlatform.h"
 
@@ -23,18 +22,18 @@ Sys_CreateWindow(void)
 	XSizeHints sizeHints;
 	pid_t pid;
 	long compositor = 1;
-	
+
 	root = DefaultRootWindow(X11_display);
 	swa.event_mask = KeyPressMask | KeyReleaseMask |
-			ButtonPressMask | ButtonReleaseMask | PointerMotionMask |
-			ExposureMask | StructureNotifyMask | FocusChangeMask;
+					 ButtonPressMask | ButtonReleaseMask | PointerMotionMask |
+					 ExposureMask | StructureNotifyMask | FocusChangeMask;
 	swa.override_redirect = False;
 	swa.background_pixel = 0;
- 
+
 	win = XCreateWindow(X11_display, root, x, y, *E_screenWidth, *E_screenHeight, 0,
-			X11_visualInfo.depth, InputOutput, X11_visualInfo.visual,
-			CWBackPixel | CWEventMask | CWOverrideRedirect, &swa);
- 
+						X11_visualInfo.depth, InputOutput, X11_visualInfo.visual,
+						CWBackPixel | CWEventMask | CWOverrideRedirect, &swa);
+
 	// Set WM hints
 
 	memset(&classHint, 0x0, sizeof(classHint));
@@ -56,19 +55,19 @@ Sys_CreateWindow(void)
 	if (X11_NET_WM_PID) {
 		pid = getpid();
 		XChangeProperty(X11_display, win,
-				X11_NET_WM_PID, XA_CARDINAL, 32, PropModeReplace,
-				(const unsigned char *)&pid, 1);
+						X11_NET_WM_PID, XA_CARDINAL, 32, PropModeReplace,
+						(const unsigned char *)&pid, 1);
 	}
 
 	if (X11_NET_WM_WINDOW_TYPE && X11_NET_WM_WINDOW_TYPE_NORMAL)
 		XChangeProperty(X11_display, win,
-				X11_NET_WM_WINDOW_TYPE, XA_ATOM, 32, PropModeReplace,
-				(const unsigned char *)&X11_NET_WM_WINDOW_TYPE_NORMAL, 1);
+						X11_NET_WM_WINDOW_TYPE, XA_ATOM, 32, PropModeReplace,
+						(const unsigned char *)&X11_NET_WM_WINDOW_TYPE_NORMAL, 1);
 
 	if (X11_NET_WM_BYPASS_COMPOSITOR)
 		XChangeProperty(X11_display, win,
-				X11_NET_WM_BYPASS_COMPOSITOR, XA_CARDINAL, 32,
-				PropModeReplace, (const unsigned char *)&compositor, 1);
+						X11_NET_WM_BYPASS_COMPOSITOR, XA_CARDINAL, 32,
+						PropModeReplace, (const unsigned char *)&compositor, 1);
 
 	XSetWMProtocols(X11_display, win, &X11_WM_DELETE_WINDOW, 1);
 
@@ -101,6 +100,22 @@ void
 Sys_MoveWindow(int x, int y)
 {
 	XMoveWindow(X11_display, (Window)E_screen, x, y);
+}
+
+void
+Sys_WorkArea(int *top, int *left, int *right, int *bottom)
+{
+	Atom type, *workArea = NULL;
+	int format;
+	unsigned long count, bytes;
+
+	XGetWindowProperty(X11_display, XRootWindow(X11_display, 0), X11_NET_WORKAREA, 0, LONG_MAX,
+					   False, XA_CARDINAL, &type, &format, &count, &bytes, (unsigned char **)&workArea);
+
+	if (top) *top = workArea[1];
+	if (left) *left = workArea[0];
+	if (right) *right = workArea[2];
+	if (bottom) *bottom = workArea[3];
 }
 
 void

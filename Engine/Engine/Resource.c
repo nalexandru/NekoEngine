@@ -308,10 +308,9 @@ exit:
 static inline struct NeResource *
 _DecodeHandle(NeHandle res, struct NeResType **rt)
 {
-	uint32_t type = (uint32_t)((res & (uint64_t)0xFFFFFFFF00000000) >> 32);
-	uint32_t id = (uint32_t)(res & (uint64_t)0x00000000FFFFFFFF);
+	uint32_t id = E_HANDLE_ID(res);
 
-	*rt = Rt_ArrayGet(&_ResTypes, type);
+	*rt = Rt_ArrayGet(&_ResTypes, E_HANDLE_TYPE(res));
 	if (!*rt)
 		return NULL;
 

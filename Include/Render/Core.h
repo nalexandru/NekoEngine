@@ -6,6 +6,8 @@
 #include <Render/Context.h>
 
 // Buffer
+#define RE_WHOLE_SIZE	(~0ULL)
+
 struct NeBufferDesc
 {
 	uint64_t size;
@@ -322,12 +324,16 @@ void Re_SavePipelineCache(void);
 // Synchronization
 struct NeMemoryBarrier
 {
+	enum NePipelineStage srcStage;
+	enum NePipelineStage dstStage;
 	enum NePipelineAccess srcAccess;
 	enum NePipelineAccess dstAccess;
 };
 
 struct NeBufferBarrier
 {
+	enum NePipelineStage srcStage;
+	enum NePipelineStage dstStage;
 	enum NePipelineAccess srcAccess;
 	enum NePipelineAccess dstAccess;
 	enum NeRenderQueue srcQueue;
@@ -339,6 +345,8 @@ struct NeBufferBarrier
 
 struct NeImageBarrier
 {
+	enum NePipelineStage srcStage;
+	enum NePipelineStage dstStage;
 	enum NePipelineAccess srcAccess;
 	enum NePipelineAccess dstAccess;
 	enum NeTextureLayout oldLayout;

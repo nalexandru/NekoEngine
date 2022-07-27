@@ -7,7 +7,7 @@
 #include <Script/Script.h>
 #include <Runtime/Runtime.h>
 
-static bool _open, _enabled;
+static bool _visible, _enabled;
 static lua_State *_consoleVM;
 static struct NeArray _text, _line, _history;
 static uint32_t _lineLength = 81;
@@ -162,7 +162,7 @@ E_ConsoleExec(const char *line)
 void
 E_DrawConsole(void)
 {
-	if (!_enabled || !_open)
+	if (!_enabled || !_visible)
 		return;
 
 	float y = *E_screenHeight - 30.f;
@@ -188,7 +188,7 @@ E_ConsoleKey(enum NeButton key, bool down)
 	char ch = 0x0;
 	static bool _shift = false;
 
-	if (!_open && key != BTN_KEY_TILDE)
+	if (!_visible && key != BTN_KEY_TILDE)
 		return false;
 
 	if (down) {
@@ -238,7 +238,7 @@ E_ConsoleKey(enum NeButton key, bool down)
 			}
 		break;
 		case BTN_KEY_DELETE: break;
-		case BTN_KEY_TILDE: _open = !_open; break;
+		case BTN_KEY_TILDE: _visible = !_visible; break;
 		case BTN_KEY_RSHIFT:
 		case BTN_KEY_LSHIFT: _shift = true; break;
 		default:

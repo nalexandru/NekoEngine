@@ -115,10 +115,16 @@ MTL_SetRenderArguments(id<MTLRenderCommandEncoder> encoder)
 		if (_textures[i])
 			[encoder useResource: _textures[i] usage: MTLResourceUsageRead stages: MTLRenderStageFragment];
 
-	for (uint16_t i = 0; i < _usedBuffers; ++i)
-		if (_buffers[i])
-			[encoder useResource: _buffers[i] usage: MTLResourceUsageRead stages: MTLRenderStageVertex | MTLRenderStageFragment |
-																				  MTLRenderStageMesh | MTLRenderStageTile | MTLRenderStageObject];
+	if (@available(macOS 13, iOS 16, *)) {
+		for (uint16_t i = 0; i < _usedBuffers; ++i)
+			if (_buffers[i])
+				[encoder useResource: _buffers[i] usage: MTLResourceUsageRead stages: MTLRenderStageVertex | MTLRenderStageFragment |
+				 MTLRenderStageMesh | MTLRenderStageTile | MTLRenderStageObject];
+	} else {
+		for (uint16_t i = 0; i < _usedBuffers; ++i)
+			if (_buffers[i])
+				[encoder useResource: _buffers[i] usage: MTLResourceUsageRead stages: MTLRenderStageVertex | MTLRenderStageFragment];
+	}
 }
 
 void MTL_SetComputeArguments(id<MTLComputeCommandEncoder> encoder)
@@ -128,7 +134,7 @@ void MTL_SetComputeArguments(id<MTLComputeCommandEncoder> encoder)
 	for (uint16_t i = 0; i < _usedTextures; ++i)
 		if (_textures[i])
 			[encoder useResource: _textures[i] usage: MTLResourceUsageRead];
-        
+
 	for (uint16_t i = 0; i < _usedBuffers; ++i)
 		if (_buffers[i])
 			[encoder useResource: _buffers[i] usage: MTLResourceUsageRead | MTLResourceUsageWrite];

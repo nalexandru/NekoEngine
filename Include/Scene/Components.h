@@ -9,5 +9,6 @@
 #define UI_CONTEXT_COMP		"UIContext"
 #define ANIMATOR_COMP		"Animator"
 #define LIGHT_COMP			"Light"
+#define PROFILER_DRAW_COMP	"ProfilerDraw"
 
 #endif /* _NE_SCENE_COMPONENTS_H_ */

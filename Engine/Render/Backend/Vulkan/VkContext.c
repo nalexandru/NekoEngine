@@ -5,12 +5,6 @@
 
 #include "VulkanBackend.h"
 
-struct SubmitInfo
-{
-	VkCommandBuffer cmdBuffer;
-	VkQueue queue;
-};
-
 static inline uint32_t _queueFamilyIndex(struct NeRenderDevice *dev, enum NeRenderQueue queue);
 static inline void _Submit(struct VkdRenderQueue *queue, struct NeArray *submitInfo,
 	uint32_t waitCount, VkSemaphoreSubmitInfoKHR *wait,
@@ -31,7 +25,7 @@ Re_CreateContext(void)
 
 	struct NeArray *arrays = Sys_Alloc(RE_NUM_FRAMES * 4, sizeof(*arrays), MH_RenderDriver);
 	if (!arrays)
-		return NULL;
+		goto error;
 
 	ctx->graphicsCmdBuffers = arrays;
 	ctx->secondaryCmdBuffers = &arrays[RE_NUM_FRAMES];
@@ -40,7 +34,7 @@ Re_CreateContext(void)
 
 	VkCommandPool *pools = Sys_Alloc(RE_NUM_FRAMES * 3, sizeof(*pools), MH_RenderDriver);
 	if (!pools)
-		return NULL;
+		goto error;
 
 	ctx->graphicsPools = pools;
 	ctx->computePools = &pools[RE_NUM_FRAMES];
@@ -602,21 +596,26 @@ Re_CmdBuildAccelerationStructures(uint32_t count, struct NeAccelerationStructure
 }
 
 void
-Re_Barrier(enum NePipelineStage srcStage, enum NePipelineStage dstStage, enum NePipelineDependency dep,
-	uint32_t memBarrierCount, const struct NeMemoryBarrier *memBarriers, uint32_t bufferBarrierCount, const struct NeBufferBarrier *bufferBarriers,
+Re_Barrier(enum NePipelineDependency dep,
+	uint32_t memBarrierCount, const struct NeMemoryBarrier *memBarriers,
+	uint32_t bufferBarrierCount, const struct NeBufferBarrier *bufferBarriers,
 	uint32_t imageBarrierCount, const struct NeImageBarrier *imageBarriers)
 {
 	struct NeRenderContext *ctx = Re_CurrentContext();
-	VkMemoryBarrier *vkMemBarriers = NULL;
-	VkBufferMemoryBarrier *vkBufferBarriers = NULL;
-	VkImageMemoryBarrier *vkImageBarriers = NULL;
+	VkMemoryBarrier2KHR *vkMemBarriers = NULL;
+	VkBufferMemoryBarrier2KHR *vkBufferBarriers = NULL;
+	VkImageMemoryBarrier2KHR *vkImageBarriers = NULL;
 
 	if (memBarrierCount) {
 		vkMemBarriers = Sys_Alloc(sizeof(*vkMemBarriers), memBarrierCount, MH_Transient);
 
 		for (uint32_t i = 0; i < memBarrierCount; ++i) {
-			vkMemBarriers[i].sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+			vkMemBarriers[i].sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2_KHR;
 			vkMemBarriers[i].pNext = NULL;
+
+			vkMemBarriers[i].srcStageMask = memBarriers[i].srcStage;
+			vkMemBarriers[i].dstStageMask = memBarriers[i].dstStage;
+
 			vkMemBarriers[i].srcAccessMask = memBarriers[i].srcAccess;
 			vkMemBarriers[i].dstAccessMask = memBarriers[i].dstAccess;
 		}
@@ -626,12 +625,18 @@ Re_Barrier(enum NePipelineStage srcStage, enum NePipelineStage dstStage, enum Ne
 		vkBufferBarriers = Sys_Alloc(sizeof(*vkBufferBarriers), bufferBarrierCount, MH_Transient);
 
 		for (uint32_t i = 0; i < bufferBarrierCount; ++i) {
-			vkBufferBarriers[i].sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+			vkBufferBarriers[i].sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2_KHR;
 			vkBufferBarriers[i].pNext = NULL;
+
+			vkBufferBarriers[i].srcStageMask = bufferBarriers[i].srcStage;
+			vkBufferBarriers[i].dstStageMask = bufferBarriers[i].dstStage;
+
 			vkBufferBarriers[i].srcAccessMask = bufferBarriers[i].srcAccess;
 			vkBufferBarriers[i].dstAccessMask = bufferBarriers[i].dstAccess;
+
 			vkBufferBarriers[i].srcQueueFamilyIndex = _queueFamilyIndex(ctx->neDev, bufferBarriers[i].srcQueue);
 			vkBufferBarriers[i].dstQueueFamilyIndex = _queueFamilyIndex(ctx->neDev, bufferBarriers[i].dstQueue);
+
 			vkBufferBarriers[i].buffer = bufferBarriers[i].buffer->buff;
 			vkBufferBarriers[i].offset = bufferBarriers[i].offset;
 			vkBufferBarriers[i].size = bufferBarriers[i].size;
@@ -642,14 +647,21 @@ Re_Barrier(enum NePipelineStage srcStage, enum NePipelineStage dstStage, enum Ne
 		vkImageBarriers = Sys_Alloc(sizeof(*vkImageBarriers), imageBarrierCount, MH_Transient);
 
 		for (uint32_t i = 0; i < imageBarrierCount; ++i) {
-			vkImageBarriers[i].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+			vkImageBarriers[i].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2_KHR;
 			vkImageBarriers[i].pNext = NULL;
+
+			vkImageBarriers[i].srcStageMask = imageBarriers[i].srcStage;
+			vkImageBarriers[i].dstStageMask = imageBarriers[i].dstStage;
+
 			vkImageBarriers[i].srcAccessMask = imageBarriers[i].srcAccess;
 			vkImageBarriers[i].dstAccessMask = imageBarriers[i].dstAccess;
+
 			vkImageBarriers[i].oldLayout = NeToVkImageLayout(imageBarriers[i].oldLayout);
 			vkImageBarriers[i].newLayout = NeToVkImageLayout(imageBarriers[i].newLayout);
+
 			vkImageBarriers[i].srcQueueFamilyIndex = _queueFamilyIndex(ctx->neDev, imageBarriers[i].srcQueue);
 			vkImageBarriers[i].dstQueueFamilyIndex = _queueFamilyIndex(ctx->neDev, imageBarriers[i].dstQueue);
+
 			vkImageBarriers[i].image = imageBarriers[i].texture->image;
 			vkImageBarriers[i].subresourceRange.aspectMask = imageBarriers[i].subresource.aspect;
 			vkImageBarriers[i].subresourceRange.baseMipLevel = imageBarriers[i].subresource.mipLevel;
@@ -659,8 +671,18 @@ Re_Barrier(enum NePipelineStage srcStage, enum NePipelineStage dstStage, enum Ne
 		}
 	}
 
-	vkCmdPipelineBarrier(ctx->cmdBuffer, srcStage, dstStage, dep, memBarrierCount, vkMemBarriers,
-							bufferBarrierCount, vkBufferBarriers, imageBarrierCount, vkImageBarriers);
+	VkDependencyInfoKHR di =
+	{
+		.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR,
+		.bufferMemoryBarrierCount = bufferBarrierCount,
+		.pBufferMemoryBarriers = vkBufferBarriers,
+		.imageMemoryBarrierCount = imageBarrierCount,
+		.pImageMemoryBarriers = vkImageBarriers,
+		.memoryBarrierCount = memBarrierCount,
+		.pMemoryBarriers = vkMemBarriers,
+		.dependencyFlags = dep
+	};
+	vkCmdPipelineBarrier2KHR(ctx->cmdBuffer, &di);
 }
 
 void

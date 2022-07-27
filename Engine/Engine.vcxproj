@@ -66,6 +66,7 @@
     <ClInclude Include="..\Include\Engine\IO.h" />
     <ClInclude Include="..\Include\Engine\Job.h" />
     <ClInclude Include="..\Include\Engine\Plugin.h" />
+    <ClInclude Include="..\Include\Engine\Profiler.h" />
     <ClInclude Include="..\Include\Engine\Resource.h" />
     <ClInclude Include="..\Include\Engine\Types.h" />
     <ClInclude Include="..\Include\Engine\Version.h" />
@@ -226,6 +227,7 @@
     </ClCompile>
     <ClCompile Include="Engine\Job.c" />
     <ClCompile Include="Engine\Plugin.c" />
+    <ClCompile Include="Engine\Profiler.c" />
     <ClCompile Include="Engine\Resource.c" />
     <ClCompile Include="Engine\XR.c" />
     <ClCompile Include="Input\Input.c" />

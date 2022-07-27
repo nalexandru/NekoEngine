@@ -60,8 +60,9 @@ _Execute(struct NeOpaquePass *pass, const struct NeArray *resources)
 {
 	struct NeMaterialRenderConstants constants;
 
+	struct NeBuffer *visibleIndices;
 	constants.sceneAddress = Re_GraphBuffer(pass->sceneDataHash, resources, NULL);
-	constants.visibleIndicesAddress = Re_GraphBuffer(pass->visibleLightIndicesHash, resources, NULL);
+	constants.visibleIndicesAddress = Re_GraphBuffer(pass->visibleLightIndicesHash, resources, &visibleIndices);
 	uint64_t instanceRoot = Re_GraphBuffer(pass->instancesHash, resources, NULL);
 
 	struct NeTexture *depthTexture = Re_GraphTexture(pass->depthHash, resources);
@@ -72,40 +73,51 @@ _Execute(struct NeOpaquePass *pass, const struct NeArray *resources)
 
 	Re_BeginDrawCommandBuffer();
 
-	struct NeImageBarrier depthBarrier =
+	struct NeBufferBarrier visIdxBarrier =
 	{
-		.srcAccess = RE_PA_DEPTH_STENCIL_ATTACHMENT_WRITE,
-		.dstAccess = RE_PA_DEPTH_STENCIL_ATTACHMENT_READ,
-		.srcQueue = RE_QUEUE_GRAPHICS,
+		.srcQueue = RE_QUEUE_COMPUTE,
 		.dstQueue = RE_QUEUE_GRAPHICS,
-		.oldLayout = TL_DEPTH_ATTACHMENT,
-		.newLayout = TL_DEPTH_ATTACHMENT,
-		.texture = depthTexture,
-		.subresource.aspect = IA_DEPTH,
-		.subresource.baseArrayLayer = 0,
-		.subresource.layerCount = 1,
-		.subresource.mipLevel = 0,
-		.subresource.levelCount = 1
+		.dstStage = RE_PS_INDEX_INPUT,
+		.dstAccess = RE_PA_MEMORY_READ,
+		.buffer = visibleIndices,
+		.size = RE_WHOLE_SIZE
 	};
-
-	struct NeImageBarrier normalBarrier =
+	struct NeImageBarrier imgBarriers[] =
 	{
-		.srcAccess = RE_PA_COLOR_ATTACHMENT_WRITE,
-		.dstAccess = RE_PA_INPUT_ATTACHMENT_READ,
-		.srcQueue = RE_QUEUE_GRAPHICS,
-		.dstQueue = RE_QUEUE_GRAPHICS,
-		.oldLayout = TL_SHADER_READ_ONLY,
-		.newLayout = TL_SHADER_READ_ONLY,
-		.texture = normalTexture,
-		.subresource.aspect = IA_COLOR,
-		.subresource.baseArrayLayer = 0,
-		.subresource.layerCount = 1,
-		.subresource.mipLevel = 0,
-		.subresource.levelCount = 1
+		{ // Depth
+				.srcStage = RE_PS_EARLY_FRAGMENT_TESTS | RE_PS_LATE_FRAGMENT_TESTS,
+				.dstStage = RE_PS_EARLY_FRAGMENT_TESTS | RE_PS_LATE_FRAGMENT_TESTS,
+				.srcAccess = RE_PA_DEPTH_STENCIL_ATTACHMENT_WRITE,
+				.dstAccess = RE_PA_DEPTH_STENCIL_ATTACHMENT_READ,
+				.srcQueue = RE_QUEUE_GRAPHICS,
+				.dstQueue = RE_QUEUE_GRAPHICS,
+				.oldLayout = TL_DEPTH_ATTACHMENT,
+				.newLayout = TL_DEPTH_ATTACHMENT,
+				.texture = depthTexture,
+				.subresource.aspect = IA_DEPTH,
+				.subresource.baseArrayLayer = 0,
+				.subresource.layerCount = 1,
+				.subresource.mipLevel = 0,
+				.subresource.levelCount = 1
+		},
+		{ // Normal
+				.srcStage = RE_PS_COLOR_ATTACHMENT_OUTPUT,
+				.srcAccess = RE_PA_COLOR_ATTACHMENT_WRITE,
+				.dstStage = RE_PS_FRAGMENT_SHADER,
+				.dstAccess = RE_PA_SHADER_READ,
+				.srcQueue = RE_QUEUE_GRAPHICS,
+				.dstQueue = RE_QUEUE_GRAPHICS,
+				.oldLayout = TL_SHADER_READ_ONLY,
+				.newLayout = TL_SHADER_READ_ONLY,
+				.texture = normalTexture,
+				.subresource.aspect = IA_COLOR,
+				.subresource.baseArrayLayer = 0,
+				.subresource.layerCount = 1,
+				.subresource.mipLevel = 0,
+				.subresource.levelCount = 1
+		}
 	};
-
-	Re_Barrier(RE_PS_LATE_FRAGMENT_TESTS, RE_PS_EARLY_FRAGMENT_TESTS, RE_PD_BY_REGION, 0, NULL, 0, NULL, 1, &depthBarrier);
-	Re_Barrier(RE_PS_COLOR_ATTACHMENT_OUTPUT, RE_PS_FRAGMENT_SHADER, RE_PD_BY_REGION, 0, NULL, 0, NULL, 1, &normalBarrier);
+	Re_Barrier(RE_PD_BY_REGION, 0, NULL, 1, &visIdxBarrier, 2, imgBarriers);
 
 	Re_CmdBeginRenderPass(Re_MaterialRenderPassDesc, pass->fb, RENDER_COMMANDS_INLINE);
 

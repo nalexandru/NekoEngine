@@ -93,7 +93,7 @@ target_link_libraries(Engine Platform Lua PhysFS)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Shaders/Vulkan)
 
 if (NOT WIN32)
-	target_link_libraries(Engine m dl openal)
+	target_link_libraries(Engine m openal ${CMAKE_DL_LIBS})
 
 	add_custom_target(build_resource_zip ALL
 			COMMAND ${CMAKE_COMMAND} -E tar "cfv" "${CMAKE_CURRENT_BINARY_DIR}/EngineRes.zip" --format=zip "*"

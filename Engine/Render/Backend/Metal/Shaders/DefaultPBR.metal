@@ -22,8 +22,8 @@ struct VsOutputT
 	float4 color;
 	float2 uv;
 	float3 normal;
-	float3 tangent;
-	float3 biTangent;
+//	float3 tangent;
+//	float3 biTangent;
 	float3 vPos;
 };
 
@@ -45,7 +45,7 @@ vertex struct VsOutput
 DefaultPBR_O_VS(uint vertexId [[vertex_id]],
 			  constant struct ShaderArguments *args [[ buffer(0) ]],
 			  constant struct DrawInfo *drawInfo [[ buffer(1) ]],
-			  struct Vertex vtx [[stage_in]])
+			  struct VertexO vtx [[stage_in]])
 {
 	struct VsOutput out;
 	constant ModelInstance *inst = (constant ModelInstance *)(args->buffers[drawInfo->instanceBuffer] + drawInfo->instanceOffset);
@@ -65,7 +65,7 @@ vertex struct VsOutputT
 DefaultPBR_T_VS(uint vertexId [[vertex_id]],
 			  constant struct ShaderArguments *args [[ buffer(0) ]],
 			  constant struct DrawInfo *drawInfo [[ buffer(1) ]],
-			  struct Vertex vtx [[stage_in]])
+			  struct VertexT vtx [[stage_in]])
 {
 	struct VsOutputT out;
 	constant ModelInstance *inst = (constant ModelInstance *)(args->buffers[drawInfo->instanceBuffer] + drawInfo->instanceOffset);
@@ -76,9 +76,9 @@ DefaultPBR_T_VS(uint vertexId [[vertex_id]],
 	const float4 v = float4(vtx.position, 1.0);
 	const float4 pos = inst->model * v;
 
-	out.tangent = normalize(normalMat * vtx.tangent);
+//	out.tangent = normalize(normalMat * vtx.tangent);
 	out.normal = normalize(normalMat * vtx.normal);
-	out.biTangent = normalize(normalMat * cross(out.tangent, out.normal));
+//	out.biTangent = normalize(normalMat * cross(out.tangent, out.normal));
 	out.uv = vtx.uv;
 	out.position = inst->mvp * v;
 	out.color = vtx.color;

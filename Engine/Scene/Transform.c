@@ -1,4 +1,6 @@
+#include <Scene/Scene.h>
 #include <Scene/Systems.h>
+#include <Engine/Entity.h>
 #include <Engine/ECSystem.h>
 #include <Scene/Transform.h>
 #include <Scene/Components.h>
@@ -15,15 +17,22 @@ _InitTransform(struct NeTransform *xform, const void **args)
 	M_Vec3(&xform->scale, 1.f, 1.f, 1.f);
 	M_Identity(&xform->rotation);
 
+	xform->parent = E_INVALID_HANDLE;
+	xform->dirty = true;
+
 	for (; args && *args; ++args) {
 		const char *arg = *args;
 		size_t len = strlen(arg);
 
 		if (!strncmp(arg, "Parent", len)) {
-		//	if (!strncmp(*(++args), "true", 4))
-		//		Scn_ActiveCamera = cam;
-		} else if (!strncmp(arg, "ParentPtr", len)) {
-			xform->parent = (struct NeTransform *)*(++args);
+			struct NeScene *s = Scn_GetScene((uint8_t)xform->_sceneId);
+
+			NeEntityHandle parent = E_FindEntityS(s, (char *)*(++args));
+			xform->parent = E_GetComponentHandleS(s, parent, E_ComponentTypeId(TRANSFORM_COMP));
+
+			struct NeTransform *parentPtr = E_ComponentPtrS(s, xform->parent);
+			NeCompHandle self = xform->_handleId;
+			Rt_ArrayAdd(&parentPtr->children, &self);
 		} else if (!strncmp(arg, "Position", len)) {
 			char *ptr = (char *)*(++args);
 			xform->position.x = strtof(ptr, &ptr);
@@ -44,8 +53,9 @@ _InitTransform(struct NeTransform *xform, const void **args)
 		}
 	}
 
+	Rt_InitArray(&xform->children, 2, sizeof(NeCompHandle), MH_Scene);
+
 	M_Identity(&xform->mat);
-	xform_update(xform);
 
 	return true;
 }
@@ -53,13 +63,13 @@ _InitTransform(struct NeTransform *xform, const void **args)
 static void
 _TermTransform(struct NeTransform *xform)
 {
-	//
+	Rt_TermArray(&xform->children);
 }
 
 E_SYSTEM(SCN_UPDATE_TRANSFORM, ECSYS_GROUP_PRE_RENDER, ECSYS_PRI_TRANSFORM, false, void, 1, TRANSFORM_COMP)
 {
 	struct NeTransform *xform = (struct NeTransform *)comp[0];
 	
-	if (!xform->parent)
+	if (xform->parent == E_INVALID_HANDLE)
 		xform_update(xform);
 }

@@ -25,6 +25,12 @@
     <Filter Include="Header Files\Editor\Asset">
       <UniqueIdentifier>{fc58c6f6-01e2-461e-b406-bfe5c5edf807}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\GUI\GTK">
+      <UniqueIdentifier>{e7e10e72-1648-4931-9ccc-e8494e9e1495}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\GUI\GTK\Win32">
+      <UniqueIdentifier>{2e9b0c6a-e497-4e07-ac93-adbc90e850c1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Editor.c">
@@ -42,41 +48,29 @@
     <ClCompile Include="Asset\NMesh.c">
       <Filter>Source Files\Asset</Filter>
     </ClCompile>
-    <ClCompile Include="GUI\Win32\AboutDialog.c">
-      <Filter>Source Files\GUI</Filter>
-    </ClCompile>
-    <ClCompile Include="GUI\Win32\AssetManager.c">
-      <Filter>Source Files\GUI</Filter>
-    </ClCompile>
-    <ClCompile Include="GUI\Win32\GUI.c">
-      <Filter>Source Files\GUI</Filter>
-    </ClCompile>
-    <ClCompile Include="GUI\Win32\Inspector.c">
-      <Filter>Source Files\GUI</Filter>
-    </ClCompile>
-    <ClCompile Include="GUI\Win32\SceneHierarchy.c">
-      <Filter>Source Files\GUI</Filter>
-    </ClCompile>
     <ClCompile Include="Project.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="GUI\GTK\AboutDialog.c">
+      <Filter>Source Files\GUI\GTK</Filter>
+    </ClCompile>
+    <ClCompile Include="GUI\GTK\AssetManager.c">
+      <Filter>Source Files\GUI\GTK</Filter>
+    </ClCompile>
+    <ClCompile Include="GUI\GTK\GUI.c">
+      <Filter>Source Files\GUI\GTK</Filter>
+    </ClCompile>
+    <ClCompile Include="GUI\GTK\Inspector.c">
+      <Filter>Source Files\GUI\GTK</Filter>
+    </ClCompile>
+    <ClCompile Include="GUI\GTK\SceneHierarchy.c">
+      <Filter>Source Files\GUI\GTK</Filter>
+    </ClCompile>
+    <ClCompile Include="GUI\GTK\Win32\GUI_Win32.c">
+      <Filter>Source Files\GUI\GTK\Win32</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="GUI\Win32\AboutDialog.h">
-      <Filter>Source Files\GUI</Filter>
-    </ClInclude>
-    <ClInclude Include="GUI\Win32\AssetManager.h">
-      <Filter>Source Files\GUI</Filter>
-    </ClInclude>
-    <ClInclude Include="GUI\Win32\Inspector.h">
-      <Filter>Source Files\GUI</Filter>
-    </ClInclude>
-    <ClInclude Include="GUI\Win32\SceneHierarchy.h">
-      <Filter>Source Files\GUI</Filter>
-    </ClInclude>
-    <ClInclude Include="GUI\Win32\Win32GUI.h">
-      <Filter>Source Files\GUI</Filter>
-    </ClInclude>
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -100,6 +94,21 @@
     </ClInclude>
     <ClInclude Include="..\Include\Editor\Project.h">
       <Filter>Header Files\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="GUI\GTK\AboutDialog.h">
+      <Filter>Source Files\GUI\GTK</Filter>
+    </ClInclude>
+    <ClInclude Include="GUI\GTK\AssetManager.h">
+      <Filter>Source Files\GUI\GTK</Filter>
+    </ClInclude>
+    <ClInclude Include="GUI\GTK\GTKGUI.h">
+      <Filter>Source Files\GUI\GTK</Filter>
+    </ClInclude>
+    <ClInclude Include="GUI\GTK\Inspector.h">
+      <Filter>Source Files\GUI\GTK</Filter>
+    </ClInclude>
+    <ClInclude Include="GUI\GTK\SceneHierarchy.h">
+      <Filter>Source Files\GUI\GTK</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

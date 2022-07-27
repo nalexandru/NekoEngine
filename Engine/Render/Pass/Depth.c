@@ -126,6 +126,8 @@ _Execute(struct NeDepthPrePass *pass, const struct NeArray *resources)
 		}
 	}
 
+	//Re_Barrier()
+
 	Re_CmdEndRenderPass();
 
 	struct NeSemaphore *passSemaphore = Re_GraphData(pass->passSemaphoreHash, resources);
@@ -143,9 +145,9 @@ _Init(struct NeDepthPrePass **pass)
 	{
 		{ 0, 0, VF_FLOAT3, 0 },						//float x, y, z;
 		{ 1, 0, VF_FLOAT3, sizeof(float) * 3 },		//float nx, ny, nz;
-		{ 2, 0, VF_FLOAT3, sizeof(float) * 6 },		//float tx, ty, tz;
-		{ 3, 0, VF_FLOAT2, sizeof(float) * 9 },		//float u, v;
-		{ 4, 0, VF_FLOAT4, sizeof(float) * 11 }		//float r, g, b, a;
+		//{ 2, 0, VF_FLOAT3, sizeof(float) * 6 },		//float tx, ty, tz;
+		{ 2, 0, VF_FLOAT2, sizeof(float) * 9 },		//float u, v;
+		//{ 3, 0, VF_FLOAT4, sizeof(float) * 11 }		//float r, g, b, a;
 	};
 
 	struct NeVertexBinding bindings[] =

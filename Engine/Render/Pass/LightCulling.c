@@ -58,11 +58,11 @@ static void
 _Execute(struct NeLightCulling *pass, const struct NeArray *resources)
 {
 	struct Constants constants;
-	struct NeBuffer *visibleIndicesPtr;
+	struct NeBuffer *visibleIndices;
 
 	constants.threadCount = *pass->tileSize * *pass->tileSize;
 	constants.sceneAddress = Re_GraphBuffer(pass->sceneDataHash, resources, NULL);
-	constants.visibleLightIndicesAddress = Re_GraphBuffer(pass->visibleLightIndicesHash, resources, &visibleIndicesPtr);
+	constants.visibleLightIndicesAddress = Re_GraphBuffer(pass->visibleLightIndicesHash, resources, &visibleIndices);
 	constants.depthMap = Re_GraphTextureLocation(pass->depthHash, resources);
 
 	M_Copy(&constants.view, &Scn_activeCamera->viewMatrix);
@@ -72,31 +72,20 @@ _Execute(struct NeLightCulling *pass, const struct NeArray *resources)
 	Re_CmdBindPipeline(pass->pipeline);
 	Re_CmdPushConstants(SS_COMPUTE, sizeof(constants), &constants);
 
-/*	struct NeBufferBarrier barrier1 =
-	{
-		.srcQueue = RE_QUEUE_GRAPHICS,
-		.dstQueue = RE_QUEUE_COMPUTE,
-		.srcAccess = RE_PA_COLOR_ATTACHMENT_WRITE,
-		.dstAccess = RE_PA_MEMORY_READ,
-		.buffer = visibleIndicesPtr,
-		.offset = 0,
-		.size = pass->bufferSize
-	};
-	Re_Barrier(RE_PS_FRAGMENT_SHADER, RE_PS_COMPUTE_SHADER, RE_PD_BY_REGION, 0, NULL, 1, &barrier1, 0, NULL);*/
-
 	Re_CmdDispatch(pass->xTiles, pass->yTiles, 1);
 
-/*	struct NeBufferBarrier barrier2 =
+	struct NeBufferBarrier idxBarrier =
 	{
 		.srcQueue = RE_QUEUE_COMPUTE,
 		.dstQueue = RE_QUEUE_GRAPHICS,
+		.srcStage = RE_PS_COMPUTE_SHADER,
+		//.dstStage = RE_PS_INDEX_INPUT,
 		.srcAccess = RE_PA_SHADER_WRITE,
-		.dstAccess = RE_PA_MEMORY_READ,
-		.buffer = visibleIndicesPtr,
-		.offset = 0,
-		.size = pass->bufferSize;
+		//.dstAccess = RE_PA_MEMORY_READ,
+		.buffer = visibleIndices,
+		.size = RE_WHOLE_SIZE
 	};
-	Re_Barrier(RE_PS_COMPUTE_SHADER, RE_PS_FRAGMENT_SHADER, RE_PD_BY_REGION, 0, NULL, 1, &barrier2, 0, NULL);*/
+	Re_Barrier(RE_PD_BY_REGION, 0, NULL, 1, &idxBarrier, 0, NULL);
 
 	struct NeSemaphore *passSemaphore = Re_GraphData(pass->passSemaphoreHash, resources);
 	Re_QueueCompute(Re_EndCommandBuffer(), passSemaphore, passSemaphore);

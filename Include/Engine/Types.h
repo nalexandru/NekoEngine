@@ -23,7 +23,6 @@
 #	define E_INITIALIZER(x) \
 		static void x(void) __attribute__((constructor)); \
 		static void x(void)
-
 #elif defined(_MSC_VER)
 #	define NE_ALIGN(x) __declspec(align(x))
 
@@ -40,14 +39,16 @@
 #		define E_INITIALIZER(x) _INIT(x, "_")
 #	endif
 #else
-#	error "Unknown compiler"
+#	error "You must implement NE_ALIGN and E_INITIALIZER macros in Include/Engine/Types.h for this compiler"
 #endif
 
 #ifndef _SID_COMPILER_
 #	define SID(x)	x
 #endif
 
-#define E_INVALID_HANDLE (uint64_t)-1
+#define E_INVALID_HANDLE	(uint64_t)-1
+#define E_HANDLE_TYPE(x)	(uint32_t)((x & (uint64_t)0xFFFFFFFF00000000) >> 32)
+#define E_HANDLE_ID(x)		(uint32_t)(x & (uint64_t)0x00000000FFFFFFFF)
 
 struct NeArray;
 struct NeQueue;
@@ -80,7 +81,7 @@ struct NeVersion
 {
 	uint8_t major;
 	uint8_t minor;
-	uint8_t build;
+	uint16_t build;
 	uint8_t revision;
 };
 
@@ -91,9 +92,9 @@ typedef void *NeThread;
 typedef void *NeEntityHandle;
 typedef void *NeConditionVariable;
 
-typedef int64_t NeCompHandle;
 typedef size_t NeCompTypeId;
 typedef uint64_t NeHandle;
+typedef NeHandle NeCompHandle;
 
 typedef bool (*NeCompInitProc)(void *, const void **);
 typedef void (*NeCompTermProc)(void *);

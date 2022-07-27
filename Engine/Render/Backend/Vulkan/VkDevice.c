@@ -175,6 +175,9 @@ Re_CreateDevice(struct NeRenderDeviceInfo *info)
 	if (!vkQueueSubmit2KHR)
 		vkQueueSubmit2KHR = vkQueueSubmit2;
 
+	if (!vkCmdPipelineBarrier2KHR)
+		vkCmdPipelineBarrier2KHR = vkCmdPipelineBarrier2;
+
 	vkGetDeviceQueue(dev->dev, dev->graphics.family, dev->graphics.id, &dev->graphics.queue);
 	Sys_InitFutex(&dev->graphics.ftx);
 

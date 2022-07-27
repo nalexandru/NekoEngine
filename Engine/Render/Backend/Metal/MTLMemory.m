@@ -81,12 +81,20 @@ MTLDrv_CreateTexture(id<MTLDevice> dev, MTLTextureDescriptor *desc)
 void
 MTLDrv_SetRenderHeaps(id<MTLRenderCommandEncoder> encoder)
 {
-	if (_textureHeaps.count)
-		[encoder useHeaps: (id<MTLHeap> *)_textureHeaps.data count: _textureHeaps.count stages: MTLRenderStageFragment];
+	if (@available(macOS 13, iOS 16, *)) {
+		if (_textureHeaps.count)
+			[encoder useHeaps: (id<MTLHeap> *)_textureHeaps.data count: _textureHeaps.count stages: MTLRenderStageFragment];
 
-	if (_bufferHeaps.count)
-		[encoder useHeaps: (id<MTLHeap> *)_bufferHeaps.data count: _bufferHeaps.count stages: MTLRenderStageVertex | MTLRenderStageFragment |
-																							  MTLRenderStageObject | MTLRenderStageMesh | MTLRenderStageTile];
+		if (_bufferHeaps.count)
+			[encoder useHeaps: (id<MTLHeap> *)_bufferHeaps.data count: _bufferHeaps.count stages: MTLRenderStageVertex | MTLRenderStageFragment |
+																								  MTLRenderStageObject | MTLRenderStageMesh | MTLRenderStageTile];
+	} else {
+		if (_textureHeaps.count)
+			[encoder useHeaps: (id<MTLHeap> *)_textureHeaps.data count: _textureHeaps.count stages: MTLRenderStageFragment];
+
+		if (_bufferHeaps.count)
+			[encoder useHeaps: (id<MTLHeap> *)_bufferHeaps.data count: _bufferHeaps.count stages: MTLRenderStageVertex | MTLRenderStageFragment];
+	}
 }
 
 void

@@ -28,18 +28,6 @@ struct NeEntityType
 	struct NeArray initialArguments[MAX_ENTITY_COMPONENTS];
 };
 
-struct NeCompHandleData
-{
-	NeCompHandle handle;
-	NeCompTypeId type;
-	size_t index;
-};
-
-struct NeCompBase
-{
-	NE_COMPONENT_BASE;
-};
-
 struct NeCompType
 {
 	size_t size, alignment;
@@ -52,7 +40,7 @@ struct NeCompType
 		NeCompTermProc term;
 		NeScriptCompTermProc termScript;
 	};
-	char *script;
+	char *script, name[MAX_ENTITY_NAME];
 };
 
 struct NeECSystem

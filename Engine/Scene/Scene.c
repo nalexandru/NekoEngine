@@ -9,6 +9,7 @@
 #include <Engine/Events.h>
 #include <Engine/Engine.h>
 #include <Engine/ECSystem.h>
+#include <Engine/Profiler.h>
 #include <Scene/Scene.h>
 #include <Scene/Light.h>
 #include <Scene/Camera.h>
@@ -168,6 +169,8 @@ Scn_DataAddress(const struct NeScene *s, uint64_t *sceneAddress, uint64_t *insta
 void
 Scn_StartDrawableCollection(struct NeScene *s, const struct NeCamera *c)
 {
+	Prof_InsertMarker("BeginDrawableCollection");
+
 	s->collect.nextArray = 0;
 	M_MulMatrix(&s->collect.vp, &c->projMatrix, &c->viewMatrix);
 
@@ -208,17 +211,22 @@ Scn_StartDrawableCollection(struct NeScene *s, const struct NeCamera *c)
 	}
 
 	Rt_ArraySort(&s->collect.blendedDrawables, (RtSortFunc)_SortDrawables);
+
+	Prof_InsertMarker("EndDrawableCollection");
 }
 
 void
 Scn_StartDataUpdate(struct NeScene *s, const struct NeCamera *c)
 {
+	Prof_InsertMarker("BeginDataUpdate");
+
 	s->dataTransfered = false;
 
 	struct NeCollectLights collect;
 	Rt_InitArray(&collect.lightData, s->maxLights, sizeof(struct NeLightData), MH_Transient);
 
 	E_ExecuteSystemS(s, SCN_COLLECT_LIGHTS, &collect);
+	Prof_InsertMarker("CollectLights");
 
 	uint8_t *dst = s->dataPtr + _DataOffset(s);
 
@@ -260,6 +268,8 @@ Scn_StartDataUpdate(struct NeScene *s, const struct NeCamera *c)
 
 	s->lightCount = data.lighting.lightCount;
 	s->dataTransfered = true;
+
+	Prof_InsertMarker("EndDataUpdate");
 }
 
 const struct NeLightData * const

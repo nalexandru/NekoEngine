@@ -16,8 +16,6 @@ static const char _scriptTemplate[] = "function %s_Get%s(c) return CompIF.Get%s(
 
 static inline bool _InitArray(void);
 static int _CompType_cmp(const void *item, const void *data);
-static int _CompHandle_cmp(const void *item, const void *data);
-static inline struct NeCompHandleData *_HandlePtr(struct NeScene *s, NeCompHandle comp);
 static void _ComponentRegistered(struct NeScene *s, struct NeCompType *type);
 static void _LoadScript(const char *path);
 static bool _ScriptCompInit(void *comp, const void **args, const char *script);
@@ -26,210 +24,209 @@ static void _ScriptCompTerm(void *comp, const char *script);
 NeCompHandle
 E_CreateComponentS(struct NeScene *s, const char *typeName, NeEntityHandle owner, const void **args)
 {
-	NeCompTypeId id = 0;
+	NeCompTypeId typeId = 0;
 	struct NeArray *a = NULL;
+	struct NeQueue *fl = NULL;
 	struct NeCompBase *comp = NULL;
 	struct NeCompType *type = NULL;
-	struct NeCompHandleData *handle = NULL;
 
-	id = E_ComponentTypeId(typeName);
-	if (id == RT_NOT_FOUND) {
+	typeId = E_ComponentTypeId(typeName);
+	if (typeId == RT_NOT_FOUND) {
 		Sys_LogEntry(COMP_MOD, LOG_CRITICAL, "Type [%s] does not exist", typeName);
-		return ES_INVALID_COMPONENT;
+		return E_INVALID_HANDLE;
 	}
-	type = Rt_ArrayGet(&_componentTypes, id);
+	type = Rt_ArrayGet(&_componentTypes, typeId);
 
 	Sys_AtomicLockWrite(&s->compLock);
 
-	a = Rt_ArrayGet(&s->compData, id);
+	a = Rt_ArrayGet(&s->compData, typeId);
 	if (!a) {
 		Sys_LogEntry(COMP_MOD, LOG_CRITICAL, "Data for type [%s] does not exist", typeName);
-		Sys_AtomicUnlockWrite(&s->compLock);
-		return ES_INVALID_COMPONENT;
+		goto error;
 	}
 
-	comp = Rt_ArrayAllocate(a);
-	if (!comp) {
-		Sys_LogEntry(COMP_MOD, LOG_CRITICAL, "Failed to allocate component of type [%s]", typeName);
-		Sys_AtomicUnlockWrite(&s->compLock);
-		return ES_INVALID_COMPONENT;
+	fl = Rt_ArrayGet(&s->compFree, typeId);
+	if (!fl) {
+		Sys_LogEntry(COMP_MOD, LOG_CRITICAL, "Free list for type [%s] does not exist", typeName);
+		goto error;
 	}
 
-	handle = Rt_ArrayAllocate(&s->compHandle);
-	if (!handle) {
-		Sys_LogEntry(COMP_MOD, LOG_CRITICAL, "Failed to allocate component handle of type [%s]", typeName);
-		Sys_AtomicUnlockWrite(&s->compLock);
-		return ES_INVALID_COMPONENT;
-	}
+	if (fl->count) {
+		size_t idx = *((size_t *) Rt_QueuePop(fl));
+		comp = Rt_ArrayGet(a, idx);
+		comp->_handleId = idx;
+	} else {
+		comp = Rt_ArrayAllocate(a);
+		if (!comp) {
+			Sys_LogEntry(COMP_MOD, LOG_CRITICAL, "Failed to allocate component of type [%s]", typeName);
+			goto error;
+		}
 
-	handle->type = id;
-	handle->handle = _nextHandle++;
-	handle->index = a->count - 1;
+		comp->_handleId = a->count - 1;
+	}
 
 	comp->_owner = owner;
-	comp->_handleId = s->compHandle.count - 1;
+	comp->_valid = 1;
+	comp->_enabled = 1;
+	comp->_typeId = typeId;
 	comp->_sceneId = s->id;
+
+	NeCompHandle handle = comp->_handleId | (uint64_t)typeId << 32;
 
 	if (type->init) {
 		bool rc = !type->script ? type->init(comp, args) : type->initScript(comp, args, type->script);
 		if (!rc) {
-			--a->count;
+			size_t idx = comp->_handleId;
+			Rt_QueuePush(fl, &idx);
 			--_nextHandle;
-			--s->compHandle.count;
 			Sys_LogEntry(COMP_MOD, LOG_CRITICAL, "Failed to create component of type [%s]", typeName);
-			Sys_AtomicUnlockWrite(&s->compLock);
-			return ES_INVALID_COMPONENT;
+			goto error;
 		}
 	}
 
 	Sys_AtomicUnlockWrite(&s->compLock);
 
 	struct NeComponentCreationData *ccd = Sys_Alloc(sizeof(*ccd), 1, MH_Frame);
-	ccd->type = id;
-	ccd->handle = handle->handle;
+	ccd->type = typeId;
+	ccd->handle = handle;
 	ccd->owner = owner;
 	ccd->ptr = comp;
 	E_Broadcast(EVT_COMPONENT_CREATED, ccd);
 
-	return handle->handle;
+	return handle;
+
+error:
+	Sys_AtomicUnlockWrite(&s->compLock);
+	return E_INVALID_HANDLE;
 }
 
 NeCompHandle
-E_CreateComponentIdS(struct NeScene *s, NeCompTypeId id, NeEntityHandle owner, const void **args)
+E_CreateComponentIdS(struct NeScene *s, NeCompTypeId typeId, NeEntityHandle owner, const void **args)
 {
 	struct NeArray *a = NULL;
+	struct NeQueue *fl = NULL;
 	struct NeCompType *type = NULL;
 	struct NeCompBase *comp = NULL;
-	struct NeCompHandleData *handle = NULL;
 
-	type = Rt_ArrayGet(&_componentTypes, id);
+	type = Rt_ArrayGet(&_componentTypes, typeId);
 	if (!type)
-		return -1;
-
-	a = Rt_ArrayGet(&s->compData, id);
-	if (!a)
-		return -1;
+		return E_INVALID_HANDLE;
 
 	Sys_AtomicLockWrite(&s->compLock);
 
-	comp = Rt_ArrayAllocate(a);
-	if (!comp)
-		return -1;
+	a = Rt_ArrayGet(&s->compData, typeId);
+	if (!a)
+		goto error;
 
-	handle = Rt_ArrayAllocate(&s->compHandle);
-	if (!handle) {
-		Sys_AtomicUnlockWrite(&s->compLock);
-		return ES_INVALID_COMPONENT;
+	fl = Rt_ArrayGet(&s->compFree, typeId);
+	if (!fl)
+		goto error;
+
+	if (fl->count) {
+		size_t idx = *((size_t *) Rt_QueuePop(fl));
+		comp = Rt_ArrayGet(a, idx);
+		comp->_handleId = idx;
+	} else {
+		comp = Rt_ArrayAllocate(a);
+		if (!comp)
+			goto error;
+
+		comp->_handleId = a->count - 1;
 	}
 
-	handle->type = id;
-	handle->handle = _nextHandle++;
-	handle->index = a->count - 1;
-
 	comp->_owner = owner;
-	comp->_handleId = s->compHandle.count - 1;
+	comp->_valid = 1;
+	comp->_enabled = 1;
+	comp->_typeId = typeId;
 	comp->_sceneId = s->id;
+
+	NeCompHandle handle =  comp->_handleId | (uint64_t)typeId << 32;
 
 	if (type->init) {
 		bool rc = !type->script ? type->init(comp, args) : type->initScript(comp, args, type->script);
 		if (!rc) {
-			--a->count;
+			size_t idx = comp->_handleId;
+			Rt_QueuePush(fl, &idx);
 			--_nextHandle;
-			--s->compHandle.count;
-			Sys_AtomicUnlockWrite(&s->compLock);
-			return ES_INVALID_COMPONENT;
+			goto error;
 		}
 	}
 
 	Sys_AtomicUnlockWrite(&s->compLock);
 
 	struct NeComponentCreationData *ccd = Sys_Alloc(sizeof(*ccd), 1, MH_Frame);
-	ccd->type = id;
-	ccd->handle = handle->handle;
+	ccd->type = typeId;
+	ccd->handle = handle;
 	ccd->owner = owner;
 	ccd->ptr = comp;
 	E_Broadcast(EVT_COMPONENT_CREATED, ccd);
 
-	return handle->handle;
+	return handle;
+
+error:
+	Sys_AtomicUnlockWrite(&s->compLock);
+	return E_INVALID_HANDLE;
 }
 
 void
-E_DestroyComponentS(struct NeScene *s, NeCompHandle comp)
+E_DestroyComponentS(struct NeScene *s, NeCompHandle handle)
 {
-	struct NeCompHandleData *handle = NULL;
 	struct NeCompType *type = NULL;
-	uint8_t *dst = NULL, *src = NULL;
-	size_t dst_index = 0;
 	struct NeArray *a = NULL;
+	struct NeQueue *fl = NULL;
+	size_t idx = E_HANDLE_ID(handle);
+	struct NeCompBase *comp = NULL;
 
-	handle = _HandlePtr(s, comp);
-	if (!handle)
-		return;
-
-	type = Rt_ArrayGet(&_componentTypes, handle->type);
+	type = Rt_ArrayGet(&_componentTypes, E_HANDLE_TYPE(handle));
 	if (!type)
 		return;
 
-	a = Rt_ArrayGet(&s->compData, handle->type);
+	a = Rt_ArrayGet(&s->compData, E_HANDLE_TYPE(handle));
 	if (!a)
+		return;
+
+	fl = Rt_ArrayGet(&s->compFree, E_HANDLE_TYPE(handle));
+	if (!fl)
 		return;
 
 	Sys_AtomicLockWrite(&s->compLock);
 
-	dst_index = handle->index;
-
-	src = Rt_ArrayLast(a);
-	dst = Rt_ArrayGet(a, dst_index);
+	comp = Rt_ArrayGet(a, idx);
 
 	if (type->term) {
 		if (!type->script)
-			type->term(dst);
+			type->term(comp);
 		else
-			type->termScript(dst, type->script);
+			type->termScript(comp, type->script);
 	}
 
-	memcpy(dst, src, a->elemSize);
-
-	handle = Rt_ArrayGet(&s->compHandle, ((struct NeCompBase *)dst)->_handleId);
-	handle->index = dst_index;
-
-	--a->count;
+	comp->_valid = false;
+	Rt_QueuePush(fl, &idx);
 
 	Sys_AtomicUnlockWrite(&s->compLock);
 
-	E_Broadcast(EVT_COMPONENT_DESTROYED, (void *)comp);
+	E_Broadcast(EVT_COMPONENT_DESTROYED, (void *)handle);
 }
 
 void *
-E_ComponentPtrS(struct NeScene *s, NeCompHandle comp)
+E_ComponentPtrS(struct NeScene *s, NeCompHandle handle)
 {
 	void *r = NULL;
 
 	Sys_AtomicLockRead(&s->compLock);
-
-	struct NeCompHandleData *handle = _HandlePtr(s, comp);
-	if (handle) {
-		const struct NeArray *a = Rt_ArrayGet(&s->compData, handle->type);
-		r = a ? Rt_ArrayGet(a, handle->index) : NULL;
+	{
+		const struct NeArray *a = Rt_ArrayGet(&s->compData, E_HANDLE_TYPE(handle));
+		r = a ? Rt_ArrayGet(a, E_HANDLE_ID(handle)) : NULL;
 	}
-
 	Sys_AtomicUnlockRead(&s->compLock);
 
 	return r;
 }
 
 NeCompTypeId
-E_ComponentTypeS(struct NeScene *s, NeCompHandle comp)
+E_ComponentTypeS(struct NeScene *s, NeCompHandle handle)
 {
-	NeCompTypeId type = ES_INVALID_COMPONENT_TYPE;
-
-	Sys_AtomicLockRead(&s->compLock);
-	struct NeCompHandleData *handle = _HandlePtr(s, comp);
-	if (handle)
-		type = handle->type;
-	Sys_AtomicUnlockRead(&s->compLock);
-
-	return type;
+	return E_HANDLE_TYPE(handle);
 }
 
 NeCompTypeId
@@ -240,6 +237,13 @@ E_ComponentTypeId(const char *typeName)
 	hash = Rt_HashString(typeName);
 	id = Rt_ArrayFindId(&_componentTypes, &hash, _CompType_cmp);
 	return id != RT_NOT_FOUND ? id : E_INVALID_HANDLE;
+}
+
+const char *
+E_ComponentTypeName(NeCompTypeId typeId)
+{
+	const struct NeCompType *type = Rt_ArrayGet(&_componentTypes, typeId);
+	return type ? type->name : NULL;
 }
 
 size_t
@@ -260,12 +264,12 @@ E_ComponentCountS(struct NeScene *s, NeCompTypeId type)
 }
 
 NeEntityHandle
-E_ComponentOwnerS(struct NeScene *s, NeCompHandle comp)
+E_ComponentOwnerS(struct NeScene *s, NeCompHandle handle)
 {
 	NeEntityHandle owner = ES_INVALID_ENTITY;
 
 	Sys_AtomicLockRead(&s->compLock);
-	const struct NeCompBase *ptr = E_ComponentPtrS(s, comp);
+	const struct NeCompBase *ptr = E_ComponentPtrS(s, handle);
 	if (ptr) owner = ptr->_owner;
 	Sys_AtomicUnlockRead(&s->compLock);
 
@@ -288,6 +292,8 @@ E_RegisterComponent(const char *name, size_t size, size_t alignment, NeCompInitP
 	type.hash = Rt_HashString(name);
 	type.init = init;
 	type.term = term;
+
+	snprintf(type.name, sizeof(type.name), "%s", name);
 
 	if (size < sizeof(struct NeCompBase)) {
 		Sys_LogEntry(COMP_MOD, LOG_CRITICAL, "Failed to register component %s: invalid size", name);
@@ -318,17 +324,6 @@ E_GetAllComponentsS(struct NeScene *s, NeCompTypeId type)
 	return Rt_ArrayGet(&s->compData, type);
 }
 
-size_t
-E_ComponentSize(struct NeScene *s, const struct NeCompBase *comp)
-{
-	Sys_AtomicLockRead(&s->compLock);
-	const struct NeCompHandleData *handle = Rt_ArrayGet(&s->compHandle, comp->_handleId);
-	const struct NeCompType *type = handle ? Rt_ArrayGet(&_componentTypes, handle->type) : NULL;
-	Sys_AtomicUnlockRead(&s->compLock);
-
-	return type ? type->size : 0;
-}
-
 bool
 E_InitComponents(void)
 {
@@ -355,7 +350,7 @@ E_InitSceneComponents(struct NeScene *s)
 	if (!Rt_InitArray(&s->compData, _componentTypes.count, sizeof(struct NeArray), MH_Scene))
 		return false;
 
-	if (!Rt_InitArray(&s->compHandle, 100, sizeof(struct NeCompHandleData), MH_Scene))
+	if (!Rt_InitArray(&s->compFree, _componentTypes.count, sizeof(struct NeQueue), MH_Scene))
 		return false;
 
 	Rt_FillArray(&s->compData);
@@ -381,12 +376,19 @@ E_TermSceneComponents(struct NeScene *s)
 		struct NeArray *a = Rt_ArrayGet(&s->compData, i);
 
 		if (type->term) {
-			if (!type->script)
-				for (j = 0; j < a->count; ++j)
-					type->term(Rt_ArrayGet(a, j));
-			else
-				for (j = 0; j < a->count; ++j)
-					type->termScript(Rt_ArrayGet(a, j), type->script);
+			if (!type->script) {
+				for (j = 0; j < a->count; ++j) {
+					struct NeCompBase *comp = Rt_ArrayGet(a, j);
+					if (comp->_valid)
+						type->term(comp);
+				}
+			} else {
+				for (j = 0; j < a->count; ++j) {
+					struct NeCompBase *comp = Rt_ArrayGet(a, j);
+					if (comp->_valid)
+						type->termScript(comp, type->script);
+				}
+			}
 		}
 
 		Sys_Free(type->script);
@@ -395,7 +397,6 @@ E_TermSceneComponents(struct NeScene *s)
 	}
 
 	Rt_TermArray(&s->compData);
-	Rt_TermArray(&s->compHandle);
 }
 
 static inline bool
@@ -407,27 +408,7 @@ _InitArray(void)
 static int
 _CompType_cmp(const void *item, const void *data)
 {
-	return !(((struct NeCompType *)item)->hash == *((uint64_t *)data));
-}
-
-static int
-_CompHandle_cmp(const void *item, const void *data)
-{
-	const struct NeCompHandleData *handle = item;
-	const NeCompHandle val = *(NeCompHandle *)data;
-
-	if (handle->handle == val)
-		return 0;
-	else if (handle->handle > val)
-		return 1;
-	else
-		return -1;
-}
-
-static inline struct NeCompHandleData *
-_HandlePtr(struct NeScene *s, NeCompHandle comp)
-{
-	return Rt_ArrayBSearch(&s->compHandle, &comp, _CompHandle_cmp);
+	return ((struct NeCompType *) item)->hash != *((uint64_t *) data);
 }
 
 void
@@ -435,12 +416,21 @@ _ComponentRegistered(struct NeScene *s, struct NeCompType *type)
 {
 	struct NeArray *a = Rt_ArrayAllocate(&s->compData);
 	if (!a) {
-		Sys_LogEntry(COMP_MOD, LOG_CRITICAL, "Failed to allocate array for registered component in scene %s", s->name);
+		Sys_LogEntry(COMP_MOD, LOG_CRITICAL, "Failed to allocate data array for registered component in scene %s", s->name);
 		return;
 	}
 
 	if (!Rt_InitAlignedArray(a, 10, type->size, type->alignment))
-		Sys_LogEntry(COMP_MOD, LOG_CRITICAL, "Failed to initialize array for registered component in scene %s", s->name);
+		Sys_LogEntry(COMP_MOD, LOG_CRITICAL, "Failed to initialize data array for registered component in scene %s", s->name);
+
+	struct NeQueue *q = Rt_ArrayAllocate(&s->compFree);
+	if (!q) {
+		Sys_LogEntry(COMP_MOD, LOG_CRITICAL, "Failed to allocate free list for registered component in scene %s", s->name);
+		return;
+	}
+
+	if (Rt_InitQueue(q, 10, sizeof(size_t), MH_Scene))
+		Sys_LogEntry(COMP_MOD, LOG_CRITICAL, "Failed to initialize free list for registered component in scene %s", s->name);
 }
 
 static void
@@ -465,6 +455,7 @@ _LoadScript(const char *path)
 
 	char *name = Rt_TransientStrDup(&buff[15]);
 	size_t nameLen = strnlen(name, sizeof(buff) - 15);
+	snprintf(type.name, sizeof(type.name), "%s", name);
 
 	type.size = sizeof(struct NeCompBase);
 	type.hash = Rt_HashString(name);

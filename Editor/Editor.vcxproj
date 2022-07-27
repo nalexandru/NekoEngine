@@ -48,16 +48,16 @@
     <OutDir>$(SolutionDir)\bin\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\build\$(Configuration)\$(ProjectName)\</IntDir>
     <TargetName>NekoEditor</TargetName>
-    <IncludePath>$(SolutionDir)Include;$(SolutionDir)Deps;$(SolutionDir)Deps\PhysFS;$(SolutionDir)Deps\Lua;$(SolutionDir)Deps\OpenAL\include;$(SolutionDir)Deps\meshoptimizer;$(SolutionDir)Platform\Win32\Compat;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)Deps\OpenXR\x64\lib;$(SolutionDir)Bin\$(Configuration);$(LibraryPath)</LibraryPath>
+    <IncludePath>$(GTK_ROOT)\lib\graphene-1.0\include;$(GTK_ROOT)\include\graphene-1.0;$(GTK_ROOT)\include\gdk-pixbuf-2.0;$(GTK_ROOT)\include\harfbuzz;$(GTK_ROOT)\include\pango-1.0;$(GTK_ROOT)\include\cairo;$(GTK_ROOT)\lib\glib-2.0\include;$(GTK_ROOT)\include\glib-2.0;$(GTK_ROOT)\include\gio-win32-2.0;$(GTK_ROOT)\include\gtk-4.0;$(SolutionDir)Include;$(SolutionDir)Deps;$(SolutionDir)Deps\PhysFS;$(SolutionDir)Deps\Lua;$(SolutionDir)Deps\OpenAL\include;$(SolutionDir)Deps\meshoptimizer;$(SolutionDir)Platform\Win32\Compat;$(IncludePath)</IncludePath>
+    <LibraryPath>$(GTK_ROOT)\lib;$(SolutionDir)Deps\OpenXR\x64\lib;$(SolutionDir)Bin\$(Configuration);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)\bin\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\build\$(Configuration)\$(ProjectName)\</IntDir>
     <TargetName>NekoEditor</TargetName>
-    <IncludePath>$(SolutionDir)Include;$(SolutionDir)Deps;$(SolutionDir)Deps\PhysFS;$(SolutionDir)Deps\Lua;$(SolutionDir)Deps\OpenAL\include;$(SolutionDir)Deps\meshoptimizer;$(SolutionDir)Platform\Win32\Compat;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)Deps\OpenXR\x64\lib;$(SolutionDir)Bin\$(Configuration);$(LibraryPath)</LibraryPath>
+    <IncludePath>$(GTK_ROOT)\lib\graphene-1.0\include;$(GTK_ROOT)\include\graphene-1.0;$(GTK_ROOT)\include\gdk-pixbuf-2.0;$(GTK_ROOT)\include\harfbuzz;$(GTK_ROOT)\include\pango-1.0;$(GTK_ROOT)\include\cairo;$(GTK_ROOT)\lib\glib-2.0\include;$(GTK_ROOT)\include\glib-2.0;$(GTK_ROOT)\include\gio-win32-2.0;$(GTK_ROOT)\include\gtk-4.0;$(SolutionDir)Include;$(SolutionDir)Deps;$(SolutionDir)Deps\PhysFS;$(SolutionDir)Deps\Lua;$(SolutionDir)Deps\OpenAL\include;$(SolutionDir)Deps\meshoptimizer;$(SolutionDir)Platform\Win32\Compat;$(IncludePath)</IncludePath>
+    <LibraryPath>$(GTK_ROOT)\lib;$(SolutionDir)Deps\OpenXR\x64\lib;$(SolutionDir)Bin\$(Configuration);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -72,7 +72,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>OpenAL.lib;dwmapi.lib;/WHOLEARCHIVE:Engine.lib;meshoptimizer.lib;xinput9_1_0.lib;comdlg32.lib;uxtheme.lib;comctl32.lib;shell32.lib;ole32.lib;advapi32.lib;gdi32.lib;user32.lib;kernel32.lib;ntdll.lib</AdditionalDependencies>
+      <AdditionalDependencies>pango-1.0.lib;gobject-2.0.lib;glib-2.0.lib;gio-2.0.lib;gtk-4.lib;OpenAL.lib;/WHOLEARCHIVE:Engine.lib;meshoptimizer.lib;xinput9_1_0.lib;shell32.lib;ole32.lib;advapi32.lib;gdi32.lib;user32.lib;kernel32.lib;ntdll.lib</AdditionalDependencies>
       <ModuleDefinitionFile>$(SolutionDir)Engine\Exports.def</ModuleDefinitionFile>
       <DelayLoadDLLs>
       </DelayLoadDLLs>
@@ -95,7 +95,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>OpenAL.lib;dwmapi.lib;/WHOLEARCHIVE:Engine.lib;meshoptimizer.lib;xinput9_1_0.lib;comdlg32.lib;uxtheme.lib;comctl32.lib;shell32.lib;ole32.lib;advapi32.lib;gdi32.lib;user32.lib;kernel32.lib;ntdll.lib</AdditionalDependencies>
+      <AdditionalDependencies>pango-1.0.lib;gobject-2.0.lib;glib-2.0.lib;gio-2.0.lib;gtk-4.lib;OpenAL.lib;/WHOLEARCHIVE:Engine.lib;meshoptimizer.lib;xinput9_1_0.lib;shell32.lib;ole32.lib;advapi32.lib;gdi32.lib;user32.lib;kernel32.lib;ntdll.lib</AdditionalDependencies>
       <ModuleDefinitionFile>$(SolutionDir)Engine\Exports.def</ModuleDefinitionFile>
       <DelayLoadDLLs>
       </DelayLoadDLLs>
@@ -107,11 +107,12 @@
     <ClCompile Include="Asset\Import.c" />
     <ClCompile Include="Asset\NMesh.c" />
     <ClCompile Include="Editor.c" />
-    <ClCompile Include="GUI\Win32\AboutDialog.c" />
-    <ClCompile Include="GUI\Win32\AssetManager.c" />
-    <ClCompile Include="GUI\Win32\GUI.c" />
-    <ClCompile Include="GUI\Win32\Inspector.c" />
-    <ClCompile Include="GUI\Win32\SceneHierarchy.c" />
+    <ClCompile Include="GUI\GTK\AboutDialog.c" />
+    <ClCompile Include="GUI\GTK\AssetManager.c" />
+    <ClCompile Include="GUI\GTK\GUI.c" />
+    <ClCompile Include="GUI\GTK\Inspector.c" />
+    <ClCompile Include="GUI\GTK\SceneHierarchy.c" />
+    <ClCompile Include="GUI\GTK\Win32\GUI_Win32.c" />
     <ClCompile Include="Project.c" />
   </ItemGroup>
   <ItemGroup>
@@ -122,11 +123,11 @@
     <ClInclude Include="..\Include\Editor\GUI.h" />
     <ClInclude Include="..\Include\Editor\Project.h" />
     <ClInclude Include="..\Include\Editor\Types.h" />
-    <ClInclude Include="GUI\Win32\AboutDialog.h" />
-    <ClInclude Include="GUI\Win32\AssetManager.h" />
-    <ClInclude Include="GUI\Win32\Inspector.h" />
-    <ClInclude Include="GUI\Win32\SceneHierarchy.h" />
-    <ClInclude Include="GUI\Win32\Win32GUI.h" />
+    <ClInclude Include="GUI\GTK\AboutDialog.h" />
+    <ClInclude Include="GUI\GTK\AssetManager.h" />
+    <ClInclude Include="GUI\GTK\GTKGUI.h" />
+    <ClInclude Include="GUI\GTK\Inspector.h" />
+    <ClInclude Include="GUI\GTK\SceneHierarchy.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>

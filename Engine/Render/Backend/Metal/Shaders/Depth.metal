@@ -11,8 +11,8 @@ struct VsOutput
 	float4 position [[position, invariant]];
 	float2 uv;
 	float3 normal;
-	float3 tangent;
-	float3 biTangent;
+//	float3 tangent;
+//	float3 biTangent;
 	float3 vPos;
 };
 
@@ -23,20 +23,20 @@ struct DrawInfo
 	NE_BUFFER(instance);
 };
 
-struct VertexS
+struct VertexD
 {
 	float3 position [[attribute(0)]];
 	float3 normal [[attribute(1)]];
-	float3 tangent [[attribute(2)]];
-	float2 uv [[attribute(3)]];
-	float4 color [[attribute(4)]];
+	//float3 tangent [[attribute(2)]];
+	float2 uv [[attribute(2)]];
+//	float4 color [[attribute(4)]];
 };
 
 vertex struct VsOutput
 Depth_VS(uint vertexId [[vertex_id]],
 		 constant struct ShaderArguments *args [[ buffer(0) ]],
 		 constant struct DrawInfo *drawInfo [[ buffer(1) ]],
-		 struct Vertex vtx [[stage_in]])
+		 struct VertexD vtx [[stage_in]])
 {
 	struct VsOutput out;
 
@@ -48,9 +48,9 @@ Depth_VS(uint vertexId [[vertex_id]],
 	const float4 v = float4(vtx.position, 1.0);
 	const float4 pos = inst->model * v;
 
-	out.tangent = normalize(normalMat * vtx.tangent);
+//	out.tangent = normalize(normalMat * vtx.tangent);
 	out.normal = normalize(normalMat * vtx.normal);
-	out.biTangent = normalize(normalMat * cross(out.tangent, out.normal));
+//	out.biTangent = normalize(normalMat * cross(out.tangent, out.normal));
 	out.uv = vtx.uv;
 	out.position = inst->mvp * v;
 

@@ -5,6 +5,8 @@
 
 #include <Runtime/Runtime.h>
 #include <Engine/Component.h>
+#include <Engine/Entity.h>
+#include <Scene/Scene.h>
 
 struct NeTransform
 {
@@ -17,7 +19,7 @@ struct NeTransform
 	
 	struct NeVec3 forward, right, up;
 
-	struct NeTransform *parent;
+	NeCompHandle parent;
 	struct NeArray children;
 };
 
@@ -100,7 +102,9 @@ xform_update(struct NeTransform *t)
 	struct NeMatrix m2;
 	size_t i;
 
-	if ((t->parent && !t->parent->dirty) && !t->dirty)
+	struct NeScene *s = Scn_GetScene((uint8_t)t->_sceneId);
+	struct NeTransform *parent = E_ComponentPtrS(s, t->parent);
+	if ((t->parent != E_INVALID_HANDLE && !parent->dirty) && !t->dirty)
 		return;
 
 	M_RotationMatrixFromQuat(&m1, &t->rotation);
@@ -113,7 +117,7 @@ xform_update(struct NeTransform *t)
 	M_MulMatrix(&t->mat, &m1, &m2);
 
 	for (i = 0; i < t->children.count; ++i)
-		xform_update((struct NeTransform *)Rt_ArrayGetPtr(&t->children, i));
+		xform_update(E_ComponentPtrS(s, *((NeCompHandle *)Rt_ArrayGet(&t->children, i))));
 
 	t->dirty = false;
 }
@@ -121,9 +125,10 @@ xform_update(struct NeTransform *t)
 static inline struct NeVec3 *
 xform_position(const struct NeTransform *t, struct NeVec3 *pos)
 {
-	if (t->parent) {
+	if (t->parent != E_INVALID_HANDLE) {
 		struct NeVec3 tmp;
-		xform_position(t->parent, &tmp);
+		struct NeTransform *parent = E_ComponentPtr(t->parent);
+		xform_position(parent, &tmp);
 		M_Add(pos, &tmp, &t->position);
 	} else {
 		memcpy(pos, &t->position, sizeof(*pos));
@@ -135,9 +140,10 @@ xform_position(const struct NeTransform *t, struct NeVec3 *pos)
 static inline struct NeQuaternion *
 xform_rotation(const struct NeTransform *t, struct NeQuaternion *rot)
 {
-	if (t->parent) {
+	if (t->parent != E_INVALID_HANDLE) {
 		struct NeQuaternion tmp;
-		xform_rotation(t->parent, &tmp);
+		struct NeTransform *parent = E_ComponentPtr(t->parent);
+		xform_rotation(parent, &tmp);
 		M_Mul(rot, &tmp, &t->rotation);
 	} else {
 		memcpy(rot, &t->rotation, sizeof(*rot));

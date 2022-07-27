@@ -74,6 +74,5 @@ _TermCamera(struct NeCamera *cam)
 static void
 _RebuildProjection(struct NeCamera *cam, void *args)
 {
-	//M_InfinitePerspectiveMatrix(&cam->projMatrix, cam->fov, (float)*E_screenWidth / (float)*E_screenHeight, cam->zFar, cam->zNear);
 	M_InfinitePerspectiveMatrixRZ(&cam->projMatrix, cam->fov, (float)*E_screenWidth / (float)*E_screenHeight, cam->zNear);
 }

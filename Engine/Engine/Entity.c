@@ -209,12 +209,26 @@ E_GetComponentS(struct NeScene *s, NeEntityHandle handle, NeCompTypeId type)
 	return NULL;
 }
 
+NeCompHandle
+E_GetComponentHandleS(struct NeScene *s, NeEntityHandle handle, NeCompTypeId type)
+{
+	uint8_t i = 0;
+	struct NeEntity *ent = handle;
+
+	for (i = 0; i < ent->compCount; ++i)
+		if (ent->comp[i].type == type)
+			return ent->comp[i].handle;
+
+	return E_INVALID_HANDLE;
+}
+
 void
 E_GetComponentsS(struct NeScene *s, NeEntityHandle handle, struct NeArray *comp)
 {
 	struct NeEntity *ent = handle;
 	Rt_InitArray(comp, ent->compCount, sizeof(struct NeEntityComp), MH_Frame);
 	memcpy(comp->data, ent->comp, Rt_ArrayByteSize(comp));
+	comp->count = comp->size;
 }
 
 void
@@ -389,7 +403,7 @@ _CreateComponent(struct NeScene *s, struct NeEntity *ent, NeCompTypeId type, con
 {
 	NeCompHandle handle = E_CreateComponentIdS(s, type, ent, args);
 
-	if (handle == ES_INVALID_COMPONENT)
+	if (handle == E_INVALID_HANDLE)
 		return false;
 
 	if (!_AddComponent(s, ent, type, handle)) {

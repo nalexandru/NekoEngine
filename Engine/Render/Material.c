@@ -459,10 +459,10 @@ _createPipeline(const struct NeMaterialResource *mr, struct NeShader *shader)
 	struct NeVertexAttribute attribs[] =
 	{
 		{ 0, 0, VF_FLOAT3, 0 },						// float x, y, z;
-		{ 1, 0, VF_FLOAT3, sizeof(float) * 3 },		// float nx, ny, nz;
-		{ 2, 0, VF_FLOAT3, sizeof(float) * 6 },		// float tx, ty, tz;
-		{ 3, 0, VF_FLOAT2, sizeof(float) * 9 },		// float u, v;
-		{ 4, 0, VF_FLOAT4, sizeof(float) * 11 }		// float r, g, b, a;
+	//	{ 2, 0, VF_FLOAT3, sizeof(float) * 6 },		// float tx, ty, tz;
+		{ 1, 0, VF_FLOAT2, sizeof(float) * 9 },		// float u, v;
+		{ 2, 0, VF_FLOAT4, sizeof(float) * 11 },	// float r, g, b, a;
+        { 3, 0, VF_FLOAT3, sizeof(float) * 3 }  	// float nx, ny, nz;
 	};
 
 	struct NeVertexBinding bindings[] =
@@ -497,7 +497,7 @@ _createPipeline(const struct NeMaterialResource *mr, struct NeShader *shader)
 		.depthFormat = TF_D32_SFLOAT,
 
 		.vertexDesc.attributes = attribs,
-		.vertexDesc.attributeCount = sizeof(attribs) / sizeof(attribs[0]),
+		.vertexDesc.attributeCount = sizeof(attribs) / sizeof(attribs[0]) - (mr->alphaBlend ? 0 : 1),
 		.vertexDesc.bindings = bindings,
 		.vertexDesc.bindingCount = sizeof(bindings) / sizeof(bindings[0])
 	};

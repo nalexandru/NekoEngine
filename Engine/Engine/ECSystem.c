@@ -5,8 +5,9 @@
 #include <Scene/Scene.h>
 #include <Engine/IO.h>
 #include <Engine/Job.h>
-#include <Engine/ECSystem.h>
 #include <Engine/Entity.h>
+#include <Engine/Profiler.h>
+#include <Engine/ECSystem.h>
 #include <Engine/Component.h>
 
 #include "ECS.h"
@@ -236,12 +237,15 @@ E_ExecuteSystemS(struct NeScene *s, const char *name, void *args)
 		return;
 
 	if (sys->singleThread) {
+		Prof_InsertMarker("SerialExec");
 		_SysExec(s, sys, args);
 	} else {
+		Prof_InsertMarker("ParallelExec");
 		bool *done = _SysExecJobs(s, sys, args);
 		while (done && !*done)
 			Sys_Yield();
 	}
+	Prof_InsertMarker("EndExec");
 }
 
 void
@@ -319,12 +323,13 @@ static inline void
 _SysExec(struct NeScene *s, struct NeECSystem *sys, void *args)
 {
 	size_t i = 0, j = 0;
-	void *ptr = NULL;
+	struct NeCompBase *compBase = NULL;
 	const struct NeArray *comp = NULL;
 	NeEntityHandle handle = 0;
 	void *components[MAX_ENTITY_COMPONENTS];
 
 	Sys_AtomicLockRead(&s->compLock);
+	Prof_InsertMarker("Lock");
 
 	if (sys->typeCount == 1) {
 		comp = E_GetAllComponentsS(s, sys->compTypes[0]);
@@ -333,11 +338,13 @@ _SysExec(struct NeScene *s, struct NeECSystem *sys, void *args)
 			goto exit;
 
 		for (i = 0; i < comp->count; ++i) {
-			ptr = Rt_ArrayGet(comp, i);
-			_Exec(sys, &ptr, args);
+			compBase = Rt_ArrayGet(comp, i);
+			if (compBase->_valid)
+				_Exec(sys, (void **)&compBase, args);
 		}
 	} else {
 		_FilterEntities(s, &_filteredEntities, sys->compTypes, sys->typeCount);
+		Prof_InsertMarker("Filter");
 
 		for (i = 0; i < _filteredEntities.count; ++i) {
 			handle = (NeEntityHandle *)Rt_ArrayGetPtr(&_filteredEntities, i);
@@ -359,7 +366,7 @@ _SysExecJobs(struct NeScene *s, struct NeECSystem *sys, void *args)
 	const struct NeArray *comp = NULL;
 	NeEntityHandle handle = 0;
 	struct NeExecArgs **ea;
-	size_t count;
+	size_t count = 0;
 
 	Sys_AtomicLockRead(&s->compLock);
 
@@ -368,14 +375,18 @@ _SysExecJobs(struct NeScene *s, struct NeECSystem *sys, void *args)
 
 		if (!comp || !comp->count)
 			goto exit;
+		
+		ea = Sys_Alloc(sizeof(*ea), comp->count, MH_Frame);
+		for (size_t i = 0; i < comp->count; ++i) {
+			struct NeCompBase *compBase = Rt_ArrayGet(comp, i);
+			if (!compBase->_valid || !compBase->_enabled)
+				continue;
 
-		count = comp->count;
-		ea = Sys_Alloc(sizeof(*ea), count, MH_Frame);
-		for (size_t i = 0; i < count; ++i) {
-			ea[i] = Sys_Alloc(sizeof(*ea[0]), 1, MH_Frame);
-			ea[i]->sys = sys;
-			ea[i]->args = args;
-			ea[i]->components[0] = Rt_ArrayGet(comp, i);
+			ea[count] = Sys_Alloc(sizeof(*ea[0]), 1, MH_Frame);
+			ea[count]->sys = sys;
+			ea[count]->args = args;
+			ea[count]->components[0] = compBase;
+			++count;
 		}
 	} else {
 		_FilterEntities(s, &_filteredEntities, sys->compTypes, sys->typeCount);
@@ -442,7 +453,7 @@ _FilterEntities(struct NeScene *s, struct NeArray *ent, NeCompTypeId *compTypes,
 	for (i = 0; i < components->count; ++i) {
 		comp = Rt_ArrayGet(components, i);
 
-		if (!comp->_owner)
+		if (!comp->_owner || !comp->_valid || !comp->_enabled)
 			continue;
 
 		valid = true;

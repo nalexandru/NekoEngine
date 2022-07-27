@@ -9,10 +9,8 @@
 #include <sys/time.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include <sys/sysctl.h>
 #include <sys/utsname.h>
 
-#include <Input/Input.h>
 #include <System/System.h>
 #include <System/Memory.h>
 #include <Engine/Engine.h>
@@ -35,10 +33,15 @@
 #define USE_MEMALIGN
 #endif
 
+#if defined(SYS_PLATFORM_FREEBSD)
+#	include <sys/sysctl.h>
+#endif
+
 Display *X11_display;
 XVisualInfo X11_visualInfo;
 Atom X11_WM_PROTOCOLS, X11_WM_DELETE_WINDOW, X11_NET_WM_STATE, X11_NET_WM_PID,
-	X11_NET_WM_WINDOW_TYPE, X11_NET_WM_WINDOW_TYPE_NORMAL, X11_NET_WM_BYPASS_COMPOSITOR;
+		X11_NET_WM_WINDOW_TYPE, X11_NET_WM_WINDOW_TYPE_NORMAL, X11_NET_WM_BYPASS_COMPOSITOR,
+		X11_NET_WORKAREA;
 
 static uint32_t _cpuCount = 0, _cpuFreq = 0, _cpuThreadCount = 0;
 static char _cpuName[128] = "Unknown";
@@ -262,50 +265,50 @@ Sys_ProcessEvents(void)
 	XEvent ev, nev;
 	while (XPending(X11_display)) {
 		XNextEvent(X11_display, &ev);
-		
+
 		switch (ev.type) {
-		case KeyPress: {
-			In_Key(X11_keymap[ev.xkey.keycode], true);
-		} break;
-		case KeyRelease: {
-			if (XEventsQueued(X11_display, QueuedAfterReading)) {
-				XPeekEvent(X11_display, &nev);
-				
-				if (nev.type == KeyPress &&
+			case KeyPress: {
+				In_Key(X11_keymap[ev.xkey.keycode], true);
+			} break;
+			case KeyRelease: {
+				if (XEventsQueued(X11_display, QueuedAfterReading)) {
+					XPeekEvent(X11_display, &nev);
+
+					if (nev.type == KeyPress &&
 						nev.xkey.time == ev.xkey.time &&
 						nev.xkey.keycode == ev.xkey.keycode)
-					break;
-			}
-			
-			In_Key(X11_keymap[ev.xkey.keycode], false);
-		} break;
-		case ButtonPress:
-		case ButtonRelease: {
-			switch (ev.xbutton.button) {
-			case Button1: In_buttonState[BTN_MOUSE_LMB] = ev.type == ButtonPress;
-			case Button2: In_buttonState[BTN_MOUSE_RMB] = ev.type == ButtonPress;
-			case Button3: In_buttonState[BTN_MOUSE_MMB] = ev.type == ButtonPress;
-			case Button4: In_buttonState[BTN_MOUSE_BTN4] = ev.type == ButtonPress;
-			case Button5: In_buttonState[BTN_MOUSE_BTN5] = ev.type == ButtonPress;
-			}
-		} break;
-		case ConfigureNotify: {
-			XConfigureEvent ce = ev.xconfigure;
-			
-			if (ce.width == *E_screenWidth && ce.height == *E_screenHeight)
-				break;
+						break;
+				}
 
-			E_ScreenResized(ce.width, ce.height);
-		} break;
-		case ClientMessage: {
-			if (ev.xclient.data.l[0] == X11_WM_DELETE_WINDOW)
+				In_Key(X11_keymap[ev.xkey.keycode], false);
+			} break;
+			case ButtonPress:
+			case ButtonRelease: {
+				switch (ev.xbutton.button) {
+					case Button1: In_buttonState[BTN_MOUSE_LMB] = ev.type == ButtonPress;
+					case Button2: In_buttonState[BTN_MOUSE_RMB] = ev.type == ButtonPress;
+					case Button3: In_buttonState[BTN_MOUSE_MMB] = ev.type == ButtonPress;
+					case Button4: In_buttonState[BTN_MOUSE_BTN4] = ev.type == ButtonPress;
+					case Button5: In_buttonState[BTN_MOUSE_BTN5] = ev.type == ButtonPress;
+				}
+			} break;
+			case ConfigureNotify: {
+				XConfigureEvent ce = ev.xconfigure;
+
+				if (ce.width == *E_screenWidth && ce.height == *E_screenHeight)
+					break;
+
+				E_ScreenResized(ce.width, ce.height);
+			} break;
+			case ClientMessage: {
+				if (ev.xclient.data.l[0] == X11_WM_DELETE_WINDOW)
+					return false;
+			} break;
+			case DestroyNotify: {
 				return false;
-		} break;
-		case DestroyNotify: {
-			return false;
-		} break;
-		default: {
-		} break;
+			} break;
+			default: {
+			} break;
 		}
 	}
 
@@ -435,7 +438,7 @@ Sys_ExecutableLocation(char *buff, uint32_t len)
 #if defined(SYS_PLATFORM_LINUX)
 	char tmp[4096];
 	snprintf(tmp, sizeof(tmp), "/proc/%d/exe", getpid());
-	readlink(tmp, buff, len);
+	(void)readlink(tmp, buff, len);
 #elif defined(SYS_PLATFORM_FREEBSD)
 	int mib[] = { CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1 };
 	size_t size = len;
@@ -507,13 +510,13 @@ Sys_InitPlatform(void)
 	X11_display = XOpenDisplay(NULL);
 	if (!X11_display)
 		return false;
-	
+
 	XLockDisplay(X11_display);
 
 	int screen = XDefaultScreen(X11_display);
 	if (!XMatchVisualInfo(X11_display, screen, 24, TrueColor, &X11_visualInfo))
 		return false;
-	
+
 	X11_NET_WM_STATE = XInternAtom(X11_display, "_NET_WM_STATE", False);
 	X11_NET_WM_PID = XInternAtom(X11_display, "_NET_WM_PID", False);
 	X11_NET_WM_WINDOW_TYPE = XInternAtom(X11_display, "_NET_WM_WINDOW_TYPE", False);
@@ -521,6 +524,7 @@ Sys_InitPlatform(void)
 	X11_NET_WM_BYPASS_COMPOSITOR = XInternAtom(X11_display, "_NET_WM_BYPASS_COMPOSITOR", False);
 	X11_WM_PROTOCOLS = XInternAtom(X11_display, "WM_PROTOCOLS", False);
 	X11_WM_DELETE_WINDOW = XInternAtom(X11_display, "WM_DELETE_WINDOW", False);
+	X11_NET_WORKAREA = XInternAtom(X11_display, "_NET_WORKAREA", False);
 
 	XUnlockDisplay(X11_display);
 

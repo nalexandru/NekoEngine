@@ -72,7 +72,7 @@ _Execute(struct NeTransparentPass *pass, const struct NeArray *resources)
 
 	Re_BeginDrawCommandBuffer();
 
-	struct NeImageBarrier depthBarrier =
+	/*struct NeImageBarrier depthBarrier =
 	{
 		.srcAccess = RE_PA_DEPTH_STENCIL_ATTACHMENT_WRITE,
 		.dstAccess = RE_PA_DEPTH_STENCIL_ATTACHMENT_READ,
@@ -105,7 +105,7 @@ _Execute(struct NeTransparentPass *pass, const struct NeArray *resources)
 	};
 
 	Re_Barrier(RE_PS_LATE_FRAGMENT_TESTS, RE_PS_EARLY_FRAGMENT_TESTS, RE_PD_BY_REGION, 0, NULL, 0, NULL, 1, &depthBarrier);
-	Re_Barrier(RE_PS_COLOR_ATTACHMENT_OUTPUT, RE_PS_FRAGMENT_SHADER, RE_PD_BY_REGION, 0, NULL, 0, NULL, 1, &normalBarrier);
+	Re_Barrier(RE_PS_COLOR_ATTACHMENT_OUTPUT, RE_PS_FRAGMENT_SHADER, RE_PD_BY_REGION, 0, NULL, 0, NULL, 1, &normalBarrier);*/
 
 	Re_CmdBeginRenderPass(Re_TransparentMaterialRenderPassDesc, pass->fb, RENDER_COMMANDS_INLINE);
 

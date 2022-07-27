@@ -47,11 +47,7 @@ Ed_OpenAsset(const char *path)
 		args->handler = &_handlers[i];
 		args->path = Rt_StrDup(path, MH_Editor);
 
-	#ifndef SYS_PLATFORM_WINDOWS
 		E_ExecuteJob((NeJobProc)_OpenJob, args, NULL, NULL);
-	#else
-		_OpenJob(0, args);
-	#endif
 
 		break;
 	}
@@ -62,7 +58,7 @@ _OpenMesh(const char *path)
 {
 	char buff[2048];
 	snprintf(buff, 2048, "Loading %s...", path);
-	EdGUI_ShowProgressDialog(buff);
+	EdGUI_ShowProgressDialog("Creating entity...");
 
 	char *str = Rt_TransientStrDup(path);
 	char *name = strrchr(str, '/');
@@ -73,8 +69,10 @@ _OpenMesh(const char *path)
 
 	NeEntityHandle eh = E_CreateEntity(name, NULL);
 
+	EdGUI_UpdateProgressDialog("Creating transform...");
 	E_AddNewComponent(eh, E_ComponentTypeId(TRANSFORM_COMP), NULL);
 
+	EdGUI_UpdateProgressDialog(buff);
 	const void *args[] = { "Model", path, NULL };
 	E_AddNewComponent(eh, E_ComponentTypeId(MODEL_RENDER_COMP), args);
 

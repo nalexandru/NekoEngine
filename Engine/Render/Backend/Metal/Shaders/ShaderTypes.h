@@ -8,13 +8,28 @@ using namespace metal;
 	uint32_t x ## Buffer; \
 	uint32_t x ## Offset
 
-struct Vertex
+/*struct Vertex
 {
 	float3 position [[attribute(0)]];
 	float3 normal [[attribute(1)]];
 	float3 tangent [[attribute(2)]];
 	float2 uv [[attribute(3)]];
 	float4 color [[attribute(4)]];
+};*/
+
+struct VertexO
+{
+	float3 position [[attribute(0)]];
+	float2 uv [[attribute(1)]];
+	float4 color [[attribute(2)]];
+};
+
+struct VertexT
+{
+	float3 position [[attribute(0)]];
+	float2 uv [[attribute(1)]];
+	float4 color [[attribute(2)]];
+	float3 normal [[attribute(3)]];
 };
 
 struct UIVertex

@@ -22,7 +22,7 @@ Re_Execute(id<MTLDevice> dev, struct NeRenderContext *ctx, bool wait)
 void
 Re_WaitIdle(void)
 {
-	dispatch_semaphore_wait(MTL_frameSemaphore, DISPATCH_TIME_FOREVER);
+	dispatch_semaphore_wait(MTL_frameSemaphore, dispatch_time(DISPATCH_TIME_NOW, 20000000));
 
 	id<MTLEvent> event = [MTL_device newEvent];
 	uint64_t value = 0;

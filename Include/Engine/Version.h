@@ -8,7 +8,7 @@
 
 #define E_VER_MAJOR		0
 #define E_VER_MINOR		8
-#define E_VER_BUILD		250
+#define E_VER_BUILD		257
 #define E_VER_REVISION	0
 
 #define E_PGM_NAME		"NekoEngine"

@@ -130,8 +130,20 @@ void
 Sys_MoveWindow(int x, int y)
 {
 	RECT rc;
-	GetWindowRect(_window, &rc);
-	MoveWindow(_window, x, y, rc.right - rc.left, rc.bottom - rc.top, TRUE);
+	GetWindowRect((HWND)E_screen, &rc);
+	MoveWindow((HWND)E_screen, x, y, rc.right - rc.left, rc.bottom - rc.top, TRUE);
+}
+
+void
+Sys_WorkArea(int *top, int *left, int *right, int *bottom)
+{
+	RECT rc;
+	SystemParametersInfo(SPI_GETWORKAREA, sizeof(rc), &rc, 0);
+
+	if (top) *top = rc.top;
+	if (left) *left = rc.left;
+	if (right) *right = rc.right;
+	if (bottom) *bottom = rc.bottom;
 }
 
 void

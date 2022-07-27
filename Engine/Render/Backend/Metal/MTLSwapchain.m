@@ -50,7 +50,7 @@ Re_CreateSwapchain(struct NeSurface *surface, bool verticalSync)
 	if (!sw)
 		return NULL;
 
-	MTL_frameSemaphore = dispatch_semaphore_create(RE_NUM_FRAMES);
+	MTL_frameSemaphore = dispatch_semaphore_create(1);
 	sw->event = [MTL_device newEvent];
 	sw->value = 0;
 

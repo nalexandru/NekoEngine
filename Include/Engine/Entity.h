@@ -7,7 +7,6 @@
 
 #define MAX_ENTITY_NAME				64
 #define MAX_ENTITY_COMPONENTS		30
-#define ES_INVALID_COMPONENT		-1
 #define ES_INVALID_COMPONENT_TYPE	-1
 #define ES_INVALID_ENTITY			NULL
 #define ES_INVALID_ECSYS			-1
@@ -50,6 +49,9 @@ static inline bool E_AddNewComponent(NeEntityHandle ent, NeCompTypeId type, cons
 
 void *E_GetComponentS(struct NeScene *s, NeEntityHandle ent, NeCompTypeId type);
 static inline void *E_GetComponent(NeEntityHandle ent, NeCompTypeId type) { return Scn_activeScene ? E_GetComponentS(Scn_activeScene, ent, type) : NULL; }
+
+NeCompHandle E_GetComponentHandleS(struct NeScene *s, NeEntityHandle ent, NeCompTypeId type);
+static inline NeCompHandle E_GetComponentHandle(NeEntityHandle ent, NeCompTypeId type) { return Scn_activeScene ? E_GetComponentHandleS(Scn_activeScene, ent, type) : E_INVALID_HANDLE; }
 
 //
 // Retrieve the list of components; will initialize `comp` with MH_Frame memory.
