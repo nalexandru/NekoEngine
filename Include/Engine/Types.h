@@ -85,6 +85,9 @@ struct NeVersion
 	uint8_t revision;
 };
 
+typedef uint32_t NeFlags;
+typedef uint64_t NeFlags64;
+
 typedef void *NeFile;
 typedef void *NeMutex;
 typedef void *NeFutex;

@@ -17,6 +17,7 @@ Re_CreateContext(void)
 	if (!ctx)
 		return NULL;
 
+	VkCommandPool *pools = NULL;
 	VkCommandPoolCreateInfo poolInfo =
 	{
 		.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
@@ -32,7 +33,7 @@ Re_CreateContext(void)
 	ctx->computeCmdBuffers = &arrays[RE_NUM_FRAMES * 2];
 	ctx->xferCmdBuffers = &arrays[RE_NUM_FRAMES * 3];
 
-	VkCommandPool *pools = Sys_Alloc(RE_NUM_FRAMES * 3, sizeof(*pools), MH_RenderDriver);
+	pools = Sys_Alloc(RE_NUM_FRAMES * 3, sizeof(*pools), MH_RenderDriver);
 	if (!pools)
 		goto error;
 
