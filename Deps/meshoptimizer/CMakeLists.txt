@@ -1,7 +1,5 @@
 project(meshoptimizer)
 
-file (GLOB src *.cpp)
-
-set(CMAKE_CXX_STANDARD 17)
+file(GLOB src *.cpp)
 
 add_library(meshoptimizer STATIC ${src})

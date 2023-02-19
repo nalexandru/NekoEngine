@@ -1,6 +1,0 @@
-#ifndef _NE_EDITOR_GUI_WIN32_ABOUT_DIALOG_H_
-#define _NE_EDITOR_GUI_WIN32_ABOUT_DIALOG_H_
-
-void GUI_AboutDialog(void);
-
-#endif /* _NE_EDITOR_GUI_WIN32_ABOUT_DIALOG_H_ */

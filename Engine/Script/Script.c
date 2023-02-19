@@ -26,7 +26,7 @@ static const luaL_Reg _luaLibs[] = {
 	{ NULL, NULL }
 };
 
-static struct NeArray _initScripts;
+static struct NeArray _initScripts, _initIfaces;
 static void *_luaAlloc(void *ud, void *ptr, size_t oSize, size_t nSize);
 
 lua_State *
@@ -44,7 +44,7 @@ Sc_CreateVM(void)
 		luaL_requiref(vm, lib->name, lib->func, 1);
 		lua_pop(vm, 1);
 	}
-	
+
 	// TODO: make engine libraries follow Lua library conventions
 	SIface_OpenSystem(vm);
 	SIface_OpenEngine(vm);
@@ -60,6 +60,14 @@ Sc_CreateVM(void)
 	SIface_OpenCamera(vm);
 	SIface_OpenLight(vm);
 	SIface_OpenConfig(vm);
+	SIface_OpenVec3(vm);
+	SIface_OpenVec4(vm);
+	SIface_OpenMatrix(vm);
+	SIface_OpenAudio(vm);
+
+	void (*initIface)(lua_State *) = NULL;
+	Rt_ArrayForEachPtr(initIface, &_initIfaces)
+		initIface(vm);
 	
 	const char *initScript = NULL;
 	Rt_ArrayForEachPtr(initScript, &_initScripts) {
@@ -91,7 +99,7 @@ Sc_ExecuteFile(lua_State *vm, const char *path)
 	struct NeStream stm;
 
 	if (!E_FileStream(path, IO_READ, &stm))
-		return false;
+		return "File not found";
 
 	len = E_StreamLength(&stm);
 	source = Sys_Alloc((size_t)len, 1, MH_Transient);
@@ -179,6 +187,12 @@ Sc_RegisterInitScript(const char *script)
 	return Rt_ArrayAddPtr(&_initScripts, Rt_StrDup(script, MH_Script));
 }
 
+bool
+Sc_RegisterInterface(void (*initIface)(lua_State *))
+{
+	return Rt_ArrayAddPtr(&_initIfaces, initIface);
+}
+
 void
 Sc_DestroyVM(lua_State *vm)
 {
@@ -189,6 +203,7 @@ bool
 Sc_InitScriptSystem(void)
 {
 	Rt_InitPtrArray(&_initScripts, 10, MH_Script);
+	Rt_InitPtrArray(&_initIfaces, 10, MH_Script);
 
 	return true;
 }
@@ -201,6 +216,7 @@ Sc_TermScriptSystem(void)
 		Sys_Free(ptr);
 
 	Rt_TermArray(&_initScripts);
+	Rt_TermArray(&_initIfaces);
 }
 
 static void *
@@ -215,3 +231,41 @@ _luaAlloc(void *ud, void *ptr, size_t oSize, size_t nSize)
 
 	return new;
 }
+
+/* NekoEngine
+ *
+ * Script.c
+ * Author: Alexandru Naiman
+ *
+ * -----------------------------------------------------------------------------
+ *
+ * Copyright (c) 2015-2023, Alexandru Naiman
+ *
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * -----------------------------------------------------------------------------
+ */

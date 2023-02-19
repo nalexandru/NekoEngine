@@ -6,6 +6,10 @@
 #include <Engine/IO.h>
 #include <System/Thread.h>
 
+#ifdef _NEKO_EDITOR_
+#	include <Editor/Editor.h>
+#endif
+
 #include "ECS.h"
 
 static int64_t _nextHandle;
@@ -13,9 +17,9 @@ static struct NeArray _componentTypes;
 static const char _scriptTemplate[] = "function %s_Get%s(c) return CompIF.Get%s(c, %lu, %lu); end\nfunction %s_Set%s(c, v) CompIF.Set%s(c, %lu, %lu, v); end";
 
 #define COMP_MOD	"Component"
+#define EVT_COMPONENT_REGISTERED_PTR	"ComponentRegisteredPTR"
 
 static inline bool _InitArray(void);
-static int _CompType_cmp(const void *item, const void *data);
 static void _ComponentRegistered(struct NeScene *s, struct NeCompType *type);
 static void _LoadScript(const char *path);
 static bool _ScriptCompInit(void *comp, const void **args, const char *script);
@@ -235,7 +239,7 @@ E_ComponentTypeId(const char *typeName)
 	size_t id = 0;
 	uint64_t hash = 0;
 	hash = Rt_HashString(typeName);
-	id = Rt_ArrayFindId(&_componentTypes, &hash, _CompType_cmp);
+	id = Rt_ArrayFindId(&_componentTypes, &hash, Rt_U64CmpFunc);
 	return id != RT_NOT_FOUND ? id : E_INVALID_HANDLE;
 }
 
@@ -304,13 +308,14 @@ E_RegisterComponent(const char *name, size_t size, size_t alignment, NeCompInitP
 		if (!_InitArray())
 			return false;
 
-	if (Rt_ArrayFindId(&_componentTypes, &type.hash, _CompType_cmp) != RT_NOT_FOUND)
+	if (Rt_ArrayFindId(&_componentTypes, &type.hash, Rt_U64CmpFunc) != RT_NOT_FOUND)
 		return false;
 
 	if (!Rt_ArrayAdd(&_componentTypes, &type))
 		return false;
 
-	E_Broadcast(EVT_COMPONENT_REGISTERED, &type.hash);
+	E_Broadcast(EVT_COMPONENT_REGISTERED_PTR, Rt_ArrayLast(&_componentTypes));
+	E_Broadcast(EVT_COMPONENT_REGISTERED, (void *)(_componentTypes.count - 1));
 
 	return true;
 }
@@ -362,7 +367,7 @@ E_InitSceneComponents(struct NeScene *s)
 			return false;
 	}
 
-	E_RegisterHandler(EVT_COMPONENT_REGISTERED, (NeEventHandlerProc)_ComponentRegistered, s);
+	E_RegisterHandler(EVT_COMPONENT_REGISTERED_PTR, (NeEventHandlerProc)_ComponentRegistered, s);
 
 	return true;
 }
@@ -396,6 +401,7 @@ E_TermSceneComponents(struct NeScene *s)
 		Rt_TermArray(a);
 	}
 
+	Rt_TermArray(&s->compFree);
 	Rt_TermArray(&s->compData);
 }
 
@@ -403,12 +409,6 @@ static inline bool
 _InitArray(void)
 {
 	return Rt_InitArray(&_componentTypes, 40, sizeof(struct NeCompType), MH_System);
-}
-
-static int
-_CompType_cmp(const void *item, const void *data)
-{
-	return ((struct NeCompType *) item)->hash != *((uint64_t *) data);
 }
 
 void
@@ -467,10 +467,18 @@ _LoadScript(const char *path)
 	isSize = 512;
 	initScript = Sys_Alloc(sizeof(*initScript), isSize, MH_Asset);
 
-	uint32_t i = 0;
+#ifdef _NEKO_EDITOR_
+	struct NeArray insFields;
+	Rt_InitArray(&insFields, 4, sizeof(struct NeDataField), MH_Editor);
+#endif
+
 	size_t byteOffset = 0;
 	while (!E_EndOfStream(&stm)) {
 		size_t fieldSize = 0;
+
+#ifdef _NEKO_EDITOR_
+		struct NeDataField field = { .type = FT_UNKNOWN };
+#endif
 
 		E_ReadStreamLine(&stm, buff, sizeof(buff));
 
@@ -486,21 +494,63 @@ _LoadScript(const char *path)
 		if (!strncmp(&buff[3], "int32", typeLen)) {
 			typeStr = "I32";
 			fieldSize = sizeof(int32_t);
+		#ifdef _NEKO_EDITOR_
+			field.type = FT_INT32;
+		#endif
 		} else if (!strncmp(&buff[3], "int64", typeLen)) {
 			typeStr = "I64";
 			fieldSize = sizeof(int64_t);
+		#ifdef _NEKO_EDITOR_
+			field.type = FT_INT64;
+		#endif
 		} else if (!strncmp(&buff[3], "float", typeLen)) {
 			typeStr = "Flt";
 			fieldSize = sizeof(float);
+		#ifdef _NEKO_EDITOR_
+			field.type = FT_FLOAT;
+		#endif
 		} else if (!strncmp(&buff[3], "double", typeLen)) {
 			typeStr = "Dbl";
 			fieldSize = sizeof(double);
+		#ifdef _NEKO_EDITOR_
+			field.type = FT_DOUBLE;
+		#endif
 		} else if (!strncmp(&buff[3], "bool", typeLen)) {
 			typeStr = "Bln";
 			fieldSize = sizeof(bool);
+		#ifdef _NEKO_EDITOR_
+			field.type = FT_BOOL;
+		#endif
 		} else if (!strncmp(&buff[3], "string", typeLen)) {
 			typeStr = "Str";
 			fieldSize = sizeof(char *);
+		#ifdef _NEKO_EDITOR_
+			field.type = FT_STRING;
+		#endif
+		} else if (!strncmp(&buff[3], "quat", typeLen)) {
+			typeStr = "Quat";
+			fieldSize = sizeof(char *);
+		#ifdef _NEKO_EDITOR_
+			field.type = FT_QUAT;
+		#endif
+		} else if (!strncmp(&buff[3], "vec2", typeLen)) {
+			typeStr = "Vec2";
+			fieldSize = sizeof(char *);
+		#ifdef _NEKO_EDITOR_
+			field.type = FT_VEC2;
+		#endif
+		} else if (!strncmp(&buff[3], "vec3", typeLen)) {
+			typeStr = "Vec3";
+			fieldSize = sizeof(char *);
+		#ifdef _NEKO_EDITOR_
+			field.type = FT_VEC3;
+		#endif
+		} else if (!strncmp(&buff[3], "vec4", typeLen)) {
+			typeStr = "Vec4";
+			fieldSize = sizeof(char *);
+		#ifdef _NEKO_EDITOR_
+			field.type = FT_VEC4;
+		#endif
 		} else if (!strncmp(&buff[3], "pointer", typeLen)) {
 			typeStr = "Ptr";
 			fieldSize = sizeof(void *);
@@ -533,9 +583,16 @@ _LoadScript(const char *path)
 		snprintf(dst, isSize - isLen, _scriptTemplate, name, p1, typeStr, byteOffset, fieldSize, name, p1, typeStr, byteOffset, fieldSize);
 		isLen = strnlen(initScript, isSize);
 
+#ifdef _NEKO_EDITOR_
+		if (field.type != FT_UNKNOWN) {
+			field.offset = sizeof(struct NeCompBase) + byteOffset;
+			snprintf(field.name, sizeof(field.name), "%s", p1);
+			Rt_ArrayAdd(&insFields, &field);
+		}
+#endif
+
 		type.size += fieldSize;
 		byteOffset += fieldSize;
-		++i;
 	}
 
 	type.size = (type.size + type.alignment - 1) & ~(type.alignment - 1);
@@ -543,7 +600,7 @@ _LoadScript(const char *path)
 	if (type.size < sizeof(struct NeCompBase))
 		goto exit;
 
-	if (Rt_ArrayFindId(&_componentTypes, &type.hash, _CompType_cmp) != RT_NOT_FOUND)
+	if (Rt_ArrayFindId(&_componentTypes, &type.hash, Rt_U64CmpFunc) != RT_NOT_FOUND)
 		goto exit;
 
 	if (!Rt_ArrayAdd(&_componentTypes, &type))
@@ -551,7 +608,21 @@ _LoadScript(const char *path)
 
 	Sc_RegisterInitScript(initScript);
 
-	E_Broadcast(EVT_COMPONENT_REGISTERED, &type.hash);
+	E_Broadcast(EVT_COMPONENT_REGISTERED_PTR, Rt_ArrayLast(&_componentTypes));
+	E_Broadcast(EVT_COMPONENT_REGISTERED, (void *)(_componentTypes.count - 1));
+
+#ifdef _NEKO_EDITOR_
+	struct NeComponentFields f = { .type = _componentTypes.count - 1, .fieldCount = (uint32_t)insFields.count, .fields = (struct NeDataField *)insFields.data };
+
+	if (f.fieldCount) {
+		if (!Ed_componentFields.data)
+			Rt_InitArray(&Ed_componentFields, 10, sizeof(f), MH_Editor);
+
+		Rt_ArrayAdd(&Ed_componentFields, &f);
+	} else {
+		Rt_TermArray(&insFields);
+	}
+#endif
 
 exit:
 	Sys_Free(initScript);
@@ -629,3 +700,41 @@ _ScriptCompTerm(void *comp, const char *script)
 	
 	Sc_DestroyVM(vm);
 }
+
+/* NekoEngine
+ *
+ * Component.c
+ * Author: Alexandru Naiman
+ *
+ * -----------------------------------------------------------------------------
+ *
+ * Copyright (c) 2015-2023, Alexandru Naiman
+ *
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * -----------------------------------------------------------------------------
+ */

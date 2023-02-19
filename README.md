@@ -13,7 +13,7 @@ Cross-platform game engine.
 Supported platforms:
 * Windows 7 64-bit or newer
 * Linux x86_64
-* macOS 12.6 or newer arm64
+* macOS 13.0 or newer arm64
 * iOS 14.0 or newer
 * FreeBSD 13.0 amd64
 * OpenBSD 6.9 amd64
@@ -29,7 +29,7 @@ This repository is a mirror which is not frequently updated.
 ### Windows
 
 #### Prerequisites
-* Visual Studio 2022
+* Visual Studio 2022 17.4 or later
 * Vulkan SDK 1.3.216 or later
 * (Optional) FreeType for building the FontGen tool
 
@@ -41,9 +41,9 @@ This repository is a mirror which is not frequently updated.
 ### *nix
 
 #### Prerequisites
-* gcc 4.9+ or clang 3.3+ (any compiler with C11 support should work)
+* gcc 10+ or clang 10+ (any compiler with C18 & C++20 support should work)
 * cmake 3.12+
-* X11, Vulkan & OpenAL development files
+* X11, XInput2, Vulkan, OpenAL & Assimp (for the editor) development files
 * shaderc or glslang
 * For Arch based systems run the following:
 ```
@@ -62,7 +62,7 @@ pkg install vulkan-headers vulkan-loader vulkan-tools vulkan-validation-layers c
 ### macOS / iOS
 
 #### Prerequisites
-* Xcode 14 beta
+* Xcode 14
 
 #### Build
 1. Clone the repository
@@ -70,7 +70,7 @@ pkg install vulkan-headers vulkan-loader vulkan-tools vulkan-validation-layers c
 3. Build NekoEngine.xcodeproj
 
 #### Notes
-* It has only been tested on a M1 Mac Mini / iPhone 11.
+* It has only been tested on M1 machines / iPhone 11.
 
 ## 3rd Party libraries
 
@@ -84,3 +84,4 @@ pkg install vulkan-headers vulkan-loader vulkan-tools vulkan-validation-layers c
 * simple-stdatomic-for-VS-Clang - https://github.com/zenny-chen/simple-stdatomic-for-VS-Clang
 * OpenAL Soft - https://github.com/kcat/openal-soft
 * meshoptimizer - https://github.com/zeux/meshoptimizer
+* DirectXMath - 

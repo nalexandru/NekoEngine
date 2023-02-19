@@ -24,11 +24,12 @@
 	cs->axis[dsty] = y / m;								\
 }
 
+enum NeButton Win32_keymap[256];
+
 bool __InSys_rawMouseAxis = true;
 extern bool __InSys_enableMouseAxis;
 
 static bool _mouseButtons[5];
-static enum NeButton _keymap[256];
 static DWORD _lastPacket[IN_MAX_CONTROLLERS];
 
 static inline void _deadzone(float *x, float *y, const float max, const float deadzone);
@@ -37,11 +38,11 @@ static inline enum NeButton _mapKey(const int key);
 bool
 In_SysInit(void)
 {
-	uint16_t i;
-	RAWINPUTDEVICE rid[2];
+	for (uint16_t i = 0; i < 256; ++i)
+		Win32_keymap[i] = _mapKey(i);
 
-	for (i = 0; i < 256; ++i)
-		_keymap[i] = _mapKey(i);
+#ifndef _NEKO_EDITOR_
+	RAWINPUTDEVICE rid[2];
 
 	rid[0].usUsagePage = 0x01;
 	rid[0].usUsage = 0x02;
@@ -57,6 +58,9 @@ In_SysInit(void)
 		Sys_LogEntry(W32INMOD, LOG_CRITICAL, "Failed to register raw input devices");
 		return false;
 	}
+#else
+	__InSys_rawMouseAxis = false;
+#endif
 
 	UpdateControllers();
 
@@ -196,7 +200,7 @@ HandleInput(HWND wnd, LPARAM lParam, WPARAM wParam)
 		case VK_CLEAR: keyCode = raw->data.keyboard.Flags & RI_KEY_E0 ? BTN_KEY_CLEAR : BTN_KEY_NUM_5;
 		break;
 		case VK_NUMLOCK: keyCode = MapVirtualKey(raw->data.keyboard.MakeCode, MAPVK_VSC_TO_VK_EX) == VK_NUMLOCK ? BTN_KEY_NUMLOCK : BTN_KEY_PAUSE; break;
-		default: keyCode = _keymap[raw->data.keyboard.VKey]; break;
+		default: keyCode = Win32_keymap[raw->data.keyboard.VKey]; break;
 		}
 
 		In_Key(keyCode, !(raw->data.keyboard.Flags & RI_KEY_BREAK));
@@ -383,3 +387,41 @@ _mapKey(const int key)
 
 	return BTN_KEY_UNRECOGNIZED;
 }
+
+/* NekoEngine
+ *
+ * Win32Input.c
+ * Author: Alexandru Naiman
+ *
+ * -----------------------------------------------------------------------------
+ *
+ * Copyright (c) 2015-2023, Alexandru Naiman
+ *
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * -----------------------------------------------------------------------------
+ */

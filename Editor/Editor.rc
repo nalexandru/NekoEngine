@@ -1,6 +1,7 @@
 // Microsoft Visual C++ generated resource script.
 //
 #include "resource.h"
+#include "../Include/Engine/Version.h"
 
 #define APSTUDIO_READONLY_SYMBOLS
 /////////////////////////////////////////////////////////////////////////////
@@ -51,8 +52,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,8,187,0
- PRODUCTVERSION 0,8,187,0
+ FILEVERSION E_VER_MAJOR,E_VER_MINOR,E_VER_BUILD,E_VER_REVISION
+ PRODUCTVERSION E_VER_MAJOR,E_VER_MINOR,E_VER_BUILD,E_VER_REVISION
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -68,13 +69,13 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "CompanyName", "Alexandru Naiman"
-            VALUE "FileDescription", "NekoEngine Test Application"
-            VALUE "FileVersion", "0.8.187"
-            VALUE "InternalName", "NekoEngine.exe"
-            VALUE "LegalCopyright", "2015-2021 Alexandru Naiman. All Rights Reserved."
-            VALUE "OriginalFilename", "NekoEngine.exe"
-            VALUE "ProductName", "NekoEngine"
-            VALUE "ProductVersion", "0.8.187"
+            VALUE "FileDescription", "NekoEngine Editor"
+            VALUE "FileVersion", E_VER_STR
+            VALUE "InternalName", "NekoEditor.exe"
+            VALUE "LegalCopyright", E_CPY_STR
+            VALUE "OriginalFilename", "NekoEditor.exe"
+            VALUE "ProductName", E_PGM_NAME
+            VALUE "ProductVersion", E_VER_STR
         END
     END
     BLOCK "VarFileInfo"
@@ -92,114 +93,6 @@ END
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
 IDI_APPICON             ICON                    "EdIcon.ico"
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Menu
-//
-
-IDR_AM_MENU MENU
-BEGIN
-    POPUP "File"
-    BEGIN
-        MENUITEM "New",                         ID_FILE_NEW
-        MENUITEM SEPARATOR
-        MENUITEM "Open",                        ID_FILE_OPEN
-        MENUITEM "Save",                        ID_FILE_SAVE
-        MENUITEM "Close",                       ID_FILE_CLOSE
-        MENUITEM SEPARATOR
-        MENUITEM "Quit",                        ID_FILE_QUIT
-    END
-    POPUP "Project"
-    BEGIN
-        MENUITEM "Settings",                    ID_PROJECT_SETTINGS
-    END
-    POPUP "Tools"
-    BEGIN
-        MENUITEM "Scene Hierarchy",             ID_TOOLS_SCENEHIERARCHY
-        MENUITEM "Inspector",                   ID_TOOLS_INSPECTOR
-        MENUITEM SEPARATOR
-        MENUITEM "Preferences",                 ID_TOOLS_PREFERENCES
-    END
-    POPUP "Help"
-    BEGIN
-        MENUITEM "Native API Reference",        ID_HELP_NATIVEAPIREFERENCE
-        MENUITEM "Scripting API Reference",     ID_HELP_SCRIPTINGAPIREFERENCE
-        MENUITEM SEPARATOR
-        MENUITEM "About",                       ID_HELP_ABOUT
-    END
-END
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Dialog
-//
-
-IDD_ABOUT DIALOGEX 0, 0, 377, 111
-STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTION
-CAPTION "About NekoEditor"
-FONT 8, "MS Shell Dlg", 400, 0, 0x1
-BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,318,90,50,14
-    LTEXT           "Licensed under BSD 3-clause.",IDC_STATIC,108,65,179,8
-    LTEXT           "NekoEditor",IDC_ABOUT_TITLE,108,29,258,8
-    LTEXT           "Version: 0.8.0.187",IDC_ABOUT_VERSION,108,41,258,8
-    LTEXT           "Copyright (c) 2015-2021 Alexandru Naiman. All rights reserved.",IDC_ABOUT_COPYRIGHT,108,53,258,8
-END
-
-IDD_PROGRESS DIALOGEX 0, 0, 309, 39
-STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTION
-CAPTION "Working"
-FONT 8, "MS Shell Dlg", 400, 0, 0x1
-BEGIN
-    CONTROL         "",IDC_PROGRESS,"msctls_progress32",PBS_MARQUEE | WS_BORDER,6,18,294,14
-    LTEXT           "Static",IDC_DIALOG_TEXT,6,6,294,8
-END
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// DESIGNINFO
-//
-
-#ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO
-BEGIN
-    IDD_ABOUT, DIALOG
-    BEGIN
-        LEFTMARGIN, 7
-        RIGHTMARGIN, 370
-        TOPMARGIN, 7
-        BOTTOMMARGIN, 104
-    END
-
-    IDD_PROGRESS, DIALOG
-    BEGIN
-        LEFTMARGIN, 7
-        RIGHTMARGIN, 302
-        TOPMARGIN, 7
-        BOTTOMMARGIN, 32
-    END
-END
-#endif    // APSTUDIO_INVOKED
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// AFX_DIALOG_LAYOUT
-//
-
-IDD_ABOUT AFX_DIALOG_LAYOUT
-BEGIN
-    0
-END
-
-IDD_PROGRESS AFX_DIALOG_LAYOUT
-BEGIN
-    0
-END
 
 #endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////

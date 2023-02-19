@@ -5,13 +5,17 @@
 #include <Render/Device.h>
 #include <Render/Context.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Buffer
 #define RE_WHOLE_SIZE	(~0ULL)
 
 struct NeBufferDesc
 {
 	uint64_t size;
-	enum NeBufferUsage usage;
+	NeBufferUsageFlags usage;
 	enum NeGPUMemoryType memoryType;
 	const char *name;
 };
@@ -25,7 +29,8 @@ struct NeBufferCreateInfo
 };
 
 bool Re_CreateBuffer(const struct NeBufferCreateInfo *bci, NeBufferHandle *handle);
-void Re_UpdateBuffer(NeBufferHandle handle, uint64_t offset, uint8_t *data, uint64_t size);
+void Re_UpdateBuffer(NeBufferHandle handle, uint64_t offset, void *data, uint64_t size);
+void Re_CmdUpdateBuffer(NeBufferHandle handle, uint64_t offset, void *data, uint64_t size);
 void Re_CmdCopyBuffer(NeBufferHandle src, uint64_t srcOffset, NeBufferHandle dst, uint64_t dstOffset, uint64_t size);
 void *Re_MapBuffer(NeBufferHandle handle);
 void Re_FlushBuffer(NeBufferHandle handle, uint64_t offset, uint64_t size);
@@ -47,7 +52,7 @@ struct NeTextureDesc
 {
 	uint32_t width, height, depth;
 	enum NeTextureType type;
-	enum NeTextureUsage usage;
+	NeTextureUsageFlags usage;
 	enum NeTextureFormat format;
 	uint32_t arrayLayers, mipLevels;
 	bool gpuOptimalTiling;
@@ -104,7 +109,7 @@ void Re_DestroySampler(struct NeSampler *s);
 struct NeFramebufferAttachmentDesc
 {
 	enum NeTextureFormat format;
-	enum NeTextureUsage usage;
+	NeTextureUsageFlags usage;
 };
 
 struct NeFramebufferDesc
@@ -123,7 +128,7 @@ void Re_DestroyFramebuffer(struct NeFramebuffer *fb);
 // Shader
 struct NeShaderStageDesc
 {
-	enum NeShaderStage stage;
+	enum NeShaderStageFlagBits stage;
 	void *module;
 };
 
@@ -168,6 +173,7 @@ bool Re_Present(struct NeSwapchain *swapchain, void *image, struct NeSemaphore *
 enum NeTextureFormat Re_SwapchainFormat(struct NeSwapchain *swapchain);
 struct NeTexture *Re_SwapchainTexture(struct NeSwapchain *swapchain, void *image);
 void Re_SwapchainDesc(struct NeSwapchain *swapchain, struct NeFramebufferAttachmentDesc *desc);
+void Re_SwapchainTextureDesc(struct NeSwapchain *sw, struct NeTextureDesc *desc);
 void Re_DestroySwapchain(struct NeSwapchain *swapchain);
 
 // Pipeline
@@ -309,11 +315,13 @@ struct NeComputePipelineDesc
 struct NeRayTracingPipelineDesc
 {
 	struct NeShaderStageInfo *stageInfo;
+	struct NeShaderBindingTable *sbt;
+	uint32_t maxDepth;
 };
 
 struct NePipeline *Re_GraphicsPipeline(const struct NeGraphicsPipelineDesc *desc);
 struct NePipeline *Re_ComputePipeline(const struct NeComputePipelineDesc *desc);
-struct NePipeline *Re_RayTracingPipeline(struct NeShaderBindingTable *sbt, uint32_t maxDepth);
+struct NePipeline *Re_RayTracingPipeline(const struct NeRayTracingPipelineDesc *desc);
 
 bool Re_InitPipelines(void);
 void Re_TermPipelines(void);
@@ -324,18 +332,18 @@ void Re_SavePipelineCache(void);
 // Synchronization
 struct NeMemoryBarrier
 {
-	enum NePipelineStage srcStage;
-	enum NePipelineStage dstStage;
-	enum NePipelineAccess srcAccess;
-	enum NePipelineAccess dstAccess;
+	NePipelineStage srcStage;
+	NePipelineStage dstStage;
+	NePipelineAccess srcAccess;
+	NePipelineAccess dstAccess;
 };
 
 struct NeBufferBarrier
 {
-	enum NePipelineStage srcStage;
-	enum NePipelineStage dstStage;
-	enum NePipelineAccess srcAccess;
-	enum NePipelineAccess dstAccess;
+	NePipelineStage srcStage;
+	NePipelineStage dstStage;
+	NePipelineAccess srcAccess;
+	NePipelineAccess dstAccess;
 	enum NeRenderQueue srcQueue;
 	enum NeRenderQueue dstQueue;
 	struct NeBuffer *buffer;
@@ -345,10 +353,10 @@ struct NeBufferBarrier
 
 struct NeImageBarrier
 {
-	enum NePipelineStage srcStage;
-	enum NePipelineStage dstStage;
-	enum NePipelineAccess srcAccess;
-	enum NePipelineAccess dstAccess;
+	NePipelineStage srcStage;
+	NePipelineStage dstStage;
+	NePipelineAccess srcAccess;
+	NePipelineAccess dstAccess;
 	enum NeTextureLayout oldLayout;
 	enum NeTextureLayout newLayout;
 	enum NeRenderQueue srcQueue;
@@ -396,4 +404,46 @@ void Re_CloseFile(NeDirectIOHandle handle);
 struct NeRenderInterface *Re_CreateRenderInterface(void);
 void Re_DestroyRenderInterface(struct NeRenderInterface *iface);
 
-#endif /* _NE_RENDER_DRIVER_CORE_H_ */
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* _NE_RENDER_CORE_H_ */
+
+/* NekoEngine
+ *
+ * Core.h
+ * Author: Alexandru Naiman
+ *
+ * -----------------------------------------------------------------------------
+ *
+ * Copyright (c) 2015-2023, Alexandru Naiman
+ *
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * -----------------------------------------------------------------------------
+ */

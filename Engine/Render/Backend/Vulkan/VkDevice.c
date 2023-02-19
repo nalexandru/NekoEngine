@@ -23,7 +23,7 @@ static inline bool _InitQueues(struct NeRenderDevice *dev, VkDeviceCreateInfo *c
 struct NeRenderDevice *
 Re_CreateDevice(struct NeRenderDeviceInfo *info)
 {
-	VkPhysicalDevice physDev = (VkPhysicalDevice)info->private;
+	VkPhysicalDevice physDev = (VkPhysicalDevice)info->reserved;
 	struct NeRenderDevice *dev = Sys_Alloc(1, sizeof(*dev), MH_RenderDriver);
 
 	if (!dev)
@@ -35,7 +35,7 @@ Re_CreateDevice(struct NeRenderDeviceInfo *info)
 
 	void *pNext = NULL;
 
-	if (!CVAR_BOOL("VulkanDrv_DisableRTX")) {
+	if (!CVAR_BOOL("VulkanBackend_DisableRTX")) {
 		VkPhysicalDeviceMeshShaderFeaturesNV *msFeatures = Sys_Alloc(sizeof(*msFeatures), 1, MH_Transient);
 		msFeatures->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_NV;
 		msFeatures->pNext = pNext;
@@ -123,10 +123,10 @@ Re_CreateDevice(struct NeRenderDeviceInfo *info)
 
 	// check extension support
 	uint32_t extCount = 0;
-	vkEnumerateDeviceExtensionProperties((VkPhysicalDevice)info->private, NULL, &extCount, NULL);
+	vkEnumerateDeviceExtensionProperties((VkPhysicalDevice)info->reserved, NULL, &extCount, NULL);
 
 	VkExtensionProperties *extProps = Sys_Alloc(sizeof(*extProps), extCount, MH_Transient);
-	vkEnumerateDeviceExtensionProperties((VkPhysicalDevice)info->private, NULL, &extCount, extProps);
+	vkEnumerateDeviceExtensionProperties((VkPhysicalDevice)info->reserved, NULL, &extCount, extProps);
 
 	for (uint32_t i = 0; i < _devExtensionCount; ++i)
 		if (!_CheckExtension(_devExtensions[i], extProps, extCount)) {
@@ -134,7 +134,7 @@ Re_CreateDevice(struct NeRenderDeviceInfo *info)
 			goto error;
 		}
 
-	if (E_GetCVarBln("VulkanDrv_EnableDeviceDiagnostics", false)->bln &&
+	if (E_GetCVarBln("VulkanBackend_EnableDeviceDiagnostics", false)->bln &&
 			_CheckExtension(VK_NV_DEVICE_DIAGNOSTICS_CONFIG_EXTENSION_NAME, extProps, extCount)) {
 		_devExtensions[_devExtensionCount++] = VK_NV_DEVICE_DIAGNOSTICS_CONFIG_EXTENSION_NAME;
 		VkDeviceDiagnosticsConfigCreateInfoNV ddcci =
@@ -159,7 +159,7 @@ Re_CreateDevice(struct NeRenderDeviceInfo *info)
 	if (!_InitQueues(dev, &devInfo))
 		goto error;
 
-	VkResult rc = vkCreateDevice((VkPhysicalDevice)info->private, &devInfo, Vkd_allocCb, &dev->dev);
+	VkResult rc = vkCreateDevice((VkPhysicalDevice)info->reserved, &devInfo, Vkd_allocCb, &dev->dev);
 	if (rc != VK_SUCCESS) {
 		Sys_LogEntry(VKDRV_MOD, LOG_CRITICAL, "vkCreateDevice = %d", rc);
 		goto error;
@@ -235,7 +235,7 @@ Re_CreateDevice(struct NeRenderDeviceInfo *info)
 	if (vkCreateCommandPool(dev->dev, &poolInfo, Vkd_allocCb, &dev->driverTransferPool) != VK_SUCCESS)
 		goto error;
 
-	if (E_GetCVarBln("VulkanDrv_ForceNonCoherentStaging", false)->bln) {
+	if (E_GetCVarBln("VulkanBackend_ForceNonCoherentStaging", false)->bln) {
 		Re_deviceInfo.features.coherentMemory = false;
 		Sys_LogEntry(VKDRV_MOD, LOG_DEBUG, "Forcing non-coherent staging memory");
 	}
@@ -430,7 +430,7 @@ _InitQueues(struct NeRenderDevice *dev, VkDeviceCreateInfo *ci)
 		if (transfer.id == UINT32_MAX)
 			transfer.id = compute.id;
 
-		if (!E_GetCVarBln("VulkanDrv_UseComputeQueue", true)->bln)
+		if (!E_GetCVarBln("VulkanBackend_UseComputeQueue", true)->bln)
 			compute.id = graphics.id;
 	}
 
@@ -508,3 +508,41 @@ _InitQueues(struct NeRenderDevice *dev, VkDeviceCreateInfo *ci)
 
 	return true;
 }
+
+/* NekoEngine
+ *
+ * VkDevice.c
+ * Author: Alexandru Naiman
+ *
+ * -----------------------------------------------------------------------------
+ *
+ * Copyright (c) 2015-2023, Alexandru Naiman
+ *
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * -----------------------------------------------------------------------------
+ */

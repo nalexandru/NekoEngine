@@ -6,8 +6,8 @@
 
 /**
  * Last pull from upstream:
- *      commit 6925c10
- *      date: 2022/06/07
+ *      commit 9266e77
+ *      date: 2022/12/14
  */
 
 /**
@@ -439,7 +439,7 @@ typedef struct PHYSFS_Version
 
 #ifndef DOXYGEN_SHOULD_IGNORE_THIS
 #define PHYSFS_VER_MAJOR 3
-#define PHYSFS_VER_MINOR 1
+#define PHYSFS_VER_MINOR 2
 #define PHYSFS_VER_PATCH 0
 #endif  /* DOXYGEN_SHOULD_IGNORE_THIS */
 

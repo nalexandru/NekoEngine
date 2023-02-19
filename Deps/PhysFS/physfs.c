@@ -104,8 +104,8 @@ static inline int __PHYSFS_atomicAdd(int *ptrval, const int val)
 {
     int retval;
     __PHYSFS_platformGrabMutex(stateLock);
+    *ptrval += val;
     retval = *ptrval;
-    *ptrval = retval + val;
     __PHYSFS_platformReleaseMutex(stateLock);
     return retval;
 } /* __PHYSFS_atomicAdd */
@@ -552,7 +552,7 @@ static void enumStringListCallback(void *data, const char *str)
     if (pecd->errcode)
         return;
 
-    ptr = allocator.Realloc(pecd->list, (pecd->size + 2) * sizeof (char *));
+    ptr = allocator.Realloc(pecd->list, ((PHYSFS_uint64)pecd->size + 2) * sizeof (char *));
     newstr = (char *) allocator.Malloc(strlen(str) + 1);
     if (ptr != NULL)
         pecd->list = (char **) ptr;
@@ -2188,7 +2188,12 @@ static int doMkdir(const char *_dname, char *dname)
             const int rc = h->funcs->stat(h->opaque, dname, &statbuf);
             if ((!rc) && (currentErrorCode() == PHYSFS_ERR_NOT_FOUND))
                 exists = 0;
-            retval = ((rc) && (statbuf.filetype == PHYSFS_FILETYPE_DIRECTORY));
+            /* verifyPath made sure that (dname) doesn't have symlinks if they aren't
+               allowed, but it's possible the mounted writeDir itself has symlinks in it,
+               (for example "/var" on iOS is a symlink, and the prefpath will be somewhere
+               under that)...if we mounted that writeDir, we must allow those symlinks here
+               unconditionally. */
+            retval = ((rc) && ((statbuf.filetype == PHYSFS_FILETYPE_DIRECTORY) || (statbuf.filetype == PHYSFS_FILETYPE_SYMLINK)));
         } /* if */
 
         if (!exists)
@@ -2354,7 +2359,7 @@ static PHYSFS_EnumerateCallbackResult enumFilesCallback(void *data,
     if (locateInStringList(str, pecd->list, &pos))
         return PHYSFS_ENUM_OK;  /* already in the list, but keep going. */
 
-    ptr = allocator.Realloc(pecd->list, (pecd->size + 2) * sizeof (char *));
+    ptr = allocator.Realloc(pecd->list, ((PHYSFS_uint64)pecd->size + 2) * sizeof (char *));
     newstr = (char *) allocator.Malloc(strlen(str) + 1);
     if (ptr != NULL)
         pecd->list = (char **) ptr;

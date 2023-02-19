@@ -158,3 +158,19 @@ EXPORTS
 	Sys_WaitMutex
 	Sys_WaitFutex
 	Sys_TermConditionVariable
+
+	Sc_RegisterInitScript
+	Sc_RegisterInterface
+
+	NeWin32_UTF8toUCS2
+	NeWin32_UCS2toUTF8
+
+	lua_createtable
+	lua_setglobal
+	lua_getglobal
+
+	lua_pushboolean
+
+	luaL_checkversion_
+	luaL_checklstring
+	luaL_setfuncs

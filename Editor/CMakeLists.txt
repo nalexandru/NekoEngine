@@ -1,80 +1,120 @@
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+
 file (GLOB src
 	Asset/*.c
+	Asset/*.cxx
 	*.c
 )
 
-file (GLOB cocoa_src
-	GUI/Cocoa/*.m
-)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Widgets)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets)
 
-file (GLOB motif_src
-	GUI/Motif/*.c
-)
-
-file (GLOB gtk_src
-	GUI/GTK/*.c
+set(QT_SOURCES
+	GUI/GUI.cxx
+	GUI/EditorWindow.cxx
+	GUI/Inspector.cxx
+	GUI/SceneHierarchy.cxx
+	GUI/Bindings.cxx
+	GUI/Dialogs/AboutDialog.cxx
+	GUI/Widgets/EngineView.cxx
+	GUI/Widgets/ComponentInspector.cxx
+	GUI/Widgets/DataView.cxx
+	Editor.qrc
 )
 
 if (WIN32)
-	file (GLOB gtk_platform_src GUI/GTK/Win32/*.c)
+	include_directories(../Deps/assimp/include)
+	link_directories(../Deps/assimp/lib)
+endif()
 
-	set(GTK_INCLUDE_DIRS
-		$ENV{GTK_ROOT}/lib/graphene-1.0/include
-		$ENV{GTK_ROOT}/include/graphene-1.0
-		$ENV{GTK_ROOT}/include/gdk-pixbuf-2.0
-		$ENV{GTK_ROOT}/include/harfbuzz
-		$ENV{GTK_ROOT}/include/pango-1.0
-		$ENV{GTK_ROOT}/include/cairo
-		$ENV{GTK_ROOT}/lib/glib-2.0/include
-		$ENV{GTK_ROOT}/include/gio-win32-2.0
-		$ENV{GTK_ROOT}/include/glib-2.0
-		$ENV{GTK_ROOT}/include/gtk-4.0
+if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
+	qt_add_executable(NekoEditor MACOSX_BUNDLE MANUAL_FINALIZATION ${src} ${QT_SOURCES})
+elseif(WIN32)
+	add_executable(NekoEditor ${src} ${QT_SOURCES} Editor.rc)
+else()
+	add_executable(NekoEditor MACOSX_BUNDLE ${src} ${QT_SOURCES})
+endif()
+
+if(APPLE)
+	file(GLOB_RECURSE res "${CMAKE_SOURCE_DIR}/Resources/Engine/*")
+	foreach(file ${res})
+		file(RELATIVE_PATH rpath "${CMAKE_SOURCE_DIR}/Resources/Engine" ${file})
+		get_filename_component(dpath ${rpath} DIRECTORY)
+		set_property(SOURCE ${file} PROPERTY MACOSX_PACKAGE_LOCATION "Resources/${dpath}")
+		source_group("Resources/${dpath}" FILES "${file}")
+	endforeach()
+
+#	add_executable(NekoEditor MACOSX_BUNDLE ${src} ${res})
+	set_target_properties(NekoEditor PROPERTIES
+		BUNDLE True
+		MACOSX_BUNDLE_GUI_IDENTIFIER xyz.nalexandru.NekoEngine
+		MACOSX_BUNDLE_BUNDLE_NAME NekoEditor
+		MACOSX_BUNDLE_BUNDLE_VERSION "0.8.276"
+		MACOSX_BUNDLE_SHORT_VERSION_STRING "0.8"
+		MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/Platform/macOS/EditorInfo.plist
 	)
-	set(GTK_LIBRARY_DIRS $ENV{GTK_ROOT}/lib)
-	set(GTK_LIBRARIES gtk-4.lib gio-2.0.lib glib-2.0.lib gobject-2.0.lib pango-1.0.lib)
-elseif (NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-	file (GLOB gtk_platform_src GUI/GTK/X11/*.c)
 
-	find_package(PkgConfig REQUIRED)
-	pkg_check_modules(GTK REQUIRED gtk4)
-endif ()
+	add_custom_command(TARGET NekoEditor POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy
+		"${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/default.metallib"
+		"$<TARGET_BUNDLE_CONTENT_DIR:NekoEditor>/Resources/default.metallib"
+	)
 
-set(CMAKE_C_STANDARD 11)
+	add_custom_command(TARGET NekoEditor POST_BUILD
+		COMMAND xcrun actool ${CMAKE_SOURCE_DIR}/Platform/macOS/Images.xcassets --compile ${CMAKE_CURRENT_BINARY_DIR} --platform macosx --minimum-deployment-target 13.0 --app-icon "Editor AppIcon" --output-partial-info-plist temp.plist --output-format human-readable-text
+		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+	)
 
-include_directories(${GTK_INCLUDE_DIRS})
-link_directories(${GTK_LIBRARY_DIRS})
+	add_custom_command(TARGET NekoEditor POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy
+		"${CMAKE_CURRENT_BINARY_DIR}/Assets.car"
+		"$<TARGET_BUNDLE_CONTENT_DIR:NekoEditor>/Resources/Assets.car"
+	)
 
-add_definitions(${GTK_CFLAGS_OTHER})
+	add_custom_command(TARGET NekoEditor POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy
+		"${CMAKE_CURRENT_BINARY_DIR}/Editor AppIcon.icns"
+		"$<TARGET_BUNDLE_CONTENT_DIR:NekoEditor>/Resources/Editor AppIcon.icns"
+	)
+endif()
 
-if (NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-	include_directories(/usr/GNUstep/System/Library/Headers)
-	link_directories(/usr/GNUstep/System/Library/Libraries)
-endif ()
+target_link_libraries(NekoEditor PRIVATE Platform Lua PhysFS meshoptimizer assimp
+	Qt${QT_VERSION_MAJOR}::Core
+	Qt${QT_VERSION_MAJOR}::Widgets
+)
 
-if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-	add_executable(NekoEditor ${src} ${cocoa_src})
-elseif (WIN32)
-	add_executable(NekoEditor ${src} ${gtk_src} ${gtk_platform_src} Editor.rc)
-else ()
-	add_executable(NekoEditor ${src} ${gtk_src} ${gtk_platform_src})
-endif ()
+#set_target_properties(NekoEditor PROPERTIES
+#	MACOSX_BUNDLE_GUI_IDENTIFIER NekoEditor.nalexandru.xyz
+#	MACOSX_BUNDLE_BUNDLE_VERSION ${CMAKE_PROJECT_VERSION}
+#	MACOSX_BUNDLE_SHORT_VERSION_STRING ${CMAKE_PROJECT_VERSION_MAJOR}.${CMAKE_PROJECT_VERSION_MINOR}
+#	MACOSX_BUNDLE TRUE
+#	WIN32_EXECUTABLE TRUE
+#)
+
+if(QT_VERSION_MAJOR EQUAL 6)
+	qt_finalize_executable(NekoEditor)
+endif()
 
 set_target_properties(NekoEditor PROPERTIES ENABLE_EXPORTS TRUE)
 target_compile_definitions(NekoEditor PRIVATE _ENGINE_INTERNAL_)
 
-if (NOT WIN32)
-	target_link_libraries(NekoEditor "-Wl,--allow-multiple-definition" Platform openal "-Wl,--whole-archive" Engine "-Wl,--no-whole-archive" meshoptimizer stdc++)
-else ()
+if(WIN32)
 	add_dependencies(NekoEditor Engine)
-	target_link_libraries(NekoEditor Platform OpenAL PhysFS Lua ntdll xinput9_1_0 -WHOLEARCHIVE:Engine\\Engine.lib meshoptimizer)
-endif ()
+	target_link_libraries(NekoEditor PRIVATE
+		mojoal -WHOLEARCHIVE:Engine\\Engine.lib
+		ntdll xinput9_1_0 ws2_32 imm32 winmm setupapi version dwmapi
+		$ENV{VULKAN_SDK}/lib/SDL2-static.lib
+	)
 
-if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-	target_link_libraries(NekoEditor objc)
-	target_link_libraries(NekoEditor "-framework Foundation -framework AppKit")
-else ()
-#	target_compile_options(NekoEditor PRIVATE -fobjc-runtime=gnustep-2.0 -fblocks)
-#	target_link_libraries(NekoEditor gnustep-base gnustep-gui dispatch)
-#	target_link_libraries(NekoEditor Xm Xt)
-	target_link_libraries(NekoEditor ${GTK_LIBRARIES})
-endif ()
+	add_custom_command(TARGET NekoEditor POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy
+		"${CMAKE_SOURCE_DIR}/Deps/assimp/bin/assimp.dll"
+		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assimp.dll"
+	)
+elseif(APPLE)
+	target_link_libraries(NekoEditor PRIVATE "-Wl,-all_load" Engine)
+else()
+	target_link_libraries(NekoEditor PRIVATE "-Wl,--allow-multiple-definition" "-Wl,--whole-archive" Engine "-Wl,--no-whole-archive")
+endif()

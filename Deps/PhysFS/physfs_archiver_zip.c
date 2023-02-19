@@ -15,6 +15,11 @@
 #include <errno.h>
 #include <time.h>
 
+#if (PHYSFS_BYTEORDER == PHYSFS_LIL_ENDIAN)
+#define MINIZ_LITTLE_ENDIAN 1
+#else
+#define MINIZ_LITTLE_ENDIAN 0
+#endif
 #include "physfs_miniz.h"
 
 /*
@@ -568,7 +573,7 @@ static PHYSFS_sint64 zip_find_end_of_central_dir(PHYSFS_Io *io, PHYSFS_sint64 *l
         {
             if (!__PHYSFS_readAll(io, buf, maxread - 4))
                 return -1;
-            memcpy(&buf[maxread - 4], &extra, sizeof (extra));
+            memcpy(&buf[maxread - 4], extra, sizeof (extra));
             totalread += maxread - 4;
         } /* if */
         else
@@ -578,7 +583,7 @@ static PHYSFS_sint64 zip_find_end_of_central_dir(PHYSFS_Io *io, PHYSFS_sint64 *l
             totalread += maxread;
         } /* else */
 
-        memcpy(&extra, buf, sizeof (extra));
+        memcpy(extra, buf, sizeof (extra));
 
         for (i = maxread - 4; i > 0; i--)
         {

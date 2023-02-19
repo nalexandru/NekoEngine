@@ -35,8 +35,6 @@ static struct NeArray _handlers, _queue[2], *_currentQueue;
 static int _currentQueueId;
 static struct NeAtomicLock _queueLock, _handlerLock;
 
-static int32_t _Sort(const struct NeEventHandlerInfo *a, const struct NeEventHandlerInfo *b);
-static int32_t _Comp(const struct NeEventHandlerInfo *m, const uint64_t *Event);
 static void _ProcessEvent(int worker, struct NeProcessEventArgs *args);
 
 void
@@ -66,7 +64,7 @@ E_RegisterHandler(const char *event, NeEventHandlerProc handlerProc, void *user)
 
 	Sys_AtomicLockWrite(&_handlerLock);
 
-	handlerIdx = (uint32_t)Rt_ArrayBSearchId(&_handlers, &hash, (RtCmpFunc)_Comp);
+	handlerIdx = (uint32_t)Rt_ArrayBSearchId(&_handlers, &hash, Rt_U64CmpFunc);
 	info = Rt_ArrayGet(&_handlers, handlerIdx);
 	if (!info) {
 		info = Rt_ArrayAllocate(&_handlers);
@@ -83,8 +81,8 @@ E_RegisterHandler(const char *event, NeEventHandlerProc handlerProc, void *user)
 	idx = (uint32_t)info->handlers.count - 1;
 
 	if (sort) {
-		Rt_ArraySort(&_handlers, (RtSortFunc)_Sort);
-		handlerIdx = (uint32_t)Rt_ArrayBSearchId(&_handlers, &event, (RtCmpFunc)_Comp);
+		Rt_ArraySort(&_handlers, Rt_U64CmpFunc);
+		handlerIdx = (uint32_t)Rt_ArrayBSearchId(&_handlers, &event, Rt_U64CmpFunc);
 	}
 
 	Sys_AtomicUnlockWrite(&_handlerLock);
@@ -166,7 +164,7 @@ E_ProcessEvents(void)
 
 	for (i = 0; i < queue->count; ++i) {
 		evt = Rt_ArrayGet(queue, i);
-		info = Rt_ArrayBSearch(&_handlers, &evt->event, (RtCmpFunc)_Comp);
+		info = Rt_ArrayBSearch(&_handlers, &evt->event, Rt_U64CmpFunc);
 		if (!info)
 			continue;
 
@@ -190,20 +188,49 @@ E_ProcessEvents(void)
 	//
 }
 
-static int32_t
-_Sort(const struct NeEventHandlerInfo *a, const struct NeEventHandlerInfo *b)
-{
-	return a->event > b->event ? 1 : (a->event < b->event ? -1 : 0);
-}
-
-static int32_t
-_Comp(const struct NeEventHandlerInfo *m, const uint64_t *event)
-{
-	return m->event > *event ? 1 : (m->event < *event ? -1 : 0);
-}
-
 void
 _ProcessEvent(int worker, struct NeProcessEventArgs *args)
 {
+	if (!args->handler.proc)
+		return;
+
 	args->handler.proc(args->handler.user, args->args);
 }
+
+/* NekoEngine
+ *
+ * Event.c
+ * Author: Alexandru Naiman
+ *
+ * -----------------------------------------------------------------------------
+ *
+ * Copyright (c) 2015-2023, Alexandru Naiman
+ *
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * -----------------------------------------------------------------------------
+ */

@@ -16,20 +16,11 @@
     <Filter Include="Source Files\Asset">
       <UniqueIdentifier>{dd2e9705-1d0e-433d-8811-7e5c03424821}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\GUI">
-      <UniqueIdentifier>{c536a0a8-f68d-40bb-9290-1caf8c0a5c63}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Editor">
       <UniqueIdentifier>{5ac587b5-44c3-4814-81df-5498734e4ad2}</UniqueIdentifier>
     </Filter>
     <Filter Include="Header Files\Editor\Asset">
       <UniqueIdentifier>{fc58c6f6-01e2-461e-b406-bfe5c5edf807}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\GUI\GTK">
-      <UniqueIdentifier>{e7e10e72-1648-4931-9ccc-e8494e9e1495}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\GUI\GTK\Win32">
-      <UniqueIdentifier>{2e9b0c6a-e497-4e07-ac93-adbc90e850c1}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -39,7 +30,7 @@
     <ClCompile Include="Asset\Asset.c">
       <Filter>Source Files\Asset</Filter>
     </ClCompile>
-    <ClCompile Include="Asset\glTF.c">
+    <ClCompile Include="Asset\glTF.cxx">
       <Filter>Source Files\Asset</Filter>
     </ClCompile>
     <ClCompile Include="Asset\Import.c">
@@ -51,23 +42,11 @@
     <ClCompile Include="Project.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="GUI\GTK\AboutDialog.c">
-      <Filter>Source Files\GUI\GTK</Filter>
+    <ClCompile Include="Asset\NAnim.c">
+      <Filter>Source Files\Asset</Filter>
     </ClCompile>
-    <ClCompile Include="GUI\GTK\AssetManager.c">
-      <Filter>Source Files\GUI\GTK</Filter>
-    </ClCompile>
-    <ClCompile Include="GUI\GTK\GUI.c">
-      <Filter>Source Files\GUI\GTK</Filter>
-    </ClCompile>
-    <ClCompile Include="GUI\GTK\Inspector.c">
-      <Filter>Source Files\GUI\GTK</Filter>
-    </ClCompile>
-    <ClCompile Include="GUI\GTK\SceneHierarchy.c">
-      <Filter>Source Files\GUI\GTK</Filter>
-    </ClCompile>
-    <ClCompile Include="GUI\GTK\Win32\GUI_Win32.c">
-      <Filter>Source Files\GUI\GTK\Win32</Filter>
+    <ClCompile Include="Asset\Assimp.cxx">
+      <Filter>Source Files\Asset</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -89,26 +68,8 @@
     <ClInclude Include="..\Include\Editor\Asset\Import.h">
       <Filter>Header Files\Editor\Asset</Filter>
     </ClInclude>
-    <ClInclude Include="..\Include\Editor\Asset\NMesh.h">
-      <Filter>Header Files\Editor\Asset</Filter>
-    </ClInclude>
     <ClInclude Include="..\Include\Editor\Project.h">
       <Filter>Header Files\Editor</Filter>
-    </ClInclude>
-    <ClInclude Include="GUI\GTK\AboutDialog.h">
-      <Filter>Source Files\GUI\GTK</Filter>
-    </ClInclude>
-    <ClInclude Include="GUI\GTK\AssetManager.h">
-      <Filter>Source Files\GUI\GTK</Filter>
-    </ClInclude>
-    <ClInclude Include="GUI\GTK\GTKGUI.h">
-      <Filter>Source Files\GUI\GTK</Filter>
-    </ClInclude>
-    <ClInclude Include="GUI\GTK\Inspector.h">
-      <Filter>Source Files\GUI\GTK</Filter>
-    </ClInclude>
-    <ClInclude Include="GUI\GTK\SceneHierarchy.h">
-      <Filter>Source Files\GUI\GTK</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

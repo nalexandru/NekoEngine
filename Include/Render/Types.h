@@ -1,7 +1,11 @@
 #ifndef _NE_RENDER_TYPES_H_
 #define _NE_RENDER_TYPES_H_
 
-#include <Engine/Types.h>
+#include <Math/Types.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // Resource definitions
 
@@ -18,7 +22,7 @@ enum NeAccelerationStructureType
 	AS_BOTTOM_LEVEL
 };
 
-enum NeAccelerationStructureFlags
+enum NeAccelerationStructureFlagBits
 {
 	ASF_ALLOW_UPDATE		= 0x00000001,
 	ASF_ALLOW_COMPACTION	= 0x00000002,
@@ -26,6 +30,7 @@ enum NeAccelerationStructureFlags
 	ASF_FAST_BUILD			= 0x00000008,
 	ASF_LOW_MEMORY			= 0x00000010
 };
+typedef uint32_t NeAccelerationStructureFlags;
 
 enum NeAccelerationStructureBuildMode
 {
@@ -57,7 +62,7 @@ struct NeAccelerationStructureCreateInfo;
 
 // Buffer
 
-enum NeBufferUsage
+enum NeBufferUsageFlagBits
 {
 	BU_TRANSFER_SRC			= 0x00000001,
 	BU_TRANSFER_DST			= 0x00000002,
@@ -70,6 +75,7 @@ enum NeBufferUsage
 	BU_AS_STORAGE			= 0x00100000,
 	BU_SHADER_BINDING_TABLE	= 0x00000400
 };
+typedef uint32_t NeBufferUsageFlags;
 
 struct NeBuffer;
 struct NeBufferDesc;
@@ -105,6 +111,7 @@ enum NeImageAspect
 	IA_DEPTH	= 0x00000002,
 	IA_STENCIL	= 0x00000004
 };
+typedef uint32_t NeImageAspectFlags;
 
 enum NeRenderCommandContents
 {
@@ -272,7 +279,7 @@ enum NeShaderType
 	ST_RAY_TRACING
 };
 
-enum NeShaderStage
+enum NeShaderStageFlagBits
 {
 	SS_VERTEX		= 0x00000001,
 	SS_TESS_CTRL	= 0x00000002,
@@ -289,8 +296,9 @@ enum NeShaderStage
 	SS_CALLABLE		= 0x00002000,
 	SS_TASK			= 0x00000040,
 	SS_MESH			= 0x00000080,
-    SS_ALL			= 0x7FFFFFFF
+	SS_ALL			= 0x7FFFFFFF
 };
+typedef uint32_t NeShaderStageFlags;
 
 struct NeShader;
 struct NeShaderStageDesc;
@@ -359,7 +367,7 @@ enum NeTextureFormat
 	TF_INVALID
 };
 
-enum NeTextureUsage
+enum NeTextureUsageFlagBits
 {
 	TU_TRANSFER_SRC					= 0x00000001,
 	TU_TRANSFER_DST					= 0x00000002,
@@ -371,6 +379,7 @@ enum NeTextureUsage
 	TU_SHADING_RATE_ATTACHMENT		= 0x00000100,
 	TU_FRAGMENT_DENSITY_MAP			= 0x00000200
 };
+typedef uint32_t NeTextureUsageFlags;
 
 enum NeTextureLayout
 {
@@ -501,4 +510,46 @@ struct NeRenderInterface;
 
 typedef void *NeDirectIOHandle;
 
+#ifdef __cplusplus
+}
+#endif
+
 #endif /* _NE_RENDER_TYPES_H_ */
+
+/* NekoEngine
+ *
+ * Types.h
+ * Author: Alexandru Naiman
+ *
+ * -----------------------------------------------------------------------------
+ *
+ * Copyright (c) 2015-2023, Alexandru Naiman
+ *
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * -----------------------------------------------------------------------------
+ */

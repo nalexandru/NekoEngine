@@ -3,16 +3,22 @@
 #include <sched.h>
 #include <fcntl.h>
 #include <dlfcn.h>
+#include <netdb.h>
 #include <errno.h>
 #include <unistd.h>
 #include <pthread.h>
 #include <sys/time.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 #include <sys/utsname.h>
+#include <netinet/in.h>
 
 #include <System/System.h>
 #include <System/Memory.h>
+#include <Network/Network.h>
 #include <Engine/Engine.h>
 #include <Engine/Application.h>
 
@@ -198,6 +204,66 @@ Sys_CpuThreadCount(void)
 	return _cpuThreadCount;
 }
 
+uint64_t
+Sys_TotalMemory(void)
+{
+#if defined(_SC_PHYS_PAGES)
+	uint64_t pages = sysconf(_SC_PHYS_PAGES);
+	uint64_t page_size = sysconf(_SC_PAGE_SIZE);
+	return pages * page_size;
+#elif defined(HW_PHYSMEM)
+	uint64_t mem = 0;
+	size_t len = sizeof(mem);
+#if defined(SYS_PLATFORM_APPLE) && defined(HW_MEMSIZE)
+	static int mib[2] = { CTL_HW, HW_MEMSIZE };
+#else
+	static int mib[2] = { CTL_HW, HW_PHYSMEM };
+#endif
+
+	if (sysctl(mib, 2, &mem, &len, NULL, 0) < 0)
+		return 0;
+
+	return mem;
+#elif defined(SYS_PLATFORM_IRIX)
+	struct rminfo rmi;
+
+	sysmp(MP_KERNADDR, MPSA_RMINFO, &rmi);
+
+	return rmi.physmem;
+#else
+#	error FATAL: sys_mem_total NOT IMPLEMENTED FOR THIS PLATFORM
+	return 0;
+#endif
+}
+
+uint64_t
+Sys_FreeMemory(void)
+{
+#if defined(_SC_AVPHYS_PAGES)
+	uint64_t pages = sysconf(_SC_AVPHYS_PAGES);
+	uint64_t page_size = sysconf(_SC_PAGE_SIZE);
+	return pages * page_size;
+#elif defined(HW_USERMEM)
+	uint64_t mem = 0;
+	size_t len = sizeof(mem);
+	int mib[2] = { CTL_HW, HW_USERMEM };
+
+	if (sysctl(mib, 2, &mem, &len, NULL, 0) < 0)
+		return 0;
+
+	return mem;
+#elif defined(SYS_PLATFORM_IRIX)
+	struct rminfo rmi;
+
+	sysmp(MP_KERNADDR, MPSA_RMINFO, &rmi);
+
+	return rmi.freemem;
+#else
+#	error FATAL: sys_mem_free NOT IMPLEMENTED FOR THIS PLATFORM
+	return 0;
+#endif
+}
+
 const char *
 Sys_OperatingSystem(void)
 {
@@ -265,6 +331,9 @@ Sys_ProcessEvents(void)
 	XEvent ev, nev;
 	while (XPending(X11_display)) {
 		XNextEvent(X11_display, &ev);
+
+		if (HandleInput(&ev))
+			continue;
 
 		switch (ev.type) {
 			case KeyPress: {
@@ -433,7 +502,7 @@ Sys_CreateDirectory(const char *path)
 }
 
 void
-Sys_ExecutableLocation(char *buff, uint32_t len)
+Sys_ExecutableLocation(char *buff, size_t len)
 {
 #if defined(SYS_PLATFORM_LINUX)
 	char tmp[4096];
@@ -441,8 +510,7 @@ Sys_ExecutableLocation(char *buff, uint32_t len)
 	(void)readlink(tmp, buff, len);
 #elif defined(SYS_PLATFORM_FREEBSD)
 	int mib[] = { CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1 };
-	size_t size = len;
-	sysctl(mib, sizeof(mib) / sizeof(mib[0]), buff, &size, NULL, 0);
+	sysctl(mib, sizeof(mib) / sizeof(mib[0]), buff, &len, NULL, 0);
 #elif defined(SYS_PLATFORM_OPENBSD)
 	memset(buff, 0x0, len);	// TODO
 #elif defined(SYS_PLATFORM_SUNOS)
@@ -459,6 +527,24 @@ Sys_ExecutableLocation(char *buff, uint32_t len)
 
 	char *p = strrchr(buff, '/');
 	if (p) *p++ = 0x0;
+}
+
+void
+Sys_GetWorkingDirectory(char *buff, size_t len)
+{
+	getcwd(buff, len);
+}
+
+void
+Sys_SetWorkingDirectory(const char *dir)
+{
+	chdir(dir);
+}
+
+void
+Sys_UserName(char *buff, size_t len)
+{
+	getlogin_r(buff, len);
 }
 
 void *
@@ -540,6 +626,166 @@ Sys_TermPlatform(void)
 	XCloseDisplay(X11_display);
 #endif
 }
+
+intptr_t
+Sys_GetCurrentProcess()
+{
+	return (intptr_t)getpid();
+}
+
+int32_t
+Sys_GetCurrentProcessId()
+{
+	return getpid();
+}
+
+void
+Sys_WaitForProcessExit(intptr_t handle)
+{
+	waitpid((pid_t)handle, NULL, 0);
+}
+
+intptr_t
+Sys_Execute(char * const *argv, const char *wd, FILE **in, FILE **out, FILE **err, bool showWindow)
+{
+	int inPipes[2], outPipes[2], errPipes[2];
+
+	if (in)
+		if (pipe(inPipes))
+			return -1;
+
+	if (out)
+		if (pipe(outPipes))
+			return -1;
+
+	if (err)
+		if (pipe(errPipes))
+			return -1;
+
+	pid_t p = fork();
+	if (!p) {
+		if (in) {
+			close(inPipes[1]);
+			dup2(inPipes[0], STDIN_FILENO);
+		}
+
+		if (out) {
+			close(outPipes[0]);
+			dup2(outPipes[1], STDOUT_FILENO);
+		}
+
+		if (err) {
+			close(errPipes[0]);
+			dup2(errPipes[1], STDERR_FILENO);
+		}
+
+		if (wd)
+			chdir(wd);
+
+		execv(argv[0], argv);
+	} else {
+		if (in) {
+			close(inPipes[0]);
+			*in = fdopen(inPipes[1], "w");
+		}
+
+		if (out) {
+			close(outPipes[1]);
+			*out = fdopen(outPipes[0], "r");
+		}
+
+		if (err) {
+			close(errPipes[1]);
+			*err = fdopen(errPipes[0], "r");
+		}
+	}
+
+	return (intptr_t)p;
+}
+
+bool
+Sys_TerminateProcess(intptr_t handle)
+{
+	return !kill((pid_t)handle, SIGTERM);
+}
+
+bool Net_InitPlatform(void) { return true; }
+
+int32_t
+Net_Socket(enum NeSocketType type, enum NeSocketProto proto)
+{
+	int st = SOCK_STREAM, sp = IPPROTO_TCP;
+	
+	switch (type) {
+	case ST_STREAM: st = SOCK_STREAM; break;
+	case ST_DGRAM: st = SOCK_DGRAM; break;
+	case ST_RAW: st = SOCK_RAW; break;
+	}
+	
+	switch (sp) {
+	case SP_TCP: sp = IPPROTO_TCP; break;
+	case SP_UDP: sp = IPPROTO_UDP; break;
+	}
+	
+	return socket(AF_INET, st, sp);
+}
+
+bool
+Net_Connect(int32_t socket, char *host, int32_t port)
+{
+	struct hostent *h = gethostbyname(host);
+	if (!h)
+		return false;
+	
+	struct sockaddr_in addr =
+	{
+		.sin_family = AF_INET,
+		.sin_port = htons(port),
+		.sin_addr = *(struct in_addr *)h->h_addr
+	};
+	return connect(socket, (struct sockaddr *)&addr, sizeof(addr)) == 0;
+}
+
+bool
+Net_Listen(int32_t socket, int32_t port, int32_t backlog)
+{
+	struct sockaddr_in addr =
+	{
+		.sin_family = AF_INET,
+		.sin_addr.s_addr = INADDR_ANY,
+		.sin_port = htons(port)
+	};
+	if (bind(socket, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+		return false;
+	
+	return listen(socket, backlog) == 0;
+}
+
+int32_t
+Net_Accept(int32_t socket)
+{
+	return accept(socket, NULL, 0);
+}
+
+ssize_t
+Net_Send(int32_t socket, const void *data, uint32_t count)
+{
+	return send(socket, data, count, 0);
+}
+
+ssize_t
+Net_Recv(int32_t socket, void *data, uint32_t count)
+{
+	return recv(socket, data, count, 0);
+}
+
+void
+Net_Close(int32_t socket)
+{
+	close(socket);
+}
+
+void Net_TermPlatform(void) { }
 
 void
 _CpuInfo(void)
@@ -658,3 +904,41 @@ _CpuInfo(void)
 	_cpuThreadCount = _cpuCount;
 #endif
 }
+
+/* NekoEngine
+ *
+ * UNIX.c
+ * Author: Alexandru Naiman
+ *
+ * -----------------------------------------------------------------------------
+ *
+ * Copyright (c) 2015-2022, Alexandru Naiman
+ *
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * -----------------------------------------------------------------------------
+ */

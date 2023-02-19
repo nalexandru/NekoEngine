@@ -61,9 +61,6 @@
     <Filter Include="Header Files\Math">
       <UniqueIdentifier>{f089b281-775b-48d5-8698-e124689b100f}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Math\sse">
-      <UniqueIdentifier>{bd1cc43a-a0f4-4ec1-a2cc-7c9f0d693a55}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Input">
       <UniqueIdentifier>{46feef23-b0c5-4ae0-aa7b-3f51e6634523}</UniqueIdentifier>
     </Filter>
@@ -81,12 +78,6 @@
     </Filter>
     <Filter Include="Header Files\UI">
       <UniqueIdentifier>{c361f585-216c-4826-b42d-597210712e8b}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Math\altivec">
-      <UniqueIdentifier>{12b5fe55-f362-4a8c-aee0-036feef8a3a2}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Math\neon">
-      <UniqueIdentifier>{6f7c8891-19c4-4717-aaee-06f90f88eefb}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\Deps\Lua">
       <UniqueIdentifier>{566e4675-9095-4403-a72f-11a929c7ae3a}</UniqueIdentifier>
@@ -117,9 +108,6 @@
     </Filter>
     <Filter Include="Source Files\Animation">
       <UniqueIdentifier>{d5139749-6a79-483a-8104-81e3f0f9d926}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Math\vmx128">
-      <UniqueIdentifier>{f2f08e2c-e7f5-490d-ae88-1af920bbc524}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\Render\Backend">
       <UniqueIdentifier>{111cfef9-0150-40bb-af27-51629c0e2882}</UniqueIdentifier>
@@ -153,6 +141,15 @@
     </Filter>
     <Filter Include="Source Files\Render\Pass\Debug">
       <UniqueIdentifier>{85018d9e-db99-4290-a5ad-759019989187}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Deps\mojoAL">
+      <UniqueIdentifier>{e7eb16f9-528b-4501-a332-0bd9c1dbf5f4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Deps\mojoAL\AL">
+      <UniqueIdentifier>{c579c565-d469-452e-a4fe-3d092d433c2f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Asset">
+      <UniqueIdentifier>{50d6185a-4848-4f92-9dad-71aebe55a5a4}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -234,47 +231,8 @@
     <ClInclude Include="..\Include\Scene\Components.h">
       <Filter>Header Files\Scene</Filter>
     </ClInclude>
-    <ClInclude Include="..\Include\Math\aabb.h">
+    <ClInclude Include="..\Include\Math\Types.h">
       <Filter>Header Files\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Math\debug.h">
-      <Filter>Header Files\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Math\defs.h">
-      <Filter>Header Files\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Math\func.h">
-      <Filter>Header Files\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Math\mat3.h">
-      <Filter>Header Files\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Math\mat4.h">
-      <Filter>Header Files\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Math\plane.h">
-      <Filter>Header Files\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Math\quat.h">
-      <Filter>Header Files\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Math\ray.h">
-      <Filter>Header Files\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Math\vec2.h">
-      <Filter>Header Files\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Math\vec3.h">
-      <Filter>Header Files\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Math\vec4.h">
-      <Filter>Header Files\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Math\sse\mat4_sse.h">
-      <Filter>Header Files\Math\sse</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Math\sse\vec4_sse.h">
-      <Filter>Header Files\Math\sse</Filter>
     </ClInclude>
     <ClInclude Include="..\Include\System\AtomicLock.h">
       <Filter>Header Files\System</Filter>
@@ -320,18 +278,6 @@
     </ClInclude>
     <ClInclude Include="..\Include\UI\Font.h">
       <Filter>Header Files\UI</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Math\neon\mat4_neon.h">
-      <Filter>Header Files\Math\neon</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Math\neon\vec4_neon.h">
-      <Filter>Header Files\Math\neon</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Math\altivec\mat4_altivec.h">
-      <Filter>Header Files\Math\altivec</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Math\altivec\vec4_altivec.h">
-      <Filter>Header Files\Math\altivec</Filter>
     </ClInclude>
     <ClInclude Include="..\Deps\Lua\lapi.h">
       <Filter>Source Files\Deps\Lua</Filter>
@@ -414,9 +360,6 @@
     <ClInclude Include="..\Deps\Lua\lzio.h">
       <Filter>Source Files\Deps\Lua</Filter>
     </ClInclude>
-    <ClInclude Include="..\Include\Math\sanity.h">
-      <Filter>Header Files\Math</Filter>
-    </ClInclude>
     <ClInclude Include="..\Include\System\Thread.h">
       <Filter>Header Files\System</Filter>
     </ClInclude>
@@ -434,9 +377,6 @@
     </ClInclude>
     <ClInclude Include="Script\Interface.h">
       <Filter>Source Files\Script</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Audio\Driver.h">
-      <Filter>Header Files\Audio</Filter>
     </ClInclude>
     <ClInclude Include="..\Include\Render\Types.h">
       <Filter>Header Files\Render</Filter>
@@ -495,12 +435,6 @@
     <ClInclude Include="..\Include\Scene\Light.h">
       <Filter>Header Files\Scene</Filter>
     </ClInclude>
-    <ClInclude Include="..\Include\Math\vmx128\mat4_vmx128.h">
-      <Filter>Header Files\Math\vmx128</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Include\Math\vmx128\vec4_vmx128.h">
-      <Filter>Header Files\Math\vmx128</Filter>
-    </ClInclude>
     <ClInclude Include="Render\Internal.h">
       <Filter>Source Files\Render</Filter>
     </ClInclude>
@@ -543,11 +477,26 @@
     <ClInclude Include="..\Include\Render\Context.h">
       <Filter>Header Files\Render</Filter>
     </ClInclude>
-    <ClInclude Include="..\Include\Math\frustum.h">
-      <Filter>Header Files\Math</Filter>
-    </ClInclude>
     <ClInclude Include="..\Include\Engine\Profiler.h">
       <Filter>Header Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Deps\mojoAL\AL\al.h">
+      <Filter>Source Files\Deps\mojoAL\AL</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Deps\mojoAL\AL\alc.h">
+      <Filter>Source Files\Deps\mojoAL\AL</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Asset\NAnim.h">
+      <Filter>Header Files\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Asset\NMesh.h">
+      <Filter>Header Files\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Render\Components\ModelMorph.h">
+      <Filter>Header Files\Render\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\Asset\NMorph.h">
+      <Filter>Header Files\Asset</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -626,13 +575,13 @@
     <ClCompile Include="System\Compat\reallocarray.c">
       <Filter>Source Files\System\Compat</Filter>
     </ClCompile>
-    <ClCompile Include="Scene\Scene.c">
+    <ClCompile Include="Scene\Scene.cxx">
       <Filter>Source Files\Scene</Filter>
     </ClCompile>
     <ClCompile Include="Asset\NMesh.c">
       <Filter>Source Files\Asset</Filter>
     </ClCompile>
-    <ClCompile Include="Scene\Transform.c">
+    <ClCompile Include="Scene\Transform.cxx">
       <Filter>Source Files\Scene</Filter>
     </ClCompile>
     <ClCompile Include="Asset\TGA.c">
@@ -641,7 +590,7 @@
     <ClCompile Include="Engine\Config.c">
       <Filter>Source Files\Engine</Filter>
     </ClCompile>
-    <ClCompile Include="Scene\Camera.c">
+    <ClCompile Include="Scene\Camera.cxx">
       <Filter>Source Files\Scene</Filter>
     </ClCompile>
     <ClCompile Include="Asset\Ogg.c">
@@ -656,7 +605,7 @@
     <ClCompile Include="Audio\Source.c">
       <Filter>Source Files\Audio</Filter>
     </ClCompile>
-    <ClCompile Include="Audio\Audio.c">
+    <ClCompile Include="Audio\Audio.cxx">
       <Filter>Source Files\Audio</Filter>
     </ClCompile>
     <ClCompile Include="Input\Input.c">
@@ -818,7 +767,7 @@
     <ClCompile Include="Script\l_Render.c">
       <Filter>Source Files\Script</Filter>
     </ClCompile>
-    <ClCompile Include="Render\Model.c">
+    <ClCompile Include="Render\Model.cxx">
       <Filter>Source Files\Render</Filter>
     </ClCompile>
     <ClCompile Include="Script\l_Engine.c">
@@ -836,7 +785,7 @@
     <ClCompile Include="Render\Pass\Depth.c">
       <Filter>Source Files\Render\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Render\Systems.c">
+    <ClCompile Include="Render\Systems.cxx">
       <Filter>Source Files\Render</Filter>
     </ClCompile>
     <ClCompile Include="Render\Pass\LightCulling.c">
@@ -851,7 +800,7 @@
     <ClCompile Include="Animation\AnimationClip.c">
       <Filter>Source Files\Animation</Filter>
     </ClCompile>
-    <ClCompile Include="Animation\Skeleton.c">
+    <ClCompile Include="Animation\Skeleton.cxx">
       <Filter>Source Files\Animation</Filter>
     </ClCompile>
     <ClCompile Include="Animation\Animator.c">
@@ -863,16 +812,16 @@
     <ClCompile Include="Asset\DDS.c">
       <Filter>Source Files\Asset</Filter>
     </ClCompile>
-    <ClCompile Include="UI\UIPass.c">
+    <ClCompile Include="UI\UIPass.cxx">
       <Filter>Source Files\UI</Filter>
     </ClCompile>
-    <ClCompile Include="Scene\Light.c">
+    <ClCompile Include="Scene\Light.cxx">
       <Filter>Source Files\Scene</Filter>
     </ClCompile>
     <ClCompile Include="Render\Pass\SSAO.c">
       <Filter>Source Files\Render\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Scene\Terrain.c">
+    <ClCompile Include="Scene\Terrain.cxx">
       <Filter>Source Files\Scene</Filter>
     </ClCompile>
     <ClCompile Include="Render\Pass\Opaque.c">
@@ -881,7 +830,7 @@
     <ClCompile Include="Render\Pass\Transparent.c">
       <Filter>Source Files\Render\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Render\Pass\Sky.c">
+    <ClCompile Include="Render\Pass\Sky.cxx">
       <Filter>Source Files\Render\Pass</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Console.c">
@@ -908,7 +857,7 @@
     <ClCompile Include="Script\l_Input.c">
       <Filter>Source Files\Script</Filter>
     </ClCompile>
-    <ClCompile Include="Script\l_Transform.c">
+    <ClCompile Include="Script\l_Transform.cxx">
       <Filter>Source Files\Script</Filter>
     </ClCompile>
     <ClCompile Include="Script\l_Camera.c">
@@ -1013,13 +962,13 @@
     <ClCompile Include="Render\Backend\Vulkan\Platform\VkDirectStorage.c">
       <Filter>Source Files\Render\Backend\Vulkan\Platform</Filter>
     </ClCompile>
-    <ClCompile Include="Render\Pass\Debug\DebugBounds.c">
+    <ClCompile Include="Render\Pass\Debug\DebugBounds.cxx">
       <Filter>Source Files\Render\Pass\Debug</Filter>
     </ClCompile>
-    <ClCompile Include="Scene\Primitive.c">
+    <ClCompile Include="Scene\Primitive.cxx">
       <Filter>Source Files\Scene</Filter>
     </ClCompile>
-    <ClCompile Include="Render\Pass\Debug\LightBounds.c">
+    <ClCompile Include="Render\Pass\Debug\LightBounds.cxx">
       <Filter>Source Files\Render\Pass\Debug</Filter>
     </ClCompile>
     <ClCompile Include="Render\Pass\AccelerationStructureBuild.c">
@@ -1027,6 +976,33 @@
     </ClCompile>
     <ClCompile Include="Engine\Profiler.c">
       <Filter>Source Files\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\l_Matrix.cxx">
+      <Filter>Source Files\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\l_Vec3.cxx">
+      <Filter>Source Files\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\l_Vec4.cxx">
+      <Filter>Source Files\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Platform\Win32\Compat\strlcat.c">
+      <Filter>Source Files\Platform\Compat</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Pass\Skinning.c">
+      <Filter>Source Files\Render\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Deps\mojoAL\mojoal.c">
+      <Filter>Source Files\Deps\mojoAL</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Components\ModelMorph.c">
+      <Filter>Source Files\Render\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\NMorph.c">
+      <Filter>Source Files\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\l_Audio.c">
+      <Filter>Source Files\Script</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1069,6 +1045,11 @@
     <None Include="Render\Backend\Vulkan\Shaders\Vertex.glsl">
       <Filter>Source Files\Render\Backend\Vulkan\Shaders\Include</Filter>
     </None>
+    <None Include="Render\Backend\Vulkan\Shaders\Fullscreen_VS.vert">
+      <Filter>Source Files\Render\Backend\Vulkan\Shaders\Vertex</Filter>
+    </None>
+    <None Include="packages.config" />
+    <None Include="$(OpenXRLoaderBinaryRoot)\bin\openxr_loader.dll" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="Render\Backend\Vulkan\Shaders\LightCulling_CS.comp">
@@ -1109,6 +1090,9 @@
     </CustomBuild>
     <CustomBuild Include="Render\Backend\Vulkan\Shaders\DebugBounds_VS.vert">
       <Filter>Source Files\Render\Backend\Vulkan\Shaders\Vertex</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Render\Backend\Vulkan\Shaders\Skinning_CS.comp">
+      <Filter>Source Files\Render\Backend\Vulkan\Shaders\Compute</Filter>
     </CustomBuild>
   </ItemGroup>
 </Project>

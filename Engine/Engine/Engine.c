@@ -28,9 +28,14 @@
 #include <Engine/Resource.h>
 #include <Engine/ECSystem.h>
 #include <Engine/Application.h>
+#include <Animation/Animation.h>
 #include <Network/Network.h>
 #include <Script/Script.h>
 #include <UI/UI.h>
+
+#ifdef _NEKO_EDITOR_
+#	include <Editor/Editor.h>
+#endif
 
 #include "ECS.h"
 
@@ -72,7 +77,8 @@ static struct NeEngineSubsystem _subsystems[] =
 	{ "Input", In_InitInput, In_TermInput, NEP_LOAD_PRE_INPUT },
 	{ "UI", UI_InitUI, UI_TermUI, -1 },
 	{ "Console", E_InitConsole, E_TermConsole, -1 },
-	{ "Network", Net_Init, Net_Term, NEP_LOAD_PRE_NETWORK }
+	{ "Network", Net_Init, Net_Term, NEP_LOAD_PRE_NETWORK },
+	{ "Animation System", Anim_InitAnimationSystem, Anim_TermAnimationSystem, -1 }
 };
 static const int32_t _subsystemCount = sizeof(_subsystems) / sizeof(_subsystems[0]);
 
@@ -83,9 +89,10 @@ E_Init(int argc, char *argv[])
 	const char *configFile = E_CONFIG_FILE;
 	const char *logFile = NULL;
 	const char *dataDir = NULL;
+	const char *scene = NULL;
 	bool waitForDebugger = false;
 
-	while ((opt = getopt(argc, argv, "c:d:l:w")) != -1) {
+	while ((opt = getopt(argc, argv, "c:d:l:s:w")) != -1) {
 		switch (opt) {
 		case 'c':
 			configFile = optarg;
@@ -96,6 +103,9 @@ E_Init(int argc, char *argv[])
 		case 'l':
 			logFile = optarg;
 			break;
+		case 's':
+			scene = optarg;
+		break;
 		case 'w':
 			waitForDebugger = true;
 			break;
@@ -140,17 +150,23 @@ E_Init(int argc, char *argv[])
 	Sys_LogEntry(EMOD, LOG_INFORMATION, "\tCount: %d / %d", Sys_CpuCount(), Sys_CpuThreadCount());
 	Sys_LogEntry(EMOD, LOG_INFORMATION, "\tArchitecture: %s", Sys_Machine());
 	Sys_LogEntry(EMOD, LOG_INFORMATION, "\tBig Endian: %s", Sys_BigEndian() ? "yes" : "no");
+	Sys_LogEntry(EMOD, LOG_INFORMATION, "RAM: %llu MB", Sys_TotalMemory() / 1024 / 1024);
 
 	if (!E_InitPluginList()) {
 		Sys_LogEntry(EMOD, LOG_CRITICAL, "Failed to load plugin list");
 		return false;
 	}
 
-	E_LoadPlugins(NEP_LOAD_EARLY_INIT);
+	if (!E_LoadPlugins(NEP_LOAD_EARLY_INIT))
+		return false;
+
+	if (!App_EarlyInit(argc, argv))
+		return false;
 
 	for (int32_t i = 0; i < _subsystemCount; ++i) {
 		if (_subsystems[i].loadPlugins != -1)
-			E_LoadPlugins(_subsystems[i].loadPlugins);
+			if (!E_LoadPlugins(_subsystems[i].loadPlugins))
+				return false;
 
 		if (!_subsystems[i].init)
 			continue;
@@ -205,6 +221,14 @@ E_Init(int argc, char *argv[])
 	E_LoadPlugins(NEP_LOAD_POST_APP_INIT);
 
 	Sys_ResetHeap(MH_Transient);
+
+	if (scene) {
+		Scn_StartSceneLoad(scene);
+	} else {
+		scene = CVAR_STRING("Scene_DefaultScene");
+		if (scene)
+			Scn_StartSceneLoad(scene);
+	}
 
 	lua_State *vm = Sc_CreateVM();
 	Sc_LoadScriptFile(vm, "/Scripts/test.lua");
@@ -272,14 +296,13 @@ E_Frame(void)
 
 	Prof_BeginRegion("Render", 1.f, 1.f, 1.f);
 
-	E_ExecuteSystemGroupS(Scn_activeScene, ECSYS_GROUP_PRE_RENDER);
-	Prof_InsertMarker("PreRender");
-
+#ifndef _NEKO_EDITOR_
 	Re_RenderFrame();
 	E_XrPresent();
+#else
+	Ed_RenderFrame();
+#endif
 
-	Prof_InsertMarker("RenderFrame");
-	E_ExecuteSystemGroupS(Scn_activeScene, ECSYS_GROUP_POST_RENDER);
 	Prof_EndRegion();
 
 	In_Update();
@@ -349,3 +372,41 @@ E_Term(void)
 	Sys_TermMemory();
 	Sys_Term();
 }
+
+/* NekoEngine
+ *
+ * Engine.c
+ * Author: Alexandru Naiman
+ *
+ * -----------------------------------------------------------------------------
+ *
+ * Copyright (c) 2015-2023, Alexandru Naiman
+ *
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * -----------------------------------------------------------------------------
+ */

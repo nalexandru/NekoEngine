@@ -1,4 +1,3 @@
-#include <Math/Math.h>
 #include <System/Log.h>
 #include <Engine/Asset.h>
 #include <Engine/Config.h>
@@ -38,8 +37,6 @@ static inline struct NeMaterialType *_findMaterialType(const char *name, uint32_
 static inline bool _allocMaterial(uint32_t size, uint64_t *offset, void **data);
 static inline void _freeMaterial(uint64_t offset, uint32_t size);
 
-static int32_t _cmpFunc(const struct NeMaterialType *type, uint64_t *hash);
-static int32_t _sortFunc(const struct NeMaterialType *a, const struct NeMaterialType *b);
 static int32_t _blockCmpFunc(const struct NeMaterialBlock *b, const uint32_t *size);
 
 static bool _CreateMaterialResource(const char *name, const struct NeMaterialResourceCreateInfo *ci, struct NeMaterialResource *tex, NeHandle h);
@@ -128,7 +125,7 @@ _CreateMaterialResource(const char *name, const struct NeMaterialResourceCreateI
 	if (!argc)
 		return true;
 
-	if (!Rt_InitPtrArray(&mr->args, argc + 1, MH_Asset))
+	if (!Rt_InitPtrArray(&mr->args, (uint64_t)argc + 1, MH_Asset))
 		return false;
 
 	uint8_t *data = Sys_Alloc(1, dataSize, MH_Asset);
@@ -173,7 +170,10 @@ _LoadMaterialResource(struct NeResourceLoadInfo *li, const char *args, struct Ne
 		return false;
 
 	mr->data = data;
-	mr->primitiveType = args ? M_ClampI(atoi(args), PT_TRIANGLES, PT_LINES) : PT_TRIANGLES;
+	mr->primitiveType = args ? atoi(args) : PT_TRIANGLES;
+
+	if (mr->primitiveType < PT_TRIANGLES || mr->primitiveType > PT_LINES)
+		return false;
 
 	if (!Rt_InitPtrArray(&mr->args, 10, MH_Asset))
 		return false;
@@ -247,7 +247,7 @@ Re_RegisterMaterialType(const char *name, const char *shader, uint32_t dataSize,
 	if (!Rt_ArrayAdd(&_types, &mt))
 		return false;
 
-	Rt_ArraySort(&_types, (RtSortFunc)_sortFunc);
+	Rt_ArraySort(&_types, Rt_U64CmpFunc);
 
 	return true;
 }
@@ -286,13 +286,15 @@ Re_InitMaterialSystem(void)
 	Re_RegisterMaterialType("Default", "DefaultPBR_MR", sizeof(struct NeDefaultMaterial),
 							(NeMaterialInitProc)_initDefaultMaterial, (NeMaterialTermProc)_termDefaultMaterial);
 
+	enum NeAttachmentSampleCount samples = ASC_1_SAMPLE;// E_GetCVarI32("Render_Samples", ASC_1_SAMPLE)->i32;
+
 	struct NeAttachmentDesc atDesc =
 	{
 		.mayAlias = false,
 		.format = Re_SwapchainFormat(Re_swapchain),
 		.loadOp = ATL_CLEAR,
 		.storeOp = ATS_STORE,
-		.samples = ASC_1_SAMPLE,
+		.samples = samples,
 		.initialLayout = TL_UNKNOWN,
 		.layout = TL_COLOR_ATTACHMENT,
 		.finalLayout = TL_COLOR_ATTACHMENT,
@@ -304,7 +306,7 @@ Re_InitMaterialSystem(void)
 		.format = TF_D32_SFLOAT,
 		.loadOp = ATL_LOAD,
 		.storeOp = ATS_STORE,
-		.samples = ASC_1_SAMPLE,
+		.samples = samples,
 		.initialLayout = TL_DEPTH_ATTACHMENT,
 		.layout = TL_DEPTH_ATTACHMENT,
 		.finalLayout = TL_DEPTH_ATTACHMENT
@@ -315,7 +317,7 @@ Re_InitMaterialSystem(void)
 		.format = TF_R16G16B16A16_SFLOAT,
 		.loadOp = ATL_LOAD,
 		.storeOp = ATS_STORE,
-		.samples = ASC_1_SAMPLE,
+		.samples = samples,
 		.initialLayout = TL_SHADER_READ_ONLY,
 		.layout = TL_SHADER_READ_ONLY,
 		.finalLayout = TL_SHADER_READ_ONLY,
@@ -365,6 +367,7 @@ _initDefaultMaterial(const char **args, struct NeDefaultMaterial *data)
 	data->metallic = 1.f;
 	data->roughness = 1.f;
 	data->specularWeight = 1.f;
+	data->diffuseColor[0] = data->diffuseColor[1] = data->diffuseColor[2] = data->diffuseColor[3] = 1.f;
 
 	for (; args && *args; ++args) {
 		const char *arg = *args;
@@ -486,7 +489,7 @@ _createPipeline(const struct NeMaterialResource *mr, struct NeShader *shader)
 	struct NeGraphicsPipelineDesc desc =
 	{
 		.flags = RE_POLYGON_FILL |
-					RE_CULL_BACK | RE_FRONT_FACE_CCW |
+					RE_CULL_NONE | RE_FRONT_FACE_CCW |
 					RE_DEPTH_TEST /*| RE_DEPTH_WRITE*/ |
 					(mr->alphaBlend ? RE_DEPTH_OP_GREATER_EQUAL : RE_DEPTH_OP_EQUAL),
 		.stageInfo = &shader->opaqueStages,
@@ -518,7 +521,7 @@ static inline struct NeMaterialType *
 _findMaterialType(const char *name, uint32_t *id)
 {
 	uint64_t hash = Rt_HashString(name);
-	size_t typeId = Rt_ArrayBSearchId(&_types, &hash, (RtCmpFunc)_cmpFunc);
+	size_t typeId = Rt_ArrayBSearchId(&_types, &hash, Rt_U64CmpFunc);
 
 	if (typeId == RT_NOT_FOUND)
 		return NULL;
@@ -576,29 +579,45 @@ _freeMaterial(uint64_t offset, uint32_t size)
 }
 
 static int32_t
-_cmpFunc(const struct NeMaterialType *type, uint64_t *hash)
-{
-	if (type->hash > *hash)
-		return 1;
-	else if (type->hash < *hash)
-		return -1;
-	else
-		return 0;
-}
-
-static int32_t
-_sortFunc(const struct NeMaterialType *a, const struct NeMaterialType *b)
-{
-	if (a->hash > b->hash)
-		return 1;
-	else if (a->hash < b->hash)
-		return -1;
-	else
-		return 0;
-}
-
-static int32_t
 _blockCmpFunc(const struct NeMaterialBlock *b, const uint32_t *size)
 {
 	return (b->size == *size) ? 0 : -1;
 }
+
+/* NekoEngine
+ *
+ * Material.c
+ * Author: Alexandru Naiman
+ *
+ * -----------------------------------------------------------------------------
+ *
+ * Copyright (c) 2015-2023, Alexandru Naiman
+ *
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * -----------------------------------------------------------------------------
+ */

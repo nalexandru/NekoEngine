@@ -49,7 +49,7 @@
     <IncludePath>$(SolutionDir)Include;$(SolutionDir)Platform\Win32\Compat;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)\bin\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\build\$(Configuration)\$(ProjectName)\</IntDir>
-    <LibraryPath>$(SolutionDir)Deps\OpenXR\x64\lib;$(SolutionDir)Bin\$(Configuration);$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)Deps\steamworks\redistributable_bin\win64;$(VK_SDK_PATH)\Lib;$(SolutionDir)Deps\OpenXR\x64\lib;$(SolutionDir)Bin\$(Configuration);$(LibraryPath)</LibraryPath>
     <TargetName>NekoEngine</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -57,25 +57,26 @@
     <IncludePath>$(SolutionDir)Include;$(SolutionDir)Platform\Win32\Compat;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)\bin\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\build\$(Configuration)\$(ProjectName)\</IntDir>
-    <LibraryPath>$(SolutionDir)Deps\OpenXR\x64\lib;$(SolutionDir)Bin\$(Configuration);$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)Deps\steamworks\redistributable_bin\win64;$(VK_SDK_PATH)\Lib;$(SolutionDir)Deps\OpenXR\x64\lib;$(SolutionDir)Bin\$(Configuration);$(LibraryPath)</LibraryPath>
     <TargetName>NekoEngine</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_ENGINE_INTERNAL_;_CRT_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_XM_NO_XMVECTOR_OVERLOADS_;AL_LIBTYPE_STATIC;_ENGINE_INTERNAL_;_CRT_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <ExceptionHandling>false</ExceptionHandling>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <DisableSpecificWarnings>4099</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <DelayLoadDLLs>
       </DelayLoadDLLs>
-      <AdditionalDependencies>OpenAL.lib;/WHOLEARCHIVE:Engine.lib;xinput9_1_0.lib;shell32.lib;ole32.lib;advapi32.lib;gdi32.lib;user32.lib;kernel32.lib;ntdll.lib</AdditionalDependencies>
+      <AdditionalDependencies>dwmapi.lib;ws2_32.lib;oleaut32.lib;imm32.lib;version.lib;winmm.lib;setupapi.lib;SDL2-static.lib;/WHOLEARCHIVE:Engine.lib;xinput9_1_0.lib;shell32.lib;ole32.lib;advapi32.lib;gdi32.lib;user32.lib;kernel32.lib;ntdll.lib</AdditionalDependencies>
       <ModuleDefinitionFile>$(SolutionDir)Engine\Exports.def</ModuleDefinitionFile>
     </Link>
     <Manifest>
@@ -89,7 +90,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_ENGINE_INTERNAL_;_CRT_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_XM_NO_XMVECTOR_OVERLOADS_;AL_LIBTYPE_STATIC;_ENGINE_INTERNAL_;_CRT_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <ExceptionHandling>false</ExceptionHandling>
@@ -100,6 +101,7 @@
       <FloatingPointModel>Fast</FloatingPointModel>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <DebugInformationFormat>None</DebugInformationFormat>
+      <DisableSpecificWarnings>4099</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -108,7 +110,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <DelayLoadDLLs>
       </DelayLoadDLLs>
-      <AdditionalDependencies>OpenAL.lib;/WHOLEARCHIVE:Engine.lib;xinput9_1_0.lib;shell32.lib;ole32.lib;advapi32.lib;gdi32.lib;user32.lib;kernel32.lib;ntdll.lib</AdditionalDependencies>
+      <AdditionalDependencies>dwmapi.lib;ws2_32.lib;oleaut32.lib;imm32.lib;version.lib;winmm.lib;setupapi.lib;SDL2-static.lib;/WHOLEARCHIVE:Engine.lib;xinput9_1_0.lib;shell32.lib;ole32.lib;advapi32.lib;gdi32.lib;user32.lib;kernel32.lib;ntdll.lib</AdditionalDependencies>
       <ModuleDefinitionFile>$(SolutionDir)Engine\Exports.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
@@ -124,7 +126,7 @@
     <ResourceCompile Include="Application.rc" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Application.c" />
+    <ClCompile Include="Application.cxx" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Icon.ico" />

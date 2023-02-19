@@ -4,6 +4,6 @@
 	"name": "Skinning",
 	"type": "compute",
 	"modules": [
-		{ "stage": "compute", "name": "Skinning" }
+		{ "stage": "compute", "name": "Skinning_CS" }
 	]
 }

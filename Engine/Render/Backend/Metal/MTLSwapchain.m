@@ -1,4 +1,5 @@
 #include <System/Memory.h>
+#include <Engine/Engine.h>
 
 #include "MTLBackend.h"
 
@@ -10,8 +11,8 @@ dispatch_semaphore_t MTL_frameSemaphore;
 struct NeSurface *
 Re_CreateSurface(void *window)
 {
-	[(NSWindow *)window contentView].wantsLayer = true;
-	return (struct NeSurface *)[(NSWindow *)window contentView];
+	((NSView *)window).wantsLayer = true;
+	return (struct NeSurface *)window;
 }
 
 void
@@ -96,11 +97,10 @@ Re_Present(struct NeSwapchain *sw, void *image, struct NeSemaphore *waitSemaphor
 	}];
 
 	struct Mtld_SubmitInfo *si;
-	Rt_ArrayForEach(si, &ctx->submitted.graphics) {
-		//if (si->wait)
-		//	[si->cmdBuffer encodeWaitForEvent: si->wait value: si->waitValue];
-		//else
-		if (!si->wait)
+	Rt_ArrayForEach(si, &ctx->submitted) {
+		if (si->wait)
+			[si->cmdBuffer encodeWaitForEvent: si->wait value: si->waitValue];
+		else
 			[si->cmdBuffer encodeWaitForEvent: sw->event value: sw->value];
 
 		if (si->signal)
@@ -110,15 +110,6 @@ Re_Present(struct NeSwapchain *sw, void *image, struct NeSemaphore *waitSemaphor
 
 		[si->cmdBuffer commit];
 	}
-
-	/*Rt_ArrayForEach(si, &ctx->submitted.compute) {
-		if (si->signal)
-			[si->cmdBuffer encodeSignalEvent: si->signal value: si->signalValue];
-		else
-			[si->cmdBuffer encodeSignalEvent: sw->event value: ++sw->value];
-
-		[si->cmdBuffer commit];
-	}*/
 
 	[ctx->cmdBuffer encodeWaitForEvent: sw->event value: sw->value];
 	[ctx->cmdBuffer presentDrawable: image];
@@ -142,6 +133,21 @@ Re_SwapchainDesc(struct NeSwapchain *sw, struct NeFramebufferAttachmentDesc *des
 	desc->usage = TU_COLOR_ATTACHMENT | TU_TRANSFER_DST;
 }
 
+void
+Re_SwapchainTextureDesc(struct NeSwapchain *sw, struct NeTextureDesc *desc)
+{
+	desc->width = *E_screenWidth;
+	desc->height = *E_screenHeight;
+	desc->depth = 1;
+	desc->format = MTLToNeTextureFormat([sw->layer pixelFormat]);
+	desc->usage = TU_COLOR_ATTACHMENT | TU_TRANSFER_DST;
+	desc->type = TT_2D;
+	desc->arrayLayers = 1;
+	desc->mipLevels = 1;
+	desc->gpuOptimalTiling = true;
+	desc->memoryType = MT_GPU_LOCAL;
+}
+
 struct NeTexture *
 Re_SwapchainTexture(struct NeSwapchain *sw, void *image)
 {
@@ -154,3 +160,41 @@ void
 Re_ScreenResized(struct NeSwapchain *sw)
 {
 }
+
+/* NekoEngine
+ *
+ * MTLSwapchain.m
+ * Author: Alexandru Naiman
+ *
+ * -----------------------------------------------------------------------------
+ *
+ * Copyright (c) 2015-2022, Alexandru Naiman
+ *
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * -----------------------------------------------------------------------------
+ */

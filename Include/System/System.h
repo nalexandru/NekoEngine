@@ -1,13 +1,18 @@
 #ifndef _NE_SYSTEM_SYSTEM_H_
 #define _NE_SYSTEM_SYSTEM_H_
 
-#include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <string.h>
 
 #include <Engine/Types.h>
 #include <System/PlatformDetect.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 enum NeMsgBoxIcon
 {
@@ -75,6 +80,9 @@ uint32_t Sys_CpuFreq(void);
 uint32_t Sys_CpuCount(void);
 uint32_t Sys_CpuThreadCount(void);
 
+uint64_t Sys_TotalMemory(void);
+uint64_t Sys_FreeMemory(void);
+
 const char *Sys_OperatingSystem(void);
 const char *Sys_OperatingSystemVersionString(void);
 struct NeSysVersion Sys_OperatingSystemVersion(void);;
@@ -99,7 +107,18 @@ bool Sys_FileExists(const char *path);
 bool Sys_DirectoryExists(const char *path);
 bool Sys_CreateDirectory(const char *path);
 
-void Sys_ExecutableLocation(char *out, uint32_t len);
+void Sys_ExecutableLocation(char *buff, size_t len);
+
+void Sys_GetWorkingDirectory(char *buff, size_t size);
+void Sys_SetWorkingDirectory(const char *dir);
+
+void Sys_UserName(char *buff, size_t len);
+
+intptr_t Sys_GetCurrentProcess();
+int32_t Sys_GetCurrentProcessId();
+void Sys_WaitForProcessExit(intptr_t handle);
+intptr_t Sys_Execute(char * const *argv, const char *wd, FILE **in, FILE **out, FILE **err, bool showWindow);
+bool Sys_TerminateProcess(intptr_t handle);
 
 // Compatibility shivs
 void *reallocarray(void *ptr, size_t nmemb, size_t size);
@@ -115,10 +134,57 @@ int getopt(int nargc, char *const nargv[], const char *ostr);
 extern int opterr, optind, optopt, optreset;
 extern char *optarg;
 
+size_t strlcat(char *dst, const char *src, size_t dsize);
+
 #elif defined(SYS_PLATFORM_UNIX) || defined(SYS_PLATFORM_NX)
+#	include <unistd.h>
+#endif
 
-#include <unistd.h>
+#if defined(SYS_PLATFORM_LINUX)
+#	include <bsd/stdlib.h>
+#	include <bsd/string.h>
+#endif
 
+#ifdef __cplusplus
+}
 #endif
 
 #endif /* _NE_SYSTEM_SYSTEM_H_ */
+
+/* NekoEngine
+ *
+ * System.h
+ * Author: Alexandru Naiman
+ *
+ * -----------------------------------------------------------------------------
+ *
+ * Copyright (c) 2015-2023, Alexandru Naiman
+ *
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * -----------------------------------------------------------------------------
+ */

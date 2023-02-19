@@ -115,13 +115,13 @@ bool
 E_LoadTGAAsset(struct NeStream *stm, struct NeTextureCreateInfo *tci)
 {
 	uint8_t *data = NULL;
-	uint32_t imgSize, dataSize;
+	uint64_t imgSize, dataSize;
 	struct NeTGAHeader hdr;
 
 	E_ReadStream(stm, &hdr, sizeof(hdr));
 	E_StreamSeek(stm, hdr.identSize, IO_SEEK_CUR);
 
-	dataSize = (uint32_t)E_StreamLength(stm) - (uint32_t)sizeof(hdr) - hdr.identSize;
+	dataSize = E_StreamLength(stm) - sizeof(hdr) - hdr.identSize;
 
 	tci->desc.mipLevels = tci->desc.arrayLayers = 1;
 
@@ -140,7 +140,7 @@ E_LoadTGAAsset(struct NeStream *stm, struct NeTextureCreateInfo *tci)
 		hdr.height = Sys_SwapUint16(hdr.height);
 	}
 
-	imgSize = (uint32_t)hdr.width * (uint32_t)hdr.height;
+	imgSize = (uint64_t)hdr.width * (uint64_t)hdr.height;
 	if (imgSize < hdr.width || imgSize < hdr.height)
 		return false;
 
@@ -177,3 +177,41 @@ E_LoadTGAAsset(struct NeStream *stm, struct NeTextureCreateInfo *tci)
 
 	return true;
 }
+
+/* NekoEngine
+ *
+ * TGA.c
+ * Author: Alexandru Naiman
+ *
+ * -----------------------------------------------------------------------------
+ *
+ * Copyright (c) 2015-2023, Alexandru Naiman
+ *
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * -----------------------------------------------------------------------------
+ */

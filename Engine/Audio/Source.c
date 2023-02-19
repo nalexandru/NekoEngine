@@ -11,7 +11,6 @@
 #	include <AL/alc.h>
 #endif
 
-#include <Math/Math.h>
 #include <Audio/Clip.h>
 #include <Audio/Source.h>
 #include <Engine/Resource.h>
@@ -40,21 +39,39 @@ Au_InitSource(struct NeAudioSource *src)
 }
 
 void
-Au_SetPosition(struct NeAudioSource *src, struct NeVec3 *v)
+Au_SetPosition(struct NeAudioSource *src, const struct NeVec3 *v)
 {
 	alSource3f(src->id, AL_POSITION, v->x, v->y, v->z);
 }
 
 void
-Au_SetVelocity(struct NeAudioSource *src, struct NeVec3 *v)
+Au_SetPositionF(struct NeAudioSource *src, float x, float y, float z)
+{
+	alSource3f(src->id, AL_POSITION, x, y, z);
+}
+
+void
+Au_SetVelocity(struct NeAudioSource *src, const struct NeVec3 *v)
 {
 	alSource3f(src->id, AL_VELOCITY, v->x, v->y, v->z);
 }
 
 void
-Au_SetDirection(struct NeAudioSource *src, struct NeVec3 *v)
+Au_SetVelocityF(struct NeAudioSource *src, float x, float y, float z)
+{
+	alSource3f(src->id, AL_VELOCITY, x, y, z);
+}
+
+void
+Au_SetDirection(struct NeAudioSource *src, const struct NeVec3 *v)
 {
 	alSource3f(src->id, AL_DIRECTION, v->x, v->y, v->z);
+}
+
+void
+Au_SetDirectionF(struct NeAudioSource *src, float x, float y, float z)
+{
+	alSource3f(src->id, AL_DIRECTION, x, y, z);
 }
 
 void
@@ -176,3 +193,41 @@ _TermSource(struct NeAudioSource *src)
 #ifdef __APPLE__
 #	pragma clang diagnostic pop
 #endif
+
+/* NekoEngine
+ *
+ * Source.c
+ * Author: Alexandru Naiman
+ *
+ * -----------------------------------------------------------------------------
+ *
+ * Copyright (c) 2015-2023, Alexandru Naiman
+ *
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * -----------------------------------------------------------------------------
+ */

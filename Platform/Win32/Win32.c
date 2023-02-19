@@ -4,13 +4,25 @@
 #	include <intrin.h>
 #endif
 
+#include <float.h>
+
 #include <System/System.h>
 #include <System/Memory.h>
 #include <Engine/Engine.h>
 #include <Engine/Application.h>
+#include <Network/Network.h>
 
 #include "Win32Platform.h"
 #include <ShlObj.h>
+#include <fcntl.h>
+#include <io.h>
+
+// NVIDIA Optimus
+// http://developer.download.nvidia.com/devzone/devcenter/gamegraphics/files/OptimusRenderingPolicies.pdf
+__declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
+__declspec(dllexport) DWORD AmdPowerXpressRequestHighPerformance = 0x00000001;
+
+__declspec(dllexport) HINSTANCE Win32_instance;
 
 static uint32_t _cpuCount = 0, _cpuThreadCount = 0, _cpuFreq = 0;
 static HANDLE _stdout, _stderr, _k32;
@@ -34,17 +46,24 @@ NeWin32_UTF8toUCS2(const char *text)
 	return out;
 }
 
+char *
+NeWin32_UCS2toUTF8(const wchar_t *text)
+{
+	int len = WideCharToMultiByte(CP_UTF8, 0, text, -1, NULL, 0, NULL, NULL);
+	char *out = Sys_Alloc(sizeof(*out), len, MH_Transient);
+	WideCharToMultiByte(CP_UTF8, 0, text, -1, out, len, NULL, NULL);
+	return out;
+}
+
 bool
 Sys_InitDbgOut(void)
 {
 	CONSOLE_SCREEN_BUFFER_INFO csbi;
 
 	if (!IsDebuggerPresent() && Sys_MachineType() == MT_PC) {
-		if (AttachConsole) {
-			FreeConsole();
-			AllocConsole();
-			AttachConsole(GetCurrentProcessId());
-		}
+		FreeConsole();
+		AllocConsole();
+		AttachConsole(GetCurrentProcessId());
 
 		(void)freopen("CON", "w", stdout);
 		(void)freopen("CON", "w", stderr);
@@ -102,7 +121,6 @@ Sys_MapFile(const char *path, bool write, void **ptr, uint64_t *size)
 {
 	HANDLE file, map;
 	DWORD fileAccess, fileShare, mapAccess, protect;
-	int prot = 0, flags = 0;
 
 	if (!write) {
 		mapAccess = FILE_MAP_READ;
@@ -208,7 +226,7 @@ Sys_CpuName(void)
 #endif
 
 		if (!_cpu[0])
-			memcpy(_cpu, "Unknown", 7);
+			snprintf(_cpu, sizeof(_cpu), "Unknown");
 	}
 
 	return _cpu;
@@ -230,6 +248,22 @@ uint32_t
 Sys_CpuThreadCount(void)
 {
 	return _cpuThreadCount;
+}
+
+uint64_t
+Sys_TotalMemory(void)
+{
+	MEMORYSTATUSEX memStatus = { sizeof(memStatus) };
+	GlobalMemoryStatusEx(&memStatus);
+	return memStatus.ullTotalPhys;
+}
+
+uint64_t
+Sys_FreeMemory(void)
+{
+	MEMORYSTATUSEX memStatus = { sizeof(memStatus) };
+	GlobalMemoryStatusEx(&memStatus);
+	return memStatus.ullAvailPhys;
 }
 
 const char *
@@ -350,6 +384,8 @@ Sys_InitPlatform(void)
 {
 	SYSTEM_INFO si = { 0 };
 
+	Win32_instance = GetModuleHandle(NULL);
+
 	_k32 = LoadLibraryW(L"kernel32");
 	if (!_k32)
 		return false;
@@ -394,6 +430,10 @@ Sys_InitPlatform(void)
 		return false;
 
 	k32_SetThreadDescription = (HRESULT (WINAPI *)(HANDLE, PCWSTR))GetProcAddress(_k32, "SetThreadDescription");
+
+#ifdef _M_IX86	// Enable low precision on x86 platforms
+	_controlfp(_PC_24, _MCW_PC);
+#endif
 
 	return true;
 }
@@ -493,10 +533,246 @@ Sys_CreateDirectory(const char *path)
 }
 
 void
-Sys_ExecutableLocation(char *buff, uint32_t len)
+Sys_ExecutableLocation(char *buff, size_t len)
 {
-	GetModuleFileNameA(NULL, buff, len);
-	*(strrchr(buff, '\\') + 1) = 0x0;
+	DWORD dLen = (DWORD)len;
+	LPWSTR str = Sys_Alloc(sizeof(*str), len, MH_Transient);
+	GetModuleFileNameW(NULL, str, dLen);
+	snprintf(buff, len, "%s", NeWin32_UCS2toUTF8(str));
+	char *p = strrchr(buff, '\\');
+	*p = 0x0;
+}
+
+void
+Sys_GetWorkingDirectory(char *buff, size_t len)
+{
+	DWORD dLen = (DWORD)len;
+	LPWSTR str = Sys_Alloc(sizeof(*str), len, MH_Transient);
+	GetCurrentDirectoryW(dLen, str);
+	snprintf(buff, len, "%s", NeWin32_UCS2toUTF8(str));
+}
+
+void
+Sys_SetWorkingDirectory(const char *dir)
+{
+	LPWSTR str = NeWin32_UTF8toUCS2(dir);
+	SetCurrentDirectoryW(str);
+}
+
+void
+Sys_UserName(char *buff, size_t len)
+{
+	DWORD dLen = (DWORD)len;
+	LPWSTR str = Sys_Alloc(sizeof(*str), len, MH_Transient);
+	GetUserNameW(str, &dLen);
+	snprintf(buff, len, "%s", NeWin32_UCS2toUTF8(str));
+}
+
+intptr_t
+Sys_GetCurrentProcess()
+{
+	return (intptr_t)GetCurrentProcess();
+}
+
+int32_t
+Sys_GetCurrentProcessId()
+{
+	return GetCurrentProcessId();
+}
+
+void
+Sys_WaitForProcessExit(intptr_t handle)
+{
+	WaitForSingleObject((HANDLE)handle, INFINITE);
+}
+
+intptr_t
+Sys_Execute(char * const *argv, const char *wd, FILE **in, FILE **out, FILE **err, bool showWindow)
+{
+	HANDLE in_rd = 0, in_wr = 0, out_rd = 0, out_wr = 0, err_rd = 0, err_wr = 0;
+	char * const *arg = &argv[1];
+
+	SECURITY_ATTRIBUTES sa =
+	{
+		.nLength = sizeof(sa),
+		.bInheritHandle = TRUE,
+		.lpSecurityDescriptor = NULL
+	};
+
+	if (in) {
+		CreatePipe(&in_rd, &in_wr, &sa, 0);
+		SetHandleInformation(in_wr, HANDLE_FLAG_INHERIT, 0);
+	}
+
+	if (out) {
+		CreatePipe(&out_rd, &out_wr, &sa, 0);
+		SetHandleInformation(out_rd, HANDLE_FLAG_INHERIT, 0);
+	}
+
+	if (err) {
+		CreatePipe(&err_rd, &err_wr, &sa, 0);
+		SetHandleInformation(err_rd, HANDLE_FLAG_INHERIT, 0);
+	}
+
+	STARTUPINFOA si =
+	{
+		.cb = sizeof(si),
+		.hStdInput = in ? in_rd : NULL,
+		.hStdError = err ? err_wr : NULL,
+		.hStdOutput = out ? out_wr : NULL,
+		.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW,
+		.wShowWindow = showWindow ? SW_SHOWDEFAULT : SW_HIDE
+	};
+
+	// Maximum size according to
+	// https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa
+	char cmdline[32768] = { 0 };
+	while (*arg) {
+		size_t len = strlen(cmdline);
+		if ((sizeof(cmdline) - len) - strlen(*arg++) < 0)
+			break;
+		snprintf(cmdline + len, sizeof(cmdline) - len, "%s ", *arg++);
+	}
+
+	if (strlen(cmdline))
+		cmdline[strlen(cmdline) - 1] = 0x0;
+
+	PROCESS_INFORMATION pi = { 0 };
+	BOOL rc = CreateProcessA(argv[0], cmdline, NULL, NULL, TRUE, 0, NULL, wd, &si, &pi);
+
+	if (!rc)
+		goto error;
+
+	CloseHandle(pi.hThread);
+
+	// Assume these can't fail
+	if (in) {
+		CloseHandle(in_rd);
+		*in = _fdopen(_open_osfhandle((intptr_t)in_wr, _O_WRONLY), "w");
+	}
+
+	if (out) {
+		CloseHandle(out_wr);
+		*out = _fdopen(_open_osfhandle((intptr_t)out_rd, _O_RDONLY), "r");
+	}
+
+	if (err) {
+		CloseHandle(err_wr);
+		*err = _fdopen(_open_osfhandle((intptr_t)err_rd, _O_RDONLY), "r");
+	}
+
+	return (intptr_t)pi.hProcess;
+
+error:
+	if (in) {
+		CloseHandle(in_rd);
+		CloseHandle(in_wr);
+	}
+
+	if (out) {
+		CloseHandle(out_rd);
+		CloseHandle(out_wr);
+	}
+
+	if (err) {
+		CloseHandle(err_rd);
+		CloseHandle(err_wr);
+	}
+
+	return -1;
+}
+
+bool
+Sys_TerminateProcess(intptr_t handle)
+{
+	return TerminateProcess((HANDLE)handle, 0);
+}
+
+bool
+Net_InitPlatform(void)
+{
+	WSADATA wd;
+	return WSAStartup(MAKEWORD(2, 2), &wd) == 0;
+}
+
+int32_t
+Net_Socket(enum NeSocketType type, enum NeSocketProto proto)
+{
+	int st = SOCK_STREAM, sp = IPPROTO_TCP;
+
+	switch (type) {
+	case ST_STREAM: st = SOCK_STREAM; break;
+	case ST_DGRAM: st = SOCK_DGRAM; break;
+	case ST_RAW: st = SOCK_RAW; break;
+	}
+
+	switch (sp) {
+	case SP_TCP: sp = IPPROTO_TCP; break;
+	case SP_UDP: sp = IPPROTO_UDP; break;
+	}
+
+	return (int32_t)socket(AF_INET, st, sp);
+}
+
+bool
+Net_Connect(int32_t socket, char *host, int32_t port)
+{
+	struct hostent *h = gethostbyname(host);
+	if (!h)
+		return false;
+
+	struct sockaddr_in addr =
+	{
+		.sin_family = AF_INET,
+		.sin_port = htons(port),
+		.sin_addr = *(struct in_addr *)h->h_addr
+	};
+	return connect(socket, (struct sockaddr *)&addr, sizeof(addr)) == 0;
+}
+
+bool
+Net_Listen(int32_t socket, int32_t port, int32_t backlog)
+{
+	struct sockaddr_in addr =
+	{
+		.sin_family = AF_INET,
+		.sin_addr.s_addr = INADDR_ANY,
+		.sin_port = htons(port)
+	};
+	if (bind(socket, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+		return false;
+
+	return listen(socket, backlog) == 0;
+}
+
+int32_t
+Net_Accept(int32_t socket)
+{
+	return (int32_t)accept(socket, NULL, 0);
+}
+
+ssize_t
+Net_Send(int32_t socket, const void *data, uint32_t count)
+{
+	return send(socket, data, count, 0);
+}
+
+ssize_t
+Net_Recv(int32_t socket, void *data, uint32_t count)
+{
+	return recv(socket, data, count, 0);
+}
+
+void
+Net_Close(int32_t socket)
+{
+	closesocket(socket);
+}
+
+void
+Net_TermPlatform(void)
+{
+	WSACleanup();
 }
 
 void
@@ -516,9 +792,9 @@ _LoadOSInfo(void)
 			server = true;
 
 		if (osvi.wServicePackMinor)
-			(void)snprintf(spStr, sizeof(spStr), " Service Pack %d.%d", osvi.wServicePackMajor, osvi.wServicePackMinor);
+			(void)snprintf(spStr, sizeof(spStr), " Service Pack %u.%u", osvi.wServicePackMajor, osvi.wServicePackMinor);
 		else if (osvi.wServicePackMajor)
-			(void)snprintf(spStr, sizeof(spStr), " Service Pack %d", osvi.wServicePackMajor);
+			(void)snprintf(spStr, sizeof(spStr), " Service Pack %u", osvi.wServicePackMajor);
 	} else {
 		osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOA);
 		GetVersionExA((LPOSVERSIONINFOA)&osvi);
@@ -530,8 +806,8 @@ _LoadOSInfo(void)
 	case VER_PLATFORM_WIN32s: (void)snprintf(_osName, sizeof(_osName), "%s", "Windows 3.x (Win32s)"); break;
 	case VER_PLATFORM_WIN32_WINDOWS: (void)snprintf(_osName, sizeof(_osName), "%s", "Windows"); break;
 	case VER_PLATFORM_WIN32_NT: (void)snprintf(_osName, sizeof(_osName), "%s%s%s", "Windows NT",
-		(osvi.wSuiteMask & VER_SUITE_EMBEDDEDNT) ? " Embedded" : "",
-		(osvi.wProductType & VER_NT_WORKSTATION) ? " Workstation" : " Server"); break;
+		embedded ? " Embedded" : "",
+		server ? " Server" : " Workstation"); break;
 	}
 
 	if (osvi.dwMajorVersion == 6 && osvi.dwMinorVersion == 2 && osvi.dwBuildNumber == 9200) {
@@ -562,7 +838,7 @@ _LoadOSInfo(void)
 		if (!strncmp(verStr, "6.3", 3) && atoi(buildStr) > 10240)
 			(void)snprintf(verStr, sizeof(verStr), "10.0");
 
-		sscanf(verStr, "%d.%d", &_osVersion.major, &_osVersion.minor);
+		(void)sscanf(verStr, "%u.%u", &_osVersion.major, &_osVersion.minor);
 		_osVersion.revision = atoi(buildStr);
 
 		(void)snprintf(_osVersionString, sizeof(_osVersionString), "%s.%s%s", verStr, buildStr, spStr);
@@ -594,3 +870,41 @@ _CalcCPUFreq(void)
 
 	_cpuFreq = (uint32_t)(freq / 1000);
 }
+
+/* NekoEngine
+ *
+ * Win32.c
+ * Author: Alexandru Naiman
+ *
+ * -----------------------------------------------------------------------------
+ *
+ * Copyright (c) 2015-2023, Alexandru Naiman
+ *
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * -----------------------------------------------------------------------------
+ */

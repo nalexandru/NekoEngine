@@ -2348,6 +2348,9 @@ static SRes ReadUnpackInfo(CSzAr *p,
   const Byte *startBufPtr;
   Byte external;
   
+  if (!p)
+      return SZ_ERROR_MEM;
+
   RINOK(WaitId(sd2, k7zIdFolder));
   
   RINOK(SzReadNumber32(sd2, &numFolders));
@@ -2814,6 +2817,9 @@ static SRes SzReadHeader2(
 
 {
   UInt64 type;
+
+  if (!p)
+      return SZ_ERROR_MEM;
   
   SzData_Clear(&ssi.sdSizes);
   SzData_Clear(&ssi.sdCRCs);

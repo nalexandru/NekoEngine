@@ -9,9 +9,7 @@ Re_CreateContext(void)
 	
 	ctx->queue = [MTL_device newCommandQueue];
 
-	if (!Rt_InitArray(&ctx->submitted.graphics, 10, sizeof(struct Mtld_SubmitInfo), MH_RenderDriver) ||
-			!Rt_InitArray(&ctx->submitted.compute, 10, sizeof(struct Mtld_SubmitInfo), MH_RenderDriver) ||
-			!Rt_InitArray(&ctx->submitted.xfer, 10, sizeof(struct Mtld_SubmitInfo), MH_RenderDriver))
+	if (!Rt_InitArray(&ctx->submitted, 10, sizeof(struct Mtld_SubmitInfo), MH_RenderDriver))
 		return nil;
 
 	if (@available(macOS 13, iOS 16, *)) {
@@ -22,7 +20,7 @@ Re_CreateContext(void)
 		ioDesc.priority = MTLIOPriorityNormal;
 
 		ctx->ioQueue = [MTL_device newIOCommandQueueWithDescriptor: ioDesc error: &err];
-		ctx->ioCmdBuffer = [ctx->ioQueue commandBuffer];
+		ctx->ioCmdBuffer = [ctx->ioQueue commandBufferWithUnretainedReferences];
 
 		[ioDesc release];
 	}
@@ -33,9 +31,7 @@ Re_CreateContext(void)
 void
 Re_ResetContext(struct NeRenderContext *ctx)
 {
-	Rt_ClearArray(&ctx->submitted.graphics, false);
-	Rt_ClearArray(&ctx->submitted.compute, false);
-	Rt_ClearArray(&ctx->submitted.xfer, false);
+	Rt_ClearArray(&ctx->submitted, false);
 }
 
 void
@@ -46,9 +42,7 @@ Re_DestroyContext(struct NeRenderContext *ctx)
 
 	[ctx->queue release];
 
-	Rt_TermArray(&ctx->submitted.graphics);
-	Rt_TermArray(&ctx->submitted.compute);
-	Rt_TermArray(&ctx->submitted.xfer);
+	Rt_TermArray(&ctx->submitted);
 	
 	Sys_Free(ctx);
 }
@@ -85,7 +79,7 @@ Re_BeginTransferCommandBuffer(void)
 	struct NeRenderContext *ctx = Re_CurrentContext();
 
 	ctx->type = RC_BLIT;
-	ctx->cmdBuffer = [ctx->queue commandBufferWithUnretainedReferences];
+	ctx->cmdBuffer = [ctx->queue commandBuffer];
 	ctx->encoders.blit = [ctx->cmdBuffer blitCommandEncoder];
 }
 
@@ -116,6 +110,11 @@ Re_CmdBindPipeline(struct NePipeline *pipeline)
 
 	ctx->boundPipeline = pipeline;
 	
+	if (ctx->type == RC_RENDER && pipeline->type == PS_COMPUTE) {
+		ctx->type = RC_COMPUTE;
+		ctx->encoders.compute = [ctx->cmdBuffer computeCommandEncoder];
+	}
+	
 	if (ctx->type == RC_RENDER) {
 		[ctx->encoders.render setRenderPipelineState: pipeline->render.state];
 		if (pipeline->render.depthStencil)
@@ -133,7 +132,7 @@ Re_CmdBindPipeline(struct NePipeline *pipeline)
 }
 
 void
-Re_CmdPushConstants(enum NeShaderStage stage, uint32_t size, const void *data)
+Re_CmdPushConstants(NeShaderStageFlags stage, uint32_t size, const void *data)
 {
 	struct NeRenderContext *ctx = Re_CurrentContext();
 
@@ -388,6 +387,23 @@ Re_CmdTransition(struct NeTexture *tex, enum NeTextureLayout newLayout)
 }
 
 void
+Re_BkCmdUpdateBuffer(const struct NeBuffer *buff, uint64_t offset, void *data, uint64_t size)
+{
+	struct NeRenderContext *ctx = Re_CurrentContext();
+	
+	__block id<MTLBuffer> staging = [[MTL_device newBufferWithBytes: data length: size options: MTLResourceStorageModeShared] autorelease];
+	//[ctx->cmdBuffer addCompletedHandler:^(id<MTLCommandBuffer> _Nonnull cmdBuff) {
+	//	[staging release];
+	//}];
+	
+	[ctx->encoders.blit copyFromBuffer: staging
+						  sourceOffset: 0
+							  toBuffer: buff->buff
+					 destinationOffset: offset
+								  size: size];
+}
+
+void
 Re_BkCmdCopyBuffer(const struct NeBuffer *src, uint64_t srcOffset, struct NeBuffer *dst, uint64_t dstOffset, uint64_t size)
 {
 	struct NeRenderContext *ctx = Re_CurrentContext();
@@ -489,54 +505,6 @@ Re_CmdLoadTexture(struct NeTexture *tex, uint32_t slice, uint32_t level, uint32_
 	}
 }
 
-bool
-Re_QueueGraphics(NeCommandBufferHandle cmdBuffer, struct NeSemaphore *wait, struct NeSemaphore *signal)
-{
-	struct NeRenderContext *ctx = Re_CurrentContext();
-
-	struct Mtld_SubmitInfo si =
-	{
-		.wait = wait ? wait->event : nil,
-		.waitValue = wait ? wait->value : 0,
-		.signal = signal ? signal->event : nil,
-		.signalValue = signal ? ++signal->value : 0,
-		.cmdBuffer = cmdBuffer
-	};
-	return Rt_ArrayAdd(&ctx->submitted.graphics, &si);
-}
-
-bool
-Re_QueueCompute(NeCommandBufferHandle cmdBuffer, struct NeSemaphore *wait, struct NeSemaphore *signal)
-{
-	struct NeRenderContext *ctx = Re_CurrentContext();
-
-	struct Mtld_SubmitInfo si =
-	{
-		.wait = wait ? wait->event : nil,
-		.waitValue = wait ? wait->value : 0,
-		.signal = signal ? signal->event : nil,
-		.signalValue = signal ? ++signal->value : 0,
-		.cmdBuffer = cmdBuffer
-	};
-	return Rt_ArrayAdd(&ctx->submitted.graphics, &si);
-}
-
-bool
-Re_QueueTransfer(NeCommandBufferHandle cmdBuffer, struct NeSemaphore *wait, struct NeSemaphore *signal)
-{
-	struct NeRenderContext *ctx = Re_CurrentContext();
-
-	struct Mtld_SubmitInfo si =
-	{
-		.wait = wait ? wait->event : nil,
-		.waitValue = wait ? wait->value : 0,
-		.signal = signal ? signal->event : nil,
-		.signalValue = signal ? ++signal->value : 0,
-		.cmdBuffer = cmdBuffer
-	};
-	return Rt_ArrayAdd(&ctx->submitted.xfer, &si);
-}
-
 void
 Re_BeginDirectIO(void)
 {
@@ -598,6 +566,22 @@ Re_ExecuteDirectIO(void)
 }
 
 static inline bool
+_Queue(NeCommandBufferHandle cmdBuffer, struct NeSemaphore *wait, struct NeSemaphore *signal)
+{
+	struct NeRenderContext *ctx = Re_CurrentContext();
+
+	struct Mtld_SubmitInfo si =
+	{
+		.wait = wait ? wait->event : nil,
+		.waitValue = wait ? wait->value : 0,
+		.signal = signal ? signal->event : nil,
+		.signalValue = signal ? ++signal->value : 0,
+		.cmdBuffer = cmdBuffer
+	};
+	return Rt_ArrayAdd(&ctx->submitted, &si);
+}
+
+static inline bool
 _Execute(id<MTLCommandBuffer> cmdBuffer)
 {
 	__block dispatch_semaphore_t bds = dispatch_semaphore_create(0);
@@ -613,6 +597,54 @@ _Execute(id<MTLCommandBuffer> cmdBuffer)
 	return rc;
 }
 
+void
+Re_ExecuteNoWait(NeCommandBufferHandle cmdBuffer)
+{
+	id<MTLCommandBuffer> cb = cmdBuffer;
+	[cb commit];
+}
+
+bool Re_QueueGraphics(NeCommandBufferHandle cmdBuffer, struct NeSemaphore *wait, struct NeSemaphore *signal) { return _Queue(cmdBuffer, wait, signal); }
+bool Re_QueueCompute(NeCommandBufferHandle cmdBuffer, struct NeSemaphore *wait, struct NeSemaphore *signal) { return _Queue(cmdBuffer, wait, signal); }
+bool Re_QueueTransfer(NeCommandBufferHandle cmdBuffer, struct NeSemaphore *wait, struct NeSemaphore *signal) { return _Queue(cmdBuffer, wait, signal); }
 bool Re_ExecuteGraphics(NeCommandBufferHandle cmdBuffer) { return _Execute(cmdBuffer); }
 bool Re_ExecuteCompute(NeCommandBufferHandle cmdBuffer) { return _Execute(cmdBuffer); }
 bool Re_ExecuteTransfer(NeCommandBufferHandle cmdBuffer) { return _Execute(cmdBuffer); }
+
+/* NekoEngine
+ *
+ * MTLContext.m
+ * Author: Alexandru Naiman
+ *
+ * -----------------------------------------------------------------------------
+ *
+ * Copyright (c) 2015-2022, Alexandru Naiman
+ *
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * -----------------------------------------------------------------------------
+ */

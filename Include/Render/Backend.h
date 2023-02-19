@@ -3,6 +3,10 @@
 
 #include <Render/Types.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern const char *Re_backendName;
 
 bool Re_InitBackend(void);
@@ -23,6 +27,7 @@ void Re_BkFlushBuffer(struct NeBuffer *buff, uint64_t offset, uint64_t size);
 void Re_BkUnmapBuffer(struct NeBuffer *buff);
 uint64_t Re_BkBufferAddress(const struct NeBuffer *buff, uint64_t offset);
 void Re_BkDestroyBuffer(struct NeBuffer *buff);
+void Re_BkCmdUpdateBuffer(const struct NeBuffer *src, uint64_t offset, void *data, uint64_t size);
 void Re_BkCmdCopyBuffer(const struct NeBuffer *src, uint64_t srcOffset, struct NeBuffer *dst, uint64_t dstOffset, uint64_t size);
 void Re_BkCmdCopyBufferToTexture(const struct NeBuffer *src, struct NeTexture *dst, const struct NeBufferImageCopy *bic);
 void Re_BkCmdCopyTextureToBuffer(const struct NeTexture *src, struct NeBuffer *dst, const struct NeBufferImageCopy *bic);
@@ -38,7 +43,7 @@ void Re_BkDestroyTexture(struct NeTexture *tex);
 // Pipeline
 struct NePipeline *Re_BkGraphicsPipeline(const struct NeGraphicsPipelineDesc *desc);
 struct NePipeline *Re_BkComputePipeline(const struct NeComputePipelineDesc *desc);
-struct NePipeline *Re_BkRayTracingPipeline(struct NeShaderBindingTable *sbt, uint32_t maxDepth);
+struct NePipeline *Re_BkRayTracingPipeline(const struct NeRayTracingPipelineDesc *desc);
 void Re_BkDestroyPipeline(struct NePipeline *pipeline);
 
 // Direct I/O
@@ -103,4 +108,46 @@ struct NeRenderInterface
 };
 #endif
 
+#ifdef __cplusplus
+}
+#endif
+
 #endif /* _NE_RENDER_BACKEND_H_ */
+
+/* NekoEngine
+ *
+ * Backend.h
+ * Author: Alexandru Naiman
+ *
+ * -----------------------------------------------------------------------------
+ *
+ * Copyright (c) 2015-2023, Alexandru Naiman
+ *
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * -----------------------------------------------------------------------------
+ */

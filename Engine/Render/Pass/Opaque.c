@@ -31,21 +31,21 @@ _Setup(struct NeOpaquePass *pass, struct NeArray *resources)
 {
 //	if (!Re_GraphTexture(pass->depthHash, resources))
 //		return false;
+	const struct NeTextureDesc *outDesc = Re_GraphTextureDesc(pass->outputHash, resources);
 
 	struct NeFramebufferAttachmentDesc fbAtDesc[3] =
 	{
-		{ .usage = 0, .format = 0 },
+		{ .usage = outDesc->usage, .format = outDesc->format },
 		{ .usage = TU_DEPTH_STENCIL_ATTACHMENT | TU_SAMPLED, .format = TF_D32_SFLOAT },
 		{ .usage = TU_COLOR_ATTACHMENT | TU_INPUT_ATTACHMENT, .format = TF_R16G16B16A16_SFLOAT }
 	};
-	Re_SwapchainDesc(Re_swapchain, &fbAtDesc[0]);
 	
 	struct NeFramebufferDesc fbDesc =
 	{
 		.attachmentCount = 3,
 		.attachments = fbAtDesc,
-		.width = *E_screenWidth,
-		.height = *E_screenHeight,
+		.width = outDesc->width,
+		.height = outDesc->height,
 		.layers = 1,
 		.renderPassDesc = Re_MaterialRenderPassDesc
 	};
@@ -59,6 +59,7 @@ static void
 _Execute(struct NeOpaquePass *pass, const struct NeArray *resources)
 {
 	struct NeMaterialRenderConstants constants;
+	const struct NeTextureDesc *outDesc = Re_GraphTextureDesc(pass->outputHash, resources);
 
 	struct NeBuffer *visibleIndices;
 	constants.sceneAddress = Re_GraphBuffer(pass->sceneDataHash, resources, NULL);
@@ -121,8 +122,8 @@ _Execute(struct NeOpaquePass *pass, const struct NeArray *resources)
 
 	Re_CmdBeginRenderPass(Re_MaterialRenderPassDesc, pass->fb, RENDER_COMMANDS_INLINE);
 
-	Re_CmdSetViewport(0.f, 0.f, (float)*E_screenWidth, (float)*E_screenHeight, 0.f, 1.f);
-	Re_CmdSetScissor(0, 0, *E_screenWidth, *E_screenHeight);
+	Re_CmdSetViewport(0.f, 0.f, (float)outDesc->width, (float)outDesc->height, 0.f, 1.f);
+	Re_CmdSetScissor(0, 0, outDesc->width, outDesc->height);
 
 	const struct NeDrawable *d = NULL;
 	for (uint32_t i = 0; i < E_JobWorkerThreads(); ++i) {
@@ -175,3 +176,41 @@ _Term(struct NeOpaquePass *pass)
 {
 	Sys_Free(pass);
 }
+
+/* NekoEngine
+ *
+ * Opaque.c
+ * Author: Alexandru Naiman
+ *
+ * -----------------------------------------------------------------------------
+ *
+ * Copyright (c) 2015-2023, Alexandru Naiman
+ *
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * -----------------------------------------------------------------------------
+ */

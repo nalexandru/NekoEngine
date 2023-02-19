@@ -1,0 +1,20 @@
+<RCC>
+	<qresource prefix="/">
+		<file>EdIcon.png</file>
+		<file>Icons/directory.png</file>
+		<file>Icons/image.png</file>
+		<file>Icons/script.png</file>
+		<file>Icons/audio.png</file>
+		<file>Icons/video.png</file>
+		<file>Icons/model.png</file>
+		<file>Icons/material.png</file>
+		<file>Icons/binary.png</file>
+		<file>Icons/generic.png</file>
+		<file>Icons/font.png</file>
+		<file>Icons/scene.png</file>
+		<file>Icons/entity.png</file>
+		<file>Icons/animation.png</file>
+		<file>Icons/text.png</file>
+		<file>Icons/back.png</file>
+	</qresource>
+</RCC>

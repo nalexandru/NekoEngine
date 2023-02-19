@@ -41,12 +41,7 @@ struct NeShaderModuleInfo
 
 static struct NeArray _modules, _shaders;
 
-static int32_t _sortShaderModules(const struct NeShaderModuleInfo *a, const struct NeShaderModuleInfo *b);
-static int32_t _shaderModuleCompare(const struct NeShaderModuleInfo *item, const uint64_t *hash);
-
 static void _loadShader(const char *path);
-static int32_t _sortShaders(const struct NeShader *a, const struct NeShader *b);
-static int32_t _shaderCompare(const struct NeShader *item, const uint64_t *hash);
 
 bool
 Re_LoadShaders(void)
@@ -60,7 +55,7 @@ Re_LoadShaders(void)
 	}
 
 	E_ProcessFiles("/Shaders", "shader", true, _loadShader);
-	Rt_ArraySort(&_shaders, (RtSortFunc)&_sortShaders);
+	Rt_ArraySort(&_shaders, Rt_U64CmpFunc);
 
 	return true;
 }
@@ -82,29 +77,7 @@ struct NeShader *
 Re_GetShader(const char *name)
 {
 	uint64_t hash = Rt_HashString(name);
-	return Rt_ArrayBSearch(&_shaders, &hash, (RtCmpFunc)_shaderCompare);
-}
-
-static int32_t
-_sortShaderModules(const struct NeShaderModuleInfo *a, const struct NeShaderModuleInfo *b)
-{
-	if (a->hash == b->hash)
-		return 0;
-	else if (a->hash > b->hash)
-		return -1;
-	else
-		return 1;
-}
-
-static int32_t
-_shaderModuleCompare(const struct NeShaderModuleInfo *item, const uint64_t *hash)
-{
-	if (item->hash == *hash)
-		return 0;
-	else if (item->hash > *hash)
-		return -1;
-	else
-		return 1;
+	return Rt_ArrayBSearch(&_shaders, &hash, Rt_U64CmpFunc);
 }
 
 static inline uint32_t
@@ -123,7 +96,7 @@ _loadModules(struct NeShader *s, uint32_t startPos, uint32_t count, const struct
 				meta->json[val.end] = 0x0;
 
 				uint64_t hash = Rt_HashString(tmp);
-				struct NeShaderModuleInfo *modInfo = Rt_ArrayBSearch(&_shaders, &hash, (RtCmpFunc)_shaderModuleCompare);
+				struct NeShaderModuleInfo *modInfo = Rt_ArrayBSearch(&_shaders, &hash, Rt_U64CmpFunc);
 
 				if (modInfo) {
 					s->stages[j].module = modInfo->module;
@@ -141,7 +114,7 @@ _loadModules(struct NeShader *s, uint32_t startPos, uint32_t count, const struct
 					si->stages[j].module = info.module;
 
 					Rt_ArrayAdd(&_modules, &info);
-					Rt_ArraySort(&_modules, (RtSortFunc)_sortShaderModules);
+					Rt_ArraySort(&_modules, Rt_U64CmpFunc);
 				}
 			} else if (JSON_STRING("stage", key, meta->json)) {
 				if (JSON_STRING(SSTR_VERTEX, val, meta->json))
@@ -201,7 +174,7 @@ _loadShader(const char *path)
 		jsmntok_t val = meta.tokens[++i];
 
 		if (JSON_STRING("name", key, meta.json)) {
-			memcpy(s.name, meta.json + val.start, val.end - val.start);
+			memcpy(s.name, meta.json + val.start, (size_t)val.end - (size_t)val.start);
 		} else if (JSON_STRING("type", key, meta.json)) {
 			if (JSON_STRING(TSTR_GRAPHICS, val, meta.json))
 				s.type = ST_GRAPHICS;
@@ -232,24 +205,40 @@ _loadShader(const char *path)
 	Rt_ArrayAdd(&_shaders, &s);
 }
 
-int32_t
-_sortShaders(const struct NeShader *a, const struct NeShader *b)
-{
-	if (a->hash == b->hash)
-		return 0;
-	else if (a->hash > b->hash)
-		return -1;
-	else
-		return 1;
-}
-
-int32_t
-_shaderCompare(const struct NeShader *item, const uint64_t *hash)
-{
-	if (item->hash == *hash)
-		return 0;
-	else if (item->hash > *hash)
-		return -1;
-	else
-		return 1;
-}
+/* NekoEngine
+ *
+ * Shader.c
+ * Author: Alexandru Naiman
+ *
+ * -----------------------------------------------------------------------------
+ *
+ * Copyright (c) 2015-2023, Alexandru Naiman
+ *
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * -----------------------------------------------------------------------------
+ */

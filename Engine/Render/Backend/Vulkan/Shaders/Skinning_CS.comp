@@ -1,0 +1,69 @@
+#version 460 core
+
+#extension GL_EXT_buffer_reference : require
+#extension GL_EXT_shader_16bit_storage : require
+#extension GL_GOOGLE_include_directive : require
+#extension GL_EXT_nonuniform_qualifier : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int16 : require
+
+#include "Types.glsl"
+
+struct VertexWeights
+{
+	int j0, j1, j2, j3;
+	float w0, w1, w2, w3;
+};
+
+layout(std430, buffer_reference) readonly buffer JointBuffer
+{
+	mat4 data[];
+};
+
+layout(std430, buffer_reference) readonly buffer VertexWeightBuffer
+{
+	VertexWeights data[];
+};
+
+layout(std430, buffer_reference) writeonly buffer DstVertexBuffer
+{
+	Vertex data[];
+};
+
+layout(local_size_x_id = NE_THREADS_X, local_size_y_id = NE_THREADS_Y, local_size_z_id = NE_THREADS_Z) in;
+
+layout(push_constant) uniform SkinningData
+{
+	JointBuffer joints;
+	VertexWeightBuffer weights;
+	VertexBuffer src;
+	DstVertexBuffer dst;
+} ComputeArgs;
+
+void
+main()
+{
+	Vertex v = ComputeArgs.src.data[gl_GlobalInvocationID.x];
+	VertexWeights vw = ComputeArgs.weights.data[gl_GlobalInvocationID.x];
+
+	mat4 xform =
+		vw.w0 * ComputeArgs.joints.data[vw.j0] +
+		vw.w1 * ComputeArgs.joints.data[vw.j1] +
+		vw.w2 * ComputeArgs.joints.data[vw.j2] +
+		vw.w3 * ComputeArgs.joints.data[vw.j3];
+
+	Vertex dst;
+
+	vec4 pos = xform * vec4(v.x, v.y, v.z, 1.f);
+	dst.x = pos.x; dst.y = pos.y; dst.z = pos.z;
+
+	vec4 norm = xform * vec4(v.nx, v.ny, v.nz, 1.f);
+	dst.nx = norm.x; dst.ny = norm.y; dst.nz = norm.z;
+
+	vec4 tgt = xform * vec4(v.tx, v.ty, v.tz, 1.f);
+	dst.tx = tgt.x; dst.ty = tgt.y; dst.tz = tgt.z;
+
+	dst.u = v.u; dst.v = v.v;
+	dst.r = v.r; dst.g = v.g; dst.b = v.b; dst.a = v.a;
+	
+	ComputeArgs.dst.data[gl_GlobalInvocationID.x] = dst;
+}

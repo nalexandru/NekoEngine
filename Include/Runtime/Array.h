@@ -11,6 +11,10 @@
 #include <System/Memory.h>
 #include <Runtime/RtDefs.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * struct NeArray - basic array
  * @data:
@@ -43,7 +47,7 @@ Rt_InitArray(struct NeArray *a, size_t size, size_t elemSize, enum NeMemoryHeap 
 
 	Sys_ZeroMemory(a, sizeof(*a));
 
-	a->data = Sys_Alloc(size, elemSize, heap);
+	a->data = (uint8_t *)Sys_Alloc(size, elemSize, heap);
 	if (!a->data)
 		return false;
 
@@ -75,7 +79,7 @@ Rt_InitAlignedArray(struct NeArray *a, size_t size, size_t elemSize, size_t alig
 
 	memset(a, 0x0, sizeof(*a));
 
-	a->data = aligned_alloc(alignment, size * elemSize);
+	a->data = (uint8_t *)aligned_alloc(alignment, size * elemSize);
 	if (!a->data)
 		return false;
 
@@ -108,11 +112,11 @@ Rt_CloneArray(struct NeArray *dst, const struct NeArray *src, enum NeMemoryHeap 
 	if (!dst || !src)
 		return false;
 
-	void *data = Sys_Alloc(src->size, src->elemSize, heap);
+	uint8_t *data = (uint8_t *)Sys_Alloc(src->size, src->elemSize, heap);
 	if (!data)
 		return false;
 
-	memcpy(dst->data, src->data, src->size * src->elemSize);
+	memcpy(data, src->data, src->size * src->elemSize);
 	memcpy(dst, src, sizeof(*dst));
 	dst->data = data;
 	dst->heap = heap;
@@ -174,7 +178,6 @@ Rt_CloneArray(struct NeArray *dst, const struct NeArray *src, enum NeMemoryHeap 
  *
  * Returns: data pointer
  */
-//void *rt_array_data_ptr(rt_array *a);
 #define Rt_ArrayDataPtr(a) (a)->data
 
 static inline int
@@ -186,7 +189,7 @@ Rt_ResizeArray(struct NeArray *a, size_t size)
 		return true;
 
 	if (a->align > 1) {
-		if ((a->data = aligned_alloc(a->align, size * a->elemSize)) == NULL) {
+		if ((a->data = (uint8_t *)aligned_alloc(a->align, size * a->elemSize)) == NULL) {
 			a->data = ptr;
 			return false;
 		}
@@ -198,7 +201,7 @@ Rt_ResizeArray(struct NeArray *a, size_t size)
 		_aligned_free(ptr);
 #endif
 	} else {
-		if ((a->data = Sys_ReAlloc(a->data, size, a->elemSize, a->heap)) == NULL) {
+		if ((a->data = (uint8_t *)Sys_ReAlloc(a->data, size, a->elemSize, a->heap)) == NULL) {
 			a->data = ptr;
 			return false;
 		}
@@ -375,7 +378,7 @@ Rt_ArrayRemove(struct NeArray *a, size_t index)
 {
 	size_t i = 0;
 
-	if (index > a->count - 1)
+	if (!a->count || index > a->count - 1)
 		return false;
 
 	--a->count;
@@ -503,7 +506,7 @@ Rt_ArraySort(struct NeArray *a, RtSortFunc sortFunc)
 static inline bool
 Rt_ArrayReverse(struct NeArray *a)
 {
-	uint8_t *tmp = NULL;
+	void *tmp = NULL;
 	uint64_t s = 0, e = 0;
 	void *start = 0, *end = 0;
 
@@ -569,11 +572,11 @@ Rt_ArrayLowerBound(const struct NeArray *a, const void *data, RtCmpFunc cmpFunc)
 #define Rt_ZeroArray(a) memset((a)->data, 0x0, (a)->elemSize * (a)->count); a->count = 0
 
 static inline void
-Rt_ClearArray(struct NeArray *a, bool free_memory)
+Rt_ClearArray(struct NeArray *a, bool freeMemory)
 {
 	a->count = 0;
 
-	if (!free_memory || !a->data)
+	if (!freeMemory || !a->data)
 		return;
 
 	a->size = 0;
@@ -599,17 +602,31 @@ Rt_TermArray(struct NeArray *a)
 	Rt_ClearArray(a, true);
 }
 
-#define Rt_ArrayForEach(var, a)				\
-	for (size_t miwa_rtafei = 0;				\
-		(miwa_rtafei < (a)->count) &&			\
+#ifdef __cplusplus
+#define Rt_ArrayForEach(var, a, type)					\
+	for (size_t miwa_rtafei = 0;						\
+		(miwa_rtafei < (a)->count) &&					\
+			(var = (type)Rt_ArrayGet(a, miwa_rtafei));	\
+		++miwa_rtafei)
+
+#define Rt_ArrayForEachPtr(var, a, type)					\
+	for (size_t miwa_rtafei = 0;							\
+		(miwa_rtafei < (a)->count) &&						\
+			(var = (type)Rt_ArrayGetPtr(a, miwa_rtafei));	\
+		++miwa_rtafei)
+#else
+#define Rt_ArrayForEach(var, a)						\
+	for (size_t miwa_rtafei = 0;					\
+		(miwa_rtafei < (a)->count) &&				\
 			(var = Rt_ArrayGet(a, miwa_rtafei));	\
 		++miwa_rtafei)
 
-#define Rt_ArrayForEachPtr(var, a)				\
-	for (size_t miwa_rtafei = 0;				\
-		(miwa_rtafei < (a)->count) &&			\
+#define Rt_ArrayForEachPtr(var, a)					\
+	for (size_t miwa_rtafei = 0;					\
+		(miwa_rtafei < (a)->count) &&				\
 			(var = Rt_ArrayGetPtr(a, miwa_rtafei));	\
 		++miwa_rtafei)
+#endif
 
 // You are not supposed to call this function directly;
 // Use the wrappers defined above instead.
@@ -636,4 +653,46 @@ __miwa_array_insert(struct NeArray *a, const void *data, size_t pos, bool ordere
 	return true;
 }
 
+#ifdef __cplusplus
+}
+#endif
+
 #endif /* _NE_RUNTIME_ARRAY_H_ */
+
+/* NekoEngine
+ *
+ * Array.h
+ * Author: Alexandru Naiman
+ *
+ * -----------------------------------------------------------------------------
+ *
+ * Copyright (c) 2015-2023, Alexandru Naiman
+ *
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * -----------------------------------------------------------------------------
+ */

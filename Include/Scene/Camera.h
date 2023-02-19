@@ -1,9 +1,12 @@
 #ifndef _NE_SCENE_CAMERA_H_
 #define _NE_SCENE_CAMERA_H_
 
-#include <Math/Math.h>
-#include <Engine/Types.h>
+#include <Math/Types.h>
 #include <Engine/Component.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 enum NeProjectionType
 {
@@ -30,18 +33,20 @@ ENGINE_API extern struct NeCamera *Scn_activeCamera;
 
 void Scn_ActivateCamera(struct NeCamera *cam);
 
+#ifdef __cplusplus
+}
+#endif
+
 #endif /* _NE_SCENE_CAMERA_H_ */
 
 /* NekoEngine
  *
- * frustum.h
+ * Camera.h
  * Author: Alexandru Naiman
- *
- * Frustum functions
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (c) 2015-2022, Alexandru Naiman
+ * Copyright (c) 2015-2023, Alexandru Naiman
  *
  * All rights reserved.
  *

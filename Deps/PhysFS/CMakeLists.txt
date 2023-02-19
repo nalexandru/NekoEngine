@@ -1,4 +1,8 @@
-file (GLOB src *.c)
+if (APPLE)
+	file(GLOB src *.c *.m)
+else()
+	file(GLOB src *.c)
+endif()
 
 set(CMAKE_C_STANDARD 11)
 

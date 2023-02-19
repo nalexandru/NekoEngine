@@ -1,133 +1,168 @@
 #ifndef _NE_MATH_MATH_H_
 #define _NE_MATH_MATH_H_
 
-#include <Math/defs.h>
+#include <DirectXMath.h>
+#include <Math/Types.h>
 
-#include <Math/func.h>
+using namespace DirectX;
 
-#include <Math/vec2.h>
-#include <Math/vec3.h>
-#include <Math/vec4.h>
+template<typename T>
+static inline T
+M_Clamp(T x, T min, T max)
+{
+	return x < min ? min : (x > max ? max : x);
+}
 
-#include <Math/quat.h>
+template<typename T>
+static inline T
+M_Max(T a, T b)
+{
+	return a > b ? a : b;
+}
 
-#include <Math/mat3.h>
-#include <Math/mat4.h>
+template<typename T>
+static inline T
+M_Min(T a, T b)
+{
+	return a < b ? a : b;
+}
 
-#include <Math/ray.h>
+template<typename T>
+static inline T
+M_Lerp(T x, T y, T t)
+{
+	return x + t * (y - x);
+}
 
-#include <Math/aabb.h>
+template<typename T>
+static inline T
+M_Mod(T x, T y)
+{
+	return x - y * floor(x / y);
+}
 
-#include <Math/plane.h>
+static inline bool
+M_FloatEqual(float lhs, float rhs)
+{
+	return (fabsf(lhs - rhs) <= FLT_EPSILON * fmaxf(1.f, fmaxf(lhs, rhs)));
+}
 
-#include <Math/frustum.h>
+static inline struct NeMatrix *
+M_InfinitePerspectiveMatrixRZ(struct NeMatrix *dst, float fov_y, float aspect, float z_near)
+{
+	const float rad = 0.5f * XMConvertToRadians(fov_y / 2.f);
+	const float h = cosf(rad) / sinf(rad);
 
-#include <Math/debug.h>
+	float m[16] = {
+		h / aspect, 0.f, 0.f,  0.f,
+		0.f,   h, 0.f,  0.f,
+		0.f, 0.f, 0.f, 1.f,
+		0.f, 0.f, z_near,  0.f
+	};
 
-// Generics
-#define M_Normalize(x, y) _Generic((x),	\
-	struct NeVec2 *: M_NormalizeVec2,	\
-	struct NeVec3 *: M_NormalizeVec3,	\
-	struct NeVec4 *: M_NormalizeVec4,	\
-	struct NeQuat *: M_NormalizeQuat,	\
-	struct NePlane *: M_NormalizePlane	\
-)(x, y)
+	XMStoreFloat4x4A((XMFLOAT4X4A *)dst, XMLoadFloat4x4((XMFLOAT4X4 *)m));
+	return dst;
+}
 
-#define M_Add(x, y, z) _Generic((x),	\
-	struct NeVec2 *: M_AddVec2,	\
-	struct NeVec3 *: M_AddVec3,	\
-	struct NeVec4 *: M_AddVec4,	\
-	struct NeQuaternion *: M_AddQuat	\
-)(x, y, z)
+// Load/Store
 
-#define M_AddS(x, y, z) _Generic((x),	\
-	struct NeVec2 *: M_AddVec2S,	\
-	struct NeVec3 *: M_AddVec3S,	\
-	struct NeVec4 *: M_AddVec4S		\
-)(x, y, z)
+static inline XMVECTOR
+M_Load(const struct NeVec2 *v) noexcept
+{
+	return XMLoadFloat2A((XMFLOAT2A *)v);
+}
 
-#define M_Sub(x, y, z) _Generic((x),	\
-	struct NeVec2 *: M_SubVec2,	\
-	struct NeVec3 *: M_SubVec3,	\
-	struct NeVec4 *: M_SubVec4,	\
-	struct NeQuaternion *: M_SubQuat	\
-)(x, y, z)
+static inline XMVECTOR
+M_Load(const struct NeVec3 *v) noexcept
+{
+	return XMLoadFloat3A((XMFLOAT3A *)v);
+}
 
-#define M_SubS(x, y, z) _Generic((x),	\
-	struct NeVec2 *: M_SubVec2S,	\
-	struct NeVec3 *: M_SubVec3S,	\
-	struct NeVec4 *: M_SubVec4S		\
-)(x, y, z)
+static inline XMVECTOR
+M_Load(const struct NeVec4 *v) noexcept
+{
+	return XMLoadFloat4A((XMFLOAT4A *)v);
+}
 
-#define M_Mul(x, y, z) _Generic((x),	\
-	struct NeVec2 *: M_MulVec2,	\
-	struct NeVec3 *: M_MulVec3,	\
-	struct NeVec4 *: M_MulVec4,	\
-	struct NeMatrix *: M_MulMatrix,	\
-	struct NeQuaternion *: M_MulQuat	\
-)(x, y, z)
+static inline XMVECTOR
+M_Load(const struct NeQuaternion *v) noexcept
+{
+	return XMLoadFloat4A((XMFLOAT4A *)v);
+}
 
-#define M_MulVecS(x, y, z) _Generic((x),	\
-	struct NeVec2 *: M_MulVec2S,	\
-	struct NeVec3 *: M_MulVec3S,	\
-	struct NeVec4 *: M_MulVec4S		\
-)(x, y, z)
+static inline XMMATRIX
+M_Load(const struct NeMatrix *m) noexcept
+{
+	return XMLoadFloat4x4A((XMFLOAT4X4A *)m);
+}
 
-#define M_Div(x, y, z) _Generic((x),	\
-	struct NeVec2 *: M_DivVec2,	\
-	struct NeVec3 *: M_DivVec3,	\
-	struct NeVec4 *: M_DivVec4,	\
-	struct NeQuaternion *: M_DivQuat	\
-)(x, y, z)
+static inline void
+M_Store(struct NeVec2 *d, XMVECTOR v)
+{
+	XMStoreFloat2A((XMFLOAT2A *)d, v);
+}
 
-#define M_DivS(x, y, z) _Generic((x),	\
-	struct NeVec2 *: M_DivVec2S,	\
-	struct NeVec3 *: M_DivVec3S,	\
-	struct NeVec4 *: M_DivVec4S		\
-)(x, y, z)
+static inline void
+M_Store(struct NeVec3 *d, XMVECTOR v)
+{
+	XMStoreFloat3A((XMFLOAT3A *)d, v);
+}
 
-#define M_Cross(x, y, z) _Generic((x),	\
-	struct NeVec2 *: M_CrossVec2,	\
-	struct NeVec3 *: M_CrossVec3	\
-)(x, y, z)
+static inline void
+M_Store(struct NeVec4 *d, XMVECTOR v)
+{
+	XMStoreFloat4A((XMFLOAT4A *)d, v);
+}
 
-#define M_Dot(x, y, z) _Generic((x),	\
-	struct NeVec2 *: M_DotVec2,	\
-	struct NeVec3 *: M_DotVec3,	\
-	struct NeVec4 *: M_DotVec4,	\
-	struct NeQuaternion *: M_DotQuat	\
-)(x, y, z)
+static inline void
+M_Store(struct NeQuaternion *d, XMVECTOR v)
+{
+	XMStoreFloat4A((XMFLOAT4A *)d, v);
+}
 
-#define M_Copy(x, y) _Generic((x),	\
-	struct NeVec2 *: M_CopyVec2,	\
-	struct NeVec3 *: M_CopyVec3,	\
-	struct NeVec4 *: M_CopyVec4,	\
-	struct NeQuaternion *: M_CopyQuat,	\
-	struct NeMatrix *: M_CopyMatrix	\
-)(x, y)
+static inline void
+M_Store(struct NeMatrix *d, XMMATRIX v)
+{
+	XMStoreFloat4x4A((XMFLOAT4X4A *)d, v);
+}
 
-#define M_Fill(x, y) _Generic((x),	\
-	struct NeVec2 *: M_FillVec2,	\
-	struct NeVec3 *: M_FillVec3,	\
-	struct NeVec4 *: M_FillVec4		\
-)(x, y)
+// Quaternion
 
-#define M_Identity(x) _Generic((x),	\
-	struct NeQuaternion *: M_QuatIdentity,	\
-	struct NeMatrix *: M_MatrixIdentity	\
-)(x)
+static inline float
+M_QuatRoll(const struct NeQuaternion *q)
+{
+	const struct NeVec2 v =
+	{
+		2.f * (q->x * q->y + q->w * q->z),
+		q->w * q->w + q->x * q->x - q->y * q->y - q->z * q->z
+	};
 
-#define M_Clamp(x, y, z) _Generic((x), \
-	float: M_ClampF,                   \
-	int32_t: M_ClampI,                 \
-	uint32_t: M_ClampUI                \
-)(x, y, z)
+	if (XMVectorGetX(XMVectorEqual(M_Load(&v), XMVectorZero())))
+		return 0.f;
 
-#define M_Min(x, y) _Generic((x),	\
-	struct NeVec2 *: M_FillVec2,	\
-	struct NeVec3 *: M_FillVec3,	\
-	struct NeVec4 *: M_FillVec4		\
-)(x, y)
+	return XMConvertToDegrees(atan2f(v.x, v.y));
+}
+
+static inline float
+M_QuatPitch(const struct NeQuaternion *q)
+{
+	const struct NeVec2 v =
+	{
+		2.f * (q->y * q->z + q->w * q->x),
+		q->w * q->w - q->x * q->x - q->y * q->y + q->z * q->z
+	};
+
+	if (XMVectorGetX(XMVectorEqual(M_Load(&v), XMVectorZero())))
+		return XMConvertToDegrees(2.f * atan2f(q->x, q->w));
+
+	return XMConvertToDegrees(atan2f(v.x, v.y));
+}
+
+static inline float
+M_QuatYaw(const struct NeQuaternion *q)
+{
+	return XMConvertToDegrees(asinf(M_Clamp(-2.f * (q->x * q->z - q->w * q->y), -1.f, 1.f)));
+}
 
 #endif /* _NE_MATH_MATH_H_ */
 
@@ -140,7 +175,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (c) 2015-2022, Alexandru Naiman
+ * Copyright (c) 2015-2023, Alexandru Naiman
  *
  * All rights reserved.
  *

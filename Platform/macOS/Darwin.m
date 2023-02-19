@@ -4,12 +4,15 @@
 #include <sched.h>
 #include <dlfcn.h>
 #include <fcntl.h>
+#include <netdb.h>
 #include <unistd.h>
 #include <pthread.h>
 #include <sys/time.h>
 #include <sys/mman.h>
+#include <sys/socket.h>
 #include <sys/sysctl.h>
 #include <sys/utsname.h>
+#include <netinet/in.h>
 
 #include <mach/mach.h>
 #include <mach/mach_time.h>
@@ -24,6 +27,7 @@
 #include <Engine/Engine.h>
 #include <Engine/Config.h>
 #include <Engine/Application.h>
+#include <Network/Network.h>
 
 #import <Foundation/Foundation.h>
 
@@ -140,6 +144,32 @@ uint32_t
 Sys_CpuThreadCount(void)
 {
 	return Darwin_numCpus;
+}
+
+uint64_t
+Sys_TotalMemory(void)
+{
+	size_t mem = 0;
+	size_t len = sizeof(mem);
+	static int mib[2] = { CTL_HW, HW_PHYSMEM };
+
+	if (sysctl(mib, 2, &mem, &len, NULL, 0) < 0)
+		return 0;
+
+	return mem;
+}
+
+uint64_t
+Sys_FreeMemory(void)
+{
+	size_t mem = 0;
+	size_t len = sizeof(mem);
+	int mib[2] = { CTL_HW, HW_USERMEM };
+
+	if (sysctl(mib, 2, &mem, &len, NULL, 0) < 0)
+		return 0;
+
+	return mem;
 }
 
 const char *
@@ -298,9 +328,28 @@ Sys_CreateDirectory(const char *path)
 }
 
 void
-Sys_ExecutableLocation(char *out, uint32_t len)
+Sys_ExecutableLocation(char *buff, size_t len)
 {
-	_NSGetExecutablePath(out, &len);
+	uint32_t l = (uint32_t)len;
+	_NSGetExecutablePath(buff, &l);
+}
+
+void
+Sys_GetWorkingDirectory(char *buff, size_t len)
+{
+	snprintf(buff, len, "%s", [[[NSFileManager defaultManager] currentDirectoryPath] UTF8String]);
+}
+
+void
+Sys_SetWorkingDirectory(const char *dir)
+{
+	[[NSFileManager defaultManager] changeCurrentDirectoryPath: [NSString stringWithUTF8String: dir]];
+}
+
+void
+Sys_UserName(char *buff, size_t len)
+{
+	snprintf(buff, len, "%s", [NSUserName() UTF8String]);
 }
 
 void
@@ -370,3 +419,119 @@ Sys_TermDarwinPlatform(void)
 {
 	[Darwin_appSupportURL release];
 }
+
+bool Net_InitPlatform(void) { return true; }
+
+int32_t
+Net_Socket(enum NeSocketType type, enum NeSocketProto proto)
+{
+	int st = SOCK_STREAM, sp = IPPROTO_TCP;
+	
+	switch (type) {
+	case ST_STREAM: st = SOCK_STREAM; break;
+	case ST_DGRAM: st = SOCK_DGRAM; break;
+	case ST_RAW: st = SOCK_RAW; break;
+	}
+	
+	switch (sp) {
+	case SP_TCP: sp = IPPROTO_TCP; break;
+	case SP_UDP: sp = IPPROTO_UDP; break;
+	}
+	
+	return socket(AF_INET, st, sp);
+}
+
+bool
+Net_Connect(int32_t socket, char *host, int32_t port)
+{
+	struct hostent *h = gethostbyname(host);
+	if (!h)
+		return false;
+	
+	struct sockaddr_in addr =
+	{
+		.sin_family = AF_INET,
+		.sin_port = htons(port),
+		.sin_addr = *(struct in_addr *)h->h_addr
+	};
+	return connect(socket, (struct sockaddr *)&addr, sizeof(addr)) == 0;
+}
+
+bool
+Net_Listen(int32_t socket, int32_t port, int32_t backlog)
+{
+	struct sockaddr_in addr =
+	{
+		.sin_family = AF_INET,
+		.sin_addr.s_addr = INADDR_ANY,
+		.sin_port = htons(port)
+	};
+	if (bind(socket, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+		return false;
+	
+	return listen(socket, backlog) == 0;
+}
+
+int32_t
+Net_Accept(int32_t socket)
+{
+	return accept(socket, NULL, 0);
+}
+
+ssize_t
+Net_Send(int32_t socket, const void *data, uint32_t count)
+{
+	return send(socket, data, count, 0);
+}
+
+ssize_t
+Net_Recv(int32_t socket, void *data, uint32_t count)
+{
+	return recv(socket, data, count, 0);
+}
+
+void
+Net_Close(int32_t socket)
+{
+	close(socket);
+}
+
+void Net_TermPlatform(void) { }
+
+/* NekoEngine
+ *
+ * Darwin.m
+ * Author: Alexandru Naiman
+ *
+ * -----------------------------------------------------------------------------
+ *
+ * Copyright (c) 2015-2022, Alexandru Naiman
+ *
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * -----------------------------------------------------------------------------
+ */

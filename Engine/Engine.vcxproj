@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\packages\OpenXR.Loader.1.0.10.2\build\native\OpenXR.Loader.props" Condition="Exists('..\packages\OpenXR.Loader.1.0.10.2\build\native\OpenXR.Loader.props')" />
+  <Import Project="..\packages\OpenXR.Headers.1.0.10.2\build\native\OpenXR.Headers.props" Condition="Exists('..\packages\OpenXR.Headers.1.0.10.2\build\native\OpenXR.Headers.props')" />
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
@@ -38,6 +40,8 @@
     <ClInclude Include="..\Deps\Lua\lundump.h" />
     <ClInclude Include="..\Deps\Lua\lvm.h" />
     <ClInclude Include="..\Deps\Lua\lzio.h" />
+    <ClInclude Include="..\Deps\mojoAL\AL\al.h" />
+    <ClInclude Include="..\Deps\mojoAL\AL\alc.h" />
     <ClInclude Include="..\Deps\PhysFS\physfs.h" />
     <ClInclude Include="..\Deps\PhysFS\physfs_casefolding.h" />
     <ClInclude Include="..\Deps\PhysFS\physfs_internal.h" />
@@ -48,9 +52,11 @@
     <ClInclude Include="..\Include\Animation\Animator.h" />
     <ClInclude Include="..\Include\Animation\Clip.h" />
     <ClInclude Include="..\Include\Animation\Skeleton.h" />
+    <ClInclude Include="..\Include\Asset\NAnim.h" />
+    <ClInclude Include="..\Include\Asset\NMesh.h" />
+    <ClInclude Include="..\Include\Asset\NMorph.h" />
     <ClInclude Include="..\Include\Audio\Audio.h" />
     <ClInclude Include="..\Include\Audio\Clip.h" />
-    <ClInclude Include="..\Include\Audio\Driver.h" />
     <ClInclude Include="..\Include\Audio\Source.h" />
     <ClInclude Include="..\Include\Engine\Application.h" />
     <ClInclude Include="..\Include\Engine\Asset.h" />
@@ -73,31 +79,11 @@
     <ClInclude Include="..\Include\Engine\XR.h" />
     <ClInclude Include="..\Include\Input\Input.h" />
     <ClInclude Include="..\Include\Input\Codes.h" />
-    <ClInclude Include="..\Include\Math\aabb.h" />
-    <ClInclude Include="..\Include\Math\altivec\mat4_altivec.h" />
-    <ClInclude Include="..\Include\Math\altivec\vec4_altivec.h" />
-    <ClInclude Include="..\Include\Math\debug.h" />
-    <ClInclude Include="..\Include\Math\defs.h" />
-    <ClInclude Include="..\Include\Math\frustum.h" />
-    <ClInclude Include="..\Include\Math\func.h" />
-    <ClInclude Include="..\Include\Math\mat3.h" />
-    <ClInclude Include="..\Include\Math\mat4.h" />
+    <ClInclude Include="..\Include\Math\Types.h" />
     <ClInclude Include="..\Include\Math\Math.h" />
-    <ClInclude Include="..\Include\Math\neon\mat4_neon.h" />
-    <ClInclude Include="..\Include\Math\neon\vec4_neon.h" />
-    <ClInclude Include="..\Include\Math\plane.h" />
-    <ClInclude Include="..\Include\Math\quat.h" />
-    <ClInclude Include="..\Include\Math\ray.h" />
-    <ClInclude Include="..\Include\Math\sanity.h" />
-    <ClInclude Include="..\Include\Math\sse\mat4_sse.h" />
-    <ClInclude Include="..\Include\Math\sse\vec4_sse.h" />
-    <ClInclude Include="..\Include\Math\vec2.h" />
-    <ClInclude Include="..\Include\Math\vec3.h" />
-    <ClInclude Include="..\Include\Math\vec4.h" />
-    <ClInclude Include="..\Include\Math\vmx128\mat4_vmx128.h" />
-    <ClInclude Include="..\Include\Math\vmx128\vec4_vmx128.h" />
     <ClInclude Include="..\Include\Network\Network.h" />
     <ClInclude Include="..\Include\Render\Backend.h" />
+    <ClInclude Include="..\Include\Render\Components\ModelMorph.h" />
     <ClInclude Include="..\Include\Render\Components\ModelRender.h" />
     <ClInclude Include="..\Include\Render\Context.h" />
     <ClInclude Include="..\Include\Render\Core.h" />
@@ -176,6 +162,7 @@
     <ClCompile Include="..\Deps\Lua\lutf8lib.c" />
     <ClCompile Include="..\Deps\Lua\lvm.c" />
     <ClCompile Include="..\Deps\Lua\lzio.c" />
+    <ClCompile Include="..\Deps\mojoAL\mojoal.c" />
     <ClCompile Include="..\Deps\PhysFS\physfs.c" />
     <ClCompile Include="..\Deps\PhysFS\physfs_archiver_7z.c" />
     <ClCompile Include="..\Deps\PhysFS\physfs_archiver_dir.c" />
@@ -193,6 +180,7 @@
     <ClCompile Include="..\Deps\PhysFS\physfs_platform_windows.c" />
     <ClCompile Include="..\Deps\PhysFS\physfs_unicode.c" />
     <ClCompile Include="..\Platform\Win32\Compat\stdatomic.c" />
+    <ClCompile Include="..\Platform\Win32\Compat\strlcat.c" />
     <ClCompile Include="..\Platform\Win32\Main.c" />
     <ClCompile Include="..\Platform\Win32\Thread.c" />
     <ClCompile Include="..\Platform\Win32\Win32.c" />
@@ -201,17 +189,18 @@
     <ClCompile Include="Animation\Animation.c" />
     <ClCompile Include="Animation\AnimationClip.c" />
     <ClCompile Include="Animation\Animator.c" />
-    <ClCompile Include="Animation\Skeleton.c" />
+    <ClCompile Include="Animation\Skeleton.cxx" />
     <ClCompile Include="Asset\DDS.c" />
     <ClCompile Include="Asset\Font.c" />
     <ClCompile Include="Asset\Image.c" />
     <ClCompile Include="Asset\Metadata.c" />
     <ClCompile Include="Asset\NAnim.c" />
     <ClCompile Include="Asset\NMesh.c" />
+    <ClCompile Include="Asset\NMorph.c" />
     <ClCompile Include="Asset\Ogg.c" />
     <ClCompile Include="Asset\TGA.c" />
     <ClCompile Include="Asset\Wave.c" />
-    <ClCompile Include="Audio\Audio.c" />
+    <ClCompile Include="Audio\Audio.cxx" />
     <ClCompile Include="Audio\AudioClip.c" />
     <ClCompile Include="Audio\Source.c" />
     <ClCompile Include="Engine\Component.c" />
@@ -263,28 +252,31 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="Render\Components\ModelMorph.c" />
     <ClCompile Include="Render\Components\ModelRender.c" />
     <ClCompile Include="Render\Frame.c" />
     <ClCompile Include="Render\Graph\Graph.c" />
     <ClCompile Include="Render\Material.c" />
-    <ClCompile Include="Render\Model.c" />
+    <ClCompile Include="Render\Model.cxx" />
     <ClCompile Include="Render\Pass\AccelerationStructureBuild.c" />
-    <ClCompile Include="Render\Pass\Debug\DebugBounds.c" />
-    <ClCompile Include="Render\Pass\Debug\LightBounds.c" />
+    <ClCompile Include="Render\Pass\Debug\DebugBounds.cxx" />
+    <ClCompile Include="Render\Pass\Debug\LightBounds.cxx" />
     <ClCompile Include="Render\Pass\Depth.c" />
     <ClCompile Include="Render\Pass\LightCulling.c" />
     <ClCompile Include="Render\Pass\Opaque.c" />
-    <ClCompile Include="Render\Pass\Sky.c" />
+    <ClCompile Include="Render\Pass\Skinning.c" />
+    <ClCompile Include="Render\Pass\Sky.cxx" />
     <ClCompile Include="Render\Pass\SSAO.c" />
     <ClCompile Include="Render\Pass\Transparent.c" />
     <ClCompile Include="Render\Render.c" />
-    <ClCompile Include="Render\Systems.c" />
-    <ClCompile Include="Scene\Camera.c" />
-    <ClCompile Include="Scene\Light.c" />
-    <ClCompile Include="Scene\Primitive.c" />
-    <ClCompile Include="Scene\Scene.c" />
-    <ClCompile Include="Scene\Terrain.c" />
-    <ClCompile Include="Scene\Transform.c" />
+    <ClCompile Include="Render\Systems.cxx" />
+    <ClCompile Include="Scene\Camera.cxx" />
+    <ClCompile Include="Scene\Light.cxx" />
+    <ClCompile Include="Scene\Primitive.cxx" />
+    <ClCompile Include="Scene\Scene.cxx" />
+    <ClCompile Include="Scene\Terrain.cxx" />
+    <ClCompile Include="Scene\Transform.cxx" />
+    <ClCompile Include="Script\l_Audio.c" />
     <ClCompile Include="Script\l_Camera.c" />
     <ClCompile Include="Script\l_Config.c" />
     <ClCompile Include="Script\l_Console.c" />
@@ -293,11 +285,14 @@
     <ClCompile Include="Script\l_Input.c" />
     <ClCompile Include="Script\l_IO.c" />
     <ClCompile Include="Script\l_Light.c" />
+    <ClCompile Include="Script\l_Matrix.cxx" />
     <ClCompile Include="Script\l_Render.c" />
     <ClCompile Include="Script\l_Resource.c" />
     <ClCompile Include="Script\l_System.c" />
-    <ClCompile Include="Script\l_Transform.c" />
+    <ClCompile Include="Script\l_Transform.cxx" />
     <ClCompile Include="Script\l_UI.c" />
+    <ClCompile Include="Script\l_Vec3.cxx" />
+    <ClCompile Include="Script\l_Vec4.cxx" />
     <ClCompile Include="Script\Script.c" />
     <ClCompile Include="Script\l_ScriptComponent.c" />
     <ClCompile Include="System\AtomicLock.c" />
@@ -308,13 +303,14 @@
     <ClCompile Include="System\System.c" />
     <ClCompile Include="UI\Text.c" />
     <ClCompile Include="UI\UI.c" />
-    <ClCompile Include="UI\UIPass.c" />
+    <ClCompile Include="UI\UIPass.cxx" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Exports.def" />
     <CustomBuild Include="Render\Backend\Vulkan\Shaders\LightCulling_CS.comp">
       <FileType>Document</FileType>
     </CustomBuild>
+    <None Include="packages.config" />
     <None Include="Render\Backend\Vulkan\Shaders\Constants.glsl" />
     <CustomBuild Include="Render\Backend\Vulkan\Shaders\DefaultPBR_MR_O_FS.frag">
       <FileType>Document</FileType>
@@ -342,6 +338,7 @@
       <FileType>Document</FileType>
     </CustomBuild>
     <None Include="Render\Backend\Vulkan\Shaders\DrawInfo.glsl" />
+    <None Include="Render\Backend\Vulkan\Shaders\Fullscreen_VS.vert" />
     <None Include="Render\Backend\Vulkan\Shaders\Light.glsl" />
     <None Include="Render\Backend\Vulkan\Shaders\Material.glsl" />
     <None Include="Render\Backend\Vulkan\Shaders\PBR.glsl" />
@@ -350,6 +347,9 @@
       <FileType>Document</FileType>
     </CustomBuild>
     <CustomBuild Include="Render\Backend\Vulkan\Shaders\Sky_VS.vert">
+      <FileType>Document</FileType>
+    </CustomBuild>
+    <CustomBuild Include="Render\Backend\Vulkan\Shaders\Skinning_CS.comp">
       <FileType>Document</FileType>
     </CustomBuild>
     <None Include="Render\Backend\Vulkan\Shaders\Texture.glsl" />
@@ -400,27 +400,27 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(VK_SDK_PATH)\Include;$(SolutionDir)\Deps\Aftermath\include;$(SolutionDir)\Deps\OpenXR\include;$(SolutionDir)Include;$(SolutionDir)Deps;$(SolutionDir)Deps\PhysFS;$(SolutionDir)Deps\Lua;$(SolutionDir)Deps\OpenAL\include;$(SolutionDir)Platform\Win32\Compat;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)Deps\steamworks\public;C:\Program Files\Mono\include;$(VK_SDK_PATH)\Include;$(SolutionDir)\Deps\Aftermath\include;$(SolutionDir)\Deps\OpenXR\include;$(SolutionDir)Include;$(SolutionDir)Deps;$(SolutionDir)Deps\PhysFS;$(SolutionDir)Deps\Lua;$(SolutionDir)Deps\mojoAL;$(SolutionDir)Platform\Win32\Compat;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)\bin\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\build\$(Configuration)\$(ProjectName)\</IntDir>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <LibraryPath>$(SolutionDir)Deps\Aftermath\lib\x64;$(SolutionDir)Deps\OpenXR\x64\lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)Deps\steamworks\redistributable_bin\win64;C:\Program Files\Mono\lib;$(SolutionDir)Deps\Aftermath\lib\x64;$(SolutionDir)Deps\OpenXR\x64\lib;$(LibraryPath)</LibraryPath>
     <CustomBuildBeforeTargets>PreBuildEvent</CustomBuildBeforeTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(VK_SDK_PATH)\Include;$(SolutionDir)\Deps\Aftermath\include;$(SolutionDir)\Deps\OpenXR\include;$(SolutionDir)Include;$(SolutionDir)Deps;$(SolutionDir)Deps\PhysFS;$(SolutionDir)Deps\Lua;$(SolutionDir)Deps\OpenAL\include;$(SolutionDir)Platform\Win32\Compat;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)Deps\steamworks\public;C:\Program Files\Mono\include;$(VK_SDK_PATH)\Include;$(SolutionDir)\Deps\Aftermath\include;$(SolutionDir)\Deps\OpenXR\include;$(SolutionDir)Include;$(SolutionDir)Deps;$(SolutionDir)Deps\PhysFS;$(SolutionDir)Deps\Lua;$(SolutionDir)Deps\mojoAL;$(SolutionDir)Platform\Win32\Compat;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)\bin\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\build\$(Configuration)\$(ProjectName)\</IntDir>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <LibraryPath>$(SolutionDir)Deps\Aftermath\lib\x64;$(SolutionDir)Deps\OpenXR\x64\lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)Deps\steamworks\redistributable_bin\win64;C:\Program Files\Mono\lib;$(SolutionDir)Deps\Aftermath\lib\x64;$(SolutionDir)Deps\OpenXR\x64\lib;$(LibraryPath)</LibraryPath>
     <CustomBuildBeforeTargets>PreBuildEvent</CustomBuildBeforeTargets>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_ENGINE_INTERNAL_;_CRT_SECURE_NO_WARNINGS;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_XM_NO_XMVECTOR_OVERLOADS_;AL_LIBTYPE_STATIC;_ENGINE_INTERNAL_;_CRT_SECURE_NO_WARNINGS;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>
@@ -433,6 +433,7 @@
       <ExceptionHandling>false</ExceptionHandling>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <RemoveUnreferencedCodeData>false</RemoveUnreferencedCodeData>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -476,7 +477,7 @@ del $(IntDir)Shaders.h</Command>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_ENGINE_INTERNAL_;_CRT_SECURE_NO_WARNINGS;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_XM_NO_XMVECTOR_OVERLOADS_;AL_LIBTYPE_STATIC;_ENGINE_INTERNAL_;_CRT_SECURE_NO_WARNINGS;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>
@@ -493,6 +494,7 @@ del $(IntDir)Shaders.h</Command>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <Optimization>Disabled</Optimization>
       <RemoveUnreferencedCodeData>false</RemoveUnreferencedCodeData>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -533,5 +535,17 @@ del $(IntDir)Shaders.h</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ImportGroup Label="ExtensionTargets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="..\packages\OpenXR.Headers.1.0.10.2\build\native\OpenXR.Headers.targets" Condition="Exists('..\packages\OpenXR.Headers.1.0.10.2\build\native\OpenXR.Headers.targets')" />
+    <Import Project="..\packages\OpenXR.Loader.1.0.10.2\build\native\OpenXR.Loader.targets" Condition="Exists('..\packages\OpenXR.Loader.1.0.10.2\build\native\OpenXR.Loader.targets')" />
+  </ImportGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\OpenXR.Headers.1.0.10.2\build\native\OpenXR.Headers.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\OpenXR.Headers.1.0.10.2\build\native\OpenXR.Headers.props'))" />
+    <Error Condition="!Exists('..\packages\OpenXR.Headers.1.0.10.2\build\native\OpenXR.Headers.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\OpenXR.Headers.1.0.10.2\build\native\OpenXR.Headers.targets'))" />
+    <Error Condition="!Exists('..\packages\OpenXR.Loader.1.0.10.2\build\native\OpenXR.Loader.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\OpenXR.Loader.1.0.10.2\build\native\OpenXR.Loader.props'))" />
+    <Error Condition="!Exists('..\packages\OpenXR.Loader.1.0.10.2\build\native\OpenXR.Loader.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\OpenXR.Loader.1.0.10.2\build\native\OpenXR.Loader.targets'))" />
+  </Target>
 </Project>
