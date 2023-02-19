@@ -84,4 +84,4 @@ pkg install vulkan-headers vulkan-loader vulkan-tools vulkan-validation-layers c
 * simple-stdatomic-for-VS-Clang - https://github.com/zenny-chen/simple-stdatomic-for-VS-Clang
 * OpenAL Soft - https://github.com/kcat/openal-soft
 * meshoptimizer - https://github.com/zeux/meshoptimizer
-* DirectXMath - 
+* DirectXMath - https://github.com/microsoft/DirectXMath
