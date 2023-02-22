@@ -29,7 +29,7 @@ This repository is a mirror which is not frequently updated.
 ### Windows
 
 #### Prerequisites
-* Visual Studio 2022 17.4 or later
+* Visual Studio 2022 17.5 or later
 * Vulkan SDK 1.3.216 or later
 * (Optional) FreeType for building the FontGen tool
 
@@ -51,7 +51,11 @@ pacman -S gcc libx11 vulkan-devel cmake shaderc openal
 ```
 * For FreeBSD:
 ```
-pkg install vulkan-headers vulkan-loader vulkan-tools vulkan-validation-layers cmake shaderc openal-soft
+pkg install vulkan-headers vulkan-loader vulkan-tools vulkan-validation-layers cmake shaderc openal-soft xinput
+```
+* For OpenBSD:
+```
+pkg_add vulkan-headers vulkan-loader vulkan-tools vulkan-validation-layers cmake glslang openal
 ```
 
 #### Build
@@ -62,7 +66,7 @@ pkg install vulkan-headers vulkan-loader vulkan-tools vulkan-validation-layers c
 ### macOS / iOS
 
 #### Prerequisites
-* Xcode 14
+* Xcode 14.1
 
 #### Build
 1. Clone the repository
@@ -81,7 +85,8 @@ pkg install vulkan-headers vulkan-loader vulkan-tools vulkan-validation-layers c
 * stb_image, stb_image_write, stb_vorbis - https://github.com/nothings/stb
 * uthash - https://troydhanson.github.io/uthash/
 * volk - https://github.com/zeux/volk
-* simple-stdatomic-for-VS-Clang - https://github.com/zenny-chen/simple-stdatomic-for-VS-Clang
+* simple-stdatomic-for-VS-Clang - https://github.com/zenny-chen/simple-stdatomic-for-VS-Clang (only if compiled with VS <= 2022 17.4)
 * OpenAL Soft - https://github.com/kcat/openal-soft
+* mojoAL - https://github.com/icculus/mojoAL
 * meshoptimizer - https://github.com/zeux/meshoptimizer
 * DirectXMath - https://github.com/microsoft/DirectXMath
