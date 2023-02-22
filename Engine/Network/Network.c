@@ -18,18 +18,6 @@ Net_Init(void)
 }
 
 bool
-Net_StartServer(void)
-{
-	return true;
-}
-
-bool
-Net_StartClient(void)
-{
-	return true;
-}
-
-bool
 Net_SendPacket(void)
 {
 	return false;

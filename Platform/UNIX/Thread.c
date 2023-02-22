@@ -63,6 +63,12 @@ Sys_SetThreadAffinity(NeThread t, int cpu)
 }
 
 void
+Sys_DetachThread(NeThread t)
+{
+	pthread_detach((pthread_t)t);
+}
+
+void
 Sys_JoinThread(NeThread t)
 {
 	pthread_join((pthread_t)t, NULL);

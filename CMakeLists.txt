@@ -41,11 +41,9 @@ if(NOT MSVC)
 	
 	if(CMAKE_C_COMPILER_ID STREQUAL "Clang")
 		add_compile_options(-Wno-enum-conversion)
+		add_compile_options(-Wno-switch)
 	else()
 		add_compile_options(-march=native -mtune=native)
-	endif()
-
-	if(NOT APPLE)
 		add_compile_options(-Wno-format-truncation)
 	endif()
 
@@ -62,6 +60,12 @@ else()
 
 	if(USE_AVX)
 		add_compile_options(/arch:AVX2)
+	endif()
+
+	if(MSVC_VERSION LESS_EQUAL 1934)
+		include_directories(Platform/Win32/Compat)
+	else()
+		add_compile_options(/experimental:c11atomics)
 	endif()
 
 	add_compile_options(/nologo)
@@ -87,7 +91,6 @@ include_directories($ENV{VULKAN_SDK}/include)
 
 if(WIN32)
 	include_directories(Deps/mojoAL)
-	include_directories(Platform/Win32/Compat)
 	set(CMAKE_WIN32_EXECUTABLE ON)
 else()
 	include_directories(Deps/sal)

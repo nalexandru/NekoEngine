@@ -422,7 +422,7 @@ Sys_TermDarwinPlatform(void)
 
 bool Net_InitPlatform(void) { return true; }
 
-int32_t
+NeSocket
 Net_Socket(enum NeSocketType type, enum NeSocketProto proto)
 {
 	int st = SOCK_STREAM, sp = IPPROTO_TCP;
@@ -442,7 +442,7 @@ Net_Socket(enum NeSocketType type, enum NeSocketProto proto)
 }
 
 bool
-Net_Connect(int32_t socket, char *host, int32_t port)
+Net_Connect(NeSocket socket, const char *host, uint16_t port)
 {
 	struct hostent *h = gethostbyname(host);
 	if (!h)
@@ -458,7 +458,7 @@ Net_Connect(int32_t socket, char *host, int32_t port)
 }
 
 bool
-Net_Listen(int32_t socket, int32_t port, int32_t backlog)
+Net_Listen(NeSocket socket, uint16_t port, int32_t backlog)
 {
 	struct sockaddr_in addr =
 	{
@@ -473,25 +473,25 @@ Net_Listen(int32_t socket, int32_t port, int32_t backlog)
 }
 
 int32_t
-Net_Accept(int32_t socket)
+Net_Accept(NeSocket socket)
 {
 	return accept(socket, NULL, 0);
 }
 
 ssize_t
-Net_Send(int32_t socket, const void *data, uint32_t count)
+Net_Send(NeSocket socket, const void *data, uint32_t count)
 {
 	return send(socket, data, count, 0);
 }
 
 ssize_t
-Net_Recv(int32_t socket, void *data, uint32_t count)
+Net_Recv(NeSocket socket, void *data, uint32_t count)
 {
 	return recv(socket, data, count, 0);
 }
 
 void
-Net_Close(int32_t socket)
+Net_Close(NeSocket socket)
 {
 	close(socket);
 }

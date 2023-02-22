@@ -6,22 +6,6 @@
 struct NeAudioDeviceInfo
 {
 	char deviceName[256];
-	
-	/*struct {
-		bool unifiedMemory;
-		bool rayTracing;
-		bool indirectRayTracing;
-		bool meshShading;
-		bool discrete;
-		bool canPresent;
-		bool drawIndirectCount;
-		bool textureCompression;
-	} features;
-	
-	struct {
-		uint32_t maxTextureSize;
-	} limits;*/
-		
 	void *reserved;
 };
 

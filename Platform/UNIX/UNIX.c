@@ -6,6 +6,7 @@
 #include <netdb.h>
 #include <errno.h>
 #include <unistd.h>
+#include <signal.h>
 #include <pthread.h>
 #include <sys/time.h>
 #include <sys/mman.h>
@@ -731,7 +732,7 @@ Net_Socket(enum NeSocketType type, enum NeSocketProto proto)
 }
 
 bool
-Net_Connect(int32_t socket, char *host, int32_t port)
+Net_Connect(int32_t socket, const char *host, uint16_t port)
 {
 	struct hostent *h = gethostbyname(host);
 	if (!h)
@@ -747,7 +748,7 @@ Net_Connect(int32_t socket, char *host, int32_t port)
 }
 
 bool
-Net_Listen(int32_t socket, int32_t port, int32_t backlog)
+Net_Listen(int32_t socket, uint16_t port, int32_t backlog)
 {
 	struct sockaddr_in addr =
 	{

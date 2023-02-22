@@ -22,6 +22,7 @@ void Sys_Yield(void);
 
 bool Sys_InitThread(NeThread *t, const char *name, void (*proc)(void *), void *args);
 void Sys_SetThreadAffinity(NeThread t, int cpu);
+void Sys_DetachThread(NeThread t);
 void Sys_JoinThread(NeThread t);
 void Sys_JoinThreads(NeThread *threads, int count);
 NeThread Sys_CurrentThread(void);

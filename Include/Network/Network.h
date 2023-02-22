@@ -1,5 +1,5 @@
-#ifndef _NE_NETWORK_H_
-#define _NE_NETWORK_H_
+#ifndef _NE_NETWORK_NETWORK_H_
+#define _NE_NETWORK_NETWORK_H_
 
 #include <Engine/Types.h>
 
@@ -23,19 +23,13 @@ enum NeSocketProto
 bool Net_Init(void);
 
 // Platform-specific network functions
-int32_t Net_Socket(enum NeSocketType type, enum NeSocketProto proto);
-bool Net_Connect(int32_t socket, char *host, int32_t port);
-bool Net_Listen(int32_t socket, int32_t port, int32_t backlog);
-int32_t Net_Accept(int32_t socket);
-ssize_t Net_Send(int32_t socket, const void *data, uint32_t count);
-ssize_t Net_Recv(int32_t socket, void *data, uint32_t count);
-void Net_Close(int32_t socket);
-
-// High-level common functions
-bool Net_StartServer(void);
-bool Net_StartClient(void);
-bool Net_SendPacket(void);
-bool Net_RecvPacket(void);
+NeSocket Net_Socket(enum NeSocketType type, enum NeSocketProto proto);
+bool Net_Connect(NeSocket socket, const char *host, uint16_t port);
+bool Net_Listen(NeSocket socket, uint16_t port, int32_t backlog);
+NeSocket Net_Accept(NeSocket socket);
+ssize_t Net_Send(NeSocket socket, const void *data, uint32_t count);
+ssize_t Net_Recv(NeSocket socket, void *data, uint32_t count);
+void Net_Close(NeSocket socket);
 
 void Net_Term(void);
 
@@ -43,7 +37,7 @@ void Net_Term(void);
 }
 #endif
 
-#endif /* _NE_NETWORK_H_ */
+#endif /* _NE_NETWORK_NETWORK_H_ */
 
 /* NekoEngine
  *

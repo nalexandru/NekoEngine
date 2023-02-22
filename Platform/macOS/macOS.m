@@ -77,7 +77,7 @@ Sys_ProcessEvents(void)
 											untilDate: [NSDate distantPast]
 											   inMode: NSDefaultRunLoopMode
 											  dequeue: true];
-							
+
 			if (!e)
 				break;
 

@@ -3,6 +3,8 @@
 
 #include <QObject>
 
+#include <Math/Math.h>
+
 class NeDataBinding : public QObject
 {
 	Q_OBJECT
@@ -37,5 +39,8 @@ ED_DECLARE_BINDING_CLASS(Int64, int64_t);
 ED_DECLARE_BINDING_CLASS(Float, float);
 ED_DECLARE_BINDING_CLASS(Double, double);
 ED_DECLARE_BINDING_CLASS(String, const char *);
+ED_DECLARE_BINDING_CLASS(Pitch, NeQuaternion);
+ED_DECLARE_BINDING_CLASS(Yaw, NeQuaternion);
+ED_DECLARE_BINDING_CLASS(Roll, NeQuaternion);
 
 #endif /* _NE_EDITOR_GUI_BINDINGS_H_ */

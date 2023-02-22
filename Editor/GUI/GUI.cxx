@@ -174,6 +174,9 @@ EdGUI_Frame(void)
 		if (!_progress) {
 			_progress = new QProgressDialog(_progressText, QString(), 0, 0, Ed_mainWindow);
 			_progress->setWindowModality(Qt::ApplicationModal);
+			_progress->show();
+			_progress->raise();
+			_progress->activateWindow();
 		} else {
 			_progress->setLabelText(_progressText);
 		}

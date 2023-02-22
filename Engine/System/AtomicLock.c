@@ -5,7 +5,8 @@
 void
 Sys_InitAtomicLock(struct NeAtomicLock *lock)
 {
-	lock->read = lock->write = 0;
+	lock->read = 0;
+	lock->write = 0;
 }
 
 void

@@ -30,6 +30,8 @@ enum NeMemoryHeap
 
 	MH_Editor,
 
+	MH_Network,
+
 	MH_ManualAlign,
 
 	MH_FORCE_UINT32 = 0xFFFFFFFF

@@ -106,6 +106,7 @@ NeEditorWindow::Init()
 	UpdateFileList();
 
 	raise();
+	activateWindow();
 
 	return true;
 }
@@ -277,7 +278,7 @@ NeEditorWindow::Play()
 #elif defined(SYS_PLATFORM_MAC)
 		strlcat(bin, "/NekoEngine", sizeof(bin));
 #else
-	strlcat(bin, "/NekoEngine", sizeof(bin));
+		strlcat(bin, "/NekoEngine", sizeof(bin));
 #endif
 
 		char *argv[] =
@@ -421,6 +422,13 @@ NeEditorWindow::_CreateMenu(void)
 
 	mb->setNativeMenuBar(true);
 	setMenuBar(mb);
+}
+
+void
+NeEditorWindow::closeEvent(QCloseEvent *event)
+{
+	QMainWindow::closeEvent(event);
+	E_Shutdown();
 }
 
 NeEditorWindow::~NeEditorWindow() noexcept

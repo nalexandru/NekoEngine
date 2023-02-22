@@ -84,6 +84,12 @@ Sys_SetThreadAffinity(NeThread t, int cpu)
 }
 
 void
+Sys_DetachThread(NeThread t)
+{
+	CloseHandle((HANDLE)t);
+}
+
+void
 Sys_JoinThread(NeThread t)
 {
 	LARGE_INTEGER li = { .QuadPart = -10000LL * INFINITE };

@@ -77,8 +77,7 @@ NeDataView::NeDataView(void *data, const QList<NeDataField> &fields, QWidget *pa
 			ADD_LABEL("z");
 			ADD_LEDIT(NeFloatBinding, &v->z);
 		} break;
-		case FT_VEC4:
-		case FT_QUAT: {
+		case FT_VEC4: {
 			struct NeVec4 *v = (struct NeVec4 *)(_data + f.offset);
 
 			ADD_LABEL("x");
@@ -92,6 +91,18 @@ NeDataView::NeDataView(void *data, const QList<NeDataField> &fields, QWidget *pa
 
 			ADD_LABEL("w");
 			ADD_LEDIT(NeFloatBinding, &v->w);
+		} break;
+		case FT_QUAT: {
+			struct NeQuaternion *v = (struct NeQuaternion *)(_data + f.offset);
+
+			ADD_LABEL("x");
+			ADD_LEDIT(NePitchBinding, v);
+
+			ADD_LABEL("y");
+			ADD_LEDIT(NeYawBinding, v);
+
+			ADD_LABEL("z");
+			ADD_LEDIT(NeRollBinding, v);
 		} break;
 		default:
 		break;

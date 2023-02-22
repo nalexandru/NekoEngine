@@ -78,6 +78,8 @@ public:
 
 #ifdef _WIN32
 #	define ssize_t size_t
+#else
+#	include <sys/types.h>
 #endif
 
 #define E_INVALID_HANDLE	(uint64_t)-1
@@ -147,6 +149,15 @@ typedef void (*NeECSysExecProc)(void **comp, void *args);
 struct NeVec3;
 struct NeVec4;
 struct NeMatrix;
+
+struct NeClient;
+struct NeServer;
+
+#ifdef _WIN32
+#	define NeSocket uintptr_t
+#else
+#	define NeSocket int
+#endif
 
 /*#if defined(__PARSER__)
 #	define Attribute(...) __attribute__((annotate(#__VA_ARGS__)))

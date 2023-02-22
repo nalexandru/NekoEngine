@@ -56,6 +56,9 @@ public slots:
 	void ShowAbout();
 	void ShowAboutQt();
 
+protected:
+	virtual void closeEvent(QCloseEvent *event) override;
+
 private:
 	QString _amPath;
 	QListWidget *_amFileList;

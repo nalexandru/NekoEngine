@@ -1,4 +1,4 @@
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && _MSC_VER < 1935
 
 #include <stdio.h>
 #include <intrin.h>
@@ -278,4 +278,4 @@ void atomic_flag_clear_explicit(volatile atomic_flag* object, memory_order order
     atomic_flag_clear(object);
 }
 
-#endif
+#endif /* _MSC_VER < 1935 */
