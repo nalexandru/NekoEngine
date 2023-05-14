@@ -28,7 +28,9 @@
 #include "Inspector.h"
 #include "SceneHierarchy.h"
 #include "Widgets/EngineView.h"
-#include "Dialogs/AboutDialog.h"
+#include "Dialogs/About.h"
+#include "Dialogs/HelpViewer.h"
+#include "Dialogs/MorphLoader.h"
 
 NeEditorWindow::NeEditorWindow(QWidget *parent) : QMainWindow(parent), _gameProcess(0)
 {
@@ -40,6 +42,8 @@ NeEditorWindow::NeEditorWindow(QWidget *parent) : QMainWindow(parent), _gameProc
 
 	_inspector = GUI_CreateInspector();
 	GUI_CreateSceneHierarchy();
+
+	_helpViewer = new NeHelpViewer(this);
 
 	_CreateMenu();
 
@@ -76,7 +80,11 @@ NeEditorWindow::NeEditorWindow(QWidget *parent) : QMainWindow(parent), _gameProc
 		_amFileList->setViewMode(QListWidget::IconMode);
 	}
 
+	_amFileList->setContextMenuPolicy(Qt::CustomContextMenu);
+
 	connect(_amFileList, SIGNAL(itemDoubleClicked(QListWidgetItem *)), this, SLOT(AMDoubleClick(QListWidgetItem *)));
+	connect(_amFileList, SIGNAL(customContextMenuRequested(const QPoint &)), this, SLOT(AMContextMenu(const QPoint &)));
+
 	rootLyt->addWidget(_amFileList);
 
 	tabWidget->addTab(assetManager, "Asset Manager");
@@ -132,9 +140,7 @@ NeEditorWindow::UpdateFileList()
 			continue;
 
 		QIcon icon{};
-		QString path = QString::asprintf(
-						(_amPath.length() > 1 ? "%s/%s" : "%s%s"),
-						_amPath.toStdString().c_str(), *i);
+		QString path = QString::asprintf((_amPath.length() > 1 ? "%s/%s" : "%s%s"), _amPath.toStdString().c_str(), *i);
 
 		if (E_IsDirectory(path.toStdString().c_str())) {
 #ifdef SYS_PLATFORM_APPLE
@@ -203,16 +209,7 @@ NeEditorWindow::ImportAsset()
 void
 NeEditorWindow::AMDoubleClick(QListWidgetItem *item)
 {
-	QString path;
-
-	if (!item->text().compare("..")) {
-		if (int pos = _amPath.lastIndexOf('/'))
-			path = _amPath.remove(pos, INT_MAX);
-		else
-			path = "/";
-	} else {
-		path = QString::asprintf(_amPath.length() > 1 ? "%s/%s" : "%s%s", _amPath.toStdString().c_str(), item->text().toStdString().c_str());
-	}
+	const QString path = _AMFilePath(item->text());
 
 	if (E_IsDirectory(path.toStdString().c_str())) {
 		_amPath = path;
@@ -223,10 +220,43 @@ NeEditorWindow::AMDoubleClick(QListWidgetItem *item)
 }
 
 void
+NeEditorWindow::AMContextMenu(const QPoint &pt)
+{
+	QListWidgetItem *item = _amFileList->itemAt(pt);
+	if (!item)
+		return;
+
+	QMenu menu{};
+
+	if (item->text().contains(".nmesh"))
+		menu.addAction("Load Morphs");
+
+	if (menu.actions().count())
+		menu.addSeparator();
+
+	menu.addAction("Delete");
+
+	QAction *action = menu.exec(_amFileList->mapToGlobal(pt));
+	if (!action)
+		return;
+
+	if (!action->text().compare("Load Morphs")) {
+		NeMorphLoader ml(_AMFilePath(item->text()));
+
+		ml.exec();
+	} else if (!action->text().compare("Delete")) {
+		if (QMessageBox::question(nullptr, "Confirm delete", QString("Are sure you want to delete %1 ?").arg(item->text())) != QMessageBox::Yes)
+			return;
+
+		// exec delete
+	}
+}
+
+void
 NeEditorWindow::FileDialogFinished(int r)
 {
 	if (r == QDialog::Accepted)
-		Asset_Import(_qfd->selectedFiles().at(0).toStdString().c_str());
+		Asset_Import(_qfd->selectedFiles().at(0).toStdString().c_str(), NULL, NULL);
 
 	_qfd->hide();
 }
@@ -282,16 +312,16 @@ NeEditorWindow::Play()
 #endif
 
 		char *argv[] =
-			{
-				bin,
-				//"-c",
-				//"cfgfile",
-				//"-d",
-				//"datadir",
-				//"-s",
-				//"scene",
-				NULL
-			};
+		{
+			bin,
+			//"-c",
+			//"cfgfile",
+			//"-d",
+			//"datadir",
+			//"-s",
+			//"scene",
+			NULL
+		};
 
 		_gameProcess = Sys_Execute((char * const *)argv, wd, &in, &out, &err, true);
 		if (_gameProcess == -1) {
@@ -361,19 +391,23 @@ NeEditorWindow::ShowScriptEditor()
 void
 NeEditorWindow::ShowNativeRef()
 {
-
+	_helpViewer->show();
+	_helpViewer->raise();
+	_helpViewer->activateWindow();
 }
 
 void
 NeEditorWindow::ShowScriptingRef()
 {
-
+	_helpViewer->show();
+	_helpViewer->raise();
+	_helpViewer->activateWindow();
 }
 
 void
 NeEditorWindow::ShowAbout()
 {
-	NeAboutDialog dlg;
+	NeAbout dlg;
 	dlg.exec();
 }
 
@@ -424,6 +458,19 @@ NeEditorWindow::_CreateMenu(void)
 	setMenuBar(mb);
 }
 
+QString
+NeEditorWindow::_AMFilePath(const QString &name)
+{
+	if (!name.compare("..")) {
+		if (int pos = _amPath.lastIndexOf('/'))
+			return _amPath.remove(pos, INT_MAX);
+		else
+			return "/";
+	} else {
+		return QString::asprintf(_amPath.length() > 1 ? "%s/%s" : "%s%s", _amPath.toStdString().c_str(), name.toStdString().c_str());
+	}
+}
+
 void
 NeEditorWindow::closeEvent(QCloseEvent *event)
 {
@@ -434,6 +481,7 @@ NeEditorWindow::closeEvent(QCloseEvent *event)
 NeEditorWindow::~NeEditorWindow() noexcept
 {
 	delete _iconProvider;
+	delete _helpViewer;
 
 	GUI_TermSceneHierarchy();
 	GUI_TermInspector();
@@ -465,7 +513,7 @@ NeEditorWindow::~NeEditorWindow() noexcept
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

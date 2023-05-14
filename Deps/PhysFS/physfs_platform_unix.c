@@ -32,6 +32,9 @@
 #  define PHYSFS_HAVE_SYS_MNTTAB_H 1
 #elif PHYSFS_PLATFORM_BSD
 #  define PHYSFS_HAVE_SYS_UCRED_H 1
+#  ifdef __NetBSD__
+#    define statfs statvfs
+#  endif
 #else
 #  warning No CD-ROM support included. Either define your platform here,
 #  warning  or define PHYSFS_NO_CDROM_SUPPORT=1 to confirm this is intentional.

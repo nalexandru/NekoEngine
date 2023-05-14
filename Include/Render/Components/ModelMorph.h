@@ -1,5 +1,5 @@
-#ifndef _NE_RENDER_COMPONENTS_MODEL_MORPH_H_
-#define _NE_RENDER_COMPONENTS_MODEL_MORPH_H_
+#ifndef NE_RENDER_COMPONENTS_MODEL_MORPH_H
+#define NE_RENDER_COMPONENTS_MODEL_MORPH_H
 
 #include <Render/Types.h>
 #include <Runtime/Runtime.h>
@@ -14,7 +14,10 @@ struct NeModelMorph
 	NE_COMPONENT_BASE;
 
 	struct NeArray activeMorphs;
-	NeBufferHandle vertexBuffer;
+	NeBufferHandle buffer, vertexBufferId;
+	struct NeVertex *ptr;
+
+	struct NeArray morphPacks;
 };
 
 void Re_SetMorph(struct NeModelMorph *mm, const char *morph, float value);
@@ -23,7 +26,7 @@ void Re_SetMorph(struct NeModelMorph *mm, const char *morph, float value);
 }
 #endif
 
-#endif /* _NE_RENDER_COMPONENTS_MODEL_MORPH_H_ */
+#endif /* NE_RENDER_COMPONENTS_MODEL_MORPH_H */
 
 /* NekoEngine
  *
@@ -51,7 +54,7 @@ void Re_SetMorph(struct NeModelMorph *mm, const char *morph, float value);
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

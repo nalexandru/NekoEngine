@@ -1,7 +1,7 @@
-#ifndef _NE_SCRIPT_SCRIPT_H_
-#define _NE_SCRIPT_SCRIPT_H_
+#ifndef NE_SCRIPT_SCRIPT_H
+#define NE_SCRIPT_SCRIPT_H
 
-#include <stdbool.h>
+#include <Engine/Types.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -18,11 +18,12 @@ const char *Sc_ExecuteFile(lua_State *vm, const char *path);
 
 bool Sc_LoadScript(lua_State *vm, const char *source);
 bool Sc_LoadScriptFile(lua_State *vm, const char *path);
+bool Sc_LoadScriptStream(lua_State *vm, struct NeStream *stm);
 
 void Sc_LogStackDump(lua_State *vm, int severity);
 
-bool Sc_RegisterInitScript(const char *script);
-bool Sc_RegisterInterface(void (*initIface)(lua_State *));
+bool Sc_RegisterInterface(const char *name, lua_CFunction open);
+bool Sc_RegisterInterfaceScript(const char *name, const char *script);
 
 void Sc_DestroyVM(lua_State *vm);
 
@@ -33,7 +34,7 @@ void Sc_TermScriptSystem(void);
 }
 #endif
 
-#endif /* _NE_SCRIPT_SCRIPT_H_ */
+#endif /* NE_SCRIPT_SCRIPT_H */
 
 /* NekoEngine
  *
@@ -61,7 +62,7 @@ void Sc_TermScriptSystem(void);
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

@@ -4,22 +4,25 @@
 #import "EngineView.h"
 #include "macOSPlatform.h"
 
+#ifdef NE_MACOS_METAL
 #import <Metal/Metal.h>
 #import <QuartzCore/CAMetalLayer.h>
+#endif
 
-extern bool __InSys_enableMouseAxis;
+extern bool In_p_rawMouseAxis;
 
 @implementation EngineView
 
 - (void)handleMouseMoved: (NSEvent *)e
 {
-	if (!__InSys_enableMouseAxis)
+	if (!In_p_rawMouseAxis || !In_pointerCaptured)
 		return;
 
-	In_mouseAxis[0] = -([e deltaX] / ((float)*E_screenWidth / 2.f));
-	In_mouseAxis[1] = -([e deltaY] / ((float)*E_screenHeight / 2.f));
+	In_mouseAxis[0] = (float)(-([e deltaX] / ((float)*E_screenWidth / 2.f)));
+	In_mouseAxis[1] = (float)(-([e deltaY] / ((float)*E_screenHeight / 2.f)));
 }
 
+#ifdef NE_MACOS_METAL
 + (Class)layerClass
 {
 	return [CAMetalLayer class];
@@ -29,6 +32,7 @@ extern bool __InSys_enableMouseAxis;
 {
 	return [CAMetalLayer layer];
 }
+#endif
 
 - (void)keyUp: (NSEvent *)e
 {
@@ -42,13 +46,13 @@ extern bool __InSys_enableMouseAxis;
 
 - (void)flagsChanged: (NSEvent *)e
 {
-	NSEventModifierFlags flags = [e modifierFlags];
+	const NSUInteger flags = [e modifierFlags];
 
-#define MODIFIER_KEY(x, y)								\
-	if (((prevFlags & x) == x) && !((flags & x) == x))	\
-		In_Key(y, false);								\
-	if (!((prevFlags & x) == x) && ((flags & x) == x))	\
-		In_Key(y, true)
+#define MODIFIER_KEY(x, y)										\
+	if (((prevFlags & (x)) == (x)) && !((flags & (x)) == (x)))	\
+		In_Key((y), false);										\
+	if (!((prevFlags & (x)) == (x)) && ((flags & (x)) == (x)))	\
+		In_Key((y), true)
 
 	MODIFIER_KEY(NSEventModifierFlagCommand, BTN_KEY_LSUPER);
 	MODIFIER_KEY(NSEventModifierFlagOption, BTN_KEY_LALT);
@@ -57,6 +61,7 @@ extern bool __InSys_enableMouseAxis;
 	MODIFIER_KEY(NSEventModifierFlagCapsLock, BTN_KEY_CAPS);
 
 	prevFlags = flags;
+#undef MODIFIER_KEY
 }
 
 - (void)mouseUp: (NSEvent *)e
@@ -89,10 +94,12 @@ extern bool __InSys_enableMouseAxis;
 	In_buttonState[BTN_MOUSE_LMB + [e buttonNumber]] = true;
 }
 
+#if defined(MAC_OS_X_VERSION_10_7) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7
 - (void)scrollWheel: (NSEvent *)e
 {
-	In_mouseAxis[2] = [e scrollingDeltaX];
+	In_mouseAxis[2] = (float)[e scrollingDeltaX];
 }
+#endif
 
 - (void)mouseDragged: (NSEvent *)e
 {
@@ -141,23 +148,27 @@ extern bool __InSys_enableMouseAxis;
 - (void)viewDidEndLiveResize
 {
 	[super viewDidEndLiveResize];
-	
+
+#ifdef NE_MACOS_METAL
 	CAMetalLayer *metalLayer = (CAMetalLayer *)[self layer];
 	[metalLayer setDrawableSize: self.frame.size];
-	
+#endif
+
 	E_ScreenResized(self.frame.size.width, self.frame.size.height);
 }
 
 - (void)setFrameSize: (NSSize)newSize
 {
 	[super setFrameSize: newSize];
-	
+
 	if ([self inLiveResize])
 		return;
-	
+
+#ifdef NE_MACOS_METAL
 	CAMetalLayer *metalLayer = (CAMetalLayer *)[self layer];
 	[metalLayer setDrawableSize: self.frame.size];
-	
+#endif
+
 	E_ScreenResized(self.frame.size.width, self.frame.size.height);
 }
 
@@ -170,7 +181,7 @@ extern bool __InSys_enableMouseAxis;
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (c) 2015-2022, Alexandru Naiman
+ * Copyright (c) 2015-2023, Alexandru Naiman
  *
  * All rights reserved.
  *
@@ -189,7 +200,7 @@ extern bool __InSys_enableMouseAxis;
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

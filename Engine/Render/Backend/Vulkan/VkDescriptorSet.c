@@ -114,15 +114,16 @@ Vk_CreateDescriptorSet(struct NeRenderDevice *dev)
 			goto error;
 
 #ifdef _DEBUG
-	Vkd_SetObjectName(dev->dev, dev->descriptorPool, VK_OBJECT_TYPE_DESCRIPTOR_POOL, "Global Descriptor Pool");
-	Vkd_SetObjectName(dev->dev, dev->descriptorSet, VK_OBJECT_TYPE_DESCRIPTOR_SET, "Global Descriptor Set");
-	Vkd_SetObjectName(dev->dev, dev->setLayout, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, "Global Descriptor Set Layout");
-	Vkd_SetObjectName(dev->dev, dev->iaSetLayout, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, "Input Attachment Descriptor Set Layout");
+	VkBk_SetObjectName(dev->dev, dev->descriptorPool, VK_OBJECT_TYPE_DESCRIPTOR_POOL, "Global Descriptor Pool");
+	VkBk_SetObjectName(dev->dev, dev->descriptorSet, VK_OBJECT_TYPE_DESCRIPTOR_SET, "Global Descriptor Set");
+	VkBk_SetObjectName(dev->dev, dev->setLayout, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, "Global Descriptor Set Layout");
+	VkBk_SetObjectName(dev->dev, dev->iaSetLayout, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT,
+					   "Input Attachment Descriptor Set Layout");
 
 	char *tmp = Sys_Alloc(sizeof(*tmp), 64, MH_Transient);
 	for (uint32_t i = 0; i < RE_NUM_FRAMES; ++i) {
 		snprintf(tmp, 64, "Input Attachment Descriptor Pool %u", i);
-		Vkd_SetObjectName(dev->dev, dev->iaDescriptorPool[i], VK_OBJECT_TYPE_DESCRIPTOR_POOL, tmp);
+		VkBk_SetObjectName(dev->dev, dev->iaDescriptorPool[i], VK_OBJECT_TYPE_DESCRIPTOR_POOL, tmp);
 	}
 #endif
 
@@ -160,7 +161,7 @@ Vk_AllocateIADescriptorSet(struct NeRenderDevice *dev)
 		return VK_NULL_HANDLE;
 
 #ifdef _DEBUG
-	Vkd_SetObjectName(dev->dev, ds, VK_OBJECT_TYPE_DESCRIPTOR_SET, "Input Attachment Descriptor Set");
+	VkBk_SetObjectName(dev->dev, ds, VK_OBJECT_TYPE_DESCRIPTOR_SET, "Input Attachment Descriptor Set");
 #endif
 
 	return ds;
@@ -265,7 +266,7 @@ Vk_TermDescriptorSet(struct NeRenderDevice *dev)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

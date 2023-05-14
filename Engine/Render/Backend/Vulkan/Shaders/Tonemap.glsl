@@ -35,7 +35,8 @@ tonemap(vec3 color, float exposure, float invGamma)
 	color = (color * vec3(exposure)) * ACESInputMat;
 	color = (color * (color + a) - b) / (color * (c * color + d) + e);
 
-	return pow(clamp(color * ACESOutputMat, 0.0, 1.0), vec3(invGamma));
+	return pow(color * ACESOutputMat, vec3(invGamma));
+	//return pow(clamp(color * ACESOutputMat, 0.0, 1.0), vec3(invGamma));
 }
 
 #endif /* _RE_TONEMAP_H_ */
@@ -66,7 +67,7 @@ tonemap(vec3 color, float exposure, float invGamma)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

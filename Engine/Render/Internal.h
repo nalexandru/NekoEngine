@@ -1,5 +1,5 @@
-#ifndef _NE_RENDER_INTERNAL_H_
-#define _NE_RENDER_INTERNAL_H_
+#ifndef NE_RENDER_INTERNAL_H
+#define NE_RENDER_INTERNAL_H
 
 #include <Render/Types.h>
 #include <Runtime/Runtime.h>
@@ -12,7 +12,17 @@ struct NeRenderGraph
 	struct NeSemaphore *semaphore;
 };
 
-#endif /* _NE_RENDER_INTERNAL_H_ */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void ReP_DestroyRenderPasses(void);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* NE_RENDER_INTERNAL_H */
 
 /* NekoEngine
  *
@@ -40,7 +50,7 @@ struct NeRenderGraph
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

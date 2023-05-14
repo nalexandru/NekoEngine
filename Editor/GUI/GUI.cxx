@@ -15,10 +15,11 @@
 #include <Scene/Transform.h>
 
 #include "EditorWindow.h"
+#include "Dialogs/OpenProject.h"
 
 #ifdef SYS_PLATFORM_WINDOWS
-#	include <Windows.h>
-#	include <Uxtheme.h>
+#	include <windows.h>
+#	include <uxtheme.h>
 
 enum PreferredAppMode
 {
@@ -42,27 +43,31 @@ struct MBoxInfo
 	enum NeMessageBoxType type;
 };
 
-static bool _showProgress = false;
-static QString _progressText;
-static QApplication *_app;
-static QProgressDialog *_progress;
-static NeThread _guiThread;
-static NeFutex _guiFutex;
-static NeArray _mboxes;
+static bool f_showProgress = false;
+static QString f_progressText;
+static QApplication *f_app;
+static QProgressDialog *f_progress;
+static NeThread f_guiThread;
+static NeFutex f_guiFutex;
+static NeArray f_mboxes;
 
 NeEditorWindow *Ed_mainWindow = nullptr;
 
-static inline void _InitTheme(void);
-
-void
-Ed_ShowProjectDialog(void)
-{
-	Ed_LoadProject(NULL);
-}
+static inline void InitTheme(void);
 
 bool
 Ed_CreateGUI(int argc, char *argv[])
 {
+	f_app = new QApplication(argc, argv);
+	if (!f_app)
+		return false;
+
+	InitTheme();
+
+	NeOpenProject opDlg(nullptr);
+	if (opDlg.exec() != QDialog::Accepted)
+		return false;
+
 	struct NeDataField f[] =
 	{
 		{ .type = FT_VEC3, .offset = offsetof(struct NeTransform, position), .name = "Position" },
@@ -73,30 +78,27 @@ Ed_CreateGUI(int argc, char *argv[])
 	struct NeDataField *fields = (NeDataField *)Sys_Alloc(sizeof(f), 1, MH_Editor);
 	memcpy(fields, f, sizeof(f));
 
-	struct NeComponentFields cf = { .type = E_ComponentTypeId(TRANSFORM_COMP), .fieldCount = sizeof(f) / sizeof(f[0]), .fields = fields };
-	Rt_ArrayAdd(&Ed_componentFields, &cf);
+	struct NeComponentFields cf = { .type = NE_TRANSFORM_ID, .fieldCount = sizeof(f) / sizeof(f[0]), .fields = fields };
+	Rt_TSArrayAdd(&Ed_componentFields, &cf);
 
-	_app = new QApplication(argc, argv);
-	if (!_app)
+	if (!Ed_LoadProject(opDlg.Path().toStdString().c_str()))
 		return false;
 
 	Ed_mainWindow = new NeEditorWindow();
 	Ed_mainWindow->show();
 
-	_guiThread = Sys_CurrentThread();
-	Sys_InitFutex(&_guiFutex);
+	f_guiThread = Sys_CurrentThread();
+	Sys_InitFutex(&f_guiFutex);
 
-	Rt_InitArray(&_mboxes, 1, sizeof(struct MBoxInfo), MH_Editor);
-
-	_InitTheme();
+	Rt_InitArray(&f_mboxes, 1, sizeof(struct MBoxInfo), MH_Editor);
 
 #ifdef SYS_PLATFORM_X11
-	// The second call to _app->processEvents() in EdGUI_Frame will crash in QCoreApplication::arguments()
+	// The second call to f_app->processEvents() in EdGUI_Frame will crash in QCoreApplication::arguments()
 	// on Linux machines. I believe this is because of the argc reference, so as a workaround i'm calling it here twice.
-	// It's not necessary to call _app->processEvents() on Windows and macOS systems. On Windows it will cause problems
+	// It's not necessary to call f_app->processEvents() on Windows and macOS systems. On Windows it will cause problems
 	// because it steals the messages from the Engine's loop.
-	_app->processEvents();
-	_app->processEvents();
+	f_app->processEvents();
+	f_app->processEvents();
 #endif
 
 	return true;
@@ -111,43 +113,39 @@ Ed_InitGUI(void)
 void
 EdGUI_MessageBox(const char *title, const char *message, enum NeMessageBoxType type)
 {
-	if (Sys_CurrentThread() == _guiThread) {
+	if (Sys_CurrentThread() == f_guiThread) {
 		switch (type) {
 			case MB_Information: QMessageBox::information(Ed_mainWindow, title, message); break;
 			case MB_Warning: QMessageBox::warning(Ed_mainWindow, title, message); break;
 			case MB_Error: QMessageBox::critical(Ed_mainWindow, title, message); break;
 		}
 	} else {
-		Sys_LockFutex(_guiFutex);
+		NeFutexLock lock(f_guiFutex);
 		struct MBoxInfo mbox{ strdup(title), strdup(message), type };
-		Rt_ArrayAdd(&_mboxes, &mbox);
-		Sys_UnlockFutex(_guiFutex);
+		Rt_ArrayAdd(&f_mboxes, &mbox);
 	}
 }
 
 void
 EdGUI_ShowProgressDialog(const char *text)
 {
-	Sys_LockFutex(_guiFutex);
-	_progressText = text;
-	_showProgress = true;
-	Sys_UnlockFutex(_guiFutex);
+	NeFutexLock lock(f_guiFutex);
+	f_progressText = text;
+	f_showProgress = true;
 }
 
 void
 EdGUI_UpdateProgressDialog(const char *text)
 {
-	Sys_LockFutex(_guiFutex);
-	_progressText = text;
-	Sys_UnlockFutex(_guiFutex);
+	NeFutexLock lock(f_guiFutex);
+	f_progressText = text;
 }
 
 void
 EdGUI_HideProgressDialog(void)
 {
-	Sys_LockFutex(_guiFutex);
-	_showProgress = false;
-	Sys_UnlockFutex(_guiFutex);
+	NeFutexLock lock(f_guiFutex);
+	f_showProgress = false;
 }
 
 void
@@ -158,70 +156,64 @@ EdGUI_ScriptEditor(const char *path)
 void
 EdGUI_Frame(void)
 {
-	Sys_LockFutex(_guiFutex);
+	NeFutexLock lock(f_guiFutex);
 
 	struct MBoxInfo *mboxInfo;
-	Rt_ArrayForEach(mboxInfo, &_mboxes, struct MBoxInfo *) {
+	Rt_ArrayForEach(mboxInfo, &f_mboxes, struct MBoxInfo *) {
 		EdGUI_MessageBox(mboxInfo->title, mboxInfo->message, mboxInfo->type);
 		free(mboxInfo->title);
 		free(mboxInfo->message);
 	}
-	_mboxes.count = 0;
+	f_mboxes.count = 0;
 
 	Ed_mainWindow->Frame();
 
-	if (_showProgress) {
-		if (!_progress) {
-			_progress = new QProgressDialog(_progressText, QString(), 0, 0, Ed_mainWindow);
-			_progress->setWindowModality(Qt::ApplicationModal);
-			_progress->show();
-			_progress->raise();
-			_progress->activateWindow();
+	if (f_showProgress) {
+		if (!f_progress) {
+			f_progress = new QProgressDialog(f_progressText, QString(), 0, 0, Ed_mainWindow);
+			f_progress->setWindowModality(Qt::ApplicationModal);
+			f_progress->show();
+			f_progress->raise();
+			f_progress->activateWindow();
 		} else {
-			_progress->setLabelText(_progressText);
+			f_progress->setLabelText(f_progressText);
 		}
 
-		_progress->update();
-	} else if (_progress) {
-		delete _progress;
-		_progress = nullptr;
+		f_progress->update();
+	} else if (f_progress) {
+		delete f_progress;
+		f_progress = nullptr;
 	}
 
 #ifdef SYS_PLATFORM_X11
-	_app->processEvents();
+	f_app->processEvents();
 #endif
-
-	Sys_UnlockFutex(_guiFutex);
 }
 
 void
 Ed_TermGUI(void)
 {
-	Sys_TermFutex(_guiFutex);
+	Sys_TermFutex(f_guiFutex);
 
-	Rt_TermArray(&_mboxes);
+	Rt_TermArray(&f_mboxes);
 
-	delete _progress;
+	delete f_progress;
 
 	Ed_mainWindow->close();
 	delete Ed_mainWindow;
 
-	_app->exit(0);
-	delete _app;
+	f_app->exit(0);
+	delete f_app;
 }
 
 static inline void
-_InitTheme(void)
+InitTheme(void)
 {
 	const char *theme = CVAR_STRING("Editor_Theme");
-	if (theme)
-		_app->setStyle(QStyleFactory::create(theme));
-
-#ifdef SYS_PLATFORM_WINDOWS
 	if (!theme) {
+#ifdef SYS_PLATFORM_WINDOWS
 		struct NeSysVersion ver = Sys_OperatingSystemVersion();
 
-		bool darkTheme = false;
 		if (ver.major >= 10 && ver.revision >= 18363) { // Dark mode supported on Windows 19 1903 and newer
 			HMODULE uxtheme = LoadLibrary(L"uxtheme");
 
@@ -232,42 +224,76 @@ _InitTheme(void)
 			LOAD_PROC(SETPREFERREDAPPMODEPROC, SetPreferredAppMode, 135);
 		#undef LOAD_PROC
 
-			darkTheme = ShouldAppsUseDarkMode();
+			BOOL darkTheme = ShouldAppsUseDarkMode();
 			if (darkTheme) {
 				SetPreferredAppMode(ForceDark);
-				AllowDarkModeForWindow((HWND)Ed_mainWindow->winId(), true);
+				//AllowDarkModeForWindow((HWND)Ed_mainWindow->winId(), true);
 			}
 
 			FreeLibrary(uxtheme);
 		}
-
-		if (E_GetCVarBln("Editor_Win32DarkTheme", darkTheme)->bln) {
-			QPalette p;
-			QColor color = QColor(45, 45, 45), disabledColor = QColor(127, 127, 127);
-
-			p.setColor(QPalette::Window, color);
-			p.setColor(QPalette::WindowText, Qt::white);
-			p.setColor(QPalette::Base, QColor(18, 18, 18));
-			p.setColor(QPalette::AlternateBase, color);
-			p.setColor(QPalette::ToolTipBase, Qt::white);
-			p.setColor(QPalette::ToolTipText, Qt::white);
-			p.setColor(QPalette::Text, Qt::white);
-			p.setColor(QPalette::Disabled, QPalette::Text, disabledColor);
-			p.setColor(QPalette::Button, color);
-			p.setColor(QPalette::ButtonText, Qt::white);
-			p.setColor(QPalette::Disabled, QPalette::ButtonText, disabledColor);
-			p.setColor(QPalette::BrightText, Qt::red);
-			p.setColor(QPalette::Link, QColor(42, 130, 218));
-			p.setColor(QPalette::Highlight, QColor(42, 130, 218));
-			p.setColor(QPalette::HighlightedText, Qt::black);
-			p.setColor(QPalette::Disabled, QPalette::HighlightedText, disabledColor);
-
-			_app->setStyle(QStyleFactory::create("Fusion"));
-			_app->setPalette(p);
-			_app->setStyleSheet("QToolTip { color: #ffffff; background-color: #2a82da; border: 1px solid white; }");
-		}
-	}
 #endif
+		return;
+	}
+
+	const size_t len = strlen(theme);
+	if (!strncmp(theme, "NELight", len)) {
+		QPalette p;
+		QColor color = QColor(0xF5, 0xEC, 0xE5);
+		QColor textColor = QColor(0x5A, 0x51, 0x4C);
+		QColor disabledColor = QColor(0x7F, 0x7F, 0x7F);
+		QColor highlightColor = QColor(0xBE, 0x55, 0x04);
+
+		p.setColor(QPalette::Window, color);
+		p.setColor(QPalette::WindowText, textColor);
+		p.setColor(QPalette::Base, QColor(0xEF, 0xE6, 0xDD));
+		p.setColor(QPalette::AlternateBase, color);
+		p.setColor(QPalette::ToolTipBase, Qt::black);
+		p.setColor(QPalette::ToolTipText, textColor);
+		p.setColor(QPalette::Text, textColor);
+		p.setColor(QPalette::Disabled, QPalette::Text, disabledColor);
+		p.setColor(QPalette::Button, color);
+		p.setColor(QPalette::ButtonText, textColor);
+		p.setColor(QPalette::Disabled, QPalette::ButtonText, disabledColor);
+		p.setColor(QPalette::BrightText, Qt::red);
+		p.setColor(QPalette::Link, highlightColor);
+		p.setColor(QPalette::Highlight, highlightColor);
+		p.setColor(QPalette::HighlightedText, Qt::black);
+		p.setColor(QPalette::Disabled, QPalette::HighlightedText, disabledColor);
+
+		f_app->setStyle(QStyleFactory::create("Fusion"));
+		f_app->setPalette(p);
+		f_app->setStyleSheet("QToolTip { color: #ffffff; background-color: #2a82da; border: 1px solid black; }");
+	} else if (!strncmp(theme, "NEDark", len)) {
+		QPalette p;
+		QColor color = QColor(0x24, 0x18, 0x18);
+		QColor textColor = QColor(0xB5, 0xB1, 0xA6);
+		QColor disabledColor = QColor(0x7F, 0x7F, 0x7F);
+		QColor highlightColor = QColor(0xBE, 0x55, 0x04);
+
+		p.setColor(QPalette::Window, color);
+		p.setColor(QPalette::WindowText, textColor);
+		p.setColor(QPalette::Base, QColor(0x1F, 0x1B, 0x18));
+		p.setColor(QPalette::AlternateBase, color);
+		p.setColor(QPalette::ToolTipBase, Qt::white);
+		p.setColor(QPalette::ToolTipText, textColor);
+		p.setColor(QPalette::Text, textColor);
+		p.setColor(QPalette::Disabled, QPalette::Text, disabledColor);
+		p.setColor(QPalette::Button, color);
+		p.setColor(QPalette::ButtonText, textColor);
+		p.setColor(QPalette::Disabled, QPalette::ButtonText, disabledColor);
+		p.setColor(QPalette::BrightText, Qt::red);
+		p.setColor(QPalette::Link, highlightColor);
+		p.setColor(QPalette::Highlight, highlightColor);
+		p.setColor(QPalette::HighlightedText, Qt::black);
+		p.setColor(QPalette::Disabled, QPalette::HighlightedText, disabledColor);
+
+		f_app->setStyle(QStyleFactory::create("Fusion"));
+		f_app->setPalette(p);
+		f_app->setStyleSheet("QToolTip { color: #ffffff; background-color: #2a82da; border: 1px solid white; }");
+	} else {
+		f_app->setStyle(QStyleFactory::create(theme));
+	}
 }
 
 /* NekoEditor
@@ -296,7 +322,7 @@ _InitTheme(void)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

@@ -5,39 +5,37 @@
 
 struct NeSemaphore Vkd_stagingSignal;
 
-static uint64_t _size;
-static VkBuffer _cpu, _gpu;
-static VkDeviceMemory _cpuMem, _gpuMem;
-static VkCommandBuffer _cmdBuffers[3];
-static uint8_t *_memPtr;
-static uint64_t _offset;
-static struct NeAtomicLock _lock = { 0 };
-
-#define ROUND_UP(v, powerOf2Alignment) (((v) + (powerOf2Alignment)-1) & ~((powerOf2Alignment)-1))
+static uint64_t f_size;
+static VkBuffer f_cpu, f_gpu;
+static VkDeviceMemory f_cpuMem, f_gpuMem;
+static VkCommandBuffer f_cmdBuffers[3];
+static uint8_t *f_memPtr;
+static uint64_t f_offset;
+static struct NeAtomicLock f_lock = {0 };
 
 bool
-Vkd_InitStagingArea(struct NeRenderDevice *dev)
+VkBk_InitStagingArea(struct NeRenderDevice *dev)
 {
-	_size = E_GetCVarU64("VulkanBackend_NonCoherentStagingArea", 224 * 1024 * 1024)->u64;
+	f_size = E_GetCVarU64("Vulkan_NonCoherentStagingArea", 224 * 1024 * 1024)->u64;
 
 	VkBufferCreateInfo bci =
 	{
 		.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
 		.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-		.size = _size
+		.size = f_size
 	};
-	vkCreateBuffer(dev->dev, &bci, Vkd_allocCb, &_cpu);
+	vkCreateBuffer(dev->dev, &bci, Vkd_allocCb, &f_cpu);
 
 	bci.usage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-	vkCreateBuffer(dev->dev, &bci, Vkd_allocCb, &_gpu);
+	vkCreateBuffer(dev->dev, &bci, Vkd_allocCb, &f_gpu);
 
 	VkMemoryRequirements mr;
-	vkGetBufferMemoryRequirements(dev->dev, _cpu, &mr);
+	vkGetBufferMemoryRequirements(dev->dev, f_cpu, &mr);
 
-	VkMemoryDedicatedAllocateInfo dai =
+	const VkMemoryDedicatedAllocateInfo dai =
 	{
 		.sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,
-		.buffer = _cpu
+		.buffer = f_cpu
 	};
 	VkMemoryAllocateInfo ai =
 	{
@@ -46,29 +44,29 @@ Vkd_InitStagingArea(struct NeRenderDevice *dev)
 		.allocationSize = mr.size,
 		.memoryTypeIndex = Vkd_MemoryTypeIndex(dev, mr.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
 	};
-	vkAllocateMemory(dev->dev, &ai, Vkd_allocCb, &_cpuMem);
-	vkBindBufferMemory(dev->dev, _cpu, _cpuMem, 0);
-	vkMapMemory(dev->dev, _cpuMem, 0, VK_WHOLE_SIZE, 0, (void **)&_memPtr);
+	vkAllocateMemory(dev->dev, &ai, Vkd_allocCb, &f_cpuMem);
+	vkBindBufferMemory(dev->dev, f_cpu, f_cpuMem, 0);
+	vkMapMemory(dev->dev, f_cpuMem, 0, VK_WHOLE_SIZE, 0, (void **)&f_memPtr);
 
-	vkGetBufferMemoryRequirements(dev->dev, _gpu, &mr);
+	vkGetBufferMemoryRequirements(dev->dev, f_gpu, &mr);
 	
-	VkMemoryAllocateFlagsInfo af =
+	const VkMemoryAllocateFlagsInfo af =
 	{
 		.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO,
 		.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT
 	};
 	ai.pNext = &af;
 	ai.memoryTypeIndex = Vkd_MemoryTypeIndex(dev, mr.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-	vkAllocateMemory(dev->dev, &ai, Vkd_allocCb, &_gpuMem);
-	vkBindBufferMemory(dev->dev, _gpu, _gpuMem, 0);
+	vkAllocateMemory(dev->dev, &ai, Vkd_allocCb, &f_gpuMem);
+	vkBindBufferMemory(dev->dev, f_gpu, f_gpuMem, 0);
 
-	VkSemaphoreTypeCreateInfo typeInfo =
+	const VkSemaphoreTypeCreateInfo typeInfo =
 	{
 		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
 		.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE,
 		.initialValue = 0
 	};
-	VkSemaphoreCreateInfo semInfo =
+	const VkSemaphoreCreateInfo semInfo =
 	{
 		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
 		.pNext = &typeInfo
@@ -76,77 +74,77 @@ Vkd_InitStagingArea(struct NeRenderDevice *dev)
 	vkCreateSemaphore(dev->dev, &semInfo, Vkd_allocCb, &Vkd_stagingSignal.sem);
 
 #ifdef _DEBUG
-	Vkd_SetObjectName(dev->dev, _cpu, VK_OBJECT_TYPE_BUFFER, "CPU Staging Area");
-	Vkd_SetObjectName(dev->dev, _gpu, VK_OBJECT_TYPE_BUFFER, "GPU Staging Area");
-	Vkd_SetObjectName(dev->dev, _cpuMem, VK_OBJECT_TYPE_DEVICE_MEMORY, "GPU Staging Area Memory");
-	Vkd_SetObjectName(dev->dev, _gpuMem, VK_OBJECT_TYPE_DEVICE_MEMORY, "GPU Staging Area Memory");
-	Vkd_SetObjectName(dev->dev, Vkd_stagingSignal.sem, VK_OBJECT_TYPE_SEMAPHORE, "Staging Semaphore");
+	VkBk_SetObjectName(dev->dev, f_cpu, VK_OBJECT_TYPE_BUFFER, "CPU Staging Area");
+	VkBk_SetObjectName(dev->dev, f_gpu, VK_OBJECT_TYPE_BUFFER, "GPU Staging Area");
+	VkBk_SetObjectName(dev->dev, f_cpuMem, VK_OBJECT_TYPE_DEVICE_MEMORY, "CPU Staging Area Memory");
+	VkBk_SetObjectName(dev->dev, f_gpuMem, VK_OBJECT_TYPE_DEVICE_MEMORY, "GPU Staging Area Memory");
+	VkBk_SetObjectName(dev->dev, Vkd_stagingSignal.sem, VK_OBJECT_TYPE_SEMAPHORE, "Staging Semaphore");
 #endif
 
 	return true;
 }
 
 void *
-Vkd_AllocateStagingMemory(VkDevice dev, VkBuffer buff, VkMemoryRequirements *mr)
+VkBk_AllocateStagingMemory(VkDevice dev, VkBuffer buff, VkMemoryRequirements *mr)
 {
-	Sys_AtomicLockWrite(&_lock);
+	Sys_AtomicLockWrite(&f_lock);
 
-	uint64_t start = ROUND_UP(_offset, mr->alignment);
-	_offset = start + mr->size;
+	uint64_t start = NE_ROUND_UP(f_offset, mr->alignment);
+	f_offset = start + mr->size;
 
-	vkBindBufferMemory(dev, buff, _gpuMem, start);
+	vkBindBufferMemory(dev, buff, f_gpuMem, start);
 
-	Sys_AtomicUnlockWrite(&_lock);
+	Sys_AtomicUnlockWrite(&f_lock);
 
-	return _memPtr + start;
+	return f_memPtr + start;
 }
 
 void
-Vkd_CommitStagingArea(struct NeRenderDevice *dev, VkSemaphore wait)
+VkBk_CommitStagingArea(struct NeRenderDevice *dev, VkSemaphore wait)
 {
-	if (_cmdBuffers[Re_frameId])
-		vkFreeCommandBuffers(dev->dev, dev->driverTransferPool, 1, &_cmdBuffers[Re_frameId]);
-	_cmdBuffers[Re_frameId] = Vkd_TransferCmdBuffer(dev);
+	if (f_cmdBuffers[Re_frameId])
+		vkFreeCommandBuffers(dev->dev, dev->driverTransferPool, 1, &f_cmdBuffers[Re_frameId]);
+	f_cmdBuffers[Re_frameId] = Vkd_TransferCmdBuffer(dev);
 
 #ifdef _DEBUG
-	Vkd_SetObjectName(dev->dev, _cmdBuffers[Re_frameId], VK_OBJECT_TYPE_COMMAND_BUFFER, "Staging CmdBuffer");
+	VkBk_SetObjectName(dev->dev, f_cmdBuffers[Re_frameId], VK_OBJECT_TYPE_COMMAND_BUFFER, "Staging CmdBuffer");
 #endif
 
-	VkMemoryBarrier memBarrier =
+	const VkMemoryBarrier memBarrier =
 	{
 		.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
 		.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT,
 		.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT
 	};
-	vkCmdPipelineBarrier(_cmdBuffers[Re_frameId], VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+	vkCmdPipelineBarrier(f_cmdBuffers[Re_frameId], VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 							VK_DEPENDENCY_BY_REGION_BIT, 1, &memBarrier, 0, NULL, 0, NULL);
 
-	VkBufferCopy c = { .size = _offset };
-	vkCmdCopyBuffer(_cmdBuffers[Re_frameId], _cpu, _gpu, 1, &c);
+	const VkBufferCopy c = { .size = f_offset };
+	vkCmdCopyBuffer(f_cmdBuffers[Re_frameId], f_cpu, f_gpu, 1, &c);
 
-	vkEndCommandBuffer(_cmdBuffers[Re_frameId]);
+	vkEndCommandBuffer(f_cmdBuffers[Re_frameId]);
 
-	VkCommandBufferSubmitInfoKHR cbsi =
+	const VkCommandBufferSubmitInfoKHR cbsi =
 	{
 		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR,
-		.commandBuffer = _cmdBuffers[Re_frameId]
+		.commandBuffer = f_cmdBuffers[Re_frameId]
 	};
 
-	VkSemaphoreSubmitInfoKHR wssi =
+	const VkSemaphoreSubmitInfoKHR wssi =
 	{
 		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR,
 		.semaphore = wait,
 		.stageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR
 	};
 
-	VkSemaphoreSubmitInfoKHR sssi =
+	const VkSemaphoreSubmitInfoKHR sssi =
 	{
 		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR,
 		.semaphore = Vkd_stagingSignal.sem,
 		.value = ++Vkd_stagingSignal.value
 	};
 
-	VkSubmitInfo2KHR si =
+	const VkSubmitInfo2KHR si =
 	{
 		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2_KHR,
 		.pCommandBufferInfos = &cbsi,
@@ -160,36 +158,36 @@ Vkd_CommitStagingArea(struct NeRenderDevice *dev, VkSemaphore wait)
 }
 
 void
-Vkd_StagingBarrier(VkCommandBuffer cmdBuffer)
+VkBk_StagingBarrier(VkCommandBuffer cmdBuffer)
 {
-	VkBufferMemoryBarrier stagingBarrier =
+	const VkBufferMemoryBarrier stagingBarrier =
 	{
 		.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
 		.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
 		.dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
 		.srcQueueFamilyIndex = Re_device->compute.family,
 		.dstQueueFamilyIndex = Re_device->graphics.family,
-		.buffer = _gpu,
+		.buffer = f_gpu,
 		.offset = 0,
-		.size = _offset 
+		.size = f_offset
 	};
 	vkCmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
 		VK_DEPENDENCY_BY_REGION_BIT, 0, NULL, 1, &stagingBarrier, 0, NULL);
 }
 
 void
-Vkd_TermStagingArea(struct NeRenderDevice *dev)
+VkBk_TermStagingArea(struct NeRenderDevice *dev)
 {
 	vkDestroySemaphore(dev->dev, Vkd_stagingSignal.sem, Vkd_allocCb);
 
-	vkFreeCommandBuffers(dev->dev, dev->driverTransferPool, 3, _cmdBuffers);
+	vkFreeCommandBuffers(dev->dev, dev->driverTransferPool, 3, f_cmdBuffers);
 
-	vkUnmapMemory(dev->dev, _cpuMem);
-	vkFreeMemory(dev->dev, _gpuMem, Vkd_allocCb);
-	vkFreeMemory(dev->dev, _cpuMem, Vkd_allocCb);
+	vkUnmapMemory(dev->dev, f_cpuMem);
+	vkFreeMemory(dev->dev, f_gpuMem, Vkd_allocCb);
+	vkFreeMemory(dev->dev, f_cpuMem, Vkd_allocCb);
 
-	vkDestroyBuffer(dev->dev, _gpu, Vkd_allocCb);
-	vkDestroyBuffer(dev->dev, _cpu, Vkd_allocCb);
+	vkDestroyBuffer(dev->dev, f_gpu, Vkd_allocCb);
+	vkDestroyBuffer(dev->dev, f_cpu, Vkd_allocCb);
 }
 
 /* NekoEngine
@@ -218,7 +216,7 @@ Vkd_TermStagingArea(struct NeRenderDevice *dev)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

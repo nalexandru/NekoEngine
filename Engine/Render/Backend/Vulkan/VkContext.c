@@ -5,15 +5,15 @@
 
 #include "VulkanBackend.h"
 
-static inline uint32_t _queueFamilyIndex(struct NeRenderDevice *dev, enum NeRenderQueue queue);
-static inline void _Submit(struct VkdRenderQueue *queue, struct NeArray *submitInfo,
+static inline uint32_t QueueFamilyIndex(struct NeRenderDevice *dev, enum NeRenderQueue queue);
+static inline void Submit(struct VkdRenderQueue *queue, struct NeArray *submitInfo,
 	uint32_t waitCount, VkSemaphoreSubmitInfoKHR *wait,
 	uint32_t signalCount, VkSemaphoreSubmitInfoKHR *signal);
 
 struct NeRenderContext *
 Re_CreateContext(void)
 {
-	struct NeRenderContext *ctx = Sys_Alloc(1, sizeof(*ctx), MH_RenderDriver);
+	struct NeRenderContext *ctx = Sys_Alloc(1, sizeof(*ctx), MH_RenderBackend);
 	if (!ctx)
 		return NULL;
 
@@ -24,7 +24,7 @@ Re_CreateContext(void)
 		.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,
 	};
 
-	struct NeArray *arrays = Sys_Alloc(RE_NUM_FRAMES * 4, sizeof(*arrays), MH_RenderDriver);
+	struct NeArray *arrays = Sys_Alloc(RE_NUM_FRAMES * 4, sizeof(*arrays), MH_RenderBackend);
 	if (!arrays)
 		goto error;
 
@@ -33,7 +33,7 @@ Re_CreateContext(void)
 	ctx->computeCmdBuffers = &arrays[RE_NUM_FRAMES * 2];
 	ctx->xferCmdBuffers = &arrays[RE_NUM_FRAMES * 3];
 
-	pools = Sys_Alloc(RE_NUM_FRAMES * 3, sizeof(*pools), MH_RenderDriver);
+	pools = Sys_Alloc(RE_NUM_FRAMES * 3, sizeof(*pools), MH_RenderBackend);
 	if (!pools)
 		goto error;
 
@@ -54,28 +54,28 @@ Re_CreateContext(void)
 		if (vkCreateCommandPool(Re_device->dev, &poolInfo, Vkd_allocCb, &ctx->xferPools[i]) != VK_SUCCESS)
 			goto error;
 
-		if (!Rt_InitPtrArray(&ctx->graphicsCmdBuffers[i], 10, MH_RenderDriver))
+		if (!Rt_InitPtrArray(&ctx->graphicsCmdBuffers[i], 10, MH_RenderBackend))
 			goto error;
 
-		if (!Rt_InitPtrArray(&ctx->xferCmdBuffers[i], 10, MH_RenderDriver))
+		if (!Rt_InitPtrArray(&ctx->xferCmdBuffers[i], 10, MH_RenderBackend))
 			goto error;
 
-		if (!Rt_InitPtrArray(&ctx->computeCmdBuffers[i], 10, MH_RenderDriver))
+		if (!Rt_InitPtrArray(&ctx->computeCmdBuffers[i], 10, MH_RenderBackend))
 			goto error;
 
-		if (!Rt_InitPtrArray(&ctx->secondaryCmdBuffers[i], 10, MH_RenderDriver))
+		if (!Rt_InitPtrArray(&ctx->secondaryCmdBuffers[i], 10, MH_RenderBackend))
 			goto error;
 
 	#ifdef _DEBUG
 		char name[64];
 		snprintf(name, sizeof(name), "Graphics Pool %u", Re_frameId);
-		Vkd_SetObjectName(Re_device->dev, ctx->graphicsPools[i], VK_OBJECT_TYPE_COMMAND_POOL, name);
+		VkBk_SetObjectName(Re_device->dev, ctx->graphicsPools[i], VK_OBJECT_TYPE_COMMAND_POOL, name);
 
 		snprintf(name, sizeof(name), "Compute Pool %u", Re_frameId);
-		Vkd_SetObjectName(Re_device->dev, ctx->computePools[i], VK_OBJECT_TYPE_COMMAND_POOL, name);
+		VkBk_SetObjectName(Re_device->dev, ctx->computePools[i], VK_OBJECT_TYPE_COMMAND_POOL, name);
 
 		snprintf(name, sizeof(name), "Transfer Pool %u", Re_frameId);
-		Vkd_SetObjectName(Re_device->dev, ctx->xferPools[i], VK_OBJECT_TYPE_COMMAND_POOL, name);
+		VkBk_SetObjectName(Re_device->dev, ctx->xferPools[i], VK_OBJECT_TYPE_COMMAND_POOL, name);
 	#endif
 	}
 
@@ -86,9 +86,9 @@ Re_CreateContext(void)
 	ctx->neDev = Re_device;
 	ctx->descriptorSet = Re_device->descriptorSet;
 
-	if (!Rt_InitArray(&ctx->queued.graphics, 10, sizeof(struct Vkd_SubmitInfo), MH_RenderDriver) ||
-		!Rt_InitArray(&ctx->queued.compute, 10, sizeof(struct Vkd_SubmitInfo), MH_RenderDriver) ||
-		!Rt_InitArray(&ctx->queued.xfer, 10, sizeof(struct Vkd_SubmitInfo), MH_RenderDriver))
+	if (!Rt_InitArray(&ctx->queued.graphics, 10, sizeof(struct Vkd_SubmitInfo), MH_RenderBackend) ||
+		!Rt_InitArray(&ctx->queued.compute, 10, sizeof(struct Vkd_SubmitInfo), MH_RenderBackend) ||
+		!Rt_InitArray(&ctx->queued.xfer, 10, sizeof(struct Vkd_SubmitInfo), MH_RenderBackend))
 		goto error;
 
 	return ctx;
@@ -169,9 +169,9 @@ Re_DestroyContext(struct NeRenderContext *ctx)
 }
 
 void
-Vkd_ExecuteCommands(struct NeRenderDevice *dev, struct NeRenderContext *ctx, struct NeSwapchain *sw, struct NeSemaphore *waitSemaphore)
+VkBk_ExecuteCommands(struct NeSwapchain *sw, struct NeSemaphore *waitSemaphore)
 {
-	dev->frameValues[Re_frameId] = ++dev->semaphoreValue;
+	Re_device->frameValues[Re_frameId] = ++Re_device->semaphoreValue;
 
 	uint32_t waitCount = 0;
 	VkSemaphoreSubmitInfoKHR waitInfo[] =
@@ -201,8 +201,8 @@ Vkd_ExecuteCommands(struct NeRenderDevice *dev, struct NeRenderContext *ctx, str
 	{
 		{
 			.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR,
-			.semaphore = dev->frameSemaphore,
-			.value = dev->frameValues[Re_frameId],
+			.semaphore = Re_device->frameSemaphore,
+			.value = Re_device->frameValues[Re_frameId],
 			.stageMask = VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT_KHR,
 			.deviceIndex = 0
 		},
@@ -228,21 +228,30 @@ Vkd_ExecuteCommands(struct NeRenderDevice *dev, struct NeRenderContext *ctx, str
 		ADD_WAIT(waitSemaphore->sem, waitSemaphore->value);
 	}
 
-	if (ctx->queued.xfer.count) {
-		_Submit(&dev->transfer, &ctx->queued.xfer, waitCount, waitInfo, 1, signalInfo);
-		ADD_WAIT(dev->frameSemaphore, dev->frameValues[Re_frameId]);
-
-		dev->frameValues[Re_frameId] = ++dev->semaphoreValue;
-		signalInfo[0].value = dev->frameValues[Re_frameId];
+	bool xfer = false;
+	for (uint32_t i = 0; i < RE_NUM_CONTEXTS; ++i) {
+		if (Re_contexts[i]->queued.xfer.count) {
+			Submit(&Re_device->transfer, &Re_contexts[i]->queued.xfer, waitCount, waitInfo, 1, signalInfo);
+			xfer = true;
+		}
 	}
 
-	_Submit(&dev->compute, &ctx->queued.compute, waitCount, waitInfo, 0, NULL);
+	if (xfer) {
+		ADD_WAIT(Re_device->frameSemaphore, Re_device->frameValues[Re_frameId]);
+
+		Re_device->frameValues[Re_frameId] = ++Re_device->semaphoreValue;
+		signalInfo[0].value = Re_device->frameValues[Re_frameId];
+	}
+
+	for (uint32_t i = 0; i < RE_NUM_CONTEXTS; ++i)
+		Submit(&Re_device->compute, &Re_contexts[i]->queued.compute, waitCount, waitInfo, 0, NULL);
 
 	if (Re_deviceInfo.features.coherentMemory) {
 		ADD_WAIT(sw->frameStart[Re_frameId], 0);
 	}
 
-	_Submit(&dev->graphics, &ctx->queued.graphics, waitCount, waitInfo, 2, signalInfo);
+	for (uint32_t i = 0; i < RE_NUM_CONTEXTS; ++i)
+		Submit(&Re_device->graphics, &Re_contexts[i]->queued.graphics, waitCount, waitInfo, 2, signalInfo);
 }
 
 NeCommandBufferHandle
@@ -256,7 +265,7 @@ Re_BeginSecondary(struct NeRenderPassDesc *passDesc)
 #ifdef _DEBUG
 	char name[64];
 	snprintf(name, sizeof(name), "Secondary CmdBuffer %u", Re_frameId);
-	Vkd_SetObjectName(ctx->vkDev, ctx->cmdBuffer, VK_OBJECT_TYPE_COMMAND_BUFFER, name);
+	VkBk_SetObjectName(ctx->vkDev, ctx->cmdBuffer, VK_OBJECT_TYPE_COMMAND_BUFFER, name);
 #endif
 
 	VkCommandBufferInheritanceInfo inheritanceInfo =
@@ -276,16 +285,18 @@ Re_BeginSecondary(struct NeRenderPassDesc *passDesc)
 }
 
 void
-Re_BeginDrawCommandBuffer(void)
+Re_BeginDrawCommandBuffer(struct NeSemaphore *wait)
 {
 	struct NeRenderContext *ctx = Re_CurrentContext();
 	ctx->cmdBuffer = Vkd_AllocateCmdBuffer(ctx->vkDev, VK_COMMAND_BUFFER_LEVEL_PRIMARY, ctx->graphicsPools[Re_frameId]);
 	assert(ctx->cmdBuffer);
 
+	ctx->wait = wait;
+
 #ifdef _DEBUG
 	char name[64];
 	snprintf(name, sizeof(name), "Draw CmdBuffer %u", Re_frameId);
-	Vkd_SetObjectName(ctx->vkDev, ctx->cmdBuffer, VK_OBJECT_TYPE_COMMAND_BUFFER, name);
+	VkBk_SetObjectName(ctx->vkDev, ctx->cmdBuffer, VK_OBJECT_TYPE_COMMAND_BUFFER, name);
 #endif
 
 	VkCommandBufferBeginInfo beginInfo =
@@ -297,17 +308,19 @@ Re_BeginDrawCommandBuffer(void)
 }
 
 void
-Re_BeginComputeCommandBuffer(void)
+Re_BeginComputeCommandBuffer(struct NeSemaphore *wait)
 {
 	struct NeRenderContext *ctx = Re_CurrentContext();
 
 	ctx->cmdBuffer = Vkd_AllocateCmdBuffer(ctx->vkDev, VK_COMMAND_BUFFER_LEVEL_PRIMARY, ctx->computePools[Re_frameId]);
 	assert(ctx->cmdBuffer);
 
+	ctx->wait = wait;
+
 #ifdef _DEBUG
 	char name[64];
 	snprintf(name, sizeof(name), "Compute CmdBuffer %u", Re_frameId);
-	Vkd_SetObjectName(ctx->vkDev, ctx->cmdBuffer, VK_OBJECT_TYPE_COMMAND_BUFFER, name);
+	VkBk_SetObjectName(ctx->vkDev, ctx->cmdBuffer, VK_OBJECT_TYPE_COMMAND_BUFFER, name);
 #endif
 
 	VkCommandBufferBeginInfo beginInfo =
@@ -319,16 +332,18 @@ Re_BeginComputeCommandBuffer(void)
 }
 
 void
-Re_BeginTransferCommandBuffer(void)
+Re_BeginTransferCommandBuffer(struct NeSemaphore *wait)
 {
 	struct NeRenderContext *ctx = Re_CurrentContext();
 	ctx->cmdBuffer = Vkd_AllocateCmdBuffer(ctx->vkDev, VK_COMMAND_BUFFER_LEVEL_PRIMARY, ctx->xferPools[Re_frameId]);
 	assert(ctx->cmdBuffer);
 
+	ctx->wait = wait;
+
 #ifdef _DEBUG
 	char name[64];
 	snprintf(name, sizeof(name), "Xfer CmdBuffer %u", Re_frameId);
-	Vkd_SetObjectName(ctx->vkDev, ctx->cmdBuffer, VK_OBJECT_TYPE_COMMAND_BUFFER, name);
+	VkBk_SetObjectName(ctx->vkDev, ctx->cmdBuffer, VK_OBJECT_TYPE_COMMAND_BUFFER, name);
 #endif
 
 	VkCommandBufferBeginInfo beginInfo =
@@ -355,7 +370,7 @@ void
 Re_CmdBindPipeline(struct NePipeline *pipeline)
 {
 	struct NeRenderContext *ctx = Re_CurrentContext();
-	VkDescriptorSet sets[] = { ctx->descriptorSet, ctx->iaSet};
+	VkDescriptorSet sets[] = { ctx->descriptorSet, ctx->iaSet };
 
 	vkCmdBindPipeline(ctx->cmdBuffer, pipeline->bindPoint, pipeline->pipeline);
 	vkCmdBindDescriptorSets(ctx->cmdBuffer, pipeline->bindPoint, pipeline->layout, 0, ctx->iaSet ? 2 : 1, sets, 0, NULL);
@@ -408,7 +423,7 @@ Re_CmdBeginRenderPass(struct NeRenderPassDesc *passDesc, struct NeFramebuffer *f
 {
 	struct NeRenderContext *ctx = Re_CurrentContext();
 	//if (!Re_deviceInfo.features.coherentMemory)
-	//	Vkd_StagingBarrier(ctx->cmdBuffer);
+	//	VkBk_StagingBarrier(ctx->cmdBuffer);
 
 	if (passDesc->inputAttachments) {
 		ctx->iaSet = Vk_AllocateIADescriptorSet(ctx->neDev);
@@ -597,10 +612,10 @@ Re_CmdBuildAccelerationStructures(uint32_t count, struct NeAccelerationStructure
 }
 
 void
-Re_Barrier(enum NePipelineDependency dep,
-	uint32_t memBarrierCount, const struct NeMemoryBarrier *memBarriers,
-	uint32_t bufferBarrierCount, const struct NeBufferBarrier *bufferBarriers,
-	uint32_t imageBarrierCount, const struct NeImageBarrier *imageBarriers)
+Re_CmdBarrier(enum NePipelineDependency dep,
+				uint32_t memBarrierCount, const struct NeMemoryBarrier *memBarriers,
+				uint32_t bufferBarrierCount, const struct NeBufferBarrier *bufferBarriers,
+				uint32_t imageBarrierCount, const struct NeImageBarrier *imageBarriers)
 {
 	struct NeRenderContext *ctx = Re_CurrentContext();
 	VkMemoryBarrier2KHR *vkMemBarriers = NULL;
@@ -635,8 +650,8 @@ Re_Barrier(enum NePipelineDependency dep,
 			vkBufferBarriers[i].srcAccessMask = bufferBarriers[i].srcAccess;
 			vkBufferBarriers[i].dstAccessMask = bufferBarriers[i].dstAccess;
 
-			vkBufferBarriers[i].srcQueueFamilyIndex = _queueFamilyIndex(ctx->neDev, bufferBarriers[i].srcQueue);
-			vkBufferBarriers[i].dstQueueFamilyIndex = _queueFamilyIndex(ctx->neDev, bufferBarriers[i].dstQueue);
+			vkBufferBarriers[i].srcQueueFamilyIndex = QueueFamilyIndex(ctx->neDev, bufferBarriers[i].srcQueue);
+			vkBufferBarriers[i].dstQueueFamilyIndex = QueueFamilyIndex(ctx->neDev, bufferBarriers[i].dstQueue);
 
 			vkBufferBarriers[i].buffer = bufferBarriers[i].buffer->buff;
 			vkBufferBarriers[i].offset = bufferBarriers[i].offset;
@@ -660,8 +675,8 @@ Re_Barrier(enum NePipelineDependency dep,
 			vkImageBarriers[i].oldLayout = NeToVkImageLayout(imageBarriers[i].oldLayout);
 			vkImageBarriers[i].newLayout = NeToVkImageLayout(imageBarriers[i].newLayout);
 
-			vkImageBarriers[i].srcQueueFamilyIndex = _queueFamilyIndex(ctx->neDev, imageBarriers[i].srcQueue);
-			vkImageBarriers[i].dstQueueFamilyIndex = _queueFamilyIndex(ctx->neDev, imageBarriers[i].dstQueue);
+			vkImageBarriers[i].srcQueueFamilyIndex = QueueFamilyIndex(ctx->neDev, imageBarriers[i].srcQueue);
+			vkImageBarriers[i].dstQueueFamilyIndex = QueueFamilyIndex(ctx->neDev, imageBarriers[i].dstQueue);
 
 			vkImageBarriers[i].image = imageBarriers[i].texture->image;
 			vkImageBarriers[i].subresourceRange.aspectMask = imageBarriers[i].subresource.aspect;
@@ -749,9 +764,13 @@ Re_BkCmdCopyBufferToTexture(const struct NeBuffer *src, struct NeTexture *dst, c
 		.layerCount = 1
 	};
 
-	Vkd_TransitionImageLayoutRange(ctx->cmdBuffer, dst->image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &range);
+	if (dst->layout != VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+		Vkd_TransitionImageLayoutRange(ctx->cmdBuffer, dst->image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &range);
+
 	vkCmdCopyBufferToImage(ctx->cmdBuffer, src->buff, dst->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &b);
-	Vkd_TransitionImageLayoutRange(ctx->cmdBuffer, dst->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, dst->layout, &range);
+
+	if (dst->layout != VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+		Vkd_TransitionImageLayoutRange(ctx->cmdBuffer, dst->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, dst->layout, &range);
 }
 
 void
@@ -822,50 +841,53 @@ Re_CmdLoadTexture(struct NeTexture *tex, uint32_t slice, uint32_t level, uint32_
 }
 
 bool
-Re_QueueGraphics(NeCommandBufferHandle cmdBuffer, struct NeSemaphore *wait, struct NeSemaphore *signal)
+Re_QueueGraphics(NeCommandBufferHandle cmdBuffer, struct NeSemaphore *signal)
 {
 	struct NeRenderContext *ctx = Re_CurrentContext();
 	struct Vkd_SubmitInfo si =
 	{
-		.wait = wait ? wait->sem : VK_NULL_HANDLE,
-		.waitValue = wait ? wait->value : 0,
+		.wait = ctx->wait ? ctx->wait->sem : VK_NULL_HANDLE,
+		.waitValue = ctx->wait ? ctx->wait->value : 0,
 		.signal = signal ? signal->sem : VK_NULL_HANDLE,
 		.signalValue = signal ? ++signal->value : 0,
 		.cmdBuffer = (VkCommandBuffer)cmdBuffer
 	};
 	Rt_ArrayAddPtr(&ctx->graphicsCmdBuffers[Re_frameId], cmdBuffer);
+	ctx->wait = NULL;
 	return Rt_ArrayAdd(&ctx->queued.graphics, &si);
 }
 
 bool
-Re_QueueCompute(NeCommandBufferHandle cmdBuffer, struct NeSemaphore *wait, struct NeSemaphore *signal)
+Re_QueueCompute(NeCommandBufferHandle cmdBuffer, struct NeSemaphore *signal)
 {
 	struct NeRenderContext *ctx = Re_CurrentContext();
 	struct Vkd_SubmitInfo si =
 	{
-		.wait = wait ? wait->sem : VK_NULL_HANDLE,
-		.waitValue = wait ? wait->value : 0,
+		.wait = ctx->wait ? ctx->wait->sem : VK_NULL_HANDLE,
+		.waitValue = ctx->wait ? ctx->wait->value : 0,
 		.signal = signal ? signal->sem : VK_NULL_HANDLE,
 		.signalValue = signal ? ++signal->value : 0,
 		.cmdBuffer = (VkCommandBuffer)cmdBuffer
 	};
 	Rt_ArrayAddPtr(&ctx->computeCmdBuffers[Re_frameId], cmdBuffer);
+	ctx->wait = NULL;
 	return Rt_ArrayAdd(&ctx->queued.compute, &si);
 }
 
 bool
-Re_QueueTransfer(NeCommandBufferHandle cmdBuffer, struct NeSemaphore *wait, struct NeSemaphore *signal)
+Re_QueueTransfer(NeCommandBufferHandle cmdBuffer, struct NeSemaphore *signal)
 {
 	struct NeRenderContext *ctx = Re_CurrentContext();
 	struct Vkd_SubmitInfo si =
 	{
-		.wait = wait ? wait->sem : VK_NULL_HANDLE,
-		.waitValue = wait ? wait->value : 0,
+		.wait = ctx->wait ? ctx->wait->sem : VK_NULL_HANDLE,
+		.waitValue = ctx->wait ? ctx->wait->value : 0,
 		.signal = signal ? signal->sem : VK_NULL_HANDLE,
 		.signalValue = signal ? ++signal->value : 0,
 		.cmdBuffer = (VkCommandBuffer)cmdBuffer
 	};
 	Rt_ArrayAddPtr(&ctx->xferCmdBuffers[Re_frameId], cmdBuffer);
+	ctx->wait = NULL;
 	return Rt_ArrayAdd(&ctx->queued.xfer, &si);
 }
 
@@ -984,7 +1006,7 @@ Re_ExecuteDirectIO(void)
 }
 
 static inline uint32_t
-_queueFamilyIndex(struct NeRenderDevice *dev, enum NeRenderQueue queue)
+QueueFamilyIndex(struct NeRenderDevice *dev, enum NeRenderQueue queue)
 {
 	switch (queue) {
 	case RE_QUEUE_GRAPHICS: return dev->graphics.family;
@@ -996,24 +1018,23 @@ _queueFamilyIndex(struct NeRenderDevice *dev, enum NeRenderQueue queue)
 }
 
 void
-_Submit(struct VkdRenderQueue *queue, struct NeArray *submitInfo,
+Submit(struct VkdRenderQueue *queue, struct NeArray *submitInfo,
 		uint32_t waitCount, VkSemaphoreSubmitInfoKHR *wait,
 		uint32_t signalCount, VkSemaphoreSubmitInfoKHR *signal)
 {
 	if (!submitInfo->count)
 		return;
 
-	struct NeArray info, cbInfo, sInfo;
-	Rt_InitArray(&info, submitInfo->count, sizeof(VkSubmitInfo2), MH_Transient);
-	Rt_InitArray(&cbInfo, submitInfo->count, sizeof(VkCommandBufferSubmitInfoKHR), MH_Transient);
-	Rt_InitArray(&sInfo, submitInfo->count * 2 /* wait & signal */, sizeof(VkSemaphoreSubmitInfoKHR), MH_Transient);
+	VkSubmitInfo2KHR *info = Sys_Alloc(sizeof(*info), submitInfo->count, MH_Transient);
+	VkCommandBufferSubmitInfoKHR *cbInfo = Sys_Alloc(sizeof(*cbInfo), submitInfo->count, MH_Transient);
+	VkSemaphoreSubmitInfoKHR *sInfo = Sys_Alloc(sizeof(*sInfo), submitInfo->count * 2 /* wait & signal */, MH_Transient);
 
 	struct Vkd_SubmitInfo *esi;
 	Rt_ArrayForEach(esi, submitInfo) {
-		VkSubmitInfo2 *si = Rt_ArrayAllocate(&info);
+		VkSubmitInfo2 *si = &info[miwa_rtafei];
 		si->sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2_KHR;
 
-		VkCommandBufferSubmitInfoKHR *cbsi = Rt_ArrayAllocate(&cbInfo);
+		VkCommandBufferSubmitInfoKHR *cbsi = &cbInfo[miwa_rtafei];
 		cbsi->sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR;
 		cbsi->commandBuffer = esi->cmdBuffer;
 
@@ -1021,7 +1042,7 @@ _Submit(struct VkdRenderQueue *queue, struct NeArray *submitInfo,
 		si->pCommandBufferInfos = cbsi;
 
 		if (esi->wait) {
-			VkSemaphoreSubmitInfoKHR *ssi = Rt_ArrayAllocate(&sInfo);
+			VkSemaphoreSubmitInfoKHR *ssi = &sInfo[miwa_rtafei];
 			ssi->sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR;
 
 			ssi->semaphore = esi->wait;
@@ -1037,7 +1058,7 @@ _Submit(struct VkdRenderQueue *queue, struct NeArray *submitInfo,
 		}
 
 		if (esi->signal) {
-			VkSemaphoreSubmitInfoKHR *ssi = Rt_ArrayAllocate(&sInfo);
+			VkSemaphoreSubmitInfoKHR *ssi = &sInfo[miwa_rtafei + submitInfo->count];
 			ssi->sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR;
 
 			ssi->semaphore = esi->signal;
@@ -1053,7 +1074,7 @@ _Submit(struct VkdRenderQueue *queue, struct NeArray *submitInfo,
 		}
 	}
 
-	Vkd_QueueSubmit(queue, (uint32_t)info.count, (const VkSubmitInfo2KHR *)info.data, VK_NULL_HANDLE);
+	Vkd_QueueSubmit(queue, (uint32_t)submitInfo->count, info, VK_NULL_HANDLE);
 }
 
 /* NekoEngine
@@ -1082,7 +1103,7 @@ _Submit(struct VkdRenderQueue *queue, struct NeArray *submitInfo,
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

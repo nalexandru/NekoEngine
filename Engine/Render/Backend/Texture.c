@@ -1,4 +1,4 @@
-#include <stdlib.h>
+#include <stdatomic.h>
 
 #include <Engine/IO.h>
 #include <Engine/Asset.h>
@@ -7,18 +7,27 @@
 #include <Render/Render.h>
 #include <Render/Backend.h>
 
-static NeHandle _placeholderTexture;
-static struct NeSampler *_sceneSampler;
+static atomic_uint_fast32_t f_nextId;
+static struct NeQueue f_freeList;
 
-static bool _CreateTextureResource(const char *name, const struct NeTextureCreateInfo *ci, struct NeTextureResource *tex, NeHandle h);
-static bool _LoadTextureResource(struct NeResourceLoadInfo *li, const char *args, struct NeTextureResource *tex, NeHandle h);
-static void _UnloadTextureResource(struct NeTextureResource *tex, NeHandle h);
-static inline bool _InitTexture(struct NeTexture *tex, const struct NeTextureCreateInfo *tci);
-static inline uint32_t _RowSize(enum NeTextureFormat fmt, uint32_t width);
-static inline uint32_t _ByteSize(enum NeTextureFormat fmt, uint32_t width, uint32_t height);
+static NeHandle f_placeholderTexture;
+static struct NeSampler *f_sceneSampler;
+
+struct uint128
+{
+	uint64_t l, h;
+};
+
+static bool CreateTextureResource(const char *name, const struct NeTextureCreateInfo *ci, struct NeTextureResource *tex, NeHandle h);
+static bool LoadTextureResource(struct NeResourceLoadInfo *li, const char *args, struct NeTextureResource *tex, NeHandle h);
+static void UnloadTextureResource(struct NeTextureResource *tex, NeHandle h);
+static inline bool InitTexture(struct NeTexture *tex, const struct NeTextureCreateInfo *tci);
+static void Flip8(uint32_t *data, uint32_t width, uint32_t height);
+static void Flip16(uint64_t *data, uint32_t width, uint32_t height);
+static void Flip32(struct uint128 *data, uint32_t width, uint32_t height);
 
 static bool
-_CreateTextureResource(const char *name, const struct NeTextureCreateInfo *ci, struct NeTextureResource *tex, NeHandle h)
+CreateTextureResource(const char *name, const struct NeTextureCreateInfo *ci, struct NeTextureResource *tex, NeHandle h)
 {
 	if ((h & 0x00000000FFFFFFFF) > (uint64_t)RE_MAX_TEXTURES)
 		return false;
@@ -27,9 +36,9 @@ _CreateTextureResource(const char *name, const struct NeTextureCreateInfo *ci, s
 	if (!tex->texture)
 		return false;
 
-	if (!_InitTexture(tex->texture, ci))
+	if (!InitTexture(tex->texture, ci))
 		return false;
-	
+
 	if (!ci->keepData)
 		Sys_Free(ci->data);
 
@@ -37,7 +46,7 @@ _CreateTextureResource(const char *name, const struct NeTextureCreateInfo *ci, s
 }
 
 static bool
-_LoadTextureResource(struct NeResourceLoadInfo *li, const char *args, struct NeTextureResource *tex, NeHandle h)
+LoadTextureResource(struct NeResourceLoadInfo *li, const char *args, struct NeTextureResource *tex, NeHandle h)
 {
 	if ((h & 0x00000000FFFFFFFF) > (uint64_t)RE_MAX_TEXTURES)
 		return false;
@@ -56,13 +65,22 @@ _LoadTextureResource(struct NeResourceLoadInfo *li, const char *args, struct NeT
 	};
 
 	if (strstr(li->path, ".dds"))
-		rc = E_LoadDDSAsset(&li->stm, &ci);
+		rc = Asset_LoadDDS(&li->stm, &ci);
 	else if (strstr(li->path, ".tga"))
-		rc = E_LoadTGAAsset(&li->stm, &ci);
+		rc = Asset_LoadTGA(&li->stm, &ci);
 	else if (strstr(li->path, ".hdr"))
-		rc = E_LoadHDRAsset(&li->stm, &ci, flip);
+		rc = Asset_LoadHDR(&li->stm, &ci);
 	else
-		rc = E_LoadImageAsset(&li->stm, &ci, flip);
+		rc = Asset_LoadImage(&li->stm, &ci, flip);
+
+	if (flip && ci.desc.format < TF_D32_SFLOAT) {
+		if (ci.desc.format < TF_R16G16B16A16_UNORM)
+			Flip8(ci.data, ci.desc.width, ci.desc.height);
+		else if (ci.desc.format < TF_R32G32B32A32_UINT)
+			Flip16(ci.data, ci.desc.width, ci.desc.height);
+		else
+			Flip32(ci.data, ci.desc.width, ci.desc.height);
+	}
 
 	if (cube && ci.desc.type == TT_2D) {
 		// cubemap not loaded from a DDS file
@@ -109,24 +127,24 @@ _LoadTextureResource(struct NeResourceLoadInfo *li, const char *args, struct NeT
 	if (rc)
 		tex->texture = Re_BkCreateTexture(&ci.desc, E_ResHandleToGPU(h));
 
-	if (!tex->texture || (ci.data && !_InitTexture(tex->texture, &ci)))
+	if (!tex->texture || (ci.data && !InitTexture(tex->texture, &ci)))
 		goto error;
-	
+
 	Sys_Free(ci.data);
 
 	return true;
-	
+
 error:
 	if (tex->texture)
 		Re_TDestroyNeTexture(tex->texture);
-	
+
 	Sys_Free(ci.data);
-	
+
 	return false;
 }
 
 static void
-_UnloadTextureResource(struct NeTextureResource *tex, NeHandle h)
+UnloadTextureResource(struct NeTextureResource *tex, NeHandle h)
 {
 	Re_Destroy(tex->texture);
 }
@@ -146,10 +164,35 @@ Re_TextureLayout(NeTextureHandle tex)
 }
 
 bool
+Re_ReserveTextureId(NeTextureHandle *handle)
+{
+	if (f_freeList.count) {
+		*handle = *(NeBufferHandle*)Rt_QueuePop(&f_freeList);
+	} else {
+		const uint32_t nextId = atomic_fetch_add(&f_nextId, 1);
+		if (nextId < UINT16_MAX) {
+			*handle = nextId;
+		} else {
+			atomic_fetch_add(&f_nextId, -1);
+			*handle = (uint16_t)-1;
+			return false;
+		}
+	}
+
+	return true;
+}
+
+void
+Re_ReleaseTextureId(NeTextureHandle handle)
+{
+	Rt_QueuePush(&f_freeList, &handle);
+}
+
+bool
 Re_InitTextureSystem(void)
 {
-	if (!E_RegisterResourceType(RES_TEXTURE, sizeof(struct NeTextureResource), (NeResourceCreateProc)_CreateTextureResource,
-							(NeResourceLoadProc)_LoadTextureResource, (NeResourceUnloadProc)_UnloadTextureResource))
+	if (!E_RegisterResourceType(RES_TEXTURE, sizeof(struct NeTextureResource), (NeResourceCreateProc)CreateTextureResource,
+							(NeResourceLoadProc)LoadTextureResource, (NeResourceUnloadProc)UnloadTextureResource))
 		return false;
 
 	struct NeSamplerDesc desc =
@@ -164,8 +207,8 @@ Re_InitTextureSystem(void)
 		.addressModeW = SAM_REPEAT,
 		.maxLod = RE_SAMPLER_LOD_CLAMP_NONE
 	};
-	_sceneSampler = Re_CreateSampler(&desc);
-	if (!_sceneSampler)
+	f_sceneSampler = Re_CreateSampler(&desc);
+	if (!f_sceneSampler)
 		return false;
 
 	// hot pink so it's ugly and it stands out
@@ -189,20 +232,22 @@ Re_InitTextureSystem(void)
 		.dataSize = sizeof(texData),
 		.keepData = true
 	};
-	_placeholderTexture = E_CreateResource("__PlaceholderTexture", RES_TEXTURE, &tci);
-	E_ReleaseResource(_placeholderTexture);
+	f_placeholderTexture = E_CreateResource("__PlaceholderTexture", RES_TEXTURE, &tci);
+	E_ReleaseResource(f_placeholderTexture);
 
-	return true;
+	atomic_store(&f_nextId, UINT16_MAX - E_GetCVarU32("Render_TransientTextureHandles", 35)->u32);
+	return Rt_InitQueue(&f_freeList, UINT16_MAX, sizeof(NeBufferHandle), MH_Render);
 }
 
 void
 Re_TermTextureSystem(void)
 {
-	Re_DestroySampler(_sceneSampler);
+	Re_DestroySampler(f_sceneSampler);
+	Rt_TermQueue(&f_freeList);
 }
 
 static inline bool
-_InitTexture(struct NeTexture *tex, const struct NeTextureCreateInfo *tci)
+InitTexture(struct NeTexture *tex, const struct NeTextureCreateInfo *tci)
 {
 	NeBufferHandle staging;
 	struct NeBufferCreateInfo bci =
@@ -218,7 +263,7 @@ _InitTexture(struct NeTexture *tex, const struct NeTextureCreateInfo *tci)
 	memcpy(ptr, tci->data, tci->dataSize);
 	Re_UnmapBuffer(staging);
 
-	Re_BeginTransferCommandBuffer();
+	Re_BeginTransferCommandBuffer(NULL);
 
 	uint64_t offset = 0;
 
@@ -231,7 +276,7 @@ _InitTexture(struct NeTexture *tex, const struct NeTextureCreateInfo *tci)
 			struct NeBufferImageCopy bic =
 			{
 				.bufferOffset = offset,
-				.bytesPerRow = _RowSize(tci->desc.format, w),
+				.bytesPerRow = Re_TextureRowSize(tci->desc.format, w),
 				.rowLength = w,
 				.imageHeight = h,
 				.subresource =
@@ -246,81 +291,67 @@ _InitTexture(struct NeTexture *tex, const struct NeTextureCreateInfo *tci)
 			};
 			Re_CmdCopyBufferToTexture(staging, tex, &bic);
 
-			offset += _ByteSize(tci->desc.format, w, h);
+			offset += Re_TextureByteSize(tci->desc.format, w, h);
 		}
 	}
-	
+
 	Re_ExecuteTransfer(Re_EndCommandBuffer());
 	Re_DestroyBuffer(staging);
-	
+
 	return true;
 }
 
-static inline uint32_t
-_RowSize(enum NeTextureFormat fmt, uint32_t width)
+static void
+Flip8(uint32_t *data, uint32_t width, uint32_t height)
 {
-	switch (fmt) {
-	case TF_R8G8B8A8_UNORM:
-	case TF_R8G8B8A8_SRGB:
-	case TF_B8G8R8A8_UNORM:
-	case TF_B8G8R8A8_SRGB:
-	case TF_A2R10G10B10_UNORM:
-	case TF_D24_STENCIL8:
-	case TF_D32_SFLOAT: return width * 4;
-	case TF_R16G16B16A16_SFLOAT: return width * 8;
-	case TF_R32G32B32A32_SFLOAT: return width * 16;
-	case TF_R8G8_UNORM: return width * 2;
-	case TF_R8_UNORM: return width * 1;
-	/*case TF_ETC2_R8G8B8_UNORM: return MTLPixelFormatETC2_RGB8;
-	case TF_ETC2_R8G8B8_SRGB: return MTLPixelFormatETC2_RGB8_sRGB;
-	case TF_ETC2_R8G8B8A1_UNORM: return MTLPixelFormatETC2_RGB8A1;
-	case TF_ETC2_R8G8B8A1_SRGB: return MTLPixelFormatETC2_RGB8A1_sRGB;
-	case TF_EAC_R11_UNORM: return MTLPixelFormatEAC_R11Unorm;
-	case TF_EAC_R11_SNORM: return MTLPixelFormatEAC_R11Snorm;
-	case TF_EAC_R11G11_UNORM: return MTLPixelFormatEAC_RG11Unorm;
-	case TF_EAC_R11G11_SNORM: return MTLPixelFormatEAC_RG11Snorm;*/
-	case TF_BC5_UNORM:
-	case TF_BC5_SNORM:
-	case TF_BC6H_UF16:
-	case TF_BC6H_SF16:
-	case TF_BC7_UNORM:
-	case TF_BC7_SRGB: return ((width + 3) / 4) * 16;
-	default: return 0;
+	for (uint32_t i = 0; i < height / 2; ++i) {
+		uint32_t *sptr = data + width * i;
+		uint32_t *dptr = data + width * (height - i - 1);
+
+		for (uint32_t j = 0; j < width; ++j) {
+			*sptr = *sptr ^ *dptr;
+			*dptr = *sptr ^ *dptr;
+			*sptr = *sptr ^ *dptr++;
+			++sptr;
+		}
 	}
-	
-	return 0; // this should cause a crash
 }
 
-static inline uint32_t
-_ByteSize(enum NeTextureFormat fmt, uint32_t width, uint32_t height)
+static void
+Flip16(uint64_t *data, uint32_t width, uint32_t height)
 {
-	switch (fmt) {
-	case TF_R8G8B8A8_UNORM:
-	case TF_R8G8B8A8_SRGB:
-	case TF_B8G8R8A8_UNORM:
-	case TF_B8G8R8A8_SRGB:
-	case TF_A2R10G10B10_UNORM:
-	case TF_D24_STENCIL8:
-	case TF_D32_SFLOAT: return width * height * 4;
-	case TF_R16G16B16A16_SFLOAT: return width * height * 8;
-	case TF_R32G32B32A32_SFLOAT: return width * height * 16;
-	case TF_R8G8_UNORM: return width * height * 2;
-	case TF_R8_UNORM: return width * height * 1;
-	/*case TF_ETC2_R8G8B8_UNORM: return MTLPixelFormatETC2_RGB8;
-	case TF_ETC2_R8G8B8_SRGB: return MTLPixelFormatETC2_RGB8_sRGB;
-	case TF_ETC2_R8G8B8A1_UNORM: return MTLPixelFormatETC2_RGB8A1;
-	case TF_ETC2_R8G8B8A1_SRGB: return MTLPixelFormatETC2_RGB8A1_sRGB;
-	case TF_EAC_R11_UNORM: return MTLPixelFormatEAC_R11Unorm;
-	case TF_EAC_R11_SNORM: return MTLPixelFormatEAC_R11Snorm;
-	case TF_EAC_R11G11_UNORM: return MTLPixelFormatEAC_RG11Unorm;
-	case TF_EAC_R11G11_SNORM: return MTLPixelFormatEAC_RG11Snorm;*/
-	case TF_BC5_UNORM:
-	case TF_BC5_SNORM:
-	case TF_BC6H_UF16:
-	case TF_BC6H_SF16:
-	case TF_BC7_UNORM:
-	case TF_BC7_SRGB: return ((width + 3) / 4) * ((height + 3) / 4) * 16;
-	default: return 0; // this should cause a crash in the backend
+	for (uint32_t i = 0; i < height / 2; ++i) {
+		uint64_t *sptr = data + width * i;
+		uint64_t *dptr = data + width * (height - i - 1);
+
+		for (uint32_t j = 0; j < width; ++j) {
+			*sptr = *sptr ^ *dptr;
+			*dptr = *sptr ^ *dptr;
+			*sptr = *sptr ^ *dptr++;
+			++sptr;
+		}
+	}
+}
+
+static void
+Flip32(struct uint128 *data, uint32_t width, uint32_t height)
+{
+	for (uint32_t i = 0; i < height / 2; ++i) {
+		struct uint128 *sptr = data + width * i;
+		struct uint128 *dptr = data + width * (height - i - 1);
+
+		for (uint32_t j = 0; j < width; ++j) {
+			sptr->l = sptr->l ^ dptr->l;
+			sptr->h = sptr->h ^ dptr->h;
+
+			dptr->l = sptr->l ^ dptr->l;
+			dptr->h = sptr->h ^ dptr->h;
+
+			sptr->l = sptr->l ^ dptr->l;
+			sptr->h = sptr->h ^ dptr->h;
+
+			++sptr; ++dptr;
+		}
 	}
 }
 
@@ -350,7 +381,7 @@ _ByteSize(enum NeTextureFormat fmt, uint32_t width, uint32_t height)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

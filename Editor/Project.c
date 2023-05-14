@@ -20,9 +20,9 @@ Ed_LoadProject(const char *path)
 
 		snprintf(Ed_dataDir, ED_MAX_PATH, "%s%c%s", buff, ED_DIR_SEPARATOR, dataDir);
 	} else {*/
-		snprintf(Ed_dataDir, ED_MAX_PATH, "%s", dataDir);
+		strlcpy(Ed_dataDir, dataDir, ED_MAX_PATH);
 //	}
-		
+
 	Ed_activeProject = (struct NeProject *)1;
 
 	return true;
@@ -60,7 +60,7 @@ Ed_SaveProject(const char *path)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

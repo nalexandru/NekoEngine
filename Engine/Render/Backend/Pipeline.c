@@ -7,7 +7,7 @@
 #define P_COMPUTE		1
 #define P_RAY_TRACING	2
 
-static struct NeArray _pipelines;
+static struct NeArray f_pipelines;
 
 struct NePipelineInfo
 {
@@ -38,7 +38,7 @@ struct NePipelineInfo
 bool
 Re_InitPipelines(void)
 {
-	if (!Rt_InitArray(&_pipelines, 10, sizeof(struct NePipelineInfo), MH_Render))
+	if (!Rt_InitArray(&f_pipelines, 10, sizeof(struct NePipelineInfo), MH_Render))
 		return false;
 
 	Re_LoadPipelineCache();
@@ -50,7 +50,7 @@ struct NePipeline *
 Re_GraphicsPipeline(const struct NeGraphicsPipelineDesc *desc)
 {
 	struct NePipelineInfo *pi;
-	Rt_ArrayForEach(pi, &_pipelines) {
+	Rt_ArrayForEach(pi, &f_pipelines) {
 		if (pi->type != P_GRAPHICS ||
 				pi->graphics.stageInfo != desc->stageInfo ||
 				pi->graphics.flags != desc->flags ||
@@ -87,7 +87,7 @@ Re_GraphicsPipeline(const struct NeGraphicsPipelineDesc *desc)
 	if (!new.pipeline)
 		return NULL;
 
-	Rt_ArrayAdd(&_pipelines, &new);
+	Rt_ArrayAdd(&f_pipelines, &new);
 
 	return new.pipeline;
 }
@@ -96,7 +96,7 @@ struct NePipeline *
 Re_ComputePipeline(const struct NeComputePipelineDesc *desc)
 {
 	struct NePipelineInfo *pi;
-	Rt_ArrayForEach(pi, &_pipelines) {
+	Rt_ArrayForEach(pi, &f_pipelines) {
 		if (pi->type != P_GRAPHICS ||
 				pi->compute.stageInfo != desc->stageInfo ||
 				pi->compute.threadsPerThreadgroup.x != desc->threadsPerThreadgroup.x ||
@@ -120,7 +120,7 @@ Re_ComputePipeline(const struct NeComputePipelineDesc *desc)
 	if (!new.pipeline)
 		return NULL;
 
-	Rt_ArrayAdd(&_pipelines, &new);
+	Rt_ArrayAdd(&f_pipelines, &new);
 
 	return new.pipeline;
 }
@@ -129,7 +129,7 @@ struct NePipeline *
 Re_RayTracingPipeline(const struct NeRayTracingPipelineDesc *desc)
 {
 	struct NePipelineInfo *pi;
-	Rt_ArrayForEach(pi, &_pipelines) {
+	Rt_ArrayForEach(pi, &f_pipelines) {
 		if (pi->type != P_RAY_TRACING || pi->rayTracing.sbt != desc->sbt || pi->rayTracing.maxDepth != desc->maxDepth)
 			continue;
 
@@ -147,7 +147,7 @@ Re_RayTracingPipeline(const struct NeRayTracingPipelineDesc *desc)
 	if (!new.pipeline)
 		return NULL;
 
-	Rt_ArrayAdd(&_pipelines, &new);
+	Rt_ArrayAdd(&f_pipelines, &new);
 
 	return new.pipeline;
 }
@@ -156,7 +156,7 @@ void
 Re_TermPipelines(void)
 {
 	struct NePipelineInfo *pi;
-	Rt_ArrayForEach(pi, &_pipelines) {
+	Rt_ArrayForEach(pi, &f_pipelines) {
 		if (pi->type == P_GRAPHICS)
 			Sys_Free(pi->graphics.at);
 
@@ -164,7 +164,7 @@ Re_TermPipelines(void)
 	}
 
 	Re_SavePipelineCache();
-	Rt_TermArray(&_pipelines);
+	Rt_TermArray(&f_pipelines);
 }
 
 /* NekoEngine
@@ -193,7 +193,7 @@ Re_TermPipelines(void)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

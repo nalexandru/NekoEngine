@@ -5,6 +5,7 @@
 #include <System/Thread.h>
 #include <System/Memory.h>
 #include <Engine/Config.h>
+#include <Runtime/Array.h>
 
 #include "TTSInternal.h"
 
@@ -17,23 +18,8 @@ NSSS_init(void)
 {
 	if ((_synth = [[NSSpeechSynthesizer alloc] init]) == nil)
 		return false;
-	
+
 	_synth.usesFeedbackWindow = false;
-	
-	/*_bufferSize = E_GetCVarI32("TTS.SAPI_BufferSize", 8192)->i32;
-	_buff = Sys_Alloc(sizeof(*_buff), _bufferSize, MH_System);
-	if (!_buff)
-		return false;
-
-	// COM is initialized by the Engine
-	HRESULT hr = CoCreateInstance(&CLSID_SpVoice, NULL, CLSCTX_ALL, &IID_ISpVoice, (void **)&_voice);
-	if (FAILED(hr)) {
-		Sys_Free(_buff);
-		return false;
-	}
-
-	// the first call to Speak will block the program for ~1 second
-	ISpVoice_Speak(_voice, L"", SVSFDefault | SVSFlagsAsync, NULL);*/
 
 	return true;
 }
@@ -57,6 +43,37 @@ NSSS_speaking(void)
 	return [_synth isSpeaking];
 }
 
+bool
+NSSS_selectVoice(const char *name)
+{
+	return false;
+}
+
+bool
+NSSS_listVoices(struct NeVoiceInfo **info, uint32_t *count)
+{
+	struct NeArray array;
+	if (!Rt_InitArray(&array, 2, sizeof(struct NeVoiceInfo), MH_Plugin))
+		return false;
+
+	NSArray<NSSpeechSynthesizerVoiceName> *voices = [NSSpeechSynthesizer availableVoices];
+	for (NSUInteger i = 0 ; i < [voices count]; ++i) {
+		struct NeVoiceInfo info = { 0 };
+
+		NSDictionary *attr = [NSSpeechSynthesizer attributesForVoice: [voices objectAtIndex: i]];
+		strlcpy(info.name, [[attr objectForKey: NSVoiceName] UTF8String], sizeof(info.name));
+		strlcpy(info.language, [[attr objectForKey: NSVoiceLocaleIdentifier] UTF8String], sizeof(info.language));
+		info.gender = ![[attr objectForKey: NSVoiceGender] isEqual: NSVoiceGenderFemale];
+
+		Rt_ArrayAdd(&array, &info);
+	}
+
+	*info = (struct NeVoiceInfo *)array.data;
+	*count = (uint32_t)array.count;
+
+	return true;
+}
+
 void
 NSSS_term(void)
 {
@@ -69,7 +86,7 @@ NSSS_term(void)
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (c) 2015-2022, Alexandru Naiman
+ * Copyright (c) 2015-2023, Alexandru Naiman
  *
  * All rights reserved.
  *
@@ -88,7 +105,7 @@ NSSS_term(void)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

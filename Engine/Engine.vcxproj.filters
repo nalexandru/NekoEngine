@@ -43,12 +43,6 @@
     <Filter Include="Source Files\Audio">
       <UniqueIdentifier>{1a12bd1f-89dc-4817-be95-0ede26fe9788}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Deps">
-      <UniqueIdentifier>{913f5e35-417f-4304-8ff6-b34d2edc044f}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Deps\PhysFS">
-      <UniqueIdentifier>{68a45ed8-e7d6-4787-97d0-f8693aa836f6}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\System\Compat">
       <UniqueIdentifier>{8e8d240a-69c2-4de5-9f53-007816b4d5d9}</UniqueIdentifier>
     </Filter>
@@ -78,9 +72,6 @@
     </Filter>
     <Filter Include="Header Files\UI">
       <UniqueIdentifier>{c361f585-216c-4826-b42d-597210712e8b}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Deps\Lua">
-      <UniqueIdentifier>{566e4675-9095-4403-a72f-11a929c7ae3a}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\Platform">
       <UniqueIdentifier>{e9afc5ab-56db-4f11-9633-c329f46ce180}</UniqueIdentifier>
@@ -142,14 +133,14 @@
     <Filter Include="Source Files\Render\Pass\Debug">
       <UniqueIdentifier>{85018d9e-db99-4290-a5ad-759019989187}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Deps\mojoAL">
-      <UniqueIdentifier>{e7eb16f9-528b-4501-a332-0bd9c1dbf5f4}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Deps\mojoAL\AL">
-      <UniqueIdentifier>{c579c565-d469-452e-a4fe-3d092d433c2f}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Asset">
       <UniqueIdentifier>{50d6185a-4848-4f92-9dad-71aebe55a5a4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Audio\OpenAL">
+      <UniqueIdentifier>{4256ae3b-9731-4fd0-b94a-253fedbcbae7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Script\Engine">
+      <UniqueIdentifier>{4dc811d8-0c61-401a-8a99-8315914b0a11}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -279,87 +270,6 @@
     <ClInclude Include="..\Include\UI\Font.h">
       <Filter>Header Files\UI</Filter>
     </ClInclude>
-    <ClInclude Include="..\Deps\Lua\lapi.h">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Deps\Lua\lauxlib.h">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Deps\Lua\lcode.h">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Deps\Lua\lctype.h">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Deps\Lua\ldebug.h">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Deps\Lua\ldo.h">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Deps\Lua\lfunc.h">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Deps\Lua\lgc.h">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Deps\Lua\ljumptab.h">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Deps\Lua\llex.h">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Deps\Lua\llimits.h">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Deps\Lua\lmem.h">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Deps\Lua\lobject.h">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Deps\Lua\lopcodes.h">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Deps\Lua\lopnames.h">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Deps\Lua\lparser.h">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Deps\Lua\lprefix.h">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Deps\Lua\lstate.h">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Deps\Lua\lstring.h">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Deps\Lua\ltable.h">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Deps\Lua\ltm.h">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Deps\Lua\lua.h">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Deps\Lua\luaconf.h">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Deps\Lua\lualib.h">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Deps\Lua\lundump.h">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Deps\Lua\lvm.h">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Deps\Lua\lzio.h">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClInclude>
     <ClInclude Include="..\Include\System\Thread.h">
       <Filter>Header Files\System</Filter>
     </ClInclude>
@@ -374,9 +284,6 @@
     </ClInclude>
     <ClInclude Include="..\Include\Runtime\Queue.h">
       <Filter>Header Files\Runtime</Filter>
-    </ClInclude>
-    <ClInclude Include="Script\Interface.h">
-      <Filter>Source Files\Script</Filter>
     </ClInclude>
     <ClInclude Include="..\Include\Render\Types.h">
       <Filter>Header Files\Render</Filter>
@@ -413,24 +320,6 @@
     </ClInclude>
     <ClInclude Include="..\Include\System\PlatformDetect.h">
       <Filter>Header Files\System</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Deps\PhysFS\physfs.h">
-      <Filter>Source Files\Deps\PhysFS</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Deps\PhysFS\physfs_casefolding.h">
-      <Filter>Source Files\Deps\PhysFS</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Deps\PhysFS\physfs_internal.h">
-      <Filter>Source Files\Deps\PhysFS</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Deps\PhysFS\physfs_lzmasdk.h">
-      <Filter>Source Files\Deps\PhysFS</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Deps\PhysFS\physfs_miniz.h">
-      <Filter>Source Files\Deps\PhysFS</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Deps\PhysFS\physfs_platforms.h">
-      <Filter>Source Files\Deps\PhysFS</Filter>
     </ClInclude>
     <ClInclude Include="..\Include\Scene\Light.h">
       <Filter>Header Files\Scene</Filter>
@@ -480,12 +369,6 @@
     <ClInclude Include="..\Include\Engine\Profiler.h">
       <Filter>Header Files\Engine</Filter>
     </ClInclude>
-    <ClInclude Include="..\Deps\mojoAL\AL\al.h">
-      <Filter>Source Files\Deps\mojoAL\AL</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Deps\mojoAL\AL\alc.h">
-      <Filter>Source Files\Deps\mojoAL\AL</Filter>
-    </ClInclude>
     <ClInclude Include="..\Include\Asset\NAnim.h">
       <Filter>Header Files\Asset</Filter>
     </ClInclude>
@@ -497,6 +380,12 @@
     </ClInclude>
     <ClInclude Include="..\Include\Asset\NMorph.h">
       <Filter>Header Files\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Audio\OpenAL\Internal.h">
+      <Filter>Source Files\Audio\OpenAL</Filter>
+    </ClInclude>
+    <ClInclude Include="Script\Engine\EngineInterface.h">
+      <Filter>Source Files\Script\Engine</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -524,51 +413,6 @@
     <ClCompile Include="Engine\IO.c">
       <Filter>Source Files\Engine</Filter>
     </ClCompile>
-    <ClCompile Include="..\Deps\PhysFS\physfs.c">
-      <Filter>Source Files\Deps\PhysFS</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_7z.c">
-      <Filter>Source Files\Deps\PhysFS</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_dir.c">
-      <Filter>Source Files\Deps\PhysFS</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_grp.c">
-      <Filter>Source Files\Deps\PhysFS</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_hog.c">
-      <Filter>Source Files\Deps\PhysFS</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_iso9660.c">
-      <Filter>Source Files\Deps\PhysFS</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_mvl.c">
-      <Filter>Source Files\Deps\PhysFS</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_qpak.c">
-      <Filter>Source Files\Deps\PhysFS</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_slb.c">
-      <Filter>Source Files\Deps\PhysFS</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_unpacked.c">
-      <Filter>Source Files\Deps\PhysFS</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_vdf.c">
-      <Filter>Source Files\Deps\PhysFS</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_wad.c">
-      <Filter>Source Files\Deps\PhysFS</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_zip.c">
-      <Filter>Source Files\Deps\PhysFS</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\PhysFS\physfs_byteorder.c">
-      <Filter>Source Files\Deps\PhysFS</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\PhysFS\physfs_unicode.c">
-      <Filter>Source Files\Deps\PhysFS</Filter>
-    </ClCompile>
     <ClCompile Include="System\Compat\getopt.c">
       <Filter>Source Files\System\Compat</Filter>
     </ClCompile>
@@ -593,21 +437,6 @@
     <ClCompile Include="Scene\Camera.cxx">
       <Filter>Source Files\Scene</Filter>
     </ClCompile>
-    <ClCompile Include="Asset\Ogg.c">
-      <Filter>Source Files\Asset</Filter>
-    </ClCompile>
-    <ClCompile Include="Asset\Wave.c">
-      <Filter>Source Files\Asset</Filter>
-    </ClCompile>
-    <ClCompile Include="Audio\AudioClip.c">
-      <Filter>Source Files\Audio</Filter>
-    </ClCompile>
-    <ClCompile Include="Audio\Source.c">
-      <Filter>Source Files\Audio</Filter>
-    </ClCompile>
-    <ClCompile Include="Audio\Audio.cxx">
-      <Filter>Source Files\Audio</Filter>
-    </ClCompile>
     <ClCompile Include="Input\Input.c">
       <Filter>Source Files\Input</Filter>
     </ClCompile>
@@ -617,9 +446,6 @@
     <ClCompile Include="Engine\Event.c">
       <Filter>Source Files\Engine</Filter>
     </ClCompile>
-    <ClCompile Include="Script\Script.c">
-      <Filter>Source Files\Script</Filter>
-    </ClCompile>
     <ClCompile Include="UI\UI.c">
       <Filter>Source Files\UI</Filter>
     </ClCompile>
@@ -628,102 +454,6 @@
     </ClCompile>
     <ClCompile Include="Asset\Font.c">
       <Filter>Source Files\Asset</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\Lua\lapi.c">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\Lua\lauxlib.c">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\Lua\lbaselib.c">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\Lua\lcode.c">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\Lua\lcorolib.c">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\Lua\lctype.c">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\Lua\ldblib.c">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\Lua\ldebug.c">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\Lua\ldo.c">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\Lua\ldump.c">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\Lua\lfunc.c">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\Lua\lgc.c">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\Lua\linit.c">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\Lua\liolib.c">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\Lua\llex.c">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\Lua\lmathlib.c">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\Lua\lmem.c">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\Lua\loadlib.c">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\Lua\lobject.c">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\Lua\lopcodes.c">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\Lua\loslib.c">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\Lua\lparser.c">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\Lua\lstate.c">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\Lua\lstring.c">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\Lua\lstrlib.c">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\Lua\ltable.c">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\Lua\ltablib.c">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\Lua\ltm.c">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\Lua\lundump.c">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\Lua\lutf8lib.c">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\Lua\lvm.c">
-      <Filter>Source Files\Deps\Lua</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\Lua\lzio.c">
-      <Filter>Source Files\Deps\Lua</Filter>
     </ClCompile>
     <ClCompile Include="Render\Render.c">
       <Filter>Source Files\Render</Filter>
@@ -737,9 +467,6 @@
     <ClCompile Include="System\Memory.c">
       <Filter>Source Files\System</Filter>
     </ClCompile>
-    <ClCompile Include="..\Platform\Win32\Main.c">
-      <Filter>Source Files\Platform</Filter>
-    </ClCompile>
     <ClCompile Include="..\Platform\Win32\Thread.c">
       <Filter>Source Files\Platform</Filter>
     </ClCompile>
@@ -752,9 +479,6 @@
     <ClCompile Include="..\Platform\Win32\Window.c">
       <Filter>Source Files\Platform</Filter>
     </ClCompile>
-    <ClCompile Include="..\Deps\PhysFS\physfs_platform_windows.c">
-      <Filter>Source Files\Deps\PhysFS</Filter>
-    </ClCompile>
     <ClCompile Include="..\Platform\Win32\Compat\stdatomic.c">
       <Filter>Source Files\Platform\Compat</Filter>
     </ClCompile>
@@ -764,32 +488,14 @@
     <ClCompile Include="Asset\Metadata.c">
       <Filter>Source Files\Asset</Filter>
     </ClCompile>
-    <ClCompile Include="Script\l_Render.c">
-      <Filter>Source Files\Script</Filter>
-    </ClCompile>
     <ClCompile Include="Render\Model.cxx">
       <Filter>Source Files\Render</Filter>
-    </ClCompile>
-    <ClCompile Include="Script\l_Engine.c">
-      <Filter>Source Files\Script</Filter>
-    </ClCompile>
-    <ClCompile Include="Script\l_System.c">
-      <Filter>Source Files\Script</Filter>
     </ClCompile>
     <ClCompile Include="Render\Material.c">
       <Filter>Source Files\Render</Filter>
     </ClCompile>
-    <ClCompile Include="Render\Graph\Graph.c">
-      <Filter>Source Files\Render\Graph</Filter>
-    </ClCompile>
-    <ClCompile Include="Render\Pass\Depth.c">
-      <Filter>Source Files\Render\Pass</Filter>
-    </ClCompile>
     <ClCompile Include="Render\Systems.cxx">
       <Filter>Source Files\Render</Filter>
-    </ClCompile>
-    <ClCompile Include="Render\Pass\LightCulling.c">
-      <Filter>Source Files\Render\Pass</Filter>
     </ClCompile>
     <ClCompile Include="Render\Components\ModelRender.c">
       <Filter>Source Files\Render\Components</Filter>
@@ -801,9 +507,6 @@
       <Filter>Source Files\Animation</Filter>
     </ClCompile>
     <ClCompile Include="Animation\Skeleton.cxx">
-      <Filter>Source Files\Animation</Filter>
-    </ClCompile>
-    <ClCompile Include="Animation\Animator.c">
       <Filter>Source Files\Animation</Filter>
     </ClCompile>
     <ClCompile Include="Asset\NAnim.c">
@@ -818,56 +521,14 @@
     <ClCompile Include="Scene\Light.cxx">
       <Filter>Source Files\Scene</Filter>
     </ClCompile>
-    <ClCompile Include="Render\Pass\SSAO.c">
-      <Filter>Source Files\Render\Pass</Filter>
-    </ClCompile>
     <ClCompile Include="Scene\Terrain.cxx">
       <Filter>Source Files\Scene</Filter>
-    </ClCompile>
-    <ClCompile Include="Render\Pass\Opaque.c">
-      <Filter>Source Files\Render\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Render\Pass\Transparent.c">
-      <Filter>Source Files\Render\Pass</Filter>
     </ClCompile>
     <ClCompile Include="Render\Pass\Sky.cxx">
       <Filter>Source Files\Render\Pass</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Console.c">
       <Filter>Source Files\Engine</Filter>
-    </ClCompile>
-    <ClCompile Include="Script\l_Console.c">
-      <Filter>Source Files\Script</Filter>
-    </ClCompile>
-    <ClCompile Include="Script\l_UI.c">
-      <Filter>Source Files\Script</Filter>
-    </ClCompile>
-    <ClCompile Include="Script\l_ScriptComponent.c">
-      <Filter>Source Files\Script</Filter>
-    </ClCompile>
-    <ClCompile Include="Script\l_Resource.c">
-      <Filter>Source Files\Script</Filter>
-    </ClCompile>
-    <ClCompile Include="Script\l_IO.c">
-      <Filter>Source Files\Script</Filter>
-    </ClCompile>
-    <ClCompile Include="Script\l_Event.c">
-      <Filter>Source Files\Script</Filter>
-    </ClCompile>
-    <ClCompile Include="Script\l_Input.c">
-      <Filter>Source Files\Script</Filter>
-    </ClCompile>
-    <ClCompile Include="Script\l_Transform.cxx">
-      <Filter>Source Files\Script</Filter>
-    </ClCompile>
-    <ClCompile Include="Script\l_Camera.c">
-      <Filter>Source Files\Script</Filter>
-    </ClCompile>
-    <ClCompile Include="Script\l_Light.c">
-      <Filter>Source Files\Script</Filter>
-    </ClCompile>
-    <ClCompile Include="Script\l_Config.c">
-      <Filter>Source Files\Script</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Plugin.c">
       <Filter>Source Files\Engine</Filter>
@@ -971,29 +632,8 @@
     <ClCompile Include="Render\Pass\Debug\LightBounds.cxx">
       <Filter>Source Files\Render\Pass\Debug</Filter>
     </ClCompile>
-    <ClCompile Include="Render\Pass\AccelerationStructureBuild.c">
-      <Filter>Source Files\Render\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\Profiler.c">
-      <Filter>Source Files\Engine</Filter>
-    </ClCompile>
-    <ClCompile Include="Script\l_Matrix.cxx">
-      <Filter>Source Files\Script</Filter>
-    </ClCompile>
-    <ClCompile Include="Script\l_Vec3.cxx">
-      <Filter>Source Files\Script</Filter>
-    </ClCompile>
-    <ClCompile Include="Script\l_Vec4.cxx">
-      <Filter>Source Files\Script</Filter>
-    </ClCompile>
     <ClCompile Include="..\Platform\Win32\Compat\strlcat.c">
       <Filter>Source Files\Platform\Compat</Filter>
-    </ClCompile>
-    <ClCompile Include="Render\Pass\Skinning.c">
-      <Filter>Source Files\Render\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Deps\mojoAL\mojoal.c">
-      <Filter>Source Files\Deps\mojoAL</Filter>
     </ClCompile>
     <ClCompile Include="Render\Components\ModelMorph.c">
       <Filter>Source Files\Render\Components</Filter>
@@ -1001,8 +641,125 @@
     <ClCompile Include="Asset\NMorph.c">
       <Filter>Source Files\Asset</Filter>
     </ClCompile>
-    <ClCompile Include="Script\l_Audio.c">
+    <ClCompile Include="Animation\Animator.cxx">
+      <Filter>Source Files\Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Pass\AccelerationStructureBuild.cxx">
+      <Filter>Source Files\Render\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Pass\Depth.cxx">
+      <Filter>Source Files\Render\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Pass\LightCulling.cxx">
+      <Filter>Source Files\Render\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Pass\Opaque.cxx">
+      <Filter>Source Files\Render\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Pass\ShadowMap.cxx">
+      <Filter>Source Files\Render\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Pass\Skinning.cxx">
+      <Filter>Source Files\Render\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Pass\SSAO.cxx">
+      <Filter>Source Files\Render\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Pass\Transparent.cxx">
+      <Filter>Source Files\Render\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Backend\TransientResources.c">
+      <Filter>Source Files\Render\Backend</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\Audio.c">
+      <Filter>Source Files\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\NTexture.c">
+      <Filter>Source Files\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Platform\Win32\Compat\strlcpy.c">
+      <Filter>Source Files\Platform\Compat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Platform\Win32\Compat\strcasecmp.c">
+      <Filter>Source Files\Platform\Compat</Filter>
+    </ClCompile>
+    <ClCompile Include="Audio\OpenAL\OAL_Audio.cxx">
+      <Filter>Source Files\Audio\OpenAL</Filter>
+    </ClCompile>
+    <ClCompile Include="Audio\OpenAL\OAL_Clip.c">
+      <Filter>Source Files\Audio\OpenAL</Filter>
+    </ClCompile>
+    <ClCompile Include="Audio\OpenAL\OAL_Source.c">
+      <Filter>Source Files\Audio\OpenAL</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Graph\Graph.cxx">
+      <Filter>Source Files\Render\Graph</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\Engine\l_Audio.c">
+      <Filter>Source Files\Script\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\Engine\l_Camera.cxx">
+      <Filter>Source Files\Script\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\Engine\l_Config.c">
+      <Filter>Source Files\Script\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\Engine\l_Console.c">
+      <Filter>Source Files\Script\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\Engine\l_Engine.c">
+      <Filter>Source Files\Script\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\Engine\l_Event.c">
+      <Filter>Source Files\Script\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\Engine\l_Light.cxx">
+      <Filter>Source Files\Script\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\Engine\l_Math.cxx">
+      <Filter>Source Files\Script\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\Engine\l_ModelMorph.c">
+      <Filter>Source Files\Script\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\Engine\l_Resource.c">
+      <Filter>Source Files\Script\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\Engine\l_Scene.c">
+      <Filter>Source Files\Script\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\Engine\l_Transform.cxx">
+      <Filter>Source Files\Script\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\l_Array.c">
       <Filter>Source Files\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\l_Debug.c">
+      <Filter>Source Files\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\l_Input.c">
+      <Filter>Source Files\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\l_IO.c">
+      <Filter>Source Files\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\l_Render.c">
+      <Filter>Source Files\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\l_ScriptComponent.c">
+      <Filter>Source Files\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\l_System.c">
+      <Filter>Source Files\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\l_UI.c">
+      <Filter>Source Files\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\Script.c">
+      <Filter>Source Files\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="UI\UIConsoleOutput.c">
+      <Filter>Source Files\UI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1093,6 +850,12 @@
     </CustomBuild>
     <CustomBuild Include="Render\Backend\Vulkan\Shaders\Skinning_CS.comp">
       <Filter>Source Files\Render\Backend\Vulkan\Shaders\Compute</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Render\Backend\Vulkan\Shaders\SSAO_FS.frag">
+      <Filter>Source Files\Render\Backend\Vulkan\Shaders\Fragment</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Render\Backend\Vulkan\Shaders\SSAOBlur_FS.frag">
+      <Filter>Source Files\Render\Backend\Vulkan\Shaders\Fragment</Filter>
     </CustomBuild>
   </ItemGroup>
 </Project>

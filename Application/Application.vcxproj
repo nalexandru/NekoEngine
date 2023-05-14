@@ -46,18 +46,18 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(SolutionDir)Include;$(SolutionDir)Platform\Win32\Compat;$(IncludePath)</IncludePath>
+    <IncludePath>$(OPENAL_SDK)\include\al;$(OPENAL_SDK)\include;$(SolutionDir)\Deps\Windows\AMD64\include;$(SolutionDir)Deps\steamworks\public;$(VK_SDK_PATH)\Include;$(SolutionDir)\Deps\Aftermath\include;$(SolutionDir)\Deps\OpenXR\include;$(SolutionDir)Include;$(SolutionDir)Deps;$(SolutionDir)Deps\PhysFS;$(SolutionDir)Deps\Lua;$(SolutionDir)Deps\mojoAL;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)\bin\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\build\$(Configuration)\$(ProjectName)\</IntDir>
-    <LibraryPath>$(SolutionDir)Deps\steamworks\redistributable_bin\win64;$(VK_SDK_PATH)\Lib;$(SolutionDir)Deps\OpenXR\x64\lib;$(SolutionDir)Bin\$(Configuration);$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(OPENAL_SDK)\lib;$(OPENAL_SDK)\libs\Win64;$(SolutionDir)\Deps\Windows\AMD64\lib;$(SolutionDir)Deps\steamworks\redistributable_bin\win64;$(SolutionDir)Deps\Aftermath\lib\x64;$(SolutionDir)Deps\OpenXR\x64\lib;$(LibraryPath)</LibraryPath>
     <TargetName>NekoEngine</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)Include;$(SolutionDir)Platform\Win32\Compat;$(IncludePath)</IncludePath>
+    <IncludePath>$(OPENAL_SDK)\include\al;$(OPENAL_SDK)\include;$(SolutionDir)\Deps\Windows\AMD64\include;$(SolutionDir)Deps\steamworks\public;$(VK_SDK_PATH)\Include;$(SolutionDir)\Deps\Aftermath\include;$(SolutionDir)\Deps\OpenXR\include;$(SolutionDir)Include;$(SolutionDir)Deps;$(SolutionDir)Deps\PhysFS;$(SolutionDir)Deps\Lua;$(SolutionDir)Deps\mojoAL;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)\bin\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\build\$(Configuration)\$(ProjectName)\</IntDir>
-    <LibraryPath>$(SolutionDir)Deps\steamworks\redistributable_bin\win64;$(VK_SDK_PATH)\Lib;$(SolutionDir)Deps\OpenXR\x64\lib;$(SolutionDir)Bin\$(Configuration);$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(OPENAL_SDK)\lib;$(OPENAL_SDK)\libs\Win64;$(SolutionDir)\Deps\Windows\AMD64\lib;$(SolutionDir)Deps\steamworks\redistributable_bin\win64;$(SolutionDir)Deps\Aftermath\lib\x64;$(SolutionDir)Deps\OpenXR\x64\lib;$(LibraryPath)</LibraryPath>
     <TargetName>NekoEngine</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -70,13 +70,14 @@
       <ExceptionHandling>false</ExceptionHandling>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <DisableSpecificWarnings>4099</DisableSpecificWarnings>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <DelayLoadDLLs>
       </DelayLoadDLLs>
-      <AdditionalDependencies>dwmapi.lib;ws2_32.lib;oleaut32.lib;imm32.lib;version.lib;winmm.lib;setupapi.lib;SDL2-static.lib;/WHOLEARCHIVE:Engine.lib;xinput9_1_0.lib;shell32.lib;ole32.lib;advapi32.lib;gdi32.lib;user32.lib;kernel32.lib;ntdll.lib</AdditionalDependencies>
+      <AdditionalDependencies>lua.lib;physfs.lib;jpeg-static.lib;libpng16_static.lib;FLAC.lib;vorbis.lib;vorbisfile.lib;zlibstatic.lib;ogg.lib;wsock32.lib;openal32.lib;setupapi.lib;/WHOLEARCHIVE:Engine.lib;xinput9_1_0.lib;shell32.lib;ole32.lib;advapi32.lib;gdi32.lib;user32.lib;kernel32.lib;ntdll.lib</AdditionalDependencies>
       <ModuleDefinitionFile>$(SolutionDir)Engine\Exports.def</ModuleDefinitionFile>
     </Link>
     <Manifest>
@@ -102,6 +103,7 @@
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <DebugInformationFormat>None</DebugInformationFormat>
       <DisableSpecificWarnings>4099</DisableSpecificWarnings>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -110,7 +112,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <DelayLoadDLLs>
       </DelayLoadDLLs>
-      <AdditionalDependencies>dwmapi.lib;ws2_32.lib;oleaut32.lib;imm32.lib;version.lib;winmm.lib;setupapi.lib;SDL2-static.lib;/WHOLEARCHIVE:Engine.lib;xinput9_1_0.lib;shell32.lib;ole32.lib;advapi32.lib;gdi32.lib;user32.lib;kernel32.lib;ntdll.lib</AdditionalDependencies>
+      <AdditionalDependencies>lua.lib;physfs.lib;jpeg-static.lib;libpng16_static.lib;FLAC.lib;vorbis.lib;vorbisfile.lib;zlibstatic.lib;ogg.lib;wsock32.lib;openal32.lib;setupapi.lib;/WHOLEARCHIVE:Engine.lib;xinput9_1_0.lib;shell32.lib;ole32.lib;advapi32.lib;gdi32.lib;user32.lib;kernel32.lib;ntdll.lib</AdditionalDependencies>
       <ModuleDefinitionFile>$(SolutionDir)Engine\Exports.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
@@ -127,6 +129,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Application.cxx" />
+    <ClCompile Include="MovingLight.cxx" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Icon.ico" />

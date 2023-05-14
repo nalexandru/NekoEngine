@@ -12,11 +12,8 @@
 
 #define MMOD					"MemoryManager"
 #define MAGIC					0x53544954		// TITS, in little endian format
-#define DEFAULT_ALIGNMENT		16
 
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
-#define ROUND_UP(v, powerOf2Alignment) (((v) + (powerOf2Alignment)-1) & ~((powerOf2Alignment)-1))
-#define MUL_NO_OVERFLOW	((size_t)1 << (sizeof(size_t) * 4))
 
 struct NeAllocation
 {
@@ -25,38 +22,40 @@ struct NeAllocation
 	uint64_t size;
 };
 
-struct NeTransientHeap
+struct NeHeap
 {
 	uint8_t *heap, *ptr;
 	uint64_t *size;
 	uint64_t peak;
-	struct NeAtomicLock lock;
 };
 
-static inline bool _InitTransientHeap(struct NeTransientHeap *heap, uint64_t *size);
-static inline void *_TransientAlloc(struct NeTransientHeap *heap, size_t size);
-static inline void _ResetTransientHeap(struct NeTransientHeap *heap);
+static inline bool InitHeap(struct NeHeap *heap, uint64_t *size);
+static inline void *HeapAllocate(struct NeHeap *heap, size_t size, size_t alignment);
+static inline void ResetHeap(struct NeHeap *heap);
+static inline void TermHeap(struct NeHeap *heap);
+static void ResetTransientJob(int workerId, void *data);
+static void ResetFrameJob(int workerId, void *data);
 
-static struct NeTransientHeap _transientHeap;
-static struct NeTransientHeap _frameHeap[RE_NUM_FRAMES];
+static THREAD_LOCAL struct NeHeap f_transientHeap;
+static THREAD_LOCAL struct NeHeap f_frameHeap[RE_NUM_FRAMES];
 
 void *
-Sys_Alloc(size_t size, size_t count, enum NeMemoryHeap heap)
+Sys_AlignedAlloc(size_t size, size_t count, size_t alignment, enum NeMemoryHeap heap)
 {
 	void *ret = NULL;
 	struct NeAllocation *alloc = NULL;
-	size_t totalSize = size * count + sizeof(struct NeAllocation);
 
-	if ((count >= MUL_NO_OVERFLOW || size >= MUL_NO_OVERFLOW) && count > 0 && SIZE_MAX / count < size)
+	size_t totalSize = size * count + sizeof(struct NeAllocation);
+	if ((count >= NE_MUL_NO_OVERFLOW || size >= NE_MUL_NO_OVERFLOW) && count > 0 && SIZE_MAX / count < size)
 		return NULL;
 
-	totalSize = ROUND_UP(totalSize, DEFAULT_ALIGNMENT);
+	totalSize = NE_ROUND_UP(totalSize, alignment);
 	if (heap == MH_Transient)
-		ret = _TransientAlloc(&_transientHeap, totalSize);
+		ret = HeapAllocate(&f_transientHeap, totalSize, alignment);
 	else if (heap == MH_Frame)
-		ret = _TransientAlloc(&_frameHeap[Re_frameId], totalSize);
+		ret = HeapAllocate(&f_frameHeap[Re_frameId], totalSize, alignment);
 	else
-		ret = aligned_alloc(DEFAULT_ALIGNMENT, totalSize);
+		ret = aligned_alloc(alignment, totalSize);
 
 	assert("Out of memory" && ret);
 	if (!ret)
@@ -69,13 +68,16 @@ Sys_Alloc(size_t size, size_t count, enum NeMemoryHeap heap)
 	alloc->heap = heap;
 	alloc->size = totalSize - sizeof(struct NeAllocation);
 
+	if (alloc->heap == MH_Secure)
+		Sys_LockMemory(alloc, alloc->size);
+
 	ret = (uint8_t *)ret + sizeof(*alloc);
 
 	return ret;
 }
 
 void *
-Sys_ReAlloc(void *mem, size_t size, size_t count, enum NeMemoryHeap heap)
+Sys_AlignedReAlloc(void *mem, size_t size, size_t count, size_t alignment, enum NeMemoryHeap heap)
 {
 	void *new = NULL;
 	struct NeAllocation *alloc;
@@ -84,7 +86,7 @@ Sys_ReAlloc(void *mem, size_t size, size_t count, enum NeMemoryHeap heap)
 		return Sys_Alloc(size, count, heap);
 
 	size_t totalSize = size * count + sizeof(*alloc);
-	if ((count >= MUL_NO_OVERFLOW || size >= MUL_NO_OVERFLOW) && count > 0 && SIZE_MAX / count < size)
+	if ((count >= NE_MUL_NO_OVERFLOW || size >= NE_MUL_NO_OVERFLOW) && count > 0 && SIZE_MAX / count < size)
 		return NULL;
 
 	alloc = (struct NeAllocation *)((uint8_t *)mem - (sizeof(*alloc)));
@@ -93,13 +95,17 @@ Sys_ReAlloc(void *mem, size_t size, size_t count, enum NeMemoryHeap heap)
 		return realloc(mem, totalSize);
 	}
 
-	if (alloc->heap == MH_Transient || alloc->heap == MH_Frame) {
-		assert(!"Attempt to realloc a transient block");
+	if (heap == MH_Transient) {
+		new = HeapAllocate(&f_transientHeap, totalSize, alignment);
+		memcpy(new, mem, alloc->size);
+	} else if (heap == MH_Frame) {
+		new = HeapAllocate(&f_frameHeap[Re_frameId], totalSize, alignment);
+		memcpy(new, mem, alloc->size);
 	} else {
 #ifndef SYS_PLATFORM_WINDOWS
 		new = realloc(alloc, totalSize);
 #else
-		new = _aligned_realloc(alloc, totalSize, DEFAULT_ALIGNMENT);
+		new = _aligned_realloc(alloc, totalSize, alignment);
 #endif
 		assert("Out of memory" && new);
 	}
@@ -109,6 +115,9 @@ Sys_ReAlloc(void *mem, size_t size, size_t count, enum NeMemoryHeap heap)
 
 	alloc = new;
 	alloc->size = totalSize - sizeof(*alloc);
+
+	if (alloc->heap == MH_Secure)
+		Sys_LockMemory(alloc, alloc->size);
 
 	return (uint8_t *)new + sizeof(*alloc);
 }
@@ -128,10 +137,12 @@ Sys_Free(void *mem)
 		return;
 	}
 
-	if (alloc->heap == MH_Transient || alloc->heap == MH_Frame)
+	if (alloc->heap == MH_Transient || alloc->heap == MH_Frame) {
 		return;
-	else if (alloc->heap == MH_Secure)
+	} else if (alloc->heap == MH_Secure) {
 		Sys_ZeroMemory(alloc, alloc->size);
+		Sys_UnlockMemory(alloc, alloc->size);
+	}
 
 #ifndef SYS_PLATFORM_WINDOWS
 	free(alloc);
@@ -143,11 +154,11 @@ Sys_Free(void *mem)
 bool
 Sys_InitMemory(void)
 {
-	if (!_InitTransientHeap(&_transientHeap, &E_GetCVarU64("Engine_TransientHeapSize", 64 * 1024 * 1024)->u64))
+	if (!InitHeap(&f_transientHeap, &E_GetCVarU64("Engine_TransientHeapSize", 4 * 1024 * 1024)->u64))
 		return false;
 
 	for (uint32_t i = 0; i < RE_NUM_FRAMES; ++i)
-		if (!_InitTransientHeap(&_frameHeap[i], &E_GetCVarU64("Engine_FrameHeapSize", 12 * 1024 * 1024)->u64))
+		if (!InitHeap(&f_frameHeap[i], &E_GetCVarU64("Engine_FrameHeapSize", 4 * 1024 * 1024)->u64))
 			return false;
 
 	return true;
@@ -156,42 +167,52 @@ Sys_InitMemory(void)
 void
 Sys_ResetHeap(enum NeMemoryHeap heap)
 {
-	if (heap == MH_Transient)
-		_ResetTransientHeap(&_transientHeap);
-	else if (heap == MH_Frame)
-		_ResetTransientHeap(&_frameHeap[Re_frameId]);
+	if (heap == MH_Transient) {
+		ResetHeap(&f_transientHeap);
+		E_DispatchJobs(E_JobWorkerThreads(), ResetTransientJob, NULL, NULL, NULL);
+	} else if (heap == MH_Frame) {
+		ResetHeap(&f_frameHeap[Re_frameId]);
+		E_DispatchJobs(E_JobWorkerThreads(), ResetFrameJob, NULL, NULL, NULL);
+	}
 }
 
 void
 Sys_LogMemoryStatistics(void)
 {
-	for (uint32_t i = 0; i < RE_NUM_FRAMES; ++i)
-		Sys_LogEntry(MMOD, LOG_INFORMATION, "Frame heap peak: %u/%u B (%.02f%%)", _frameHeap[i].peak, *_frameHeap[i].size,
-			((double)_frameHeap[i].peak / (double)*_frameHeap[i].size) * 100.0);
+	if (E_WorkerId() == E_JobWorkerThreads()) {
+		for (uint32_t i = 0; i < RE_NUM_FRAMES; ++i)
+			Sys_LogEntry(MMOD, LOG_INFORMATION, "Main thread frame heap peak: %u/%u B (%.02f%%)",
+						f_frameHeap[i].peak, *f_frameHeap[i].size,
+						((double)f_frameHeap[i].peak / (double)*f_frameHeap[i].size) * 100.0);
 
-	Sys_LogEntry(MMOD, LOG_INFORMATION, "Transient heap peak: %u/%u B (%.02f%%)", _transientHeap.peak, *_transientHeap.size,
-		((double)_transientHeap.peak / (double)*_transientHeap.size) * 100.0);
+		Sys_LogEntry(MMOD, LOG_INFORMATION, "Main thread transient heap peak: %u/%u B (%.02f%%)",
+					f_transientHeap.peak, *f_transientHeap.size,
+					((double)f_transientHeap.peak / (double)*f_transientHeap.size) * 100.0);
+	} else {
+		for (uint32_t i = 0; i < RE_NUM_FRAMES; ++i)
+			Sys_LogEntry(MMOD, LOG_INFORMATION, "Worker %d frame heap peak: %u/%u B (%.02f%%)",
+						E_WorkerId(), f_frameHeap[i].peak, *f_frameHeap[i].size,
+						((double)f_frameHeap[i].peak / (double)*f_frameHeap[i].size) * 100.0);
+
+		Sys_LogEntry(MMOD, LOG_INFORMATION, "Worker %d transient heap peak: %u/%u B (%.02f%%)",
+					E_WorkerId(), f_transientHeap.peak, *f_transientHeap.size,
+					((double)f_transientHeap.peak / (double)*f_transientHeap.size) * 100.0);
+	}
 }
 
 void
 Sys_TermMemory(void)
 {
-#ifndef SYS_PLATFORM_WINDOWS
 	for (uint32_t i = 0; i < RE_NUM_FRAMES; ++i)
-		free(_frameHeap[i].heap);
-	free(_transientHeap.heap);
-#else
-	for (uint32_t i = 0; i < RE_NUM_FRAMES; ++i)
-		_aligned_free(_frameHeap[i].heap);
-	_aligned_free(_transientHeap.heap);
-#endif
+		TermHeap(&f_frameHeap[i]);
+	TermHeap(&f_transientHeap);
 }
 
 static inline bool
-_InitTransientHeap(struct NeTransientHeap *heap, uint64_t *size)
+InitHeap(struct NeHeap *heap, uint64_t *size)
 {
 	heap->size = size;
-	heap->heap = aligned_alloc(16, (size_t)*heap->size);
+	heap->heap = aligned_alloc(NE_DEFAULT_ALIGNMENT, (size_t)*heap->size);
 
 	if (!heap->heap)
 		return false;
@@ -202,27 +223,48 @@ _InitTransientHeap(struct NeTransientHeap *heap, uint64_t *size)
 }
 
 static inline void *
-_TransientAlloc(struct NeTransientHeap *heap, size_t size)
+HeapAllocate(struct NeHeap *heap, size_t size, size_t alignment)
 {
-	Sys_AtomicLockWrite(&heap->lock);
+	heap->ptr = (uint8_t *)NE_ROUND_UP((uintptr_t)heap->ptr, alignment);
 
-	assert("Out of transient memory" && !((heap->ptr - heap->heap) + size > *heap->size));
+	if ((heap->ptr - heap->heap) + size > *heap->size) {
+		Sys_LogEntry(MMOD, LOG_CRITICAL, "Worker %d: Out of transient memory ! Alloc Size = %llu", E_WorkerId(), size);
+		assert(!"Out of transient memory");
+	}
 
 	void *ret = heap->ptr;
 	heap->ptr += size;
-
-	Sys_AtomicUnlockWrite(&heap->lock);
 
 	return ret;
 }
 
 static inline void
-_ResetTransientHeap(struct NeTransientHeap *heap)
+ResetHeap(struct NeHeap *heap)
 {
-	Sys_AtomicLockWrite(&heap->lock);
 	heap->peak = MAX(heap->peak, (size_t)(heap->ptr - heap->heap));
 	heap->ptr = heap->heap;
-	Sys_AtomicUnlockWrite(&heap->lock);
+}
+
+static inline void
+TermHeap(struct NeHeap *heap)
+{
+#ifndef SYS_PLATFORM_WINDOWS
+	free(heap->heap);
+#else
+	_aligned_free(heap->heap);
+#endif
+}
+
+static void
+ResetTransientJob(int workerId, void *data)
+{
+	ResetHeap(&f_transientHeap);
+}
+
+static void
+ResetFrameJob(int workerId, void *data)
+{
+	ResetHeap(&f_frameHeap[Re_frameId]);
 }
 
 /* NekoEngine
@@ -251,7 +293,7 @@ _ResetTransientHeap(struct NeTransientHeap *heap)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

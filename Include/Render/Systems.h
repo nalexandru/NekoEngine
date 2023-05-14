@@ -1,5 +1,5 @@
-#ifndef _NE_RENDER_SYSTEMS_H_
-#define _NE_RENDER_SYSTEMS_H_
+#ifndef NE_RENDER_SYSTEMS_H
+#define NE_RENDER_SYSTEMS_H
 
 #include <Render/Types.h>
 #include <Render/Model.h>
@@ -37,7 +37,7 @@ struct NeCollectDrawablesArgs
 	uint32_t *instanceOffset;
 	uint32_t maxDrawables, requiredDrawables, drawableCount;
 	NE_ALIGN(16) NE_ATOMIC_UINT nextArray, totalDrawables, visibleDrawables;
-	const struct NeScene *s;
+	struct NeScene *s;
 	struct NeVec3 camPos;
 	struct NeFrustum camFrustum;
 };
@@ -46,7 +46,7 @@ struct NeCollectDrawablesArgs
 }
 #endif
 
-#endif /* _NE_RENDER_SYSTEMS_H_ */
+#endif /* NE_RENDER_SYSTEMS_H */
 
 /* NekoEngine
  *
@@ -74,7 +74,7 @@ struct NeCollectDrawablesArgs
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

@@ -9,7 +9,7 @@
 #include <Engine/Events.h>
 #include <Engine/Engine.h>
 #include <Engine/ECSystem.h>
-#include <Engine/Profiler.h>
+#include <Engine/Component.h>
 #include <Scene/Scene.h>
 #include <Scene/Light.h>
 #include <Scene/Camera.h>
@@ -22,6 +22,7 @@
 #include <Render/Render.h>
 #include <Render/Model.h>
 #include <Animation/Animation.h>
+#include <Script/Interface.h>
 
 #include "../Engine/ECS.h"
 
@@ -29,16 +30,16 @@
 #define DEF_MAX_INSTANCES	8192
 #define SCNMOD				"Scene"
 #define BUFF_SZ				512
-#define ROUND_UP(v, powerOf2Alignment) (((v) + (powerOf2Alignment)-1) & ~((powerOf2Alignment)-1))
 
 #pragma pack(push, 1)
 NE_ALIGNED_STRUCT(NeSceneData, 16,
 	struct {
 		struct NeMatrix viewProjection;
+		struct NeMatrix projection;
 		struct NeMatrix inverseProjection;
 		struct NeVec4 cameraPosition;
 	} NE_ALIGN(16) camera;
-	
+
 	struct {
 		struct NeVec4 sunPosition;
 		uint32_t enviornmentMap;
@@ -46,14 +47,14 @@ NE_ALIGNED_STRUCT(NeSceneData, 16,
 		uint32_t aoMap;
 		uint32_t __padding;
 	} NE_ALIGN(16) enviornment;
-	
+
 	struct {
 		uint32_t lightCount;
 		uint32_t xTileCount;
 	} lighting;
-	
+
 	uint64_t instanceBufferAddress;
-	
+
 	struct {
 		float exposure;
 		float gamma;
@@ -65,21 +66,21 @@ NE_ALIGNED_STRUCT(NeSceneData, 16,
 
 struct NeScene *Scn_activeScene = NULL;
 
-static uint8_t _nextSceneId = 0;
-static struct NeScene *_scenes[UINT8_MAX] = { 0 };
+static uint8_t f_nextSceneId = 0;
+static struct NeScene *f_scenes[UINT8_MAX] = {0 };
 
-static inline bool _InitScene(struct NeScene *s);
-static void _LoadJob(int worker, struct NeScene *scn);
-static inline void _ReadSceneInfo(struct NeScene *s, struct NeStream *stm, char *data);
-static inline void _ReadTerrain(struct NeScene *s, struct NeStream *stm, char *data);
-static inline void _ReadEntity(struct NeScene *s, char *name, struct NeStream *stm, char *data, struct NeArray *args);
-static inline uint64_t _DataOffset(const struct NeScene *s);
-static int32_t _SortDrawables(const struct NeDrawable *a, const struct NeDrawable *b);
+static inline bool InitScene(struct NeScene *s);
+static void LoadJob(int worker, struct NeScene *scn);
+static inline void ReadSceneInfo(struct NeScene *s, struct NeStream *stm, char *data);
+static inline void ReadTerrain(struct NeScene *s, struct NeStream *stm, char *data);
+static inline void ReadEntity(struct NeScene *s, char *name, struct NeStream *stm, char *data, struct NeArray *args);
+static inline uint64_t DataOffset(const struct NeScene *s);
+static int32_t SortDrawables(const struct NeDrawable *a, const struct NeDrawable *b);
 
 struct NeScene *
 Scn_GetScene(uint8_t id)
 {
-	return _scenes[id];
+	return f_scenes[id];
 }
 
 struct NeScene *
@@ -89,12 +90,13 @@ Scn_CreateScene(const char *name)
 	if (!s)
 		return NULL;
 
+	s->camera = NE_INVALID_HANDLE;
 	s->maxLights = DEF_MAX_LIGHTS;
 	s->maxInstances = DEF_MAX_INSTANCES;
 
-	snprintf(s->name, sizeof(s->name), "%s", name);
+	strlcpy(s->name, name, sizeof(s->name));
 
-	if (!_InitScene(s)) {
+	if (!InitScene(s)) {
 		Sys_Free(s);
 		return NULL;
 	}
@@ -109,12 +111,12 @@ Scn_StartSceneLoad(const char *path)
 	if (!s)
 		return NULL;
 
-	snprintf(s->path, sizeof(s->path), "%s", path);
+	strlcpy(s->path, path, sizeof(s->path));
 
 	if (E_GetCVarBln("Engine_SingleThreadSceneLoad", false))
-		_LoadJob(0, s);
+		LoadJob(0, s);
 	else
-		E_ExecuteJob((NeJobProc)_LoadJob, s, NULL, NULL);
+		E_ExecuteJob((NeJobProc)LoadJob, s, NULL, NULL);
 
 	return s;
 }
@@ -134,7 +136,7 @@ Scn_UnloadScene(struct NeScene *s)
 
 	Rt_TermArray(&s->collect.blendedDrawables);
 
-	if (s->environmentMap != E_INVALID_HANDLE)
+	if (s->environmentMap != NE_INVALID_HANDLE)
 		E_UnloadResource(s->environmentMap);
 
 	Re_Destroy(s->sceneData);
@@ -143,6 +145,14 @@ Scn_UnloadScene(struct NeScene *s)
 	E_TermSceneComponents(s);
 
 	Sys_Free(s);
+}
+
+void
+Scn_UnloadScenes(void)
+{
+	for (uint32_t i = 0; i < UINT8_MAX; ++i)
+		if (f_scenes[i])
+			Scn_UnloadScene(f_scenes[i]);
 }
 
 bool
@@ -160,7 +170,7 @@ Scn_ActivateScene(struct NeScene *s)
 void
 Scn_DataAddress(const struct NeScene *s, uint64_t *sceneAddress, uint64_t *instanceAddress)
 {
-	const uint64_t offset = _DataOffset(s);
+	const uint64_t offset = DataOffset(s);
 	*sceneAddress = Re_BufferAddress(s->sceneData, offset);
 	*instanceAddress = Re_BufferAddress(s->sceneData, offset + sizeof(struct NeSceneData) + s->lightDataSize);
 }
@@ -168,16 +178,11 @@ Scn_DataAddress(const struct NeScene *s, uint64_t *sceneAddress, uint64_t *insta
 void
 Scn_StartDrawableCollection(struct NeScene *s, const struct NeCamera *c)
 {
-	Prof_InsertMarker("BeginDrawableCollection");
-
 	s->collect.nextArray = 0;
 	M_Store(&s->collect.vp, XMMatrixMultiply(M_Load(&c->viewMatrix), M_Load(&c->projMatrix)));
+	M_FrustumFromVP(&s->collect.camFrustum, &s->collect.vp);
 
-//	M_FrustumFromVP(&s->collect.camFrustum, &c->viewMatrix, &c->projMatrix);
-//	memcpy(&s->collect.camFrustum, &c->frustum, sizeof(s->collect.camFrustum));
-
-	const NeEntityHandle camEnt = c->_owner;
-	const struct NeTransform *camXform = (struct NeTransform *)E_GetComponentS(s, camEnt, E_ComponentTypeId(TRANSFORM_COMP));
+	const struct NeTransform *camXform = (struct NeTransform *)E_GetComponent(c->_owner, NE_TRANSFORM_ID);
 	memcpy(&s->collect.camPos, &camXform->position, sizeof(s->collect.camPos));
 
 	for (uint32_t i = 0; i < E_JobWorkerThreads(); ++i) {
@@ -187,10 +192,10 @@ Scn_StartDrawableCollection(struct NeScene *s, const struct NeCamera *c)
 	}
 	Rt_ClearArray(&s->collect.blendedDrawables, false);
 
-	E_ExecuteSystemS(s, RE_COLLECT_DRAWABLES, &s->collect);
+	E_ExecuteSystemS(s, Rt_HashLiteral(RE_COLLECT_DRAWABLES), &s->collect);
 
 	uint32_t offset = 0;
-	uint8_t *dst = s->dataPtr + _DataOffset(s) + sizeof(struct NeSceneData) + s->lightDataSize;
+	uint8_t *dst = s->dataPtr + DataOffset(s) + sizeof(struct NeSceneData) + s->lightDataSize;
 	for (uint32_t i = 0; i < E_JobWorkerThreads(); ++i) {
 		s->collect.instanceOffset[i] = offset;
 		offset += (uint32_t)s->collect.instanceArrays[i].count;
@@ -209,28 +214,23 @@ Scn_StartDrawableCollection(struct NeScene *s, const struct NeCamera *c)
 		}
 	}
 
-	Rt_ArraySort(&s->collect.blendedDrawables, (RtSortFunc)_SortDrawables);
-
-	Prof_InsertMarker("EndDrawableCollection");
+	Rt_ArraySort(&s->collect.blendedDrawables, (RtSortFunc)SortDrawables);
 }
 
 void
 Scn_StartDataUpdate(struct NeScene *s, const struct NeCamera *c)
 {
-	Prof_InsertMarker("BeginDataUpdate");
-
-	s->dataTransfered = false;
+	s->dataTransferred = false;
 
 	struct NeCollectLights collect;
 	Rt_InitArray(&collect.lightData, s->maxLights, sizeof(struct NeLightData), MH_Transient);
 
-	E_ExecuteSystemS(s, SCN_COLLECT_LIGHTS, &collect);
-	Prof_InsertMarker("CollectLights");
+	E_ExecuteSystemS(s, Rt_HashLiteral(SCN_COLLECT_LIGHTS), &collect);
 
-	uint8_t *dst = s->dataPtr + _DataOffset(s);
+	uint8_t *dst = s->dataPtr + DataOffset(s);
 
 	const NeEntityHandle camEnt = c->_owner;
-	const struct NeTransform *camXform = (struct NeTransform *)E_GetComponentS(s, camEnt, E_ComponentTypeId(TRANSFORM_COMP));
+	const struct NeTransform *camXform = (struct NeTransform *)E_GetComponent(camEnt, NE_TRANSFORM_ID);
 
 	const uint32_t tileSize = E_GetCVarU32(SID("Render_LightCullingTileSize"), 16)->u32;
 
@@ -258,7 +258,8 @@ Scn_StartDataUpdate(struct NeScene *s, const struct NeCamera *c)
 		}
 	};
 	M_Store(&data.camera.viewProjection, XMMatrixMultiply(M_Load(&c->viewMatrix), M_Load(&c->projMatrix)));
-	M_Store(&data.camera.inverseProjection, XMMatrixInverse(NULL, M_Load(&c->projMatrix)));
+	M_Store(&data.camera.inverseProjection, XMMatrixInverse(NULL, M_Load(&data.camera.viewProjection)));
+	memcpy(&data.camera.projection, &c->projMatrix, sizeof(data.camera.projection));
 
 	data.settings.invGamma = 1.f / data.settings.gamma;
 
@@ -266,29 +267,86 @@ Scn_StartDataUpdate(struct NeScene *s, const struct NeCamera *c)
 	memcpy(dst + sizeof(data), collect.lightData.data, Rt_ArrayUsedByteSize(&collect.lightData));
 
 	s->lightCount = data.lighting.lightCount;
-	s->dataTransfered = true;
+	s->dataTransferred = true;
+}
 
-	Prof_InsertMarker("EndDataUpdate");
+void
+Scn_Commit(struct NeScene *scn)
+{
+	Sys_AtomicLockWrite(&scn->lock.comp);
+	Sys_AtomicLockWrite(&scn->lock.newComp);
+
+	for (size_t i = 0; i < scn->compData.count; ++i) {
+		struct NeArray *c = (struct NeArray *)Rt_ArrayGet(&scn->compData, i);
+		struct NeArray *nc = (struct NeArray *)Rt_ArrayGet(&scn->newCompData, i);
+
+		if (!nc->count)
+			continue;
+
+		Rt_ResizeArray(c, c->size + nc->count);
+
+		for (size_t j = 0; j < nc->count; ++j) {
+			struct NeCompBase *comp = (struct NeCompBase *)Rt_ArrayGet(nc, j);
+			if (comp->_handleId >= c->count)
+				Rt_ArrayAdd(c, comp);
+			else
+				Rt_ArrayInsert(c, comp, comp->_handleId);
+
+			struct NeComponentCreationData *ccd = (struct NeComponentCreationData *)Sys_Alloc(sizeof(*ccd), 1, MH_Frame);
+			ccd->type = comp->_typeId;
+			ccd->handle = comp->_handleId | (uint64_t)comp->_typeId << 32;
+			ccd->owner = comp->_owner;
+			ccd->ptr = Rt_ArrayGet(c, comp->_handleId);
+			E_Broadcast(EVT_COMPONENT_CREATED, ccd);
+		}
+
+		Rt_ClearArray(nc, false);
+	}
+
+	Sys_ZeroMemory(scn->newCompOffset.data, Rt_ArrayUsedByteSize(&scn->newCompOffset));
+
+	Sys_AtomicUnlockWrite(&scn->lock.newComp);
+	Sys_AtomicUnlockWrite(&scn->lock.comp);
+
+	if (!scn->newEntities.count)
+		return;
+
+	Sys_AtomicLockWrite(&scn->lock.entity);
+	Sys_AtomicLockWrite(&scn->lock.newEntity);
+
+	Rt_ResizeArray(&scn->entities, scn->entities.size + scn->newEntities.count);
+
+	NeEntity *ent;
+	Rt_ArrayForEachPtr(ent, &scn->newEntities, NeEntity *)
+		Rt_ArrayAddPtr(&scn->entities, ent);
+
+	Rt_ClearArray(&scn->newEntities, false);
+
+	Sys_AtomicUnlockWrite(&scn->lock.newEntity);
+	Sys_AtomicUnlockWrite(&scn->lock.entity);
 }
 
 const struct NeLightData * const
 Scn_VisibleLights(struct NeScene *scn)
 {
-	return (const struct NeLightData * const)(scn->dataPtr + _DataOffset(scn) + sizeof(struct NeSceneData));
+	return (const struct NeLightData * const)(scn->dataPtr + DataOffset(scn) + sizeof(struct NeSceneData));
 }
 
 bool
-_InitScene(struct NeScene *s)
+InitScene(struct NeScene *s)
 {
 	struct NeBufferCreateInfo bci {};
 
-	Sys_InitAtomicLock(&s->compLock);
+	Sys_InitAtomicLock(&s->lock.comp);
+	Sys_InitAtomicLock(&s->lock.newComp);
+	Sys_InitAtomicLock(&s->lock.entity);
+	Sys_InitAtomicLock(&s->lock.newEntity);
 
 	if (!E_InitSceneComponents(s) || !E_InitSceneEntities(s))
 		goto error;
 
-	s->lightDataSize = ROUND_UP(sizeof(struct NeLightData) * s->maxLights, 16);
-	s->instanceDataSize = ROUND_UP(sizeof(struct NeModelInstance) * s->maxInstances, 16);
+	s->lightDataSize = NE_ROUND_UP(sizeof(struct NeLightData) * s->maxLights, 16);
+	s->instanceDataSize = NE_ROUND_UP(sizeof(struct NeModelInstance) * s->maxInstances, 16);
 	s->sceneDataSize = sizeof(struct NeSceneData) + s->lightDataSize + s->instanceDataSize;
 
 	bci.desc =
@@ -336,8 +394,8 @@ _InitScene(struct NeScene *s)
 
 	s->collect.s = s;
 
-	_scenes[_nextSceneId] = s;
-	s->id = _nextSceneId++;
+	f_scenes[f_nextSceneId] = s;
+	s->id = f_nextSceneId++;
 
 	return true;
 
@@ -352,7 +410,7 @@ error:
 }
 
 void
-_LoadJob(int wid, struct NeScene *s)
+LoadJob(int wid, struct NeScene *s)
 {
 	struct NeStream stm;
 	char *data = NULL;
@@ -377,14 +435,14 @@ _LoadJob(int wid, struct NeScene *s)
 
 		len = strnlen(line, BUFF_SZ);
 		if (!strncmp(line, "SceneInfo", len)) {
-			_ReadSceneInfo(s, &stm, data);
+			ReadSceneInfo(s, &stm, data);
 		} else if (!strncmp(line, "Terrain", len)) {
-			_ReadTerrain(s, &stm, data);
+			ReadTerrain(s, &stm, data);
 		} else if (!strncmp(line, "EndSceneInfo", len)) {
 			//
 		} else if (strstr(line, "Entity")) {
 			char *name = strchr(line, '=') + 1;
-			_ReadEntity(s, name, &stm, data, &args);
+			ReadEntity(s, name, &stm, data, &args);
 		}
 
 		memset(data, 0x0, BUFF_SZ);
@@ -392,13 +450,17 @@ _LoadJob(int wid, struct NeScene *s)
 
 	E_CloseStream(&stm);
 
-	E_ExecuteSystemS(s, ANIM_BUILD_SKELETON, NULL);
+	Scn_Commit(s);
+
+	E_ExecuteSystemS(s, Rt_HashLiteral(SCN_ACTIVATE_CAMERA), s);
+	E_ExecuteSystemS(s, Rt_HashLiteral(ANIM_BUILD_SKELETON), NULL);
 
 	s->loaded = true;
 	if (s->postLoad[0]) {
 		lua_State *vm = Sc_CreateVM();
 
-		lua_pushlightuserdata(vm, s);
+		(void)luaL_dostring(vm, "require 'NeEngine'\n");
+		Sc_PushScriptWrapper(vm, s, SIF_NE_SCENE);
 		lua_setglobal(vm, "LoadedScene");
 
 		const char *err = Sc_ExecuteFile(vm, s->postLoad);
@@ -414,7 +476,7 @@ _LoadJob(int wid, struct NeScene *s)
 }
 
 void
-_ReadSceneInfo(struct NeScene *s, struct NeStream *stm, char *data)
+ReadSceneInfo(struct NeScene *s, struct NeStream *stm, char *data)
 {
 	s->maxLights = DEF_MAX_LIGHTS;
 	s->maxInstances = DEF_MAX_INSTANCES;
@@ -429,7 +491,7 @@ _ReadSceneInfo(struct NeScene *s, struct NeStream *stm, char *data)
 		len = strnlen(line, BUFF_SZ);
 		if (!strncmp(line, "Name", 4)) {
 			char *type = strchr(line, '=') + 1;
-			snprintf(s->name, sizeof(s->name), "%s", type);
+			strlcpy(s->name, type, sizeof(s->name));
 		} else if (!strncmp(line, "EnvironmentMap", 14)) {
 			char *file = strchr(line, '=') + 1;
 			s->environmentMap = E_LoadResource(file, RES_TEXTURE);
@@ -437,17 +499,17 @@ _ReadSceneInfo(struct NeScene *s, struct NeStream *stm, char *data)
 			s->maxLights = atoi(strchr(line, '=') + 1);
 		} else if (!strncmp(line, "PostLoad", 8)) {
 			char *postLoad = strchr(line, '=') + 1;
-			snprintf(s->postLoad, sizeof(s->postLoad), "%s", postLoad);
+			strlcpy(s->postLoad, postLoad, sizeof(s->postLoad));
 		} else if (!strncmp(line, "EndSceneInfo", len)) {
 			break;
 		}
 	}
 
-	_InitScene(s);
+	InitScene(s);
 }
 
 void
-_ReadTerrain(struct NeScene *s, struct NeStream *stm, char *data)
+ReadTerrain(struct NeScene *s, struct NeStream *stm, char *data)
 {
 	struct NeTerrainCreateInfo tci = { 0 };
 	
@@ -479,13 +541,13 @@ _ReadTerrain(struct NeScene *s, struct NeStream *stm, char *data)
 }
 
 void
-_ReadEntity(struct NeScene *s, char *name, struct NeStream *stm, char *data, struct NeArray *args)
+ReadEntity(struct NeScene *s, char *name, struct NeStream *stm, char *data, struct NeArray *args)
 {
 	NeEntityHandle entity = NULL;
 	char *compType = NULL;
 	char entityName[MAX_ENTITY_NAME];
 
-	snprintf(entityName, sizeof(entityName), "%s", name);
+	strlcpy(entityName, name, sizeof(entityName));
 	compType = (char *)Sys_Alloc(sizeof(*compType), BUFF_SZ, MH_Transient);
 
 	while (!E_EndOfStream(stm)) {
@@ -502,7 +564,7 @@ _ReadEntity(struct NeScene *s, char *name, struct NeStream *stm, char *data, str
 			if (!type)
 				continue;
 
-			strncpy(compType, type, BUFF_SZ);
+			strlcpy(compType, type, BUFF_SZ);
 
 			if (!entity)
 				entity = E_CreateEntityS(s, entityName, NULL);
@@ -517,7 +579,7 @@ _ReadEntity(struct NeScene *s, char *name, struct NeStream *stm, char *data, str
 			void *guard = NULL;
 			Rt_ArrayAddPtr(args, guard);
 
-			E_AddNewComponentS(s, entity, E_ComponentTypeId(compType), (const void **)args->data);
+			E_AddNewComponent(entity, E_ComponentTypeId(compType), (const void **)args->data);
 			memset(compType, 0x0, BUFF_SZ);
 		} else if (!strncmp(line, "EndEntity", len)) {
 			break;
@@ -544,13 +606,13 @@ _ReadEntity(struct NeScene *s, char *name, struct NeStream *stm, char *data, str
 }
 
 static inline uint64_t
-_DataOffset(const struct NeScene *s)
+DataOffset(const struct NeScene *s)
 {
 	return s->sceneDataSize * Re_frameId;
 }
 
 static int32_t
-_SortDrawables(const struct NeDrawable *a, const struct NeDrawable *b)
+SortDrawables(const struct NeDrawable *a, const struct NeDrawable *b)
 {
 	if (a->distance < b->distance)
 		return 1;
@@ -586,7 +648,7 @@ _SortDrawables(const struct NeDrawable *a, const struct NeDrawable *b)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

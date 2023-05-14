@@ -9,30 +9,30 @@ struct PrimitiveInfo
 
 //static NeBufferHandle _primitiveBuffer;
 
-static struct PrimitiveInfo _info[PRIM_COUNT];
+static struct PrimitiveInfo f_info[PRIM_COUNT];
 
 bool
 Scn_InitPrimitives(void)
 {
-	_info[PRIM_PLANE].indexCount = 4;
-	_info[PRIM_PLANE].indexOffset = 0;
-	_info[PRIM_PLANE].vertexOffset = 0;
+	f_info[PRIM_PLANE].indexCount = 4;
+	f_info[PRIM_PLANE].indexOffset = 0;
+	f_info[PRIM_PLANE].vertexOffset = 0;
 
-	_info[PRIM_CUBE].indexCount = 0;
-	_info[PRIM_CUBE].indexOffset = 0;
-	_info[PRIM_CUBE].vertexOffset = 0;
+	f_info[PRIM_CUBE].indexCount = 0;
+	f_info[PRIM_CUBE].indexOffset = 0;
+	f_info[PRIM_CUBE].vertexOffset = 0;
 
-	_info[PRIM_SPHERE].indexCount = 0;
-	_info[PRIM_SPHERE].indexOffset = 0;
-	_info[PRIM_SPHERE].vertexOffset = 0;
+	f_info[PRIM_SPHERE].indexCount = 0;
+	f_info[PRIM_SPHERE].indexOffset = 0;
+	f_info[PRIM_SPHERE].vertexOffset = 0;
 
-	_info[PRIM_CONE].indexCount = 0;
-	_info[PRIM_CONE].indexOffset = 0;
-	_info[PRIM_CONE].vertexOffset = 0;
+	f_info[PRIM_CONE].indexCount = 0;
+	f_info[PRIM_CONE].indexOffset = 0;
+	f_info[PRIM_CONE].vertexOffset = 0;
 
-	_info[PRIM_CYLINDER].indexCount = 0;
-	_info[PRIM_CYLINDER].indexOffset = 0;
-	_info[PRIM_CYLINDER].vertexOffset = 0;
+	f_info[PRIM_CYLINDER].indexCount = 0;
+	f_info[PRIM_CYLINDER].indexOffset = 0;
+	f_info[PRIM_CYLINDER].vertexOffset = 0;
 
 	return false;
 }
@@ -43,7 +43,7 @@ Scn_PrimitiveInfo(enum NePrimitive prim, uint32_t *indexCount, uint32_t *indexOf
 	if (prim >= PRIM_COUNT)
 		return false;
 
-	const struct PrimitiveInfo *i = &_info[PRIM_COUNT];
+	const struct PrimitiveInfo *i = &f_info[PRIM_COUNT];
 
 	if (indexCount)
 		*indexCount = i->indexCount;
@@ -89,7 +89,7 @@ Scn_TermPrimitives(void)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

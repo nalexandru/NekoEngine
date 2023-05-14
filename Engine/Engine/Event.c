@@ -31,16 +31,18 @@ struct NeProcessEventArgs
 	void *args;
 };
 
-static struct NeArray _handlers, _queue[2], *_currentQueue;
-static int _currentQueueId;
-static struct NeAtomicLock _queueLock, _handlerLock;
+static struct NeArray f_handlers, f_queue[2], *f_currentQueue;
+static int f_currentQueueId;
+static struct NeAtomicLock f_queueLock, f_handlerLock;
+static NE_ATOMIC_UINT f_jobCount;
 
-static void _ProcessEvent(int worker, struct NeProcessEventArgs *args);
+static void ProcessEvent(int worker, struct NeProcessEventArgs *args);
+static void JobCompleted(uint64_t id, void *args);
 
 void
 E_Broadcast(const char *event, void *args)
 {
-	if (!_currentQueue)
+	if (!f_currentQueue)
 		return;
 
 	struct NeEvent evt;
@@ -48,9 +50,9 @@ E_Broadcast(const char *event, void *args)
 	evt.args = args;
 	evt.timestamp = Sys_Time();
 
-	Sys_AtomicLockWrite(&_queueLock);
-	Rt_ArrayAdd(_currentQueue, &evt);
-	Sys_AtomicUnlockWrite(&_queueLock);
+	Sys_AtomicLockWrite(&f_queueLock);
+	Rt_ArrayAdd(f_currentQueue, &evt);
+	Sys_AtomicUnlockWrite(&f_queueLock);
 }
 
 uint64_t
@@ -60,14 +62,13 @@ E_RegisterHandler(const char *event, NeEventHandlerProc handlerProc, void *user)
 	struct NeEventHandler *handler = NULL;
 	struct NeEventHandlerInfo *info = NULL;
 	uint64_t hash = Rt_HashString(event);
-	uint32_t idx = 0, handlerIdx = 0;
 
-	Sys_AtomicLockWrite(&_handlerLock);
+	Sys_AtomicLockWrite(&f_handlerLock);
 
-	handlerIdx = (uint32_t)Rt_ArrayBSearchId(&_handlers, &hash, Rt_U64CmpFunc);
-	info = Rt_ArrayGet(&_handlers, handlerIdx);
+	uint32_t handlerIdx = (uint32_t)Rt_ArrayBSearchId(&f_handlers, &hash, Rt_U64CmpFunc);
+	info = Rt_ArrayGet(&f_handlers, handlerIdx);
 	if (!info) {
-		info = Rt_ArrayAllocate(&_handlers);
+		info = Rt_ArrayAllocate(&f_handlers);
 		info->event = hash;
 		Rt_InitArray(&info->handlers, 5, sizeof(struct NeEventHandler), MH_System);
 		sort = true;
@@ -78,14 +79,14 @@ E_RegisterHandler(const char *event, NeEventHandlerProc handlerProc, void *user)
 	handler->user = user;
 	handler->timestamp = Sys_Time();
 
-	idx = (uint32_t)info->handlers.count - 1;
+	const uint32_t idx = (uint32_t)info->handlers.count - 1;
 
 	if (sort) {
-		Rt_ArraySort(&_handlers, Rt_U64CmpFunc);
-		handlerIdx = (uint32_t)Rt_ArrayBSearchId(&_handlers, &event, Rt_U64CmpFunc);
+		Rt_ArraySort(&f_handlers, Rt_U64CmpFunc);
+		handlerIdx = (uint32_t)Rt_ArrayBSearchId(&f_handlers, &event, Rt_U64CmpFunc);
 	}
 
-	Sys_AtomicUnlockWrite(&_handlerLock);
+	Sys_AtomicUnlockWrite(&f_handlerLock);
 
 	return (uint64_t)idx | (uint64_t)handlerIdx << 32;
 }
@@ -97,35 +98,35 @@ E_UnregisterHandler(uint64_t handler)
 	uint32_t handlerIdx = (uint32_t)((handler & (uint64_t)0xFFFFFFFF00000000) >> 32);
 	uint32_t infoIdx = (uint32_t)(handler & (uint64_t)0x00000000FFFFFFFF);
 
-	Sys_AtomicLockWrite(&_handlerLock);
+	Sys_AtomicLockWrite(&f_handlerLock);
 
-	info = Rt_ArrayGet(&_handlers, infoIdx);
+	info = Rt_ArrayGet(&f_handlers, infoIdx);
 	if (info) {
 		Rt_ArrayRemove(&info->handlers, handlerIdx);
 		if (!info->handlers.count)
-			Rt_ArrayRemove(&_handlers, handlerIdx);
+			Rt_ArrayRemove(&f_handlers, handlerIdx);
 	}
 
-	Sys_AtomicUnlockWrite(&_handlerLock);
+	Sys_AtomicUnlockWrite(&f_handlerLock);
 }
 
 bool
 E_InitEventSystem(void)
 {
-	if (!Rt_InitArray(&_handlers, 10, sizeof(struct NeEventHandlerInfo), MH_System))
+	if (!Rt_InitArray(&f_handlers, 10, sizeof(struct NeEventHandlerInfo), MH_System))
 		return false;
 
-	if (!Rt_InitArray(&_queue[0], 10, sizeof(struct NeEvent), MH_System))
+	if (!Rt_InitArray(&f_queue[0], 10, sizeof(struct NeEvent), MH_System))
 		return false;
 
-	if (!Rt_InitArray(&_queue[1], 10, sizeof(struct NeEvent), MH_System))
+	if (!Rt_InitArray(&f_queue[1], 10, sizeof(struct NeEvent), MH_System))
 		return false;
 
-	_currentQueue = &_queue[0];
-	_currentQueueId = 0;
+	f_currentQueue = &f_queue[0];
+	f_currentQueueId = 0;
 
-	Sys_InitAtomicLock(&_queueLock);
-	Sys_InitAtomicLock(&_handlerLock);
+	Sys_InitAtomicLock(&f_queueLock);
+	Sys_InitAtomicLock(&f_handlerLock);
 
 	return true;
 }
@@ -133,42 +134,39 @@ E_InitEventSystem(void)
 void
 E_TermEventSystem(void)
 {
-	size_t i = 0;
 	struct NeEventHandlerInfo *info;
-
-	for (i = 0; i < _handlers.count; ++i) {
-		info = Rt_ArrayGet(&_handlers, i);
+	Rt_ArrayForEach(info, &f_handlers)
 		Rt_TermArray(&info->handlers);
-	}
 
-	Rt_TermArray(&_queue[0]);
-	Rt_TermArray(&_queue[1]);
-	Rt_TermArray(&_handlers);
+	Rt_TermArray(&f_queue[0]);
+	Rt_TermArray(&f_queue[1]);
+	Rt_TermArray(&f_handlers);
 }
 
 void
 E_ProcessEvents(void)
 {
-	size_t i = 0, j = 0;
 	struct NeEvent *evt;
 	struct NeEventHandlerInfo *info;
 	struct NeProcessEventArgs *args;
-	struct NeArray *queue = _currentQueue;
+	struct NeArray *queue = f_currentQueue;
 
-	Sys_AtomicLockWrite(&_queueLock);
-	_currentQueueId = !_currentQueueId;
-	_currentQueue = &_queue[_currentQueueId];
-	Sys_AtomicUnlockWrite(&_queueLock);
+	Sys_AtomicLockWrite(&f_queueLock);
+	f_currentQueueId = !f_currentQueueId;
+	f_currentQueue = &f_queue[f_currentQueueId];
+	Sys_AtomicUnlockWrite(&f_queueLock);
 
-	Sys_AtomicLockRead(&_handlerLock);
+	Sys_AtomicLockRead(&f_handlerLock);
 
-	for (i = 0; i < queue->count; ++i) {
+	atomic_store(&f_jobCount, 0);
+
+	for (size_t i = 0; i < queue->count; ++i) {
 		evt = Rt_ArrayGet(queue, i);
-		info = Rt_ArrayBSearch(&_handlers, &evt->event, Rt_U64CmpFunc);
+		info = Rt_ArrayBSearch(&f_handlers, &evt->event, Rt_U64CmpFunc);
 		if (!info)
 			continue;
 
-		for (j = 0; j < info->handlers.count; ++j) {
+		for (size_t j = 0; j < info->handlers.count; ++j) {
 			struct NeEventHandler *handler = Rt_ArrayGet(&info->handlers, j);
 
 			if (handler->timestamp > evt->timestamp)
@@ -177,24 +175,32 @@ E_ProcessEvents(void)
 			args = Sys_Alloc(sizeof(*args), 1, MH_Frame);
 			args->handler = *handler;
 			args->args = evt->args;
-			E_ExecuteJob((NeJobProc)_ProcessEvent, args, NULL, NULL);
+
+			atomic_fetch_add_explicit(&f_jobCount, 1, memory_order_acquire);
+			E_ExecuteJob((NeJobProc)ProcessEvent, args, JobCompleted, NULL);
 		}
 	}
 
 	Rt_ClearArray(queue, false);
 
-	Sys_AtomicUnlockRead(&_handlerLock);
+	Sys_AtomicUnlockRead(&f_handlerLock);
 
-	//
+	while (atomic_load(&f_jobCount)) ;
 }
 
-void
-_ProcessEvent(int worker, struct NeProcessEventArgs *args)
+static void
+ProcessEvent(int worker, struct NeProcessEventArgs *args)
 {
 	if (!args->handler.proc)
 		return;
 
 	args->handler.proc(args->handler.user, args->args);
+}
+
+static void
+JobCompleted(uint64_t id, void *args)
+{
+	atomic_fetch_sub_explicit(&f_jobCount, 1, memory_order_release);
 }
 
 /* NekoEngine
@@ -223,7 +229,7 @@ _ProcessEvent(int worker, struct NeProcessEventArgs *args)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

@@ -1,5 +1,5 @@
-#ifndef _NE_SYSTEM_MEMORY_H_
-#define _NE_SYSTEM_MEMORY_H_
+#ifndef NE_SYSTEM_MEMORY_H
+#define NE_SYSTEM_MEMORY_H
 
 #include <stddef.h>
 #include <stdbool.h>
@@ -22,8 +22,8 @@ enum NeMemoryHeap
 	MH_Asset,
 	MH_Script,
 
-	MH_AudioDriver,
-	MH_RenderDriver,
+	MH_AudioBackend,
+	MH_RenderBackend,
 
 	MH_Debug,
 	MH_System,
@@ -32,13 +32,23 @@ enum NeMemoryHeap
 
 	MH_Network,
 
+	MH_Plugin,
+
 	MH_ManualAlign,
 
 	MH_FORCE_UINT32 = 0xFFFFFFFF
 };
 
-void *Sys_Alloc(size_t size, size_t count, enum NeMemoryHeap heap);
-void *Sys_ReAlloc(void *mem, size_t size, size_t count, enum NeMemoryHeap heap);
+#define NE_DEFAULT_ALIGNMENT		16
+
+void *Sys_AlignedAlloc(size_t size, size_t count, size_t alignment, enum NeMemoryHeap heap);
+static inline void *Sys_Alloc(size_t size, size_t count, enum NeMemoryHeap heap)
+{ return Sys_AlignedAlloc(size, count, NE_DEFAULT_ALIGNMENT, heap); }
+
+void *Sys_AlignedReAlloc(void *mem, size_t size, size_t count, size_t alignment, enum NeMemoryHeap heap);
+static inline void *Sys_ReAlloc(void *mem, size_t size, size_t count, enum NeMemoryHeap heap)
+{ return Sys_AlignedReAlloc(mem, size, count, NE_DEFAULT_ALIGNMENT, heap); }
+
 void Sys_Free(void *mem);
 
 void Sys_ZeroMemory(void *mem, size_t size);
@@ -48,11 +58,14 @@ void Sys_ResetHeap(enum NeMemoryHeap heap);
 void Sys_LogMemoryStatistics(void);
 void Sys_TermMemory(void);
 
+bool Sys_LockMemory(void *mem, size_t size);
+bool Sys_UnlockMemory(void *mem, size_t size);
+
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* _NE_SYSTEM_MEMORY_H_ */
+#endif /* NE_SYSTEM_MEMORY_H */
 
 /* NekoEngine
  *
@@ -80,7 +93,7 @@ void Sys_TermMemory(void);
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

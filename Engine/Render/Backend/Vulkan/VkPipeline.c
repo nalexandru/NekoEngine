@@ -10,7 +10,7 @@
 VkPipelineCache Vkd_pipelineCache;
 
 static inline VkCompareOp
-_NeToVkCompareOp(uint64_t flags)
+NeToVkCompareOp(uint64_t flags)
 {
 	switch (flags & RE_DEPTH_OP_BITS) {
 	case RE_DEPTH_OP_LESS: return VK_COMPARE_OP_LESS;
@@ -25,16 +25,16 @@ _NeToVkCompareOp(uint64_t flags)
 	return VK_COMPARE_OP_GREATER_OR_EQUAL;
 }
 
-static inline VkPipelineLayout _CreateLayout(uint32_t size, VkShaderStageFlags pcFlags, bool inputAttachments);
+static inline VkPipelineLayout CreateLayout(uint32_t size, VkShaderStageFlags pcFlags, bool inputAttachments);
 
 struct NePipeline *
 Re_BkGraphicsPipeline(const struct NeGraphicsPipelineDesc *desc)
 {
-	struct NePipeline *p = Sys_Alloc(1, sizeof(*p), MH_RenderDriver);
+	struct NePipeline *p = Sys_Alloc(1, sizeof(*p), MH_RenderBackend);
 	if (!p)
 		return NULL;
 
-	VkPipelineLayout layout = _CreateLayout(desc->pushConstantSize, VK_SHADER_STAGE_ALL, desc->renderPassDesc ? desc->renderPassDesc->inputAttachments > 0 : false);
+	VkPipelineLayout layout = CreateLayout(desc->pushConstantSize, VK_SHADER_STAGE_ALL, desc->renderPassDesc ? desc->renderPassDesc->inputAttachments > 0 : false);
 	if (!layout) {
 		Sys_Free(p);
 		return NULL;
@@ -46,7 +46,7 @@ Re_BkGraphicsPipeline(const struct NeGraphicsPipelineDesc *desc)
 	{
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO
 	};
-	
+
 	if (desc->vertexDesc.attributeCount) {
 		VkVertexInputAttributeDescription *attribs = Sys_Alloc(sizeof(VkVertexInputAttributeDescription), desc->vertexDesc.attributeCount, MH_Transient);
 		vi.pVertexAttributeDescriptions = attribs;
@@ -91,9 +91,9 @@ Re_BkGraphicsPipeline(const struct NeGraphicsPipelineDesc *desc)
 	VkPipelineRasterizationStateCreateInfo rs =
 	{
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
-		.depthClampEnable = flags & RE_DEPTH_CLAMP,
-		.rasterizerDiscardEnable = flags & RE_DISCARD,
-		.depthBiasEnable = flags & RE_DEPTH_BIAS,
+		.depthClampEnable = (flags & RE_DEPTH_CLAMP) == RE_DEPTH_CLAMP,
+		.rasterizerDiscardEnable = (flags & RE_DISCARD) == RE_DISCARD,
+		.depthBiasEnable = (flags & RE_DEPTH_BIAS) == RE_DEPTH_BIAS,
 		.lineWidth = 1.f
 	};
 
@@ -118,9 +118,9 @@ Re_BkGraphicsPipeline(const struct NeGraphicsPipelineDesc *desc)
 	VkPipelineMultisampleStateCreateInfo ms =
 	{
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-		.sampleShadingEnable = flags & RE_SAMPLE_SHADING,
-		.alphaToCoverageEnable = flags & RE_ALPHA_TO_COVERAGE,
-		.alphaToOneEnable = flags & RE_ALPHA_TO_ONE
+		.sampleShadingEnable = (flags & RE_SAMPLE_SHADING) == RE_SAMPLE_SHADING,
+		.alphaToCoverageEnable = (flags & RE_ALPHA_TO_COVERAGE) == RE_ALPHA_TO_COVERAGE,
+		.alphaToOneEnable = (flags & RE_ALPHA_TO_ONE) == RE_ALPHA_TO_ONE
 	};
 
 	if ((flags & RE_MULTISAMPLE) == RE_MULTISAMPLE) {
@@ -139,7 +139,7 @@ Re_BkGraphicsPipeline(const struct NeGraphicsPipelineDesc *desc)
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
 		.depthTestEnable = (flags & RE_DEPTH_TEST) == RE_DEPTH_TEST,
 		.depthWriteEnable = (flags & RE_DEPTH_WRITE) == RE_DEPTH_WRITE,
-		.depthCompareOp = _NeToVkCompareOp(flags & RE_DEPTH_OP_BITS),
+		.depthCompareOp = NeToVkCompareOp(flags & RE_DEPTH_OP_BITS),
 		.depthBoundsTestEnable = (flags & RE_DEPTH_BOUNDS) == RE_DEPTH_BOUNDS,
 		.stencilTestEnable = VK_FALSE, // stencil not supported in v1 of the render API
 		.minDepthBounds = 0.f,
@@ -238,8 +238,8 @@ Re_BkGraphicsPipeline(const struct NeGraphicsPipelineDesc *desc)
 
 #ifdef _DEBUG
 	if (desc->name) {
-		Vkd_SetObjectName(Re_device->dev, p->pipeline, VK_OBJECT_TYPE_PIPELINE, desc->name);
-		Vkd_SetObjectName(Re_device->dev, p->layout, VK_OBJECT_TYPE_PIPELINE_LAYOUT, desc->name);
+		VkBk_SetObjectName(Re_device->dev, p->pipeline, VK_OBJECT_TYPE_PIPELINE, desc->name);
+		VkBk_SetObjectName(Re_device->dev, p->layout, VK_OBJECT_TYPE_PIPELINE_LAYOUT, desc->name);
 	}
 #endif
 
@@ -249,11 +249,11 @@ Re_BkGraphicsPipeline(const struct NeGraphicsPipelineDesc *desc)
 struct NePipeline *
 Re_BkComputePipeline(const struct NeComputePipelineDesc *desc)
 {
-	struct NePipeline *p = Sys_Alloc(sizeof(*p), 1, MH_RenderDriver);
+	struct NePipeline *p = Sys_Alloc(sizeof(*p), 1, MH_RenderBackend);
 	if (!p)
 		return NULL;
 
-	VkPipelineLayout layout = _CreateLayout(desc->pushConstantSize, VK_SHADER_STAGE_COMPUTE_BIT, false);
+	VkPipelineLayout layout = CreateLayout(desc->pushConstantSize, VK_SHADER_STAGE_COMPUTE_BIT, false);
 	if (!layout) {
 		Sys_Free(p);
 		return NULL;
@@ -303,8 +303,8 @@ Re_BkComputePipeline(const struct NeComputePipelineDesc *desc)
 
 #ifdef _DEBUG
 	if (desc->name) {
-		Vkd_SetObjectName(Re_device->dev, p->pipeline, VK_OBJECT_TYPE_PIPELINE, desc->name);
-		Vkd_SetObjectName(Re_device->dev, p->layout, VK_OBJECT_TYPE_PIPELINE_LAYOUT, desc->name);
+		VkBk_SetObjectName(Re_device->dev, p->pipeline, VK_OBJECT_TYPE_PIPELINE, desc->name);
+		VkBk_SetObjectName(Re_device->dev, p->layout, VK_OBJECT_TYPE_PIPELINE_LAYOUT, desc->name);
 	}
 #endif
 
@@ -314,7 +314,7 @@ Re_BkComputePipeline(const struct NeComputePipelineDesc *desc)
 struct NePipeline *
 Re_BkRayTracingPipeline(const struct NeRayTracingPipelineDesc *desc)
 {
-	struct NePipeline *p = Sys_Alloc(1, sizeof(*p), MH_RenderDriver);
+	struct NePipeline *p = Sys_Alloc(1, sizeof(*p), MH_RenderBackend);
 	if (!p)
 		return NULL;
 
@@ -434,7 +434,7 @@ Re_SavePipelineCache(void)
 	void *data = NULL;
 	vkGetPipelineCacheData(Re_device->dev, Vkd_pipelineCache, &dataSize, data);
 
-	data = Sys_Alloc(1, dataSize, MH_RenderDriver);
+	data = Sys_Alloc(1, dataSize, MH_RenderBackend);
 	vkGetPipelineCacheData(Re_device->dev, Vkd_pipelineCache, &dataSize, data);
 
 	E_EnableWrite(WD_Config);
@@ -465,7 +465,7 @@ Re_BkDestroyPipeline(struct NePipeline *pipeline)
 }
 
 static inline VkPipelineLayout
-_CreateLayout(uint32_t size, VkShaderStageFlags pcFlags, bool inputAttachments)
+CreateLayout(uint32_t size, VkShaderStageFlags pcFlags, bool inputAttachments)
 {
 	VkDescriptorSetLayout layouts[] = { Re_device->setLayout, Re_device->iaSetLayout };
 	VkPushConstantRange range =
@@ -515,7 +515,7 @@ _CreateLayout(uint32_t size, VkShaderStageFlags pcFlags, bool inputAttachments)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

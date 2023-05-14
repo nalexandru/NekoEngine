@@ -1,5 +1,5 @@
-#ifndef _NE_EDITOR_GUI_SCENE_HIERARCHY_H_
-#define _NE_EDITOR_GUI_SCENE_HIERARCHY_H_
+#ifndef NE_EDITOR_GUI_SCENE_HIERARCHY_H
+#define NE_EDITOR_GUI_SCENE_HIERARCHY_H
 
 #include <Engine/Types.h>
 
@@ -20,10 +20,10 @@ public:
 	explicit NeSceneHierarchy(QWidget *parent = nullptr);
 	virtual ~NeSceneHierarchy();
 
-	static void _EntityCreate(NeSceneHierarchy *shd, NeEntityHandle eh);
-	static void _EntityDestroy(NeSceneHierarchy *shd, NeEntityHandle eh);
-	static void _ComponentCreate(NeSceneHierarchy *shd, const struct NeComponentCreationData *ccd);
-	static void _SceneActivated(NeSceneHierarchy *shd, struct NeScene *scn);
+	static void EntityCreated(NeSceneHierarchy *shd, NeEntityHandle eh);
+	static void EntityDestroyed(NeSceneHierarchy *shd, NeEntityHandle eh);
+	static void ComponentCreated(NeSceneHierarchy *shd, const struct NeComponentCreationData *ccd);
+	static void SceneActivated(NeSceneHierarchy *shd, struct NeScene *scn);
 
 public slots:
 	void TreeSelectionChanged();
@@ -35,7 +35,7 @@ private:
 	void _AddTransform(const struct NeTransform *xform, QTreeWidgetItem *parent);
 };
 
-#endif /* _NE_EDITOR_GUI_SCENE_HIERARCHY_H_ */
+#endif /* NE_EDITOR_GUI_SCENE_HIERARCHY_H */
 
 /* NekoEditor
  *
@@ -63,7 +63,7 @@ private:
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

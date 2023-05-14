@@ -21,29 +21,21 @@ struct DSONData
 
 ED_ASSET_IMPORTER(DSON);
 
-static bool _MatchAsset(const char *path);
-static bool _ImportAsset(const char *path);
-
-/*static inline void _ConvertMesh(const cgltf_mesh *mesh, const char *name, struct NMesh *nm);
-static inline void _SaveMaterial(const cgltf_material *mat, const char *name, const char *path);
-static inline void _SaveAnimation(const cgltf_animation *anim, const char *path);
-static inline void _SaveImage(const cgltf_image *img, const char *path);*/
-
-static inline uint32_t _parseGeometryLibrary(uint32_t startPos, uint32_t count, const struct DSONData *data);
-static inline uint32_t _parseNodeLibrary(uint32_t startPos, uint32_t count, const struct DSONData *data);
-static inline uint32_t _parseUVSetLibrary(uint32_t startPos, uint32_t count, const struct DSONData *data);
-static inline uint32_t _parseMaterialLibrary(uint32_t startPos, uint32_t count, const struct DSONData *data);
-static inline uint32_t _parseModifierLibrary(uint32_t startPos, uint32_t count, const struct DSONData *data);
-static inline uint32_t _parseImageLibrary(uint32_t startPos, uint32_t count, const struct DSONData *data);
+static inline uint32_t ParseGeometryLibrary(uint32_t startPos, uint32_t count, const struct DSONData *data);
+static inline uint32_t ParseNodeLibrary(uint32_t startPos, uint32_t count, const struct DSONData *data);
+static inline uint32_t ParseUVSetLibrary(uint32_t startPos, uint32_t count, const struct DSONData *data);
+static inline uint32_t ParseMaterialLibrary(uint32_t startPos, uint32_t count, const struct DSONData *data);
+static inline uint32_t ParseModifierLibrary(uint32_t startPos, uint32_t count, const struct DSONData *data);
+static inline uint32_t ParseImageLibrary(uint32_t startPos, uint32_t count, const struct DSONData *data);
 
 static bool
-_MatchAsset(const char *path)
+DSON_MatchAsset(const char *path)
 {
 	return strstr(path, ".duf") != NULL;
 }
 
 static bool
-_ImportAsset(const char *path)
+DSON_ImportAsset(const char *path, const struct NeAssetImportOptions *options)
 {
 	bool rc = false;
 	jsmn_parser p;
@@ -90,32 +82,32 @@ _ImportAsset(const char *path)
 			if (val.type != JSMN_ARRAY)
 				continue;
 
-			i = _parseGeometryLibrary(i, val.size, &data);
+			i = ParseGeometryLibrary(i, val.size, &data);
 		} else if (JSON_STRING("node_library", key, data.json)) {
 			if (val.type != JSMN_ARRAY)
 				continue;
 
-			i = _parseNodeLibrary(i, val.size, &data);
+			i = ParseNodeLibrary(i, val.size, &data);
 		} else if (JSON_STRING("uv_set_library", key, data.json)) {
 			if (val.type != JSMN_ARRAY)
 				continue;
 
-			i = _parseUVSetLibrary(i, val.size, &data);
+			i = ParseUVSetLibrary(i, val.size, &data);
 		} else if (JSON_STRING("modifier_library", key, data.json)) {
 			if (val.type != JSMN_ARRAY)
 				continue;
 
-			i = _parseModifierLibrary(i, val.size, &data);
+			i = ParseModifierLibrary(i, val.size, &data);
 		} else if (JSON_STRING("image_library", key, data.json)) {
 			if (val.type != JSMN_ARRAY)
 				continue;
 
-			i = _parseImageLibrary(i, val.size, &data);
+			i = ParseImageLibrary(i, val.size, &data);
 		} else if (JSON_STRING("material_library", key, data.json)) {
 			if (val.type != JSMN_ARRAY)
 				continue;
 
-			i = _parseMaterialLibrary(i, val.size, &data);
+			i = ParseMaterialLibrary(i, val.size, &data);
 		} else if (JSON_STRING("scene", key, data.json)) {
 			if (val.type != JSMN_OBJECT)
 				continue;
@@ -133,7 +125,7 @@ exit:
 }
 
 static inline
-uint32_t _parseGeometryLibrary(uint32_t startPos, uint32_t count, const struct DSONData *data)
+uint32_t ParseGeometryLibrary(uint32_t startPos, uint32_t count, const struct DSONData *data)
 {
 	uint32_t pos = startPos;
 	for (uint32_t j = 0; j < count; ++j) {
@@ -156,7 +148,7 @@ uint32_t _parseGeometryLibrary(uint32_t startPos, uint32_t count, const struct D
 }
 
 static inline
-uint32_t _parseNodeLibrary(uint32_t startPos, uint32_t count, const struct DSONData *data)
+uint32_t ParseNodeLibrary(uint32_t startPos, uint32_t count, const struct DSONData *data)
 {
 	uint32_t pos = startPos;
 	for (uint32_t j = 0; j < count; ++j) {
@@ -173,7 +165,7 @@ uint32_t _parseNodeLibrary(uint32_t startPos, uint32_t count, const struct DSOND
 }
 
 static inline
-uint32_t _parseUVSetLibrary(uint32_t startPos, uint32_t count, const struct DSONData *data)
+uint32_t ParseUVSetLibrary(uint32_t startPos, uint32_t count, const struct DSONData *data)
 {
 	uint32_t pos = startPos;
 	for (uint32_t j = 0; j < count; ++j) {
@@ -190,7 +182,7 @@ uint32_t _parseUVSetLibrary(uint32_t startPos, uint32_t count, const struct DSON
 }
 
 static inline
-uint32_t _parseMaterialLibrary(uint32_t startPos, uint32_t count, const struct DSONData *data)
+uint32_t ParseMaterialLibrary(uint32_t startPos, uint32_t count, const struct DSONData *data)
 {
 	uint32_t pos = startPos;
 	for (uint32_t j = 0; j < count; ++j) {
@@ -207,7 +199,7 @@ uint32_t _parseMaterialLibrary(uint32_t startPos, uint32_t count, const struct D
 }
 
 static inline
-uint32_t _parseModifierLibrary(uint32_t startPos, uint32_t count, const struct DSONData *data)
+uint32_t ParseModifierLibrary(uint32_t startPos, uint32_t count, const struct DSONData *data)
 {
 	uint32_t pos = startPos;
 	for (uint32_t j = 0; j < count; ++j) {
@@ -224,7 +216,7 @@ uint32_t _parseModifierLibrary(uint32_t startPos, uint32_t count, const struct D
 }
 
 static inline
-uint32_t _parseImageLibrary(uint32_t startPos, uint32_t count, const struct DSONData *data)
+uint32_t ParseImageLibrary(uint32_t startPos, uint32_t count, const struct DSONData *data)
 {
 	uint32_t pos = startPos;
 	for (uint32_t j = 0; j < count; ++j) {
@@ -239,3 +231,41 @@ uint32_t _parseImageLibrary(uint32_t startPos, uint32_t count, const struct DSON
 
 	return pos;
 }
+
+/* NekoEditor
+ *
+ * DSON.c
+ * Author: Alexandru Naiman
+ *
+ * -----------------------------------------------------------------------------
+ *
+ * Copyright (c) 2015-2023, Alexandru Naiman
+ *
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * -----------------------------------------------------------------------------
+ */

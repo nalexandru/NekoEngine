@@ -3,7 +3,7 @@
 struct NeAccelerationStructure *
 Re_CreateAccelerationStructure(const struct NeAccelerationStructureCreateInfo *info)
 {
-	struct NeAccelerationStructure *as = Sys_Alloc(1, sizeof(*as), MH_RenderDriver);
+	struct NeAccelerationStructure *as = Sys_Alloc(1, sizeof(*as), MH_RenderBackend);
 	if (!as)
 		return NULL;
 
@@ -81,7 +81,7 @@ Re_DestroyAccelerationStructure(struct NeAccelerationStructure *as)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

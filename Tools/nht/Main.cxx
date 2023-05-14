@@ -70,31 +70,31 @@ struct SourceLocations
 };
 
 CXIndex _index;
-vector<const char *> _clangArguments;
+vector<const char *> _cArguments, _cxxArguments;
 vector<NeComponentInfo> _componentInfo;
 vector<NeEnumInfo> _enumInfo;
 vector<string> _processedFiles;
 vector<NeStringHash> _stringHashes;
 mutex _infoMutex, _fileMutex;
 
-static inline void _processStruct(CXCursor cur, vector<CXSourceLocation> *componentLocations);
-static inline void _processEnum(CXCursor cur);
-static inline NeFieldType _stringToType(const char *type);
-static inline const char *_typeToString(NeFieldType type);
-static inline bool _validatePath(const char *path);
-static inline void _addStringHash(const char *str);
-static inline string _macroValue(const string &macro, const vector<tuple<string, CXSourceLocation>> &macros, CXTranslationUnit tu);
+static inline void ProcessStruct(CXCursor cur, vector<CXSourceLocation> *componentLocations);
+static inline void ProcessEnum(CXCursor cur);
+static inline NeFieldType StringToType(const char *type);
+static inline const char *TypeToString(NeFieldType type);
+static inline bool ValidatePath(const char *path);
+static inline void AddStringHash(const char *str);
+static inline string MacroValue(const string &macro, const vector<tuple<string, CXSourceLocation>> &macros, CXTranslationUnit tu);
 
 CXChildVisitResult
-_visitor(CXCursor cur, CXCursor parent, CXClientData data)
+Visitor(CXCursor cur, CXCursor parent, CXClientData data)
 {
 	SourceLocations *loc = (SourceLocations *)data;
 
 	if (clang_isCursorDefinition(cur)) {
 		if (cur.kind == CXCursor_ClassDecl || cur.kind == CXCursor_StructDecl)
-			_processStruct(cur, &loc->component);
+			ProcessStruct(cur, &loc->component);
 		else if (cur.kind == CXCursor_EnumDecl)
-			_processEnum(cur);
+			ProcessEnum(cur);
 	} else if (cur.kind == CXCursor_VarDecl) {
 	} else if (cur.kind == CXCursor_MacroExpansion) {
 		CXString nameStr = clang_getCursorSpelling(cur);
@@ -136,7 +136,7 @@ _visitor(CXCursor cur, CXCursor parent, CXClientData data)
 }
 
 CXChildVisitResult
-_structVisitor(CXCursor cur, CXCursor parent, CXClientData data)
+StructVisitor(CXCursor cur, CXCursor parent, CXClientData data)
 {
 	NeComponentInfo *ci = (NeComponentInfo *)data;
 
@@ -153,7 +153,7 @@ _structVisitor(CXCursor cur, CXCursor parent, CXClientData data)
 			NeFieldInfo fi{};
 
 			snprintf(fi.name, sizeof(fi.name), "%s", name);
-			fi.type = _stringToType(type);
+			fi.type = StringToType(type);
 
 			ci->fieldInfo.push_back(fi);
 		}
@@ -166,7 +166,7 @@ _structVisitor(CXCursor cur, CXCursor parent, CXClientData data)
 }
 
 CXChildVisitResult
-_enumVisitor(CXCursor cur, CXCursor parent, CXClientData data)
+EnumVisitor(CXCursor cur, CXCursor parent, CXClientData data)
 {
 	NeEnumInfo *ei = (NeEnumInfo *)data;
 	
@@ -188,16 +188,18 @@ _enumVisitor(CXCursor cur, CXCursor parent, CXClientData data)
 	return CXChildVisit_Continue;
 }
 
-void
-parse(const char *file)
+static void
+Parse(const char *file)
 {
 	SourceLocations loc;
 
-	CXTranslationUnit tu = clang_createTranslationUnitFromSourceFile(_index, file, (int)_clangArguments.size(), _clangArguments.data(), 0, NULL);
-	//CXTranslationUnit tu = clang_parseTranslationUnit(_index, file, _clangArguments.data(), (int)_clangArguments.size(), NULL, 0, CXTranslationUnit_DetailedPreprocessingRecord);
-	CXCursor cur = clang_getTranslationUnitCursor(tu);
+	CXTranslationUnit tu = strstr(file, ".cxx") ?
+	clang_createTranslationUnitFromSourceFile(_index, file, (int)_cxxArguments.size(), _cxxArguments.data(), 0, NULL)
+	:
+	clang_createTranslationUnitFromSourceFile(_index, file, (int)_cArguments.size(), _cArguments.data(), 0, NULL);
 
-	clang_visitChildren(cur, _visitor, &loc);
+	//CXTranslationUnit tu = clang_parseTranslationUnit(_index, file, _clangArguments.data(), (int)_clangArguments.size(), NULL, 0, CXTranslationUnit_DetailedPreprocessingRecord);
+	clang_visitChildren(clang_getTranslationUnitCursor(tu), Visitor, &loc);
 
 	for (const CXSourceLocation &sl : loc.hash) {
 		CXCursor cur = clang_getCursor(tu, sl);
@@ -211,7 +213,7 @@ parse(const char *file)
 			const char *str = clang_getCString(s);
 
 			if (strlen(str))
-				_addStringHash(str);
+				AddStringHash(str);
 
 			clang_disposeString(s);
 		} else if (clang_getTokenKind(tokens[2]) == CXToken_Identifier) {
@@ -221,7 +223,7 @@ parse(const char *file)
 				CXString s = clang_getTokenSpelling(tu, tokens[2]);
 				const char *str = clang_getCString(s);
 
-				_macroValue(str, loc.macros, tu);
+				MacroValue(str, loc.macros, tu);
 
 				clang_disposeString(s);
 			}
@@ -234,11 +236,11 @@ parse(const char *file)
 }
 
 static void
-_processDirectory(const char *path, vector<string> &files)
+ProcessDirectory(const char *path, vector<string> &files)
 {
 	for (const directory_entry &dent : recursive_directory_iterator(path)) {
 		if (dent.is_directory()) {
-			_processDirectory(dent.path().string().c_str(), files);
+			ProcessDirectory(dent.path().string().c_str(), files);
 		} else if (dent.is_regular_file()) {
 			string p = dent.path().string();
 
@@ -255,12 +257,18 @@ _processDirectory(const char *path, vector<string> &files)
 				continue;
 
 			const char *e = strrchr(p.c_str(), '.');
-			if (!e || (strncmp(e, ".h", 2) && strncmp(e, ".c", 2)))
+			if (!e || (strncmp(e, ".h", 2) && strncmp(e, ".c", 2) && strncmp(e, ".cxx", 2)))
 				continue;
 
 			files.push_back(p);
 		}
 	}
+}
+
+static void
+ProcessFiles(const vector<string> &files)
+{
+
 }
 
 int
@@ -270,42 +278,48 @@ main(int argc, char *argv[])
 
 	_index = clang_createIndex(0, 0);
 
-	_clangArguments.push_back("-std=c18");
-	_clangArguments.push_back("-ID:\\Projects\\NekoEngine\\Include");
-	_clangArguments.push_back("-ID:\\Projects\\NekoEngine\\Deps");
-	_clangArguments.push_back("-ID:\\Projects\\NekoEngine\\Deps\\Lua");
-	_clangArguments.push_back("-ID:\\Projects\\NekoEngine\\Deps\\PhysFS");
+	vector<const char *> arguments{};
+	arguments.push_back("-I/Users/alex/Projects/NekoEngine/Include");
+	arguments.push_back("-I/Users/alex/Projects/NekoEngine/Deps");
+	arguments.push_back("-I/Users/alex/Projects/NekoEngine/Deps/Lua");
+	arguments.push_back("-I/Users/alex/Projects/NekoEngine/Deps/PhysFS");
+
+	_cArguments.push_back("-std=c18");
+	copy(arguments.begin(), arguments.end(), back_inserter(_cArguments));
+
+	_cxxArguments.push_back("-std=c++20");
+	copy(arguments.begin(), arguments.end(), back_inserter(_cxxArguments));
 
 	vector<string> files;
-	_processDirectory("D:\\Projects\\NekoEngine\\Engine", files);
+	ProcessDirectory("/Users/alex/Projects/NekoEngine/Engine", files);
 
-	int threadCount = thread::hardware_concurrency();
+	uint32_t threadCount = thread::hardware_concurrency();
 	uint64_t bucket = files.size() / threadCount;
 
 	thread *threads = new thread[threadCount];
-	for (int i = 0; i < threadCount; ++i) {
+	for (uint32_t i = 0; i < threadCount; ++i) {
 		threads[i] = thread([i, bucket, files] {
 			uint64_t start = i * bucket;
 			for (int j = 0; j < bucket; ++j)
-				parse(files[start + j].c_str());
+				Parse(files[start + j].c_str());
 		});
 	}
 
-	for (int i = 0; i < threadCount; ++i)
+	for (uint32_t i = 0; i < threadCount; ++i)
 		threads[i].join();
 
 	for (uint64_t i = bucket * threadCount; i < files.size(); ++i)
-		parse(files[i].c_str());
+		Parse(files[i].c_str());
 
 	delete[] threads;
 
 	printf("Found %zu components\n", _componentInfo.size());
-/*	for (const NeComponentInfo &ci : _componentInfo) {
+	for (const NeComponentInfo &ci : _componentInfo) {
 		printf("Component: %s\n", ci.name);
 
 		for (const NeFieldInfo &fi : ci.fieldInfo)
-			printf("\t%s %s\n", _typeToString(fi.type), fi.name);
-	}*/
+			printf("\t%s %s\n", TypeToString(fi.type), fi.name);
+	}
 
 	printf("Found %zu enums\n", _enumInfo.size());
 	/*for (const NeEnumInfo &ei : _enumInfo) {
@@ -326,7 +340,7 @@ main(int argc, char *argv[])
 }
 
 static inline void
-_processStruct(CXCursor cur, vector<CXSourceLocation> *componentLocations)
+ProcessStruct(CXCursor cur, vector<CXSourceLocation> *componentLocations)
 {
 	CXSourceRange range = clang_getCursorExtent(cur);
 
@@ -334,7 +348,7 @@ _processStruct(CXCursor cur, vector<CXSourceLocation> *componentLocations)
 	clang_getFileLocation(clang_getRangeStart(range), &f, NULL, NULL, NULL);
 	
 	CXString fName = clang_getFileName(f);
-	if (!_validatePath(clang_getCString(fName))) {
+	if (!ValidatePath(clang_getCString(fName))) {
 		clang_disposeString(fName);
 		return;
 	}
@@ -380,12 +394,12 @@ _processStruct(CXCursor cur, vector<CXSourceLocation> *componentLocations)
 
 	_infoMutex.lock();
 	_componentInfo.push_back(ci);
-	clang_visitChildren(cur, _structVisitor, &_componentInfo[_componentInfo.size() - 1]);
+	clang_visitChildren(cur, StructVisitor, &_componentInfo[_componentInfo.size() - 1]);
 	_infoMutex.unlock();
 }
 
 static inline void
-_processEnum(CXCursor cur)
+ProcessEnum(CXCursor cur)
 {
 	CXSourceRange range = clang_getCursorExtent(cur);
 
@@ -393,7 +407,7 @@ _processEnum(CXCursor cur)
 	clang_getFileLocation(clang_getRangeStart(range), &f, NULL, NULL, NULL);
 	
 	CXString fName = clang_getFileName(f);
-	if (!_validatePath(clang_getCString(fName))) {
+	if (!ValidatePath(clang_getCString(fName))) {
 		clang_disposeString(fName);
 		return;
 	}
@@ -415,7 +429,7 @@ _processEnum(CXCursor cur)
 
 	_infoMutex.lock();
 	_enumInfo.push_back(ei);
-	clang_visitChildren(cur, _enumVisitor, &_enumInfo[_enumInfo.size() - 1]);
+	clang_visitChildren(cur, EnumVisitor, &_enumInfo[_enumInfo.size() - 1]);
 	_infoMutex.unlock();
 
 exit:
@@ -423,7 +437,7 @@ exit:
 }
 
 static inline NeFieldType
-_stringToType(const char *type)
+StringToType(const char *type)
 {
 	size_t len = strlen(type);
 	if (!strncmp(type, "uint8_t", len))
@@ -463,7 +477,7 @@ _stringToType(const char *type)
 }
 
 static inline const char *
-_typeToString(NeFieldType type)
+TypeToString(NeFieldType type)
 {
 	switch (type) {
 	case FT_UINT8: return "ui8";
@@ -487,13 +501,13 @@ _typeToString(NeFieldType type)
 }
 
 static inline bool
-_validatePath(const char *path)
+ValidatePath(const char *path)
 {
 	return strstr(path, "NekoEngine");
 }
 
 static inline void
-_addStringHash(const char *str)
+AddStringHash(const char *str)
 {
 	NeStringHash sh{};
 
@@ -511,7 +525,7 @@ _addStringHash(const char *str)
 }
 
 static inline string
-_macroValue(const string &macro, const vector<tuple<string, CXSourceLocation>> &macros, CXTranslationUnit tu)
+MacroValue(const string &macro, const vector<tuple<string, CXSourceLocation>> &macros, CXTranslationUnit tu)
 {
 	for (const tuple<string, CXSourceLocation> &t : macros) {
 		if (macro.compare(get<0>(t)))
@@ -558,7 +572,7 @@ _macroValue(const string &macro, const vector<tuple<string, CXSourceLocation>> &
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

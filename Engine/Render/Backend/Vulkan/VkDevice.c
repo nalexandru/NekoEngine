@@ -11,20 +11,20 @@ struct FamilyInfo
 	uint32_t id, available, count;
 };
 
-static const char *_devExtensions[10] =
+static const char *f_devExtensions[10] =
 {
 	VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
-static uint32_t _devExtensionCount = 1;
+static uint32_t f_devExtensionCount = 1;
 
-static inline bool _CheckExtension(const char *name, VkExtensionProperties *extProps, uint32_t extCount);
-static inline bool _InitQueues(struct NeRenderDevice *dev, VkDeviceCreateInfo *ci);
+static inline bool CheckExtension(const char *name, VkExtensionProperties *extProps, uint32_t extCount);
+static inline bool InitQueues(struct NeRenderDevice *dev, VkDeviceCreateInfo *ci);
 
 struct NeRenderDevice *
 Re_CreateDevice(struct NeRenderDeviceInfo *info)
 {
 	VkPhysicalDevice physDev = (VkPhysicalDevice)info->reserved;
-	struct NeRenderDevice *dev = Sys_Alloc(1, sizeof(*dev), MH_RenderDriver);
+	struct NeRenderDevice *dev = Sys_Alloc(1, sizeof(*dev), MH_RenderBackend);
 
 	if (!dev)
 		return NULL;
@@ -35,7 +35,7 @@ Re_CreateDevice(struct NeRenderDeviceInfo *info)
 
 	void *pNext = NULL;
 
-	if (!CVAR_BOOL("VulkanBackend_DisableRTX")) {
+	if (!CVAR_BOOL("Vulkan_DisableRTX")) {
 		VkPhysicalDeviceMeshShaderFeaturesNV *msFeatures = Sys_Alloc(sizeof(*msFeatures), 1, MH_Transient);
 		msFeatures->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_NV;
 		msFeatures->pNext = pNext;
@@ -44,7 +44,7 @@ Re_CreateDevice(struct NeRenderDeviceInfo *info)
 			pNext = msFeatures;
 			msFeatures->taskShader = VK_TRUE;
 			msFeatures->meshShader = VK_TRUE;
-			_devExtensions[_devExtensionCount++] = VK_NV_MESH_SHADER_EXTENSION_NAME;
+			f_devExtensions[f_devExtensionCount++] = VK_NV_MESH_SHADER_EXTENSION_NAME;
 		}
 
 		VkPhysicalDeviceRayTracingPipelineFeaturesKHR *rtFeatures = Sys_Alloc(sizeof(*rtFeatures), 1, MH_Transient);
@@ -55,9 +55,9 @@ Re_CreateDevice(struct NeRenderDeviceInfo *info)
 			pNext = rtFeatures;
 			rtFeatures->rayTracingPipeline = VK_TRUE;
 			rtFeatures->rayTracingPipelineTraceRaysIndirect = info->features.indirectRayTracing ? VK_TRUE : VK_FALSE;
-			_devExtensions[_devExtensionCount++] = VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME;
-			_devExtensions[_devExtensionCount++] = VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME;
-			_devExtensions[_devExtensionCount++] = VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME;
+			f_devExtensions[f_devExtensionCount++] = VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME;
+			f_devExtensions[f_devExtensionCount++] = VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME;
+			f_devExtensions[f_devExtensionCount++] = VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME;
 		}
 	}
 
@@ -69,7 +69,7 @@ Re_CreateDevice(struct NeRenderDeviceInfo *info)
 		s2Features->synchronization2 = true;
 		
 		pNext = s2Features;
-		_devExtensions[_devExtensionCount++] = VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME;
+		f_devExtensions[f_devExtensionCount++] = VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME;
 	} else {
 		VkPhysicalDeviceVulkan13Features *vk13Features = Sys_Alloc(sizeof(*vk13Features), 1, MH_Transient);
 		vk13Features->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
@@ -90,6 +90,9 @@ Re_CreateDevice(struct NeRenderDeviceInfo *info)
 	VkPhysicalDeviceVulkan12Features *vk12Features = Sys_Alloc(sizeof(*vk12Features), 1, MH_Transient);
 	vk12Features->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
 	vk12Features->pNext = vk11Features;
+
+	vk12Features->shaderInt8 = VK_TRUE;
+	vk12Features->storageBuffer8BitAccess = VK_TRUE;
 
 	vk12Features->imagelessFramebuffer = VK_TRUE;
 	vk12Features->descriptorIndexing = VK_TRUE;
@@ -128,15 +131,15 @@ Re_CreateDevice(struct NeRenderDeviceInfo *info)
 	VkExtensionProperties *extProps = Sys_Alloc(sizeof(*extProps), extCount, MH_Transient);
 	vkEnumerateDeviceExtensionProperties((VkPhysicalDevice)info->reserved, NULL, &extCount, extProps);
 
-	for (uint32_t i = 0; i < _devExtensionCount; ++i)
-		if (!_CheckExtension(_devExtensions[i], extProps, extCount)) {
-			Sys_LogEntry(VKDRV_MOD, LOG_CRITICAL, "Selected device missing required extension %s", _devExtensions[i]);
+	for (uint32_t i = 0; i < f_devExtensionCount; ++i)
+		if (!CheckExtension(f_devExtensions[i], extProps, extCount)) {
+			Sys_LogEntry(VKDRV_MOD, LOG_CRITICAL, "Selected device missing required extension %s", f_devExtensions[i]);
 			goto error;
 		}
 
-	if (E_GetCVarBln("VulkanBackend_EnableDeviceDiagnostics", false)->bln &&
-			_CheckExtension(VK_NV_DEVICE_DIAGNOSTICS_CONFIG_EXTENSION_NAME, extProps, extCount)) {
-		_devExtensions[_devExtensionCount++] = VK_NV_DEVICE_DIAGNOSTICS_CONFIG_EXTENSION_NAME;
+	if (E_GetCVarBln("Vulkan_EnableDeviceDiagnostics", false)->bln &&
+			CheckExtension(VK_NV_DEVICE_DIAGNOSTICS_CONFIG_EXTENSION_NAME, extProps, extCount)) {
+		f_devExtensions[f_devExtensionCount++] = VK_NV_DEVICE_DIAGNOSTICS_CONFIG_EXTENSION_NAME;
 		VkDeviceDiagnosticsConfigCreateInfoNV ddcci =
 		{
 			.sType = VK_STRUCTURE_TYPE_DEVICE_DIAGNOSTICS_CONFIG_CREATE_INFO_NV,
@@ -152,11 +155,11 @@ Re_CreateDevice(struct NeRenderDeviceInfo *info)
 	{
 		.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
 		.pNext = features,
-		.enabledExtensionCount = _devExtensionCount,
-		.ppEnabledExtensionNames = _devExtensions
+		.enabledExtensionCount = f_devExtensionCount,
+		.ppEnabledExtensionNames = f_devExtensions
 	};
 
-	if (!_InitQueues(dev, &devInfo))
+	if (!InitQueues(dev, &devInfo))
 		goto error;
 
 	VkResult rc = vkCreateDevice((VkPhysicalDevice)info->reserved, &devInfo, Vkd_allocCb, &dev->dev);
@@ -211,7 +214,7 @@ Re_CreateDevice(struct NeRenderDeviceInfo *info)
 	vkCreateSemaphore(dev->dev, &semInfo, Vkd_allocCb, &dev->frameSemaphore);
 
 	dev->semaphoreValue = 0;
-	dev->frameValues = Sys_Alloc(RE_NUM_FRAMES, sizeof(*dev->frameValues), MH_RenderDriver);
+	dev->frameValues = Sys_Alloc(RE_NUM_FRAMES, sizeof(*dev->frameValues), MH_RenderBackend);
 
 	if (!Vk_CreateDescriptorSet(dev))
 		goto error;
@@ -235,25 +238,27 @@ Re_CreateDevice(struct NeRenderDeviceInfo *info)
 	if (vkCreateCommandPool(dev->dev, &poolInfo, Vkd_allocCb, &dev->driverTransferPool) != VK_SUCCESS)
 		goto error;
 
-	if (E_GetCVarBln("VulkanBackend_ForceNonCoherentStaging", false)->bln) {
+	if (E_GetCVarBln("Vulkan_ForceNonCoherentStaging", false)->bln) {
 		Re_deviceInfo.features.coherentMemory = false;
 		Sys_LogEntry(VKDRV_MOD, LOG_DEBUG, "Forcing non-coherent staging memory");
 	}
 
 	if (!Re_deviceInfo.features.coherentMemory)
-		if (!Vkd_InitStagingArea(dev))
+		if (!VkBk_InitStagingArea(dev))
 			goto error;
 
 #ifdef _DEBUG
-	Vkd_SetObjectName(dev->dev, dev->graphics.queue, VK_OBJECT_TYPE_QUEUE, "Graphics Queue");
-	Vkd_SetObjectName(dev->dev, dev->compute.queue, VK_OBJECT_TYPE_QUEUE, "Compute Queue");
-	Vkd_SetObjectName(dev->dev, dev->transfer.queue, VK_OBJECT_TYPE_QUEUE, "Transfer Queue");
+	VkBk_SetObjectName(dev->dev, dev->graphics.queue, VK_OBJECT_TYPE_QUEUE, "Graphics Queue");
+	VkBk_SetObjectName(dev->dev, dev->compute.queue, VK_OBJECT_TYPE_QUEUE, "Compute Queue");
+	VkBk_SetObjectName(dev->dev, dev->transfer.queue, VK_OBJECT_TYPE_QUEUE, "Transfer Queue");
 
-	Vkd_SetObjectName(dev->dev, dev->frameSemaphore, VK_OBJECT_TYPE_SEMAPHORE, "Frame Semaphore");
+	VkBk_SetObjectName(dev->dev, dev->frameSemaphore, VK_OBJECT_TYPE_SEMAPHORE, "Frame Semaphore");
 
-	Vkd_SetObjectName(dev->dev, dev->driverTransferFence, VK_OBJECT_TYPE_FENCE, "Driver Transfer Fence");
-	Vkd_SetObjectName(dev->dev, dev->driverTransferPool, VK_OBJECT_TYPE_COMMAND_POOL, "Driver Transfer Pool");
+	VkBk_SetObjectName(dev->dev, dev->driverTransferFence, VK_OBJECT_TYPE_FENCE, "Driver Transfer Fence");
+	VkBk_SetObjectName(dev->dev, dev->driverTransferPool, VK_OBJECT_TYPE_COMMAND_POOL, "Driver Transfer Pool");
 #endif
+
+	VkBk_InitDStorage();
 
 	return dev;
 
@@ -300,7 +305,9 @@ void
 Re_DestroyDevice(struct NeRenderDevice *dev)
 {
 	if (!Re_deviceInfo.features.coherentMemory)
-		Vkd_TermStagingArea(dev);
+		VkBk_TermStagingArea(dev);
+
+	VkBk_TermDStorage();
 
 	Vk_TermDescriptorSet(dev);
 	Vk_UnloadShaders(dev->dev);
@@ -311,45 +318,49 @@ Re_DestroyDevice(struct NeRenderDevice *dev)
 
 	vkDestroyDevice(dev->dev, Vkd_allocCb);
 
+	Sys_TermFutex(dev->graphics.ftx);
+	Sys_TermFutex(dev->transfer.ftx);
+	Sys_TermFutex(dev->compute.ftx);
+
 	Sys_Free(dev->frameValues);
 	Sys_Free(dev);
 }
 
-static uint64_t _IFace_FrameSemaphoreValue(struct NeRenderDevice *dev) { return dev->frameValues[Re_frameId]; }
-static VkCommandBuffer _IFace_CurrentCommandBuffer(struct NeRenderContext *ctx) { return ctx->cmdBuffer; }
-static VkSemaphore _IFace_SemaphoreHandle(struct NeSemaphore *sem) { return sem->sem; }
-static uint64_t _IFace_CurrentSemaphoreValue(struct NeSemaphore *sem) { return sem->value; }
-static VkImage _IFace_Image(struct NeTexture *tex) { return tex->image; }
-static VkImageView _IFace_ImageView(struct NeTexture *tex) { return tex->imageView; }
-static VkBuffer _IFace_Buffer(struct NeBuffer *buff) { return buff->buff; }
-static VkAccelerationStructureKHR _IFace_AccelerationStructure(struct NeAccelerationStructure *as) { return as->as; }
-static VkFramebuffer _IFace_Framebuffer(struct NeFramebuffer *fb) { return fb->fb; }
-static VkRenderPass _IFace_RenderPass(struct NeRenderPassDesc *rp) { return rp->rp; }
-static VkSampler _IFace_Sampler(struct NeSampler *s) { return (VkSampler)s; }
-static VkPipeline _IFace_Pipeline(struct NePipeline *p) { return p->pipeline; }
+static uint64_t IFace_FrameSemaphoreValue(struct NeRenderDevice *dev) { return dev->frameValues[Re_frameId]; }
+static VkCommandBuffer IFace_CurrentCommandBuffer(struct NeRenderContext *ctx) { return ctx->cmdBuffer; }
+static VkSemaphore IFace_SemaphoreHandle(struct NeSemaphore *sem) { return sem->sem; }
+static uint64_t IFace_CurrentSemaphoreValue(struct NeSemaphore *sem) { return sem->value; }
+static VkImage IFace_Image(struct NeTexture *tex) { return tex->image; }
+static VkImageView IFace_ImageView(struct NeTexture *tex) { return tex->imageView; }
+static VkBuffer IFace_Buffer(struct NeBuffer *buff) { return buff->buff; }
+static VkAccelerationStructureKHR IFace_AccelerationStructure(struct NeAccelerationStructure *as) { return as->as; }
+static VkFramebuffer IFace_Framebuffer(struct NeFramebuffer *fb) { return fb->fb; }
+static VkRenderPass IFace_RenderPass(struct NeRenderPassDesc *rp) { return rp->rp; }
+static VkSampler IFace_Sampler(struct NeSampler *s) { return (VkSampler)s; }
+static VkPipeline IFace_Pipeline(struct NePipeline *p) { return p->pipeline; }
 
 struct NeRenderInterface *
 Re_CreateRenderInterface(void)
 {
-	struct NeRenderInterface *iface = Sys_Alloc(sizeof(*iface), 1, MH_RenderDriver);
+	struct NeRenderInterface *iface = Sys_Alloc(sizeof(*iface), 1, MH_RenderBackend);
 	if (!iface)
 		return NULL;
 
-	iface->CurrentCommandBuffer = _IFace_CurrentCommandBuffer;
+	iface->CurrentCommandBuffer = IFace_CurrentCommandBuffer;
 
-	iface->FrameSemaphoreValue = _IFace_FrameSemaphoreValue;
+	iface->FrameSemaphoreValue = IFace_FrameSemaphoreValue;
 	iface->frameSemaphore = Re_device->frameSemaphore;
 
-	iface->SemaphoreHandle = _IFace_SemaphoreHandle;
-	iface->CurrentSemaphoreValue = _IFace_CurrentSemaphoreValue;
-	iface->Image = _IFace_Image;
-	iface->ImageView = _IFace_ImageView;
-	iface->Buffer = _IFace_Buffer;
-	iface->Framebuffer = _IFace_Framebuffer;
-	iface->Sampler = _IFace_Sampler;
-	iface->RenderPass = _IFace_RenderPass;
-	iface->AccelerationStructure = _IFace_AccelerationStructure;
-	iface->Pipeline = _IFace_Pipeline;
+	iface->SemaphoreHandle = IFace_SemaphoreHandle;
+	iface->CurrentSemaphoreValue = IFace_CurrentSemaphoreValue;
+	iface->Image = IFace_Image;
+	iface->ImageView = IFace_ImageView;
+	iface->Buffer = IFace_Buffer;
+	iface->Framebuffer = IFace_Framebuffer;
+	iface->Sampler = IFace_Sampler;
+	iface->RenderPass = IFace_RenderPass;
+	iface->AccelerationStructure = IFace_AccelerationStructure;
+	iface->Pipeline = IFace_Pipeline;
 	
 	iface->device = Re_device->dev;
 	iface->graphicsQueue = Re_device->graphics.queue;
@@ -375,7 +386,7 @@ Re_DestroyRenderInterface(struct NeRenderInterface *iface)
 }
 
 static inline bool
-_CheckExtension(const char *name, VkExtensionProperties *extProps, uint32_t extCount)
+CheckExtension(const char *name, VkExtensionProperties *extProps, uint32_t extCount)
 {
 	size_t len = strnlen(name, VK_MAX_EXTENSION_NAME_SIZE);
 	for (uint32_t i = 0; i < extCount; ++i)
@@ -385,7 +396,7 @@ _CheckExtension(const char *name, VkExtensionProperties *extProps, uint32_t extC
 }
 
 static inline bool
-_InitQueues(struct NeRenderDevice *dev, VkDeviceCreateInfo *ci)
+InitQueues(struct NeRenderDevice *dev, VkDeviceCreateInfo *ci)
 {
 	uint32_t count;
 	vkGetPhysicalDeviceQueueFamilyProperties(dev->physDev, &count, NULL);
@@ -430,7 +441,7 @@ _InitQueues(struct NeRenderDevice *dev, VkDeviceCreateInfo *ci)
 		if (transfer.id == UINT32_MAX)
 			transfer.id = compute.id;
 
-		if (!E_GetCVarBln("VulkanBackend_UseComputeQueue", true)->bln)
+		if (!E_GetCVarBln("Vulkan_UseComputeQueue", true)->bln)
 			compute.id = graphics.id;
 	}
 
@@ -535,7 +546,7 @@ _InitQueues(struct NeRenderDevice *dev, VkDeviceCreateInfo *ci)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

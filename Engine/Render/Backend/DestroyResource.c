@@ -19,13 +19,13 @@ struct NeTDestroy
 	};
 };
 
-struct NeArray _destroyedResources[RE_NUM_FRAMES];
+struct NeArray f_destroyedResources[RE_NUM_FRAMES];
 
 bool
 Re_InitResourceDestructor(void)
 {
 	for (uint32_t i = 0; i < RE_NUM_FRAMES; ++i)
-		if (!Rt_InitArray(&_destroyedResources[i], 50, sizeof(struct NeTDestroy), MH_Render))
+		if (!Rt_InitArray(&f_destroyedResources[i], 50, sizeof(struct NeTDestroy), MH_Render))
 			return false;
 	return true;
 }
@@ -34,13 +34,13 @@ void
 Re_DestroyResources(void)
 {
 	const struct NeTDestroy *d;
-	Rt_ArrayForEach(d, &_destroyedResources[Re_frameId]) {
+	Rt_ArrayForEach(d, &f_destroyedResources[Re_frameId]) {
 		if (d->type == DT_OBJECT)
 			d->destroy(d->object);
 		else
 			d->destroyHandle(d->handle);
 	}
-	Rt_ClearArray(&_destroyedResources[Re_frameId], false);
+	Rt_ClearArray(&f_destroyedResources[Re_frameId], false);
 }
 
 void
@@ -48,18 +48,18 @@ Re_TermResourceDestructor(void)
 {
 	for (uint32_t i = 0; i < RE_NUM_FRAMES; ++i) {
 		const struct NeTDestroy *d;
-		Rt_ArrayForEach(d, &_destroyedResources[i]) {
+		Rt_ArrayForEach(d, &f_destroyedResources[i]) {
 			if (d->type == DT_OBJECT)
 				d->destroy(d->object);
 			else
 				d->destroyHandle(d->handle);
 		}
-		Rt_TermArray(&_destroyedResources[i]);
+		Rt_TermArray(&f_destroyedResources[i]);
 	}
 }
 
-static void _DestroyBuffer(struct NeBuffer *buff) { Re_BkDestroyBuffer(buff); }
-static void _DestroyTexture(struct NeTexture *tex) { Re_BkDestroyTexture(tex); }
+static void DestroyBuffer(struct NeBuffer *buff) { Re_BkDestroyBuffer(buff); }
+static void DestroyTexture(struct NeTexture *tex) { Re_BkDestroyTexture(tex); }
 
 #define TDESTROY(x, func)								\
 void Re_TDestroy ## x(struct x *obj) {					\
@@ -67,9 +67,9 @@ void Re_TDestroy ## x(struct x *obj) {					\
 	{													\
 		.type = DT_OBJECT,								\
 		.object = obj,									\
-		.destroy = (void(*)(void*))func					\
+		.destroy = (void(*)(void*))(func)				\
 	};													\
-	Rt_ArrayAdd(&_destroyedResources[Re_frameId], &d);	\
+	Rt_ArrayAdd(&f_destroyedResources[Re_frameId], &d);	\
 }
 
 #define TDESTROYH(x, func)								\
@@ -78,13 +78,13 @@ void Re_TDestroyH ## x(x ## Handle h) {					\
 	{													\
 		.type = DT_HANDLE,								\
 		.handle = h,									\
-		.destroy = (void(*)(void*))func					\
+		.destroy = (void(*)(void*))(func)				\
 	};													\
-	Rt_ArrayAdd(&_destroyedResources[Re_frameId], &d);	\
+	Rt_ArrayAdd(&f_destroyedResources[Re_frameId], &d);	\
 }
 
-TDESTROY(NeBuffer, _DestroyBuffer)
-TDESTROY(NeTexture, _DestroyTexture)
+TDESTROY(NeBuffer, DestroyBuffer)
+TDESTROY(NeTexture, DestroyTexture)
 TDESTROY(NeFramebuffer, Re_DestroyFramebuffer)
 TDESTROY(NeAccelerationStructure, Re_DestroyAccelerationStructure)
 TDESTROY(NeSampler, Re_DestroySampler)
@@ -117,7 +117,7 @@ TDESTROYH(NeBuffer, Re_DestroyBuffer)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

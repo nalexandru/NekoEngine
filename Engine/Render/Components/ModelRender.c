@@ -15,10 +15,10 @@ struct MorphInfo
 	char file[4096];
 };
 
-static bool _InitModelRender(struct NeModelRender *mr, const void **args);
-static void _TermModelRender(struct NeModelRender *mr);
+static bool InitModelRender(struct NeModelRender *mr, const void **args);
+static void TermModelRender(struct NeModelRender *mr);
 
-E_REGISTER_COMPONENT(MODEL_RENDER_COMP, struct NeModelRender, 1, _InitModelRender, _TermModelRender)
+NE_REGISTER_COMPONENT(NE_MODEL_RENDER, struct NeModelRender, 1, InitModelRender, NULL, TermModelRender)
 
 void
 Re_SetModel(struct NeModelRender *mr, NeHandle model)
@@ -27,28 +27,33 @@ Re_SetModel(struct NeModelRender *mr, NeHandle model)
 	struct NeModel *old = E_ResourcePtr(mr->model);
 
 	if (old)
-		_TermModelRender(mr);
+		TermModelRender(mr);
 
 	if (!new)
 		return;
 
 	mr->model = model;
 
-	mr->materials = Sys_Alloc(new->meshCount, sizeof(*mr->materials), MH_Render);
-	mr->meshBounds = Sys_Alloc(new->meshCount, sizeof(*mr->meshBounds), MH_Render);
+	memcpy(&mr->bounds, &new->bounds, sizeof(mr->bounds));
 
+	mr->meshBounds = Sys_ReAlloc(mr->meshBounds, new->meshCount, sizeof(*mr->meshBounds), MH_Render);
+	for (uint32_t i = 0; i < new->meshCount; ++i)
+		memcpy(&mr->meshBounds[i], &new->meshes[i].bounds, sizeof(mr->meshBounds[i]));
+
+	mr->materials = Sys_ReAlloc(mr->materials, new->meshCount, sizeof(*mr->materials), MH_Render);
 	for (uint32_t i = 0; i < new->meshCount; ++i)
 		Re_InitMaterial(new->meshes[i].materialResource, &mr->materials[i]);
 
 	mr->vertexBuffer = new->gpu.vertexBuffer;
+	mr->meshCount = new->meshCount;
 }
 
 static bool
-_InitModelRender(struct NeModelRender *mr, const void **args)
+InitModelRender(struct NeModelRender *mr, const void **args)
 {
 	struct NeArray morphs = { 0 };
-	NeHandle model = E_INVALID_HANDLE;
-	mr->model = E_INVALID_HANDLE;
+	NeHandle model = NE_INVALID_HANDLE;
+	mr->model = NE_INVALID_HANDLE;
 
 	for (; args && *args; ++args) {
 		const char *arg = *args;
@@ -56,18 +61,15 @@ _InitModelRender(struct NeModelRender *mr, const void **args)
 
 		if (!strncmp(arg, "Model", len)) {
 			model = E_LoadResource(*(++args), RES_MODEL);
-		}
-		else if (!strncmp(arg, "__ModelHandle", len)) {
+		} else if (!strncmp(arg, "__ModelHandle", len)) {
 			model = (NeHandle)(*(++args));
-		}
-		else if (!strncmp(arg, "Material", len)) {
-		}
-		else if (!strncmp(arg, "Morph", len)) {
+		} else if (!strncmp(arg, "Material", len)) {
+		} else if (!strncmp(arg, "Morph", len)) {
 			if (!morphs.data)
 				Rt_InitArray(&morphs, 10, sizeof(struct MorphInfo), MH_Asset);
 
 			struct MorphInfo mi;
-			snprintf(mi.file, sizeof(mi.file), "%s", (char *)(*(++args)));
+			strlcpy(mi.file, (char *)(*(++args)), sizeof(mi.file));
 
 			Rt_ArrayAdd(&morphs, &mi);
 		}
@@ -75,7 +77,7 @@ _InitModelRender(struct NeModelRender *mr, const void **args)
 
 	// TODO: material override
 
-	if (model != E_INVALID_HANDLE) {
+	if (model != NE_INVALID_HANDLE) {
 		Re_SetModel(mr, model);
 
 		struct NeModel *mdl = E_ResourcePtr(model);
@@ -89,7 +91,7 @@ _InitModelRender(struct NeModelRender *mr, const void **args)
 					continue;
 				}
 
-				if (!E_LoadNMorphAsset(&stm, mdl))
+				if (!Asset_LoadMorphPackForModel(&stm, mdl))
 					Sys_LogEntry(MR_MOD, LOG_CRITICAL, "Failed to load morph %s", mi->file);
 				else
 					Sys_LogEntry(MR_MOD, LOG_INFORMATION, "Loaded morph %s", mi->file);
@@ -105,16 +107,14 @@ _InitModelRender(struct NeModelRender *mr, const void **args)
 }
 
 static void
-_TermModelRender(struct NeModelRender *mr)
+TermModelRender(struct NeModelRender *mr)
 {
 	struct NeModel *m = E_ResourcePtr(mr->model);
 	if (!m)
 		return;
 
-	for (uint32_t i = 0; i < m->meshCount; ++i) {
+	for (uint32_t i = 0; i < m->meshCount; ++i)
 		Re_TermMaterial(&mr->materials[i]);
-		Sys_Free(mr->meshBounds[i]);
-	}
 
 	E_UnloadResource(mr->model);
 	Sys_Free(mr->meshBounds);
@@ -147,7 +147,7 @@ _TermModelRender(struct NeModelRender *mr)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

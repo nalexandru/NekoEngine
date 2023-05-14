@@ -59,7 +59,7 @@ static int l_checkmode (const char *mode) {
 #define l_popen(L,c,m)		(fflush(NULL), popen(c,m))
 #define l_pclose(L,file)	(pclose(file))
 
-#elif defined(LUA_USE_WINDOWS) || defined(LUA_USE_XBOX)	/* }{ */
+#elif defined(LUA_USE_WINDOWS) || defined(LUA_USE_XBOX) /* }{ */
 
 #define l_popen(L,c,m)		(_popen(c,m))
 #define l_pclose(L,file)	(_pclose(file))
@@ -283,7 +283,6 @@ static int io_open (lua_State *L) {
 static int io_pclose (lua_State *L) {
   LStream *p = tolstream(L);
   errno = 0;
-
 #ifndef LUA_USE_XBOX
   return luaL_execresult(L, l_pclose(L, p->f));
 #else
@@ -297,7 +296,6 @@ static int io_popen (lua_State *L) {
   const char *mode = luaL_optstring(L, 2, "r");
   LStream *p = newprefile(L);
   luaL_argcheck(L, l_checkmodep(mode), 2, "invalid mode");
-
 #ifndef LUA_USE_XBOX
   p->f = l_popen(L, filename, mode);
   p->closef = &io_pclose;
@@ -309,7 +307,7 @@ static int io_popen (lua_State *L) {
 
 
 static int io_tmpfile (lua_State *L) {
-#if !defined(__PS3__)
+#if !defined(LUA_USE_PS3)
   LStream *p = newfile(L);
   p->f = tmpfile();
   return (p->f == NULL) ? luaL_fileresult(L, 0, NULL) : 1;

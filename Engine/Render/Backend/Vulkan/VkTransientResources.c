@@ -2,10 +2,8 @@
 
 #include "VulkanBackend.h"
 
-#define ROUND_UP(v, powerOf2Alignment) (((v) + (powerOf2Alignment)-1) & ~((powerOf2Alignment)-1))
-
 struct NeTexture *
-Re_CreateTransientTexture(const struct NeTextureDesc *desc, uint16_t location, uint64_t offset, uint64_t *size)
+Re_BkCreateTransientTexture(const struct NeTextureDesc *desc, uint16_t location, uint64_t offset, uint64_t *size)
 {
 	struct NeTexture *tex = Sys_Alloc(1, sizeof(*tex), MH_Frame);
 	if (!tex)
@@ -19,7 +17,7 @@ Re_CreateTransientTexture(const struct NeTextureDesc *desc, uint16_t location, u
 	VkMemoryRequirements mr;
 	vkGetImageMemoryRequirements(Re_device->dev, tex->image, &mr);
 
-	uint64_t realOffset = ROUND_UP(offset, mr.alignment);
+	uint64_t realOffset = NE_ROUND_UP(offset, mr.alignment);
 	*size = mr.size + realOffset - offset;
 
 	vkBindImageMemory(Re_device->dev, tex->image, Re_device->transientHeap, realOffset);
@@ -62,14 +60,14 @@ Re_BkCreateTransientBuffer(const struct NeBufferDesc *desc, uint16_t location, u
 	VkMemoryRequirements mr;
 	vkGetBufferMemoryRequirements(Re_device->dev, buff->buff, &mr);
 
-	uint64_t realOffset = ROUND_UP(offset, mr.alignment);
+	uint64_t realOffset = NE_ROUND_UP(offset, mr.alignment);
 	*size = mr.size + realOffset - offset;
 
 	vkBindBufferMemory(Re_device->dev, buff->buff, Re_device->transientHeap, realOffset);
 
 #ifdef _DEBUG
 	if (desc->name)
-		Vkd_SetObjectName(Re_device->dev, buff->buff, VK_OBJECT_TYPE_BUFFER, desc->name);
+		VkBk_SetObjectName(Re_device->dev, buff->buff, VK_OBJECT_TYPE_BUFFER, desc->name);
 #endif
 
 	return buff;
@@ -94,7 +92,7 @@ Re_InitTransientHeap(uint64_t size)
 		return false;
 
 #ifdef _DEBUG
-	Vkd_SetObjectName(Re_device->dev, Re_device->transientHeap, VK_OBJECT_TYPE_DEVICE_MEMORY, "Transient Memory Heap");
+	VkBk_SetObjectName(Re_device->dev, Re_device->transientHeap, VK_OBJECT_TYPE_DEVICE_MEMORY, "Transient Memory Heap");
 #endif
 
 	return true;
@@ -138,7 +136,7 @@ Re_TermTransientHeap(void)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

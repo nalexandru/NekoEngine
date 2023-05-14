@@ -5,138 +5,64 @@
 #include <Engine/Events.h>
 #include <Engine/IO.h>
 #include <System/Thread.h>
+#include <Engine/Config.h>
+#include <Script/Interface.h>
 
-#ifdef _NEKO_EDITOR_
-#	include <Editor/Editor.h>
-#endif
+#include <Editor/Editor.h>
 
 #include "ECS.h"
 
-static int64_t _nextHandle;
-static struct NeArray _componentTypes;
-static const char _scriptTemplate[] = "function %s_Get%s(c) return CompIF.Get%s(c, %lu, %lu); end\nfunction %s_Set%s(c, v) CompIF.Set%s(c, %lu, %lu, v); end";
+static int64_t f_nextHandle;
+static struct NeArray f_componentTypes;
 
 #define COMP_MOD	"Component"
 #define EVT_COMPONENT_REGISTERED_PTR	"ComponentRegisteredPTR"
 
-static inline bool _InitArray(void);
-static void _ComponentRegistered(struct NeScene *s, struct NeCompType *type);
-static void _LoadScript(const char *path);
-static bool _ScriptCompInit(void *comp, const void **args, const char *script);
-static void _ScriptCompTerm(void *comp, const char *script);
-
-NeCompHandle
-E_CreateComponentS(struct NeScene *s, const char *typeName, NeEntityHandle owner, const void **args)
-{
-	NeCompTypeId typeId = 0;
-	struct NeArray *a = NULL;
-	struct NeQueue *fl = NULL;
-	struct NeCompBase *comp = NULL;
-	struct NeCompType *type = NULL;
-
-	typeId = E_ComponentTypeId(typeName);
-	if (typeId == RT_NOT_FOUND) {
-		Sys_LogEntry(COMP_MOD, LOG_CRITICAL, "Type [%s] does not exist", typeName);
-		return E_INVALID_HANDLE;
-	}
-	type = Rt_ArrayGet(&_componentTypes, typeId);
-
-	Sys_AtomicLockWrite(&s->compLock);
-
-	a = Rt_ArrayGet(&s->compData, typeId);
-	if (!a) {
-		Sys_LogEntry(COMP_MOD, LOG_CRITICAL, "Data for type [%s] does not exist", typeName);
-		goto error;
-	}
-
-	fl = Rt_ArrayGet(&s->compFree, typeId);
-	if (!fl) {
-		Sys_LogEntry(COMP_MOD, LOG_CRITICAL, "Free list for type [%s] does not exist", typeName);
-		goto error;
-	}
-
-	if (fl->count) {
-		size_t idx = *((size_t *) Rt_QueuePop(fl));
-		comp = Rt_ArrayGet(a, idx);
-		comp->_handleId = idx;
-	} else {
-		comp = Rt_ArrayAllocate(a);
-		if (!comp) {
-			Sys_LogEntry(COMP_MOD, LOG_CRITICAL, "Failed to allocate component of type [%s]", typeName);
-			goto error;
-		}
-
-		comp->_handleId = a->count - 1;
-	}
-
-	comp->_owner = owner;
-	comp->_valid = 1;
-	comp->_enabled = 1;
-	comp->_typeId = typeId;
-	comp->_sceneId = s->id;
-
-	NeCompHandle handle = comp->_handleId | (uint64_t)typeId << 32;
-
-	if (type->init) {
-		bool rc = !type->script ? type->init(comp, args) : type->initScript(comp, args, type->script);
-		if (!rc) {
-			size_t idx = comp->_handleId;
-			Rt_QueuePush(fl, &idx);
-			--_nextHandle;
-			Sys_LogEntry(COMP_MOD, LOG_CRITICAL, "Failed to create component of type [%s]", typeName);
-			goto error;
-		}
-	}
-
-	Sys_AtomicUnlockWrite(&s->compLock);
-
-	struct NeComponentCreationData *ccd = Sys_Alloc(sizeof(*ccd), 1, MH_Frame);
-	ccd->type = typeId;
-	ccd->handle = handle;
-	ccd->owner = owner;
-	ccd->ptr = comp;
-	E_Broadcast(EVT_COMPONENT_CREATED, ccd);
-
-	return handle;
-
-error:
-	Sys_AtomicUnlockWrite(&s->compLock);
-	return E_INVALID_HANDLE;
-}
+static inline bool InitArray(void);
+static void ComponentRegistered(struct NeScene *s, struct NeCompType *type);
+static void LoadScript(const char *path);
+static bool ScriptCompInit(struct NeScriptComponent *comp, const void **args, const char *type, const char *script);
+static void ScriptCompTerm(struct NeScriptComponent *comp, const char *type, const char *script);
 
 NeCompHandle
 E_CreateComponentIdS(struct NeScene *s, NeCompTypeId typeId, NeEntityHandle owner, const void **args)
 {
-	struct NeArray *a = NULL;
+	struct NeArray *na = NULL, *a = NULL;
 	struct NeQueue *fl = NULL;
 	struct NeCompType *type = NULL;
 	struct NeCompBase *comp = NULL;
 
-	type = Rt_ArrayGet(&_componentTypes, typeId);
+	type = Rt_ArrayGet(&f_componentTypes, typeId);
 	if (!type)
-		return E_INVALID_HANDLE;
-
-	Sys_AtomicLockWrite(&s->compLock);
+		return NE_INVALID_HANDLE;
 
 	a = Rt_ArrayGet(&s->compData, typeId);
 	if (!a)
+		goto error;
+
+	na = Rt_ArrayGet(&s->newCompData, typeId);
+	if (!na)
 		goto error;
 
 	fl = Rt_ArrayGet(&s->compFree, typeId);
 	if (!fl)
 		goto error;
 
+	Sys_AtomicLockWrite(&s->lock.newComp);
+
+	comp = Rt_ArrayAllocate(na);
+	if (!comp)
+		goto error;
+
 	if (fl->count) {
-		size_t idx = *((size_t *) Rt_QueuePop(fl));
-		comp = Rt_ArrayGet(a, idx);
+		size_t idx = *((size_t *)Rt_QueuePop(fl));
 		comp->_handleId = idx;
 	} else {
-		comp = Rt_ArrayAllocate(a);
-		if (!comp)
-			goto error;
-
-		comp->_handleId = a->count - 1;
+		uint64_t *offset = Rt_ArrayGet(&s->newCompOffset, typeId);
+		comp->_handleId = a->count + (*offset)++;
 	}
+
+	Sys_AtomicUnlockWrite(&s->lock.newComp);
 
 	comp->_owner = owner;
 	comp->_valid = 1;
@@ -147,29 +73,21 @@ E_CreateComponentIdS(struct NeScene *s, NeCompTypeId typeId, NeEntityHandle owne
 	NeCompHandle handle =  comp->_handleId | (uint64_t)typeId << 32;
 
 	if (type->init) {
-		bool rc = !type->script ? type->init(comp, args) : type->initScript(comp, args, type->script);
+		bool rc = !type->script ? type->init(comp, args) : type->initScript(comp, args, type->name, type->script);
 		if (!rc) {
 			size_t idx = comp->_handleId;
+			Sys_AtomicLockWrite(&s->lock.newComp);
 			Rt_QueuePush(fl, &idx);
-			--_nextHandle;
+			--f_nextHandle;
 			goto error;
 		}
 	}
 
-	Sys_AtomicUnlockWrite(&s->compLock);
-
-	struct NeComponentCreationData *ccd = Sys_Alloc(sizeof(*ccd), 1, MH_Frame);
-	ccd->type = typeId;
-	ccd->handle = handle;
-	ccd->owner = owner;
-	ccd->ptr = comp;
-	E_Broadcast(EVT_COMPONENT_CREATED, ccd);
-
 	return handle;
 
 error:
-	Sys_AtomicUnlockWrite(&s->compLock);
-	return E_INVALID_HANDLE;
+	Sys_AtomicUnlockWrite(&s->lock.newComp);
+	return NE_INVALID_HANDLE;
 }
 
 void
@@ -181,7 +99,7 @@ E_DestroyComponentS(struct NeScene *s, NeCompHandle handle)
 	size_t idx = E_HANDLE_ID(handle);
 	struct NeCompBase *comp = NULL;
 
-	type = Rt_ArrayGet(&_componentTypes, E_HANDLE_TYPE(handle));
+	type = Rt_ArrayGet(&f_componentTypes, E_HANDLE_TYPE(handle));
 	if (!type)
 		return;
 
@@ -193,21 +111,22 @@ E_DestroyComponentS(struct NeScene *s, NeCompHandle handle)
 	if (!fl)
 		return;
 
-	Sys_AtomicLockWrite(&s->compLock);
-
+	Sys_AtomicLockWrite(&s->lock.comp);
 	comp = Rt_ArrayGet(a, idx);
+	Sys_AtomicUnlockWrite(&s->lock.comp);
 
 	if (type->term) {
 		if (!type->script)
 			type->term(comp);
 		else
-			type->termScript(comp, type->script);
+			type->termScript(comp, type->name, type->script);
 	}
 
 	comp->_valid = false;
-	Rt_QueuePush(fl, &idx);
 
-	Sys_AtomicUnlockWrite(&s->compLock);
+	Sys_AtomicLockWrite(&s->lock.comp);
+	Rt_QueuePush(fl, &idx);
+	Sys_AtomicUnlockWrite(&s->lock.comp);
 
 	E_Broadcast(EVT_COMPONENT_DESTROYED, (void *)handle);
 }
@@ -215,16 +134,32 @@ E_DestroyComponentS(struct NeScene *s, NeCompHandle handle)
 void *
 E_ComponentPtrS(struct NeScene *s, NeCompHandle handle)
 {
-	void *r = NULL;
+	struct NeCompBase *comp = NULL;
+	if (E_HANDLE_TYPE(handle) >= s->compData.count)
+		return NULL;
 
-	Sys_AtomicLockRead(&s->compLock);
+	struct NeArray *compData = (struct NeArray *)s->compData.data;
+	struct NeArray *newCompData = (struct NeArray *)s->newCompData.data;
+	Sys_AtomicLockRead(&s->lock.comp);
 	{
-		const struct NeArray *a = Rt_ArrayGet(&s->compData, E_HANDLE_TYPE(handle));
-		r = a ? Rt_ArrayGet(a, E_HANDLE_ID(handle)) : NULL;
-	}
-	Sys_AtomicUnlockRead(&s->compLock);
+		comp = Rt_ArrayGet(&compData[E_HANDLE_TYPE(handle)], E_HANDLE_ID(handle));
+		if ((!comp || !comp->_valid) && newCompData[E_HANDLE_TYPE(handle)].count) {
+			Sys_AtomicLockRead(&s->lock.newComp);
+			{
+				const size_t id = E_HANDLE_ID(handle);
+				Rt_ArrayForEach(comp, &newCompData[E_HANDLE_TYPE(handle)]) {
+					if (comp->_handleId == id)
+						break;
 
-	return r;
+					comp = NULL;
+				}
+			}
+			Sys_AtomicUnlockRead(&s->lock.newComp);
+		}
+	}
+	Sys_AtomicUnlockRead(&s->lock.comp);
+
+	return comp;
 }
 
 NeCompTypeId
@@ -236,33 +171,31 @@ E_ComponentTypeS(struct NeScene *s, NeCompHandle handle)
 NeCompTypeId
 E_ComponentTypeId(const char *typeName)
 {
-	size_t id = 0;
-	uint64_t hash = 0;
-	hash = Rt_HashString(typeName);
-	id = Rt_ArrayFindId(&_componentTypes, &hash, Rt_U64CmpFunc);
-	return id != RT_NOT_FOUND ? id : E_INVALID_HANDLE;
+	const uint64_t hash = Rt_HashString(typeName);
+	const size_t id = Rt_ArrayFindId(&f_componentTypes, &hash, Rt_U64CmpFunc);
+	return id != RT_NOT_FOUND ? id : NE_INVALID_HANDLE;
 }
 
 const char *
 E_ComponentTypeName(NeCompTypeId typeId)
 {
-	const struct NeCompType *type = Rt_ArrayGet(&_componentTypes, typeId);
+	const struct NeCompType *type = Rt_ArrayGet(&f_componentTypes, typeId);
 	return type ? type->name : NULL;
 }
 
 size_t
 E_ComponentTypeSize(NeCompTypeId typeId)
 {
-	const struct NeCompType *type = Rt_ArrayGet(&_componentTypes, typeId);
+	const struct NeCompType *type = Rt_ArrayGet(&f_componentTypes, typeId);
 	return type ? type->size : 0;
 }
 
 size_t
 E_ComponentCountS(struct NeScene *s, NeCompTypeId type)
 {
-	Sys_AtomicLockRead(&s->compLock);
+	Sys_AtomicLockRead(&s->lock.comp);
 	size_t r = ((struct NeArray *)Rt_ArrayGet(&s->compData, type))->count;
-	Sys_AtomicUnlockRead(&s->compLock);
+	Sys_AtomicUnlockRead(&s->lock.comp);
 
 	return r;
 }
@@ -272,10 +205,10 @@ E_ComponentOwnerS(struct NeScene *s, NeCompHandle handle)
 {
 	NeEntityHandle owner = ES_INVALID_ENTITY;
 
-	Sys_AtomicLockRead(&s->compLock);
+	Sys_AtomicLockRead(&s->lock.comp);
 	const struct NeCompBase *ptr = E_ComponentPtrS(s, handle);
 	if (ptr) owner = ptr->_owner;
-	Sys_AtomicUnlockRead(&s->compLock);
+	Sys_AtomicUnlockRead(&s->lock.comp);
 
 	return owner;
 }
@@ -288,34 +221,40 @@ E_SetComponentOwnerS(struct NeScene *s, NeCompHandle comp, NeEntityHandle owner)
 }
 
 bool
-E_RegisterComponent(const char *name, size_t size, size_t alignment, NeCompInitProc init, NeCompTermProc term)
+E_RegisterComponent(const char *name, size_t size, size_t alignment, NeCompInitProc init,
+					NeCompMessageHandlerProc handler, NeCompTermProc term, NeCompTypeId *id)
 {
-	struct NeCompType type = { 0 };
-	type.size = (size + alignment - 1) & ~(alignment - 1);
-	type.alignment = alignment;
-	type.hash = Rt_HashString(name);
-	type.init = init;
-	type.term = term;
-
-	snprintf(type.name, sizeof(type.name), "%s", name);
+	struct NeCompType type =
+	{
+		.size = (size + alignment - 1) & ~(alignment - 1),
+		.alignment = alignment,
+		.hash = Rt_HashString(name),
+		.init = init,
+		.term = term,
+		.messageHandler = handler
+	};
+	strlcpy(type.name, name, sizeof(type.name));
 
 	if (size < sizeof(struct NeCompBase)) {
 		Sys_LogEntry(COMP_MOD, LOG_CRITICAL, "Failed to register component %s: invalid size", name);
 		return false;
 	}
 
-	if (!_componentTypes.data)
-		if (!_InitArray())
+	if (!f_componentTypes.data)
+		if (!InitArray())
 			return false;
 
-	if (Rt_ArrayFindId(&_componentTypes, &type.hash, Rt_U64CmpFunc) != RT_NOT_FOUND)
+	if (Rt_ArrayFindId(&f_componentTypes, &type.hash, Rt_U64CmpFunc) != RT_NOT_FOUND)
 		return false;
 
-	if (!Rt_ArrayAdd(&_componentTypes, &type))
+	if (!Rt_ArrayAdd(&f_componentTypes, &type))
 		return false;
 
-	E_Broadcast(EVT_COMPONENT_REGISTERED_PTR, Rt_ArrayLast(&_componentTypes));
-	E_Broadcast(EVT_COMPONENT_REGISTERED, (void *)(_componentTypes.count - 1));
+	if (id)
+		*id = f_componentTypes.count - 1;
+
+	E_Broadcast(EVT_COMPONENT_REGISTERED_PTR, Rt_ArrayLast(&f_componentTypes));
+	E_Broadcast(EVT_COMPONENT_REGISTERED, (void *)(f_componentTypes.count - 1));
 
 	return true;
 }
@@ -329,14 +268,20 @@ E_GetAllComponentsS(struct NeScene *s, NeCompTypeId type)
 	return Rt_ArrayGet(&s->compData, type);
 }
 
+const struct NeCompType *
+ECS_ComponentType(NeCompTypeId typeId)
+{
+	return Rt_ArrayGet(&f_componentTypes, typeId);
+}
+
 bool
 E_InitComponents(void)
 {
-	if (!_componentTypes.data)
-		if (!_InitArray())
+	if (!f_componentTypes.data)
+		if (!InitArray())
 			return false;
 
-	E_ProcessFiles("/Scripts", "lua", true, _LoadScript);
+	E_ProcessFiles("/Scripts/Components", "lua", true, LoadScript);
 
 	return true;
 }
@@ -344,30 +289,46 @@ E_InitComponents(void)
 void
 E_TermComponents(void)
 {
-	Rt_TermArray(&_componentTypes);
+	struct NeCompType *type;
+	Rt_ArrayForEach(type, &f_componentTypes)
+		Sys_Free(type->script);
+
+	Rt_TermArray(&f_componentTypes);
 }
 
 bool
 E_InitSceneComponents(struct NeScene *s)
 {
-	size_t i = 0;
-
-	if (!Rt_InitArray(&s->compData, _componentTypes.count, sizeof(struct NeArray), MH_Scene))
+	if (!Rt_InitArray(&s->compData, f_componentTypes.count, sizeof(struct NeArray), MH_Scene))
 		return false;
 
-	if (!Rt_InitArray(&s->compFree, _componentTypes.count, sizeof(struct NeQueue), MH_Scene))
+	if (!Rt_InitArray(&s->newCompData, f_componentTypes.count, sizeof(struct NeArray), MH_Scene))
+		return false;
+
+	if (!Rt_InitArray(&s->newCompOffset, f_componentTypes.count, sizeof(uint64_t), MH_Scene))
+		return false;
+
+	if (!Rt_InitArray(&s->compFree, f_componentTypes.count, sizeof(struct NeQueue), MH_Scene))
 		return false;
 
 	Rt_FillArray(&s->compData);
-	for (i = 0; i < _componentTypes.count; ++i) {
-		struct NeCompType *type = Rt_ArrayGet(&_componentTypes, i);
-		struct NeArray *a = Rt_ArrayGet(&s->compData, i);
+	Rt_FillArray(&s->compFree);
+	Rt_FillArray(&s->newCompData);
+	Rt_FillArray(&s->newCompOffset);
 
-		if (!Rt_InitAlignedArray(a, 10, type->size, type->alignment))
+	for (size_t i = 0; i < f_componentTypes.count; ++i) {
+		struct NeCompType *type = Rt_ArrayGet(&f_componentTypes, i);
+
+		struct NeArray *a = Rt_ArrayGet(&s->compData, i);
+		if (!Rt_InitAlignedArray(a, 10, type->size, type->alignment, MH_Scene))
+			return false;
+
+		a = Rt_ArrayGet(&s->newCompData, i);
+		if (!Rt_InitAlignedArray(a, 10, type->size, type->alignment, MH_Scene))
 			return false;
 	}
 
-	E_RegisterHandler(EVT_COMPONENT_REGISTERED_PTR, (NeEventHandlerProc)_ComponentRegistered, s);
+	E_RegisterHandler(EVT_COMPONENT_REGISTERED_PTR, (NeEventHandlerProc)ComponentRegistered, s);
 
 	return true;
 }
@@ -375,44 +336,68 @@ E_InitSceneComponents(struct NeScene *s)
 void
 E_TermSceneComponents(struct NeScene *s)
 {
-	size_t i = 0, j = 0;
-	for (i = 0; i < s->compData.count; ++i) {
-		struct NeCompType *type = Rt_ArrayGet(&_componentTypes, i);
+	for (size_t i = 0; i < s->compData.count; ++i) {
+		struct NeCompType *type = Rt_ArrayGet(&f_componentTypes, i);
 		struct NeArray *a = Rt_ArrayGet(&s->compData, i);
 
 		if (type->term) {
 			if (!type->script) {
-				for (j = 0; j < a->count; ++j) {
+				for (size_t j = 0; j < a->count; ++j) {
 					struct NeCompBase *comp = Rt_ArrayGet(a, j);
 					if (comp->_valid)
 						type->term(comp);
 				}
 			} else {
-				for (j = 0; j < a->count; ++j) {
+				for (size_t j = 0; j < a->count; ++j) {
 					struct NeCompBase *comp = Rt_ArrayGet(a, j);
 					if (comp->_valid)
-						type->termScript(comp, type->script);
+						type->termScript(comp, type->name, type->script);
 				}
 			}
 		}
 
-		Sys_Free(type->script);
-
 		Rt_TermArray(a);
+		Rt_TermArray(Rt_ArrayGet(&s->newCompData, i));
 	}
 
+	Rt_TermArray(&s->newCompOffset);
+	Rt_TermArray(&s->newCompData);
 	Rt_TermArray(&s->compFree);
 	Rt_TermArray(&s->compData);
 }
 
-static inline bool
-_InitArray(void)
+void *
+ECS_CommitedComponentPtr(struct NeScene *s, NeCompHandle handle)
 {
-	return Rt_InitArray(&_componentTypes, 40, sizeof(struct NeCompType), MH_System);
+	struct NeArray *compData = (struct NeArray *)s->compData.data;
+	return Rt_ArrayGet(compData, E_HANDLE_ID(handle));
+}
+
+void *
+ECS_ComponentPtr(struct NeScene *s, NeCompHandle handle)
+{
+	struct NeArray *compData = (struct NeArray *)s->compData.data;
+	struct NeArray *newCompData = (struct NeArray *)s->newCompData.data;
+	struct NeCompBase *comp = Rt_ArrayGet(&compData[E_HANDLE_TYPE(handle)], E_HANDLE_ID(handle));
+	if ((!comp || !comp->_valid) && newCompData[E_HANDLE_TYPE(handle)].count) {
+		const size_t id = E_HANDLE_ID(handle);
+		Rt_ArrayForEach(comp, &newCompData[E_HANDLE_TYPE(handle)]) {
+			if (comp->_handleId == id)
+				break;
+			comp = NULL;
+		}
+	}
+	return comp;
+}
+
+static inline bool
+InitArray(void)
+{
+	return Rt_InitArray(&f_componentTypes, 40, sizeof(struct NeCompType), MH_System);
 }
 
 void
-_ComponentRegistered(struct NeScene *s, struct NeCompType *type)
+ComponentRegistered(struct NeScene *s, struct NeCompType *type)
 {
 	struct NeArray *a = Rt_ArrayAllocate(&s->compData);
 	if (!a) {
@@ -420,8 +405,19 @@ _ComponentRegistered(struct NeScene *s, struct NeCompType *type)
 		return;
 	}
 
-	if (!Rt_InitAlignedArray(a, 10, type->size, type->alignment))
+	if (!Rt_InitAlignedArray(a, 10, type->size, type->alignment, MH_Scene))
 		Sys_LogEntry(COMP_MOD, LOG_CRITICAL, "Failed to initialize data array for registered component in scene %s", s->name);
+
+	a = Rt_ArrayAllocate(&s->newCompData);
+	if (!a) {
+		Sys_LogEntry(COMP_MOD, LOG_CRITICAL, "Failed to allocate data array for registered component in scene %s", s->name);
+		return;
+	}
+
+	if (!Rt_InitAlignedArray(a, 10, type->size, type->alignment, MH_Scene))
+		Sys_LogEntry(COMP_MOD, LOG_CRITICAL, "Failed to initialize data array for registered component in scene %s", s->name);
+
+	(void)Rt_ArrayAllocate(&s->newCompOffset);
 
 	struct NeQueue *q = Rt_ArrayAllocate(&s->compFree);
 	if (!q) {
@@ -434,215 +430,85 @@ _ComponentRegistered(struct NeScene *s, struct NeCompType *type)
 }
 
 static void
-_LoadScript(const char *path)
+LoadScript(const char *path)
 {
-	char buff[512], *p1 = NULL;
-	struct NeCompType type = { 0 };
-	struct NeStream stm;
-	char *initScript = NULL;
-	size_t isLen = 0, isSize = 0;
+	lua_State *vm = Sc_CreateVM();
 
-	if (!E_FileStream(path, IO_READ, &stm))
+	if (!Sc_LoadScriptFile(vm, path))
 		return;
 
-	E_ReadStreamLine(&stm, buff, sizeof(buff));
-
-	if (strncmp(buff, "-- NeComponent ", 15))
+	lua_getglobal(vm, "NeComponent");
+	int t = lua_gettop(vm);
+	if (!lua_istable(vm, t))
 		goto exit;
 
-	p1 = strchr(&buff[15], ' ');
-	*p1++ = 0x0;
-
-	char *name = Rt_TransientStrDup(&buff[15]);
-	size_t nameLen = strnlen(name, sizeof(buff) - 15);
-	snprintf(type.name, sizeof(type.name), "%s", name);
-
-	type.size = sizeof(struct NeCompBase);
-	type.hash = Rt_HashString(name);
-	type.alignment = p1 ? atoi(p1) : 1;
-	type.script = Rt_StrDup(path, MH_Script);
-	type.initScript = _ScriptCompInit;
-	type.termScript = _ScriptCompTerm;
-
-	isSize = 512;
-	initScript = Sys_Alloc(sizeof(*initScript), isSize, MH_Asset);
-
-#ifdef _NEKO_EDITOR_
-	struct NeArray insFields;
-	Rt_InitArray(&insFields, 4, sizeof(struct NeDataField), MH_Editor);
-#endif
-
-	size_t byteOffset = 0;
-	while (!E_EndOfStream(&stm)) {
-		size_t fieldSize = 0;
-
-#ifdef _NEKO_EDITOR_
-		struct NeDataField field = { .type = FT_UNKNOWN };
-#endif
-
-		E_ReadStreamLine(&stm, buff, sizeof(buff));
-
-		if (!strncmp(buff, "-- End", 6))
-			break;
-
-		// build init script
-		p1 = strchr(&buff[3], ' ');
-		*p1++ = 0x0;
-
-		const char *typeStr = NULL;
-		size_t typeLen = strnlen(&buff[3], sizeof(buff) - 3);
-		if (!strncmp(&buff[3], "int32", typeLen)) {
-			typeStr = "I32";
-			fieldSize = sizeof(int32_t);
-		#ifdef _NEKO_EDITOR_
-			field.type = FT_INT32;
-		#endif
-		} else if (!strncmp(&buff[3], "int64", typeLen)) {
-			typeStr = "I64";
-			fieldSize = sizeof(int64_t);
-		#ifdef _NEKO_EDITOR_
-			field.type = FT_INT64;
-		#endif
-		} else if (!strncmp(&buff[3], "float", typeLen)) {
-			typeStr = "Flt";
-			fieldSize = sizeof(float);
-		#ifdef _NEKO_EDITOR_
-			field.type = FT_FLOAT;
-		#endif
-		} else if (!strncmp(&buff[3], "double", typeLen)) {
-			typeStr = "Dbl";
-			fieldSize = sizeof(double);
-		#ifdef _NEKO_EDITOR_
-			field.type = FT_DOUBLE;
-		#endif
-		} else if (!strncmp(&buff[3], "bool", typeLen)) {
-			typeStr = "Bln";
-			fieldSize = sizeof(bool);
-		#ifdef _NEKO_EDITOR_
-			field.type = FT_BOOL;
-		#endif
-		} else if (!strncmp(&buff[3], "string", typeLen)) {
-			typeStr = "Str";
-			fieldSize = sizeof(char *);
-		#ifdef _NEKO_EDITOR_
-			field.type = FT_STRING;
-		#endif
-		} else if (!strncmp(&buff[3], "quat", typeLen)) {
-			typeStr = "Quat";
-			fieldSize = sizeof(char *);
-		#ifdef _NEKO_EDITOR_
-			field.type = FT_QUAT;
-		#endif
-		} else if (!strncmp(&buff[3], "vec2", typeLen)) {
-			typeStr = "Vec2";
-			fieldSize = sizeof(char *);
-		#ifdef _NEKO_EDITOR_
-			field.type = FT_VEC2;
-		#endif
-		} else if (!strncmp(&buff[3], "vec3", typeLen)) {
-			typeStr = "Vec3";
-			fieldSize = sizeof(char *);
-		#ifdef _NEKO_EDITOR_
-			field.type = FT_VEC3;
-		#endif
-		} else if (!strncmp(&buff[3], "vec4", typeLen)) {
-			typeStr = "Vec4";
-			fieldSize = sizeof(char *);
-		#ifdef _NEKO_EDITOR_
-			field.type = FT_VEC4;
-		#endif
-		} else if (!strncmp(&buff[3], "pointer", typeLen)) {
-			typeStr = "Ptr";
-			fieldSize = sizeof(void *);
-		} else {
-			goto exit;
-		}
-
-		size_t len = strnlen(p1, sizeof(buff) - typeLen - 3);
-		size_t newLen = isLen + ((nameLen + len + strnlen(typeStr, 4)) * 2) + sizeof(_scriptTemplate);
-		if (newLen >= isSize) {
-			size_t newSize = isSize * 2;
-			if (newSize < isSize)
-				goto exit;
-
-			char *new = Sys_ReAlloc(initScript, sizeof(*initScript), newSize, MH_Asset);
-			if (!new)
-				goto exit;
-
-			initScript = new;
-			isSize = newSize;
-		}
-
-		char *dst = initScript;
-
-		if (isLen) {
-			initScript[isLen] = '\n';
-			dst = initScript + (isLen + 1);
-		}
-
-		snprintf(dst, isSize - isLen, _scriptTemplate, name, p1, typeStr, byteOffset, fieldSize, name, p1, typeStr, byteOffset, fieldSize);
-		isLen = strnlen(initScript, isSize);
-
-#ifdef _NEKO_EDITOR_
-		if (field.type != FT_UNKNOWN) {
-			field.offset = sizeof(struct NeCompBase) + byteOffset;
-			snprintf(field.name, sizeof(field.name), "%s", p1);
-			Rt_ArrayAdd(&insFields, &field);
-		}
-#endif
-
-		type.size += fieldSize;
-		byteOffset += fieldSize;
+	char *name = (char *)SIF_OPTSTRINGFIELD(t, "name", NULL);
+	if (!name) {
+		char *p = Rt_TransientStrDup(path);
+		name = strrchr(p, '/'); *name++ = 0x0;
+		if ((p = strrchr(name, '.'))) *p = 0x0;
 	}
 
-	type.size = (type.size + type.alignment - 1) & ~(type.alignment - 1);
+	struct NeCompType type =
+	{
+		.size = NE_ROUND_UP(sizeof(struct NeScriptComponent), 16),
+		.alignment = 16,
+		.hash = Rt_HashString(name),
+		.script = Rt_StrDup(path, MH_System),
+		.initScript = (NeScriptCompInitProc)ScriptCompInit,
+		.termScript = (NeScriptCompTermProc)ScriptCompTerm
+	};
 
-	if (type.size < sizeof(struct NeCompBase))
+	if (Rt_ArrayFindId(&f_componentTypes, &type.hash, Rt_U64CmpFunc) != RT_NOT_FOUND)
 		goto exit;
 
-	if (Rt_ArrayFindId(&_componentTypes, &type.hash, Rt_U64CmpFunc) != RT_NOT_FOUND)
+	strlcpy(type.name, name, sizeof(type.name));
+
+	char initScript[512];
+	snprintf(initScript, sizeof(initScript),
+		"local t = {\n"								\
+			"__name = \"%s\",\n"					\
+			"__index = Component.Index,\n"			\
+			"__newindex = Component.NewIndex,\n"	\
+			"__tostring = Component.ToString,\n"	\
+		"}; return t;",
+		 name
+	);
+
+	Sc_RegisterInterfaceScript(name, initScript);
+
+	lua_getglobal(vm, "MessageHandler");
+	type.scriptMessageHandler = lua_isfunction(vm, lua_gettop(vm));
+
+	if (!Rt_ArrayAdd(&f_componentTypes, &type))
 		goto exit;
 
-	if (!Rt_ArrayAdd(&_componentTypes, &type))
-		goto exit;
-
-	Sc_RegisterInitScript(initScript);
-
-	E_Broadcast(EVT_COMPONENT_REGISTERED_PTR, Rt_ArrayLast(&_componentTypes));
-	E_Broadcast(EVT_COMPONENT_REGISTERED, (void *)(_componentTypes.count - 1));
-
-#ifdef _NEKO_EDITOR_
-	struct NeComponentFields f = { .type = _componentTypes.count - 1, .fieldCount = (uint32_t)insFields.count, .fields = (struct NeDataField *)insFields.data };
-
-	if (f.fieldCount) {
-		if (!Ed_componentFields.data)
-			Rt_InitArray(&Ed_componentFields, 10, sizeof(f), MH_Editor);
-
-		Rt_ArrayAdd(&Ed_componentFields, &f);
-	} else {
-		Rt_TermArray(&insFields);
-	}
-#endif
+	E_Broadcast(EVT_COMPONENT_REGISTERED_PTR, Rt_ArrayLast(&f_componentTypes));
+	E_Broadcast(EVT_COMPONENT_REGISTERED, (void *)(f_componentTypes.count - 1));
 
 exit:
-	Sys_Free(initScript);
-
+	Sc_DestroyVM(vm);
 	return;
 }
 
 static bool
-_ScriptCompInit(void *comp, const void **args, const char *script)
+ScriptCompInit(struct NeScriptComponent *comp, const void **args, const char *type, const char *script)
 {
 	bool rc = true;
 
 	lua_State *vm = Sc_CreateVM();
+
+	char buff[256];
+	snprintf(buff, sizeof(buff), "require \"%s\"", type);
+	(void)luaL_dostring(vm, buff);
+
 	Sc_LoadScriptFile(vm, script);
 
 	lua_getglobal(vm, "Init");
 	if (!lua_isfunction(vm, lua_gettop(vm)))
 		goto exit;
 
-	lua_pushlightuserdata(vm, comp);
+	Sc_PushScriptWrapper(vm, comp, type);
 
 	uint32_t count = 0;
 	if (args)
@@ -660,13 +526,24 @@ _ScriptCompInit(void *comp, const void **args, const char *script)
 		lua_pushnil(vm);
 	}
 
-	if (lua_pcall(vm, 2, 1, 0)) {
+	Rt_InitArray(&comp->fields, 5, sizeof(struct NeScriptField), MH_Script);
+
+	struct NeScriptField sf = { .hash = Rt_HashLiteral("owner"), .type = SFT_Entity, .usrdata = comp->_owner, .readOnly = true };
+	Rt_ArrayAdd(&comp->fields, &sf);
+
+	sf.hash = Rt_HashLiteral("sceneId"); sf.type = SFT_Integer; sf.integer = (lua_Integer)comp->_sceneId;
+	Rt_ArrayAdd(&comp->fields, &sf);
+
+	sf.hash = Rt_HashLiteral("typeId"); sf.type = SFT_Integer; sf.integer = (lua_Integer)comp->_typeId;
+	Rt_ArrayAdd(&comp->fields, &sf);
+
+	if (lua_pcall(vm, 2, 1, 0) && lua_gettop(vm)) {
 		Sys_LogEntry(COMP_MOD, LOG_CRITICAL, "Failed to execute Init script %s: %s", script, lua_tostring(vm, -1));
 		Sc_LogStackDump(vm, LOG_CRITICAL);
 		rc = false;
 		goto exit;
 	}
-	
+
 	if (!lua_isboolean(vm, -1)) {
 		Sys_LogEntry(COMP_MOD, LOG_CRITICAL, "Init script %s did not return a boolean: %s", script, lua_tostring(vm, -1));
 		rc = false;
@@ -683,21 +560,28 @@ exit:
 }
 
 static void
-_ScriptCompTerm(void *comp, const char *script)
+ScriptCompTerm(struct NeScriptComponent *comp, const char *type, const char *script)
 {
 	lua_State *vm = Sc_CreateVM();
+
+	char buff[256];
+	snprintf(buff, sizeof(buff), "require \"%s\"", type);
+	(void)luaL_dostring(vm, buff);
+
 	Sc_LoadScriptFile(vm, script);
 
 	lua_getglobal(vm, "Term");
 	if (lua_isfunction(vm, lua_gettop(vm))) {
-		lua_pushlightuserdata(vm, comp);
+		Sc_PushScriptWrapper(vm, comp, type);
 		if (lua_pcall(vm, 1, 0, 0)) {
 			lua_pop(vm, 1);
 		}
 	} else {
 		lua_pop(vm, 1);
 	}
-	
+
+	Rt_TermArray(&comp->fields);
+
 	Sc_DestroyVM(vm);
 }
 
@@ -727,7 +611,7 @@ _ScriptCompTerm(void *comp, const char *script)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

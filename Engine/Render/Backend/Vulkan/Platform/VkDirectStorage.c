@@ -1,8 +1,7 @@
-#if 0
+#ifdef _WIN32
 
 #include <Engine/Engine.h>
 
-#define VOLK_IMPLEMENTATION
 #define VK_USE_PLATFORM_WIN32_KHR
 #include "../VulkanBackend.h"
 
@@ -13,13 +12,14 @@ static ID3D12Device10 *_device;
 //static IDStorageFactory *_factory;
 
 bool
-Vkd_InitDStorage(void)
+VkBk_InitDStorage(void)
 {
 //	HRESULT hr;
 
 //	hr = D3D12CreateDevice(NULL, D3D_FEATURE_LEVEL_12_1, &IID_ID3D12Device10, &_device);
 
 //	hr = DStorageGetFactory(&_factory);
+	return false;
 }
 
 NeDirectIOHandle
@@ -33,13 +33,13 @@ Vkd_DStorageOpenFile(const char *path)
 }
 
 void
-Vkd_DStorageCloseFile(NeDirectIOHandle handle)
+VkBk_DStorageCloseFile(NeDirectIOHandle handle)
 {
 //	IDStorageFile_Release((IDStorageFile *)handle);
 }
 
 void
-Vkd_TermDStorage(void)
+VkBk_TermDStorage(void)
 {
 //	IDStorageFactory_Release(_factory);
 //	ID3D12Device10_Release(_device);
@@ -82,6 +82,15 @@ _ConvertToImage(ID3D12Resource *res)
 	return img;
 }
 
+#else
+
+#include "../VulkanBackend.h"
+
+bool VkBk_InitDStorage(void) { return false; }
+NeDirectIOHandle VkBk_DStorageOpenFile(const char *path) { return NULL; }
+void VkBk_DStorageCloseFile(NeDirectIOHandle handle) { }
+void VkBk_TermDStorage(void) { }
+
 #endif
 
 /* NekoEngine
@@ -110,7 +119,7 @@ _ConvertToImage(ID3D12Resource *res)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

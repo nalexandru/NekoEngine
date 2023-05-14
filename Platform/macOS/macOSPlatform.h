@@ -1,5 +1,5 @@
-#ifndef _MACOS_PLATFORM_H_
-#define _MACOS_PLATFORM_H_
+#ifndef NE_MACOS_PLATFORM_H
+#define NE_MACOS_PLATFORM_H
 
 #ifndef OSX100
 #	include <AvailabilityMacros.h>
@@ -8,6 +8,41 @@
 #include <Input/Input.h>
 
 extern enum NeButton macOS_keymap[256];
+
+// Apple decided to rename these constants
+#if !defined(MAC_OS_X_VERSION_10_12) || MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_12
+
+#define NSWindowStyleMaskTitled				NSTitledWindowMask
+#define NSWindowStyleMaskClosable			NSClosableWindowMask
+#define NSWindowStyleMaskMiniaturizable		NSMiniaturizableWindowMask
+#define NSWindowStyleMaskResizable			NSResizableWindowMask
+
+#define NSAlertStyleInformational			NSInformationalAlertStyle
+#define NSAlertStyleWarning					NSWarningAlertStyle
+#define NSAlertStyleCritical				NSCriticalAlertStyle
+
+#define NSEventMaskAny						NSAnyEventMask
+#define NSEventModifierFlagCommand			NSCommandKeyMask
+#define NSEventModifierFlagOption			NSAlternateKeyMask
+#define NSEventModifierFlagShift			NSShiftKeyMask
+#define NSEventModifierFlagControl			NSControlKeyMask
+#define NSEventModifierFlagCapsLock			NSAlphaShiftKeyMask
+
+#define convertPointToScreen				convertBaseToScreen
+
+#endif
+
+#if defined(MAC_OS_X_VERSION_10_11) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_11
+#	define NE_MACOS_METAL
+#endif
+
+#if defined(MAC_OS_X_VERSION_10_7) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7
+#	define AUTORELEASE_BEGIN	@autoreleasepool {
+#	define AUTORELEASE_END		}
+#else
+#	define AUTORELEASE_BEGIN	{ NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+#	define AUTORELEASE_END		[pool release]; }
+#endif
 
 #if !defined(MAC_OS_X_VERSION_10_5) || MAC_OS_X_VERSION_MAX_ALLOWED <= MAC_OS_X_VERSION_10_4
 	#define kVK_ANSI_A                    0x00
@@ -122,9 +157,11 @@ extern enum NeButton macOS_keymap[256];
 	#define kVK_RightArrow                0x7C
 	#define kVK_DownArrow                 0x7D
 	#define kVK_UpArrow                   0x7E
+
+	typedef uint32_t NSUInteger;
 #endif /* !defined(MAC_OS_X_VERSION_10_5) */
 
-#endif /* _MACOS_PLATFORM_H_ */
+#endif /* NE_MACOS_PLATFORM_H */
 
 /* NekoEngine
  *
@@ -133,7 +170,7 @@ extern enum NeButton macOS_keymap[256];
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (c) 2015-2022, Alexandru Naiman
+ * Copyright (c) 2015-2023, Alexandru Naiman
  *
  * All rights reserved.
  *
@@ -152,7 +189,7 @@ extern enum NeButton macOS_keymap[256];
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

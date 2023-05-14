@@ -111,12 +111,8 @@ static inline HANDLE winFindFirstFileW(const WCHAR *path, LPWIN32_FIND_DATAW d)
 
 static inline BOOL winInitializeCriticalSection(LPCRITICAL_SECTION lpcs)
 {
-    #if defined(PHYSFS_PLATFORM_WINRT) || (_WIN32_WINNT >= 0x0600)
-    return InitializeCriticalSectionEx(lpcs, 2000, 0);
-    #else
     InitializeCriticalSection(lpcs);
     return TRUE;
-    #endif
 } /* winInitializeCriticalSection */
 
 static inline HANDLE winCreateFileW(const WCHAR *wfname, const DWORD mode,
@@ -159,18 +155,11 @@ static BOOL winSetFilePointer(HANDLE h, const PHYSFS_sint64 pos,
 
 static PHYSFS_sint64 winGetFileSize(HANDLE h)
 {
-    #if defined(PHYSFS_PLATFORM_WINRT) || (_WIN32_WINNT >= 0x0600)
-    FILE_STANDARD_INFO info;
-    const BOOL rc = GetFileInformationByHandleEx(h, FileStandardInfo,
-                                                 &info, sizeof (info));
-    return rc ? (PHYSFS_sint64) info.EndOfFile.QuadPart : -1;
-    #else
     DWORD high = 0;
     const DWORD rc = GetFileSize(h, &high);
     if ((rc == PHYSFS_INVALID_SET_FILE_POINTER) && (GetLastError() != NO_ERROR))
         return -1;
     return (PHYSFS_sint64) ((((PHYSFS_uint64) high) << 32) | rc);
-    #endif
 } /* winGetFileSize */
 
 

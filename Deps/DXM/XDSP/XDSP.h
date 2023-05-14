@@ -27,6 +27,12 @@
 #pragma warning(disable: 6001 6262)
 #endif
 
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunknown-warning-option"
+#pragma clang diagnostic ignored "-Wunsafe-buffer-usage"
+#endif
+
 namespace XDSP
 {
     using XMVECTOR = DirectX::XMVECTOR;
@@ -724,8 +730,8 @@ namespace XDSP
         assert(uChannelCount > 0 && uChannelCount <= 6);
         assert(uLog2Length >= 2 && uLog2Length <= 9);
 
-        XMVECTOR vRealTemp[768];
-        XMVECTOR vImaginaryTemp[768];
+        XM_ALIGNED_DATA(16) XMVECTOR vRealTemp[768];
+        XM_ALIGNED_DATA(16) XMVECTOR vImaginaryTemp[768];
         const size_t uLength = size_t(1) << uLog2Length;
 
         if (uChannelCount > 1)
@@ -807,8 +813,8 @@ namespace XDSP
         assert(uLog2Length >= 2 && uLog2Length <= 9);
         _Analysis_assume_(uLog2Length >= 2 && uLog2Length <= 9);
 
-        XMVECTOR vRealTemp[768] = {};
-        XMVECTOR vImaginaryTemp[768] = {};
+        XM_ALIGNED_DATA(16) XMVECTOR vRealTemp[768] = {};
+        XM_ALIGNED_DATA(16) XMVECTOR vImaginaryTemp[768] = {};
 
         const size_t uLength = size_t(1) << uLog2Length;
 
@@ -866,6 +872,9 @@ namespace XDSP
 
 } // namespace XDSP
 
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif

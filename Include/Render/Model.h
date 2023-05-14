@@ -1,5 +1,5 @@
-#ifndef _NE_RENDER_MODEL_H_
-#define _NE_RENDER_MODEL_H_
+#ifndef NE_RENDER_MODEL_H
+#define NE_RENDER_MODEL_H
 
 #include <Render/Types.h>
 #include <Render/Material.h>
@@ -42,15 +42,6 @@ struct NeMorphDelta
 };
 #pragma pack(pop)
 
-struct NeBounds
-{
-	struct {
-		struct NeVec3 center;
-		float radius;
-	} sphere;
-	struct NeAABB aabb;
-};
-
 struct NeMesh
 {
 	enum NePrimitiveType type;
@@ -68,6 +59,15 @@ struct NeMorph
 	char name[120];
 	uint32_t deltaOffset;
 	uint32_t deltaCount;
+};
+
+struct NeMorphPack
+{
+	uint32_t count;
+	struct NeMorph *morphs;
+
+	uint32_t deltaCount;
+	struct NeMorphDelta *deltas;
 };
 
 struct NeModel
@@ -90,14 +90,14 @@ struct NeModel
 		void *indices;
 		uint32_t indexSize;
 
-		void *vertexWeights;
-		uint32_t vertexWeightSize;
+		struct NeVertexWeight *vertexWeights;
+		uint32_t vertexWeightCount;
 	} cpu;
 
 	struct {
-		struct NeMatrix globalInverseTransform;
-		struct NeArray bones;
-		struct NeArray nodes;
+		struct NeArray nodes, joints;
+		struct NeMatrix *inverseTransforms;
+		struct NeMatrix inverseTransform;
 	} skeleton;
 
 	struct {
@@ -122,7 +122,7 @@ struct NeModelCreateInfo
 	uint32_t boneSize;
 
 	struct NeVertexWeight *vertexWeights;
-	uint32_t vertexWeightSize;
+	uint32_t vertexWeightCount;
 
 	struct NeMesh *meshes;
 	const char **materials;
@@ -142,9 +142,24 @@ struct NeModelInstance
 } NE_ALIGN(16);
 #pragma pack(pop)
 
+struct NeMorphPackCreateInfo
+{
+	uint32_t count;
+	struct NeMorph *morphs;
+
+	uint32_t deltaCount;
+	struct NeMorphDelta *deltas;
+
+	bool keepData;
+};
+
 bool Re_CreateModelResource(const char *name, const struct NeModelCreateInfo *ci, struct NeModel *mdl, NeHandle h);
 bool Re_LoadModelResource(struct NeResourceLoadInfo *li, const char *args, struct NeModel *mdl, NeHandle h);
 void Re_UnloadModelResource(struct NeModel *mdl, NeHandle h);
+
+bool Re_CreateMorphPackResource(const char *name, const struct NeMorphPackCreateInfo *ci, struct NeMorphPack *mdl, NeHandle h);
+bool Re_LoadMorphPackResource(struct NeResourceLoadInfo *li, const char *args, struct NeMorphPack *mdl, NeHandle h);
+void Re_UnloadMorphPackResource(struct NeMorphPack *mdl, NeHandle h);
 
 void Re_BuildMeshBounds(struct NeBounds *b, const struct NeVertex *vertices, uint32_t startVertex, uint32_t vertexCount);
 
@@ -152,7 +167,7 @@ void Re_BuildMeshBounds(struct NeBounds *b, const struct NeVertex *vertices, uin
 }
 #endif
 
-#endif /* _NE_RENDER_MODEL_H_ */
+#endif /* NE_RENDER_MODEL_H */
 
 /* NekoEngine
  *
@@ -180,7 +195,7 @@ void Re_BuildMeshBounds(struct NeBounds *b, const struct NeVertex *vertices, uin
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

@@ -42,6 +42,14 @@ extern NSURL *Darwin_appSupportURL;
 bool Sys_InitDarwinPlatform(void);
 void Sys_TermDarwinPlatform(void);
 
+int
+Sys_Main(int argc, char *argv[])
+{
+	@autoreleasepool {
+		return UIApplicationMain(argc, argv, nil, NSStringFromClass([EngineAppDelegate class]));
+	}
+}
+
 enum NeMachineType
 Sys_MachineType(void)
 {
@@ -122,13 +130,13 @@ Sys_TermPlatform(void)
 }
 
 intptr_t
-Sys_GetCurrentProcess()
+Sys_GetCurrentProcess(void)
 {
 	return 0;
 }
 
 int32_t
-Sys_GetCurrentProcessId()
+Sys_GetCurrentProcessId(void)
 {
 	return 0;
 }
@@ -139,7 +147,7 @@ Sys_WaitForProcessExit(intptr_t handle)
 }
 
 intptr_t
-Sys_Execute(const char **argv, const char *envp, const char *wd, FILE **in, FILE **out, FILE **err, bool showWindow)
+Sys_Execute(char * const *argv, const char *wd, FILE **in, FILE **out, FILE **err, bool showWindow)
 {
 	return -1;
 }
@@ -157,7 +165,7 @@ Sys_TerminateProcess(intptr_t handle)
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (c) 2015-2022, Alexandru Naiman
+ * Copyright (c) 2015-2023, Alexandru Naiman
  *
  * All rights reserved.
  *
@@ -176,7 +184,7 @@ Sys_TerminateProcess(intptr_t handle)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

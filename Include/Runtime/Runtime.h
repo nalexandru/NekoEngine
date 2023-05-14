@@ -1,16 +1,19 @@
-#ifndef _NE_RUNTIME_RUNTIME_H_
-#define _NE_RUNTIME_RUNTIME_H_
+#ifndef NE_RUNTIME_RUNTIME_H
+#define NE_RUNTIME_RUNTIME_H
 
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include <System/System.h>
+
 #include <Runtime/RtDefs.h>
 #include <Runtime/Array.h>
 #include <Runtime/Queue.h>
-
-#include <System/System.h>
+#include <Runtime/String.h>
+#include <Runtime/TSArray.h>
+#include <Runtime/TSQueue.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,12 +31,20 @@ Rt_SkipWhitespace(char *str)
 	return str;
 }
 
+static inline void *
+Rt_MemDup(const void *mem, size_t size, enum NeMemoryHeap mh)
+{
+	void *ret = Sys_Alloc(size, 1, mh);
+	memcpy(ret, mem, size);
+	return ret;
+}
+
 static inline char *
 Rt_StrDup(const char *str, enum NeMemoryHeap mh)
 {
 	const size_t len = strlen(str);
 	char *ret = (char *)Sys_Alloc(sizeof(*ret), len + 1, mh);
-	strncpy(ret, str, len);
+	strlcpy(ret, str, len + 1);
 	return ret;
 }
 
@@ -42,7 +53,7 @@ Rt_StrNDup(const char *str, size_t maxCount, enum NeMemoryHeap mh)
 {
 	const size_t len = strnlen(str, maxCount);
 	char *ret = (char *)Sys_Alloc(sizeof(*ret), len + 1, mh);
-	strncpy(ret, str, len);
+	strlcpy(ret, str, len + 1);
 	return ret;
 }
 
@@ -65,7 +76,7 @@ Rt_IsNumeric(const char *str)
 }
 #endif
 
-#endif /* _NE_RUNTIME_RUNTIME_H_ */
+#endif /* NE_RUNTIME_RUNTIME_H */
 
 /* NekoEngine
  *
@@ -93,7 +104,7 @@ Rt_IsNumeric(const char *str)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

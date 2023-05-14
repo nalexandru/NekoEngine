@@ -1,6 +1,5 @@
 #include <System/Log.h>
 #include <Engine/Job.h>
-#include <Engine/Engine.h>
 #include <Engine/Entity.h>
 #include <Engine/Component.h>
 #include <Scene/Components.h>
@@ -11,7 +10,7 @@
 
 #define ED_A_MOD	"Asset"
 
-static char _prgTextBuff[2048];
+static char f_pathTextBuff[2048];
 
 struct OpenJobArgs
 {
@@ -19,12 +18,12 @@ struct OpenJobArgs
 	char *path;
 };
 
-static bool _MatchMesh(const char *path) { return strstr(path, ".nmesh") != NULL; }
-static bool _OpenMesh(const char *path);
-static void _OpenJob(int worker, struct OpenJobArgs *args);
+static bool MatchMesh(const char *path) { return strstr(path, ".nmesh") != NULL; }
+static bool OpenMesh(const char *path);
+static void OpenJob(int worker, struct OpenJobArgs *args);
 
-static bool _MatchScript(const char *path) { return strstr(path, ".lua") != NULL; }
-static bool _OpenScript(const char *path) { EdGUI_ScriptEditor(path); return true; }
+static bool MatchScript(const char *path) { return strstr(path, ".lua") != NULL; }
+static bool OpenScript(const char *path) { EdGUI_ScriptEditor(path); return true; }
 
 struct NeAssetOpenHandler
 {
@@ -32,39 +31,40 @@ struct NeAssetOpenHandler
 	bool (*Open)(const char *path);
 };
 
-static struct NeAssetOpenHandler _handlers[] =
+static struct NeAssetOpenHandler f_handlers[] =
 {
 	{
-		.Match = _MatchMesh,
-		.Open = _OpenMesh
+		.Match = MatchMesh,
+		.Open = OpenMesh
 	},
 	{
-		.Match = _MatchScript,
-		.Open = _OpenScript
+		.Match = MatchScript,
+		.Open = OpenScript
 	}
 };
 
 void
 Ed_OpenAsset(const char *path)
 {
-	for (size_t i = 0; i < sizeof(_handlers) / sizeof(_handlers[0]); ++i) {
-		if (!_handlers[i].Match(path))
+	for (size_t i = 0; i < sizeof(f_handlers) / sizeof(f_handlers[0]); ++i) {
+		if (!f_handlers[i].Match(path))
 			continue;
 
 		struct OpenJobArgs *args = Sys_Alloc(sizeof(*args), 1, MH_Editor);
-		args->handler = &_handlers[i];
+		args->handler = &f_handlers[i];
 		args->path = Rt_StrDup(path, MH_Editor);
 
-		E_ExecuteJob((NeJobProc)_OpenJob, args, NULL, NULL);
+		OpenJob(E_WorkerId(), args);
+	//	E_ExecuteJob((NeJobProc)OpenJob, args, NULL, NULL);
 
 		break;
 	}
 }
 
 static bool
-_OpenMesh(const char *path)
+OpenMesh(const char *path)
 {
-	snprintf(_prgTextBuff, 2048, "Loading %s...", path);
+	snprintf(f_pathTextBuff, 2048, "Loading %s...", path);
 	EdGUI_ShowProgressDialog("Creating entity...");
 
 	char *str = Rt_TransientStrDup(path);
@@ -77,11 +77,11 @@ _OpenMesh(const char *path)
 	NeEntityHandle eh = E_CreateEntity(name, NULL);
 
 	EdGUI_UpdateProgressDialog("Creating transform...");
-	E_AddNewComponent(eh, E_ComponentTypeId(TRANSFORM_COMP), NULL);
+	E_AddNewComponent(eh, NE_TRANSFORM_ID, NULL);
 
-	EdGUI_UpdateProgressDialog(_prgTextBuff);
+	EdGUI_UpdateProgressDialog(f_pathTextBuff);
 	const void *args[] = { "Model", path, NULL };
-	E_AddNewComponent(eh, E_ComponentTypeId(MODEL_RENDER_COMP), args);
+	E_AddNewComponent(eh, NE_MODEL_RENDER_ID, args);
 
 	EdGUI_HideProgressDialog();
 
@@ -89,13 +89,13 @@ _OpenMesh(const char *path)
 }
 
 static void
-_OpenJob(int worker, struct OpenJobArgs *args)
+OpenJob(int worker, struct OpenJobArgs *args)
 {
 	if (!args->handler->Open(args->path)) {
 		EdGUI_MessageBox("Error", "Failed to open asset", MB_Error);
 		Sys_LogEntry(ED_A_MOD, LOG_CRITICAL, "Failed to open asset from file: %s", args->path);
 	}
-	
+
 	Sys_Free(args->path);
 	Sys_Free(args);
 }
@@ -126,7 +126,7 @@ _OpenJob(int worker, struct OpenJobArgs *args)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

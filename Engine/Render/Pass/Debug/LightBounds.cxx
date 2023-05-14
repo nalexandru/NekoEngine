@@ -8,13 +8,16 @@
 #include <Render/Graph/Pass.h>
 #include <Render/Graph/Graph.h>
 
-struct NeLightBoundsPass;
-static bool _Init(struct NeLightBoundsPass **pass);
-static void _Term(struct NeLightBoundsPass *pass);
-static bool _Setup(struct NeLightBoundsPass *pass, struct NeArray *resources);
-static void _Execute(struct NeLightBoundsPass *pass, const struct NeArray *resources);
+NE_RENDER_PASS(NeLightBoundsPass,
+{
+	struct NeFramebuffer *fb;
+	struct NePipeline *pipeline;
+	struct NeRenderPassDesc *rpd;
+	NeBufferHandle vertexBuffer;
+	NeBufferHandle indexBuffer;
+});
 
-static float _cubeVertices[] =
+static float f_cubeVertices[] =
 {
 	-0.5, -0.5, -0.5,
 	 0.5, -0.5, -0.5,
@@ -26,30 +29,13 @@ static float _cubeVertices[] =
 	-0.5,  0.5,  0.5
 };
 
-static uint16_t _cubeIndices[] =
+static uint16_t f_cubeIndices[] =
 {
 	0, 1, 1, 2, 2, 3, 3, 0,
 	0, 4, 4, 7, 7, 3,
 	7, 6, 6, 2,
 	6, 5, 5, 4,
 	5, 1
-};
-
-struct NeRenderPass RP_lightBounds =
-{
-	.Init = (NePassInitProc)_Init,
-	.Term = (NePassTermProc)_Term,
-	.Setup = (NePassSetupProc)_Setup,
-	.Execute = (NePassExecuteProc)_Execute
-};
-
-struct NeLightBoundsPass
-{
-	struct NeFramebuffer *fb;
-	struct NePipeline *pipeline;
-	struct NeRenderPassDesc *rpd;
-	NeBufferHandle vertexBuffer, indexBuffer;
-	uint64_t outputHash, sceneDataHash, instancesHash, passSemaphoreHash, visibleLightIndicesHash;
 };
 
 struct Constants
@@ -59,9 +45,9 @@ struct Constants
 };
 
 static bool
-_Setup(struct NeLightBoundsPass *pass, struct NeArray *resources)
+NeLightBoundsPass_Setup(struct NeLightBoundsPass *pass, struct NeArray *resources)
 {
-	const struct NeTextureDesc *outDesc = Re_GraphTextureDesc(pass->outputHash, resources);
+	const struct NeTextureDesc *outDesc = Re_GraphTextureDesc(Rt_HashLiteral(RE_OUTPUT), resources);
 	struct NeFramebufferAttachmentDesc fbAtDesc[1] = { { .format = outDesc->format, .usage = outDesc->usage } };
 
 	struct NeFramebufferDesc fbDesc =
@@ -80,14 +66,15 @@ _Setup(struct NeLightBoundsPass *pass, struct NeArray *resources)
 }
 
 static void
-_Execute(struct NeLightBoundsPass *pass, const struct NeArray *resources)
+NeLightBoundsPass_Execute(struct NeLightBoundsPass *pass, const struct NeArray *resources)
 {
 	struct Constants constants;
-	const struct NeTextureDesc *outDesc = Re_GraphTextureDesc(pass->outputHash, resources);
+	struct NeTextureDesc *outDesc;
+	struct NeSemaphore *passSemaphore = (struct NeSemaphore *)Re_GraphData(Rt_HashLiteral(RE_PASS_SEMAPHORE), resources);
 
-	Re_SetAttachment(pass->fb, 0, Re_GraphTexture(pass->outputHash, resources));
+	Re_SetAttachment(pass->fb, 0, Re_GraphTexture(Rt_HashLiteral(RE_OUTPUT), resources, NULL, &outDesc));
 
-	Re_BeginDrawCommandBuffer();
+	Re_BeginDrawCommandBuffer(passSemaphore);
 	Re_CmdBeginRenderPass(pass->rpd, pass->fb, RENDER_COMMANDS_INLINE);
 
 	Re_CmdSetViewport(0.f, 0.f, (float)outDesc->width, (float)outDesc->height, 0.f, 1.f);
@@ -105,7 +92,7 @@ _Execute(struct NeLightBoundsPass *pass, const struct NeArray *resources)
 	for (uint32_t i = 0; i < Scn_activeScene->lightCount; ++i) {
 		const struct NeLightData *const ld = &lights[i];
 
-		if (ld->type == LT_DIRECTIONAL)
+		if (ld->type == LT_Directional)
 			continue;
 
 		const float radius = ld->outerRadius * 2;
@@ -116,17 +103,15 @@ _Execute(struct NeLightBoundsPass *pass, const struct NeArray *resources)
 		XMStoreFloat4x4A(&constants.mvp, XMMatrixMultiply(boundsModel, M_Load(&Scn_activeScene->collect.vp)));
 
 		Re_CmdPushConstants(SS_ALL, sizeof(constants), &constants);
-		Re_CmdDrawIndexed(sizeof(_cubeIndices) / sizeof(_cubeIndices[0]), 1, 0, 0, 0);
+		Re_CmdDrawIndexed(sizeof(f_cubeIndices) / sizeof(f_cubeIndices[0]), 1, 0, 0, 0);
 	}
 
 	Re_CmdEndRenderPass();
-
-	struct NeSemaphore *passSemaphore = (struct NeSemaphore *)Re_GraphData(pass->passSemaphoreHash, resources);
-	Re_QueueGraphics(Re_EndCommandBuffer(), passSemaphore, passSemaphore);
+	Re_QueueGraphics(Re_EndCommandBuffer(), passSemaphore);
 }
 
 static bool
-_Init(struct NeLightBoundsPass **pass)
+NeLightBoundsPass_Init(struct NeLightBoundsPass **pass)
 {
 	*pass = (struct NeLightBoundsPass *)Sys_Alloc(sizeof(struct NeLightBoundsPass), 1, MH_Render);
 	if (!*pass)
@@ -156,8 +141,7 @@ _Init(struct NeLightBoundsPass **pass)
 		.stageInfo = &shader->opaqueStages,
 		.pushConstantSize = sizeof(struct Constants),
 		.attachmentCount = sizeof(blendAttachments) / sizeof(blendAttachments[0]),
-		.attachments = blendAttachments,
-		.depthFormat = TF_D32_SFLOAT
+		.attachments = blendAttachments
 	};
 
 	///////////////// FIXME
@@ -165,16 +149,16 @@ _Init(struct NeLightBoundsPass **pass)
 	{
 		.desc =
 		{
-			.size = sizeof(_cubeVertices),
+			.size = sizeof(f_cubeVertices),
 			.usage = BU_STORAGE_BUFFER | BU_TRANSFER_DST,
 			.memoryType = MT_GPU_LOCAL
 		},
-		.data = _cubeVertices,
-		.dataSize = sizeof(_cubeVertices),
+		.data = f_cubeVertices,
+		.dataSize = sizeof(f_cubeVertices),
 		.keepData = true
 	};
 
-	(*pass)->rpd = Re_CreateRenderPassDesc(&atDesc, 1, NULL, NULL, 0);
+	(*pass)->rpd = Re_CreateRenderPassDesc(&atDesc, 1, nullptr, nullptr, 0);
 	if (!(*pass)->rpd)
 		goto error;
 
@@ -184,20 +168,14 @@ _Init(struct NeLightBoundsPass **pass)
 	if (!(*pass)->pipeline)
 		goto error;
 
-	(*pass)->outputHash = Rt_HashString(RE_OUTPUT);
-	(*pass)->sceneDataHash = Rt_HashString(RE_SCENE_DATA);
-	(*pass)->instancesHash = Rt_HashString(RE_SCENE_INSTANCES);
-	(*pass)->passSemaphoreHash = Rt_HashString(RE_PASS_SEMAPHORE);
-	(*pass)->visibleLightIndicesHash = Rt_HashString(RE_VISIBLE_LIGHT_INDICES);
-
 	///////////////// FIXME
 
 	if (!Re_CreateBuffer(&bci, &(*pass)->vertexBuffer))
 		return false;
 
 	bci.desc.usage |= BU_INDEX_BUFFER;
-	bci.data = _cubeIndices;
-	bci.desc.size = bci.dataSize = sizeof(_cubeIndices);
+	bci.data = f_cubeIndices;
+	bci.desc.size = bci.dataSize = sizeof(f_cubeIndices);
 	if (!Re_CreateBuffer(&bci, &(*pass)->indexBuffer))
 		return false;
 
@@ -213,7 +191,7 @@ error:
 }
 
 static void
-_Term(struct NeLightBoundsPass *pass)
+NeLightBoundsPass_Term(struct NeLightBoundsPass *pass)
 {
 	Re_Destroy(pass->vertexBuffer);
 	Re_Destroy(pass->indexBuffer);
@@ -247,7 +225,7 @@ _Term(struct NeLightBoundsPass *pass)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

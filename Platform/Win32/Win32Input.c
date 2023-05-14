@@ -1,10 +1,10 @@
 #include "Win32Platform.h"
-#include <Xinput.h>
 
 #include <math.h>
 
 #include <System/Log.h>
 #include <Input/Input.h>
+#include <Engine/Config.h>
 #include <Engine/Engine.h>
 
 #include "Win32Platform.h"
@@ -12,55 +12,55 @@
 #define W32INMOD	"Win32Input"
 
 #ifndef MAPVK_VSC_TO_VK_EX
-#define MAPVK_VSC_TO_VK_EX	3
+#	define MAPVK_VSC_TO_VK_EX	3
 #endif
 
 #define READ_AXIS(cs, srcx, srcy, dstx, dsty, m, dz)	\
 {														\
 	float x = srcx;										\
 	float y = srcy;										\
-	_deadzone(&x, &y, m, dz);							\
+	Deadzone(&x, &y, m, dz);							\
 	cs->axis[dstx] = x / m;								\
 	cs->axis[dsty] = y / m;								\
 }
 
 enum NeButton Win32_keymap[256];
 
-bool __InSys_rawMouseAxis = true;
-extern bool __InSys_enableMouseAxis;
+bool In_p_rawMouseAxis = true;
+extern bool In_p_enableMouseAxis;
 
-static bool _mouseButtons[5];
-static DWORD _lastPacket[IN_MAX_CONTROLLERS];
+static bool f_mouseButtons[5];
+static DWORD f_lastPacket[IN_MAX_CONTROLLERS];
 
-static inline void _deadzone(float *x, float *y, const float max, const float deadzone);
-static inline enum NeButton _mapKey(const int key);
+static inline void Deadzone(float *x, float *y, const float max, const float deadzone);
+static inline enum NeButton MapKey(const int key);
 
 bool
 In_SysInit(void)
 {
 	for (uint16_t i = 0; i < 256; ++i)
-		Win32_keymap[i] = _mapKey(i);
+		Win32_keymap[i] = MapKey(i);
 
-#ifndef _NEKO_EDITOR_
-	RAWINPUTDEVICE rid[2];
+	if (Win32_RegisterRawInputDevices && !CVAR_BOOL("Win32_DisableRawInput")) {
+		RAWINPUTDEVICE rid[2];
 
-	rid[0].usUsagePage = 0x01;
-	rid[0].usUsage = 0x02;
-	rid[0].dwFlags = 0; // set this only in fullscreen RIDEV_NOLEGACY;
-	rid[0].hwndTarget = (HWND)E_screen;
+		rid[0].usUsagePage = 0x01;
+		rid[0].usUsage = 0x02;
+		rid[0].dwFlags = 0; // set this only in fullscreen RIDEV_NOLEGACY;
+		rid[0].hwndTarget = (HWND)E_screen;
 
-	rid[1].usUsagePage = 0x01;
-	rid[1].usUsage = 0x06;
-	rid[1].dwFlags = RIDEV_NOLEGACY;
-	rid[1].hwndTarget = (HWND)E_screen;
+		rid[1].usUsagePage = 0x01;
+		rid[1].usUsage = 0x06;
+		rid[1].dwFlags = RIDEV_NOLEGACY;
+		rid[1].hwndTarget = (HWND)E_screen;
 
-	if (!RegisterRawInputDevices(rid, 2, sizeof(rid[0]))) {
-		Sys_LogEntry(W32INMOD, LOG_CRITICAL, "Failed to register raw input devices");
-		return false;
+		if (!Win32_RegisterRawInputDevices(rid, 2, sizeof(rid[0]))) {
+			Sys_LogEntry(W32INMOD, LOG_CRITICAL, "Failed to register raw input devices");
+			return false;
+		}
+	} else {
+		In_p_rawMouseAxis = false;
 	}
-#else
-	__InSys_rawMouseAxis = false;
-#endif
 
 	UpdateControllers();
 
@@ -75,27 +75,30 @@ In_SysTerm(void)
 void
 In_SysPollControllers(void)
 {
-	if (XInputGetState) {
-		uint8_t i;
-		XINPUT_STATE xi;
-		struct NeControllerState *cs;
+#ifdef NE_NT5_SUPPORT
+	if (!Win32_XInputGetState)
+		return;
+#endif
 
-		for (i = 0; i < In_connectedControllers; ++i) {
-			XInputGetState(i, &xi);
+	uint8_t i;
+	XINPUT_STATE xi;
+	struct NeControllerState *cs;
 
-			if (_lastPacket[i] == xi.dwPacketNumber)
-				continue;
+	for (i = 0; i < In_connectedControllers; ++i) {
+		Win32_XInputGetState(i, &xi);
 
-			cs = &In_controllerState[i];
+		if (f_lastPacket[i] == xi.dwPacketNumber)
+			continue;
 
-			cs->buttons = xi.Gamepad.wButtons;
+		cs = &In_controllerState[i];
 
-			READ_AXIS(cs, xi.Gamepad.sThumbLX, xi.Gamepad.sThumbLY, AXIS_LSTICK_X, AXIS_LSTICK_Y, 32767.f, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
-			READ_AXIS(cs, xi.Gamepad.sThumbRX, xi.Gamepad.sThumbRY, AXIS_RSTICK_X, AXIS_RSTICK_Y, 32767.f, XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE);
-			READ_AXIS(cs, xi.Gamepad.bLeftTrigger, xi.Gamepad.bRightTrigger, AXIS_LTRIGGER, AXIS_RTRIGGER, 255.f, XINPUT_GAMEPAD_TRIGGER_THRESHOLD);
+		cs->buttons = xi.Gamepad.wButtons;
 
-			_lastPacket[i] = xi.dwPacketNumber;
-		}
+		READ_AXIS(cs, xi.Gamepad.sThumbLX, xi.Gamepad.sThumbLY, AXIS_LSTICK_X, AXIS_LSTICK_Y, 32767.f, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
+		READ_AXIS(cs, xi.Gamepad.sThumbRX, xi.Gamepad.sThumbRY, AXIS_RSTICK_X, AXIS_RSTICK_Y, 32767.f, XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE);
+		READ_AXIS(cs, xi.Gamepad.bLeftTrigger, xi.Gamepad.bRightTrigger, AXIS_LTRIGGER, AXIS_RTRIGGER, 255.f, XINPUT_GAMEPAD_TRIGGER_THRESHOLD);
+
+		f_lastPacket[i] = xi.dwPacketNumber;
 	}
 }
 
@@ -141,16 +144,19 @@ In_ShowPointer(bool show)
 void
 UpdateControllers(void)
 {
-	if (XInputGetState) {
-		uint32_t i;
-		XINPUT_STATE xi;
+#ifdef NE_NT5_SUPPORT
+	if (!Win32_XInputGetState)
+		return;
+#endif
 
-		In_connectedControllers = 0;
+	uint32_t i;
+	XINPUT_STATE xi;
 
-		for (i = 0; i < IN_MAX_CONTROLLERS; ++i)
-			if (XInputGetState(i, &xi) == ERROR_SUCCESS)
-				++In_connectedControllers;
-	}
+	In_connectedControllers = 0;
+
+	for (i = 0; i < IN_MAX_CONTROLLERS; ++i)
+		if (Win32_XInputGetState(i, &xi) == ERROR_SUCCESS)
+			++In_connectedControllers;
 }
 
 void
@@ -168,7 +174,7 @@ HandleInput(HWND wnd, LPARAM lParam, WPARAM wParam)
 
 	memset(lpb, 0x0, lpb_size);
 
-	if (GetRawInputData((HRAWINPUT)lParam, RID_INPUT,
+	if (Win32_GetRawInputData((HRAWINPUT)lParam, RID_INPUT,
 		lpb, &lpb_size, sizeof(RAWINPUTHEADER)) > lpb_size) {
 		lpb_size = sizeof(lpb);
 	}
@@ -209,9 +215,9 @@ HandleInput(HWND wnd, LPARAM lParam, WPARAM wParam)
 
 	#define MOUSE_BTN(x) \
 		if (btn & RI_MOUSE_BUTTON_ ## x ## _DOWN)		\
-			_mouseButtons[x - 1] = true;				\
+			f_mouseButtons[(x) - 1] = true;				\
 		else if (btn & RI_MOUSE_BUTTON_ ## x ## _UP)		\
-			_mouseButtons[x - 1] = false
+			f_mouseButtons[(x) - 1] = false
 
 		MOUSE_BTN(1);
 		MOUSE_BTN(2);
@@ -221,9 +227,9 @@ HandleInput(HWND wnd, LPARAM lParam, WPARAM wParam)
 
 	#undef MOUSE_BTN
 
-		memcpy(&In_buttonState[BTN_MOUSE_LMB], _mouseButtons, sizeof(_mouseButtons));
+		memcpy(&In_buttonState[BTN_MOUSE_LMB], f_mouseButtons, sizeof(f_mouseButtons));
 
-		if (__InSys_enableMouseAxis) {
+		if (In_p_enableMouseAxis) {
 			In_mouseAxis[0] = ((float)raw->data.mouse.lLastX / (float)(*E_screenWidth / 2)) * -10.f;
 			In_mouseAxis[1] = ((float)raw->data.mouse.lLastY / (float)(*E_screenHeight / 2)) * -10.f;
 
@@ -232,21 +238,20 @@ HandleInput(HWND wnd, LPARAM lParam, WPARAM wParam)
 		}
 	}
 
-	DefRawInputProc(&raw, 1, sizeof(RAWINPUTHEADER));
+	Win32_DefRawInputProc(&raw, 1, sizeof(RAWINPUTHEADER));
 }
 
 static inline void
-_deadzone(float *x, float *y, const float max, const float deadzone)
+Deadzone(float *x, float *y, const float max, const float deadzone)
 {
-	const float x_val = *x, y_val = *y;
-	float mag = sqrtf(x_val * x_val + y_val * y_val);
+	float mag = sqrtf(*x * *x + *y * *y);
 
 	if (mag < deadzone) {
 		*x = 0.f;
 		*y = 0.f;
 	} else {
-		const float n_x = x_val / mag;
-		const float n_y = y_val / mag;
+		const float nx = *x / mag;
+		const float ny = *y / mag;
 
 		if (mag > max)
 			mag = max;
@@ -254,13 +259,13 @@ _deadzone(float *x, float *y, const float max, const float deadzone)
 		mag -= deadzone;
 		mag /= (max - deadzone);
 
-		*x = x_val * mag;
-		*y = y_val * mag;
+		*x = nx * mag;
+		*y = ny * mag;
 	}
 }
 
 enum NeButton
-_mapKey(const int key)
+MapKey(const int key)
 {
 	switch (key) {
 	case 0x30: return BTN_KEY_0;
@@ -414,7 +419,7 @@ _mapKey(const int key)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

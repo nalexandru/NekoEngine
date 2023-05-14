@@ -6,7 +6,7 @@
 
 #include "Internal.h"
 
-static int _compare(const void *key, const void *elem);
+static int Compare(const void *key, const void *elem);
 
 void
 UI_DrawText(struct NeUIContext *ctx, const char *text, float px, float py, float size, struct NeFont *font)
@@ -36,7 +36,7 @@ UI_DrawText(struct NeUIContext *ctx, const char *text, float px, float py, float
 		const struct NeGlyph *g = NULL;
 
 		//
-		g = bsearch(text, font->glyphs, font->glyphCount, sizeof(*font->glyphs), _compare);
+		g = bsearch(text, font->glyphs, font->glyphCount, sizeof(*font->glyphs), Compare);
 
 		if (!g)
 			g = &font->glyphs[*text - 0x20];
@@ -94,7 +94,7 @@ UI_DrawText(struct NeUIContext *ctx, const char *text, float px, float py, float
 }
 
 int
-_compare(const void *key, const void *elem)
+Compare(const void *key, const void *elem)
 {
 	return 0;
 //	return *(uint8_t *)key - 
@@ -126,7 +126,7 @@ _compare(const void *key, const void *elem)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

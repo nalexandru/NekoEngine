@@ -3,34 +3,34 @@
 #include "MTLBackend.h"
 
 
-static id<MTLCommandQueue> _IFace_CommandQueue(struct NeRenderContext *ctx) { return ctx->queue; }
-static id<MTLCommandBuffer> _IFace_CurrentCommandBuffer(struct NeRenderContext *ctx) { return ctx->cmdBuffer; }
-static id<MTLBlitCommandEncoder> _IFace_CurrentBlitEncoder(struct NeRenderContext *ctx) { return ctx->encoders.blit; }
-static id<MTLRenderCommandEncoder> _IFace_CurrentRenderEncoder(struct NeRenderContext *ctx) { return ctx->encoders.render; }
-static id<MTLComputeCommandEncoder> _IFace_CurrentComputeEncoder(struct NeRenderContext *ctx) { return ctx->encoders.compute; }
+static id<MTLCommandQueue> IFace_CommandQueue(struct NeRenderContext *ctx) { return ctx->queue; }
+static id<MTLCommandBuffer> IFace_CurrentCommandBuffer(struct NeRenderContext *ctx) { return ctx->cmdBuffer; }
+static id<MTLBlitCommandEncoder> IFace_CurrentBlitEncoder(struct NeRenderContext *ctx) { return ctx->encoders.blit; }
+static id<MTLRenderCommandEncoder> IFace_CurrentRenderEncoder(struct NeRenderContext *ctx) { return ctx->encoders.render; }
+static id<MTLComputeCommandEncoder> IFace_CurrentComputeEncoder(struct NeRenderContext *ctx) { return ctx->encoders.compute; }
 
-static id<MTLTexture> _IFace_Texture(struct NeTexture *tex) { return tex->tex; }
-static id<MTLBuffer> _IFace_Buffer(struct NeBuffer *buff) { return buff->buff; }
-static id<MTLAccelerationStructure> _IFace_AccelerationStructure(struct NeAccelerationStructure *as) { return as->as; }
-static const MTLRenderPassDescriptor *_IFace_RenderPassDescriptor(struct NeRenderPassDesc *rpd) { return rpd->desc; }
+static id<MTLTexture> IFace_Texture(struct NeTexture *tex) { return tex->tex; }
+static id<MTLBuffer> IFace_Buffer(struct NeBuffer *buff) { return buff->buff; }
+static id<MTLAccelerationStructure> IFace_AccelerationStructure(struct NeAccelerationStructure *as) { return as->as; }
+static const MTLRenderPassDescriptor *IFace_RenderPassDescriptor(struct NeRenderPassDesc *rpd) { return rpd->desc; }
 
 struct NeRenderInterface *
 Re_CreateRenderInterface(void)
 {
-	struct NeRenderInterface *iface = Sys_Alloc(sizeof(*iface), 1, MH_RenderDriver);
+	struct NeRenderInterface *iface = Sys_Alloc(sizeof(*iface), 1, MH_RenderBackend);
 	if (!iface)
 		return NULL;
 
-	iface->CommandQueue = _IFace_CommandQueue;
-	iface->CurrentCommandBuffer = _IFace_CurrentCommandBuffer;
-	iface->CurrentBlitEncoder = _IFace_CurrentBlitEncoder;
-	iface->CurrentRenderEncoder = _IFace_CurrentRenderEncoder;
-	iface->CurrentComputeEncoder = _IFace_CurrentComputeEncoder;
+	iface->CommandQueue = IFace_CommandQueue;
+	iface->CurrentCommandBuffer = IFace_CurrentCommandBuffer;
+	iface->CurrentBlitEncoder = IFace_CurrentBlitEncoder;
+	iface->CurrentRenderEncoder = IFace_CurrentRenderEncoder;
+	iface->CurrentComputeEncoder = IFace_CurrentComputeEncoder;
 
-	iface->Texture = _IFace_Texture;
-	iface->Buffer = _IFace_Buffer;
-	iface->AccelerationStructure = _IFace_AccelerationStructure;
-	iface->RenderPassDescriptor = _IFace_RenderPassDescriptor;
+	iface->Texture = IFace_Texture;
+	iface->Buffer = IFace_Buffer;
+	iface->AccelerationStructure = IFace_AccelerationStructure;
+	iface->RenderPassDescriptor = IFace_RenderPassDescriptor;
 
 	iface->device = Re_device->dev;
 
@@ -69,7 +69,7 @@ Re_DestroyRenderInterface(struct NeRenderInterface *iface)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

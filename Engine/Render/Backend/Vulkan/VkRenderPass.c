@@ -5,13 +5,13 @@
 
 #include "VulkanBackend.h"
 
-static inline void _SetAttachment(VkAttachmentDescription *dst, const struct NeAttachmentDesc *src);
+static inline void SetAttachment(VkAttachmentDescription *dst, const struct NeAttachmentDesc *src);
 
 struct NeRenderPassDesc *
 Re_CreateRenderPassDesc(const struct NeAttachmentDesc *attachments, uint32_t count, const struct NeAttachmentDesc *depthAttachment,
 	const struct NeAttachmentDesc *inputAttachments, uint32_t inputCount)
 {
-	struct NeRenderPassDesc *rp = Sys_Alloc(sizeof(*rp), 1, MH_RenderDriver);
+	struct NeRenderPassDesc *rp = Sys_Alloc(sizeof(*rp), 1, MH_RenderBackend);
 	if (!rp)
 		return NULL;
 
@@ -26,13 +26,13 @@ Re_CreateRenderPassDesc(const struct NeAttachmentDesc *attachments, uint32_t cou
 	VkAttachmentReference *atRef = Sys_Alloc(sizeof(*atRef), atCount, MH_Transient);
 	VkAttachmentReference *iaRef = NULL;
 
-	rp->clearValues = Sys_Alloc(sizeof(*rp->clearValues), atCount, MH_RenderDriver);
+	rp->clearValues = Sys_Alloc(sizeof(*rp->clearValues), atCount, MH_RenderBackend);
 	assert(rp->clearValues);
 
 	rp->inputAttachments = inputCount;
 
 	for (uint32_t i = 0; i < count; ++i) {
-		_SetAttachment(&atDesc[i], &attachments[i]);
+		SetAttachment(&atDesc[i], &attachments[i]);
 
 		atRef[i].attachment = i;
 		atRef[i].layout = NeToVkImageLayout(attachments[i].layout);
@@ -42,7 +42,7 @@ Re_CreateRenderPassDesc(const struct NeAttachmentDesc *attachments, uint32_t cou
 	}
 
 	if (depthAttachment) {
-		_SetAttachment(&atDesc[count], depthAttachment);
+		SetAttachment(&atDesc[count], depthAttachment);
 
 		atRef[count].attachment = count;
 		atRef[count].layout = NeToVkImageLayout(depthAttachment->layout);
@@ -59,7 +59,7 @@ Re_CreateRenderPassDesc(const struct NeAttachmentDesc *attachments, uint32_t cou
 		int offset = depthAttachment ? count + 1 : count;
 		for (uint32_t i = 0; i < inputCount; ++i) {
 			int id = offset + i;
-			_SetAttachment(&atDesc[id], &inputAttachments[i]);
+			SetAttachment(&atDesc[id], &inputAttachments[i]);
 
 			iaRef[i].attachment = id;
 			iaRef[i].layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -133,7 +133,7 @@ Re_DestroyRenderPassDesc(struct NeRenderPassDesc *rp)
 }
 
 static inline void
-_SetAttachment(VkAttachmentDescription *dst, const struct NeAttachmentDesc *src)
+SetAttachment(VkAttachmentDescription *dst, const struct NeAttachmentDesc *src)
 {
 	dst->flags = src->mayAlias ? VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT : 0;
 	dst->format = NeToVkTextureFormat(src->format);
@@ -172,7 +172,7 @@ _SetAttachment(VkAttachmentDescription *dst, const struct NeAttachmentDesc *src)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

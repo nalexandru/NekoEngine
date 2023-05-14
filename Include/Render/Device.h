@@ -1,5 +1,5 @@
-#ifndef _NE_RENDER_DEVICE_H_
-#define _NE_RENDER_DEVICE_H_
+#ifndef NE_RENDER_DEVICE_H
+#define NE_RENDER_DEVICE_H
 
 #include <Render/Types.h>
 
@@ -43,7 +43,9 @@ struct NeRenderDeviceInfo
 	} features;
 
 	struct {
+		uint32_t maxPushConstantsSize;
 		uint32_t maxTextureSize;
+		float maxAnisotropy;
 	} limits;
 
 	struct {
@@ -58,10 +60,6 @@ struct NeRenderDeviceInfo
 ENGINE_API extern struct NeRenderDevice *Re_device;
 ENGINE_API extern struct NeRenderDeviceInfo Re_deviceInfo;
 
-struct NeRenderContext *Re_CreateContext(void);
-void Re_ResetContext(struct NeRenderContext *ctx);
-void Re_DestroyContext(struct NeRenderContext *ctx);
-
 struct NeSurface *Re_CreateSurface(void *window);
 void Re_DestroySurface(struct NeSurface *surface);
 
@@ -75,7 +73,7 @@ void *Re_XrGraphicsBinding(void);
 }
 #endif
 
-#endif /* _NE_RENDER_DEVICE_H_ */
+#endif /* NE_RENDER_DEVICE_H */
 
 /* NekoEngine
  *
@@ -103,7 +101,7 @@ void *Re_XrGraphicsBinding(void);
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

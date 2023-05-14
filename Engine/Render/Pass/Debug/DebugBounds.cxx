@@ -7,13 +7,16 @@
 #include <Render/Graph/Pass.h>
 #include <Render/Graph/Graph.h>
 
-struct NeDebugBoundsPass;
-static bool _Init(struct NeDebugBoundsPass **pass);
-static void _Term(struct NeDebugBoundsPass *pass);
-static bool _Setup(struct NeDebugBoundsPass *pass, struct NeArray *resources);
-static void _Execute(struct NeDebugBoundsPass *pass, const struct NeArray *resources);
+NE_RENDER_PASS(NeDebugBoundsPass,
+{
+	struct NeFramebuffer *fb;
+	struct NePipeline *pipeline;
+	struct NeRenderPassDesc *rpd;
+	NeBufferHandle vertexBuffer;
+	NeBufferHandle indexBuffer;
+});
 
-static float _cubeVertices[] =
+static float f_cubeVertices[] =
 {
 	-0.5, -0.5, -0.5,
 	 0.5, -0.5, -0.5,
@@ -25,30 +28,13 @@ static float _cubeVertices[] =
 	-0.5,  0.5,  0.5
 };
 
-static uint16_t _cubeIndices[] =
+static uint16_t f_cubeIndices[] =
 {
 	0, 1, 1, 2, 2, 3, 3, 0,
 	0, 4, 4, 7, 7, 3,
 	7, 6, 6, 2,
 	6, 5, 5, 4,
 	5, 1
-};
-
-struct NeRenderPass RP_debugBounds =
-{
-	.Init = (NePassInitProc)_Init,
-	.Term = (NePassTermProc)_Term,
-	.Setup = (NePassSetupProc)_Setup,
-	.Execute = (NePassExecuteProc)_Execute
-};
-
-struct NeDebugBoundsPass
-{
-	struct NeFramebuffer *fb;
-	struct NePipeline *pipeline;
-	struct NeRenderPassDesc *rpd;
-	NeBufferHandle vertexBuffer, indexBuffer;
-	uint64_t outputHash, sceneDataHash, instancesHash, passSemaphoreHash, visibleLightIndicesHash;
 };
 
 struct Constants
@@ -58,9 +44,9 @@ struct Constants
 };
 
 static bool
-_Setup(struct NeDebugBoundsPass *pass, struct NeArray *resources)
+NeDebugBoundsPass_Setup(struct NeDebugBoundsPass *pass, struct NeArray *resources)
 {
-	const struct NeTextureDesc *outDesc = Re_GraphTextureDesc(pass->outputHash, resources);
+	const struct NeTextureDesc *outDesc = Re_GraphTextureDesc(Rt_HashLiteral(RE_OUTPUT), resources);
 	struct NeFramebufferAttachmentDesc fbAtDesc[1] = { { .format = outDesc->format, .usage = outDesc->usage } };
 
 	struct NeFramebufferDesc fbDesc =
@@ -79,14 +65,15 @@ _Setup(struct NeDebugBoundsPass *pass, struct NeArray *resources)
 }
 
 static void
-_Execute(struct NeDebugBoundsPass *pass, const struct NeArray *resources)
+NeDebugBoundsPass_Execute(struct NeDebugBoundsPass *pass, const struct NeArray *resources)
 {
 	struct Constants constants;
-	const struct NeTextureDesc *outDesc = Re_GraphTextureDesc(pass->outputHash, resources);
+	struct NeTextureDesc *outDesc;
+	struct NeSemaphore *passSemaphore = (struct NeSemaphore *)Re_GraphData(Rt_HashLiteral(RE_PASS_SEMAPHORE), resources);
 
-	Re_SetAttachment(pass->fb, 0, Re_GraphTexture(pass->outputHash, resources));
+	Re_SetAttachment(pass->fb, 0, Re_GraphTexture(Rt_HashLiteral(RE_OUTPUT), resources, NULL, &outDesc));
 
-	Re_BeginDrawCommandBuffer();
+	Re_BeginDrawCommandBuffer(passSemaphore);
 	Re_CmdBeginRenderPass(pass->rpd, pass->fb, RENDER_COMMANDS_INLINE);
 
 	Re_CmdSetViewport(0.f, 0.f, (float)outDesc->width, (float)outDesc->height, 0.f, 1.f);
@@ -102,11 +89,10 @@ _Execute(struct NeDebugBoundsPass *pass, const struct NeArray *resources)
 
 	for (uint32_t i = 0; i < E_JobWorkerThreads(); ++i) {
 		const struct NeArray *drawables = &Scn_activeScene->collect.opaqueDrawableArrays[i];
-		const struct NeDrawable *d = NULL;
-
 		if (!drawables->count)
 			continue;
 
+		const struct NeDrawable *d = nullptr;
 		Rt_ArrayForEach(d, drawables, const struct NeDrawable *) {
 			struct NeVec3 size, center;
 			const XMVECTOR min = M_Load(&d->bounds.aabb.min);
@@ -122,18 +108,16 @@ _Execute(struct NeDebugBoundsPass *pass, const struct NeArray *resources)
 			XMStoreFloat4x4A(&constants.mvp, XMMatrixMultiply(boundsModel, M_Load(&Scn_activeScene->collect.vp)));
 
 			Re_CmdPushConstants(SS_ALL, sizeof(constants), &constants);
-			Re_CmdDrawIndexed(sizeof(_cubeIndices) / sizeof(_cubeIndices[0]), 1, 0, 0, 0);
+			Re_CmdDrawIndexed(sizeof(f_cubeIndices) / sizeof(f_cubeIndices[0]), 1, 0, 0, 0);
 		}
 	}
 
 	Re_CmdEndRenderPass();
-
-	struct NeSemaphore *passSemaphore = (struct NeSemaphore *)Re_GraphData(pass->passSemaphoreHash, resources);
-	Re_QueueGraphics(Re_EndCommandBuffer(), passSemaphore, passSemaphore);
+	Re_QueueGraphics(Re_EndCommandBuffer(), passSemaphore);
 }
 
 static bool
-_Init(struct NeDebugBoundsPass **pass)
+NeDebugBoundsPass_Init(struct NeDebugBoundsPass **pass)
 {
 	*pass = (struct NeDebugBoundsPass *)Sys_Alloc(sizeof(struct NeDebugBoundsPass), 1, MH_Render);
 	if (!*pass)
@@ -164,8 +148,7 @@ _Init(struct NeDebugBoundsPass **pass)
 		.stageInfo = &shader->opaqueStages,
 		.pushConstantSize = sizeof(struct Constants),
 		.attachmentCount = sizeof(blendAttachments) / sizeof(blendAttachments[0]),
-		.attachments = blendAttachments,
-		.depthFormat = TF_D32_SFLOAT
+		.attachments = blendAttachments
 	};
 
 	///////////////// FIXME
@@ -174,12 +157,12 @@ _Init(struct NeDebugBoundsPass **pass)
 	{
 		.desc =
 		{
-			.size = sizeof(_cubeVertices),
+			.size = sizeof(f_cubeVertices),
 			.usage = BU_STORAGE_BUFFER | BU_TRANSFER_DST,
 			.memoryType = MT_GPU_LOCAL
 		},
-		.data = _cubeVertices,
-		.dataSize = sizeof(_cubeVertices),
+		.data = f_cubeVertices,
+		.dataSize = sizeof(f_cubeVertices),
 		.keepData = true
 	};
 
@@ -193,20 +176,14 @@ _Init(struct NeDebugBoundsPass **pass)
 	if (!(*pass)->pipeline)
 		goto error;
 
-	(*pass)->outputHash = Rt_HashString(RE_OUTPUT);
-	(*pass)->sceneDataHash = Rt_HashString(RE_SCENE_DATA);
-	(*pass)->instancesHash = Rt_HashString(RE_SCENE_INSTANCES);
-	(*pass)->passSemaphoreHash = Rt_HashString(RE_PASS_SEMAPHORE);
-	(*pass)->visibleLightIndicesHash = Rt_HashString(RE_VISIBLE_LIGHT_INDICES);
-
 	///////////////// FIXME
 
 	if (!Re_CreateBuffer(&bci, &(*pass)->vertexBuffer))
 		return false;
 
 	bci.desc.usage |= BU_INDEX_BUFFER;
-	bci.data = _cubeIndices;
-	bci.desc.size = bci.dataSize = sizeof(_cubeIndices);
+	bci.data = f_cubeIndices;
+	bci.desc.size = bci.dataSize = sizeof(f_cubeIndices);
 	if (!Re_CreateBuffer(&bci, &(*pass)->indexBuffer))
 		return false;
 
@@ -222,7 +199,7 @@ error:
 }
 
 static void
-_Term(struct NeDebugBoundsPass *pass)
+NeDebugBoundsPass_Term(struct NeDebugBoundsPass *pass)
 {
 	Re_Destroy(pass->vertexBuffer);
 	Re_Destroy(pass->indexBuffer);
@@ -256,7 +233,7 @@ _Term(struct NeDebugBoundsPass *pass)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

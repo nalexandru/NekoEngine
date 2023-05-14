@@ -3,7 +3,7 @@
 static id<MTLBuffer> _argumentBuffer;
 static id<MTLArgumentEncoder> _encoder;
 
-static uint16_t _usedTextures, _usedBuffers;
+static uint16_t _usedTextures, _usedBuffers, _transientTextureStart;
 static id<MTLTexture> _textures[UINT16_MAX];
 static id<MTLBuffer> _buffers[UINT16_MAX];
 
@@ -45,6 +45,8 @@ MTL_InitArgumentBuffer(id<MTLDevice> dev)
 #endif
 	
 	[_encoder setArgumentBuffer: _argumentBuffer offset: 0];
+	
+	_transientTextureStart = (uint16_t)(UINT16_MAX - E_GetCVarU32("Render_TransientTextureHandles", 35)->u32);
 	
 	return true;
 }
@@ -111,10 +113,17 @@ MTL_SetRenderArguments(id<MTLRenderCommandEncoder> encoder)
 	[encoder setVertexBuffer: _argumentBuffer offset: 0 atIndex: 0];
 	[encoder setFragmentBuffer: _argumentBuffer offset: 0 atIndex: 0];
 
-	for (uint16_t i = 0; i < _usedTextures; ++i)
-		if (_textures[i])
-			[encoder useResource: _textures[i] usage: MTLResourceUsageRead stages: MTLRenderStageFragment];
-
+	for (uint16_t i = 0; i < _usedTextures; ++i) {
+		if (!_textures[i])
+			continue;
+		
+		MTLResourceUsage usage = MTLResourceUsageRead;
+		if (i >= _transientTextureStart)
+			usage |= MTLResourceUsageWrite;
+		
+		[encoder useResource: _textures[i] usage: usage stages: MTLRenderStageFragment];
+	}
+	
 	if (@available(macOS 13, iOS 16, *)) {
 		for (uint16_t i = 0; i < _usedBuffers; ++i)
 			if (_buffers[i])
@@ -133,7 +142,7 @@ void MTL_SetComputeArguments(id<MTLComputeCommandEncoder> encoder)
 
 	for (uint16_t i = 0; i < _usedTextures; ++i)
 		if (_textures[i])
-			[encoder useResource: _textures[i] usage: MTLResourceUsageRead];
+			[encoder useResource: _textures[i] usage: MTLResourceUsageRead | MTLResourceUsageWrite];
 
 	for (uint16_t i = 0; i < _usedBuffers; ++i)
 		if (_buffers[i])
@@ -173,7 +182,7 @@ MTL_TermArgumentBuffer(id<MTLDevice> dev)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

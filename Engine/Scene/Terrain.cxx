@@ -21,16 +21,16 @@ struct NeTerrainVertex
 	float tu, tv;
 };
 
-bool _Generate(struct NeModelCreateInfo *mci, const struct NeTerrainCreateInfo *tci, const struct NeTextureCreateInfo *mapInfo);
-static inline float _SampleHeightmap(const struct NeTextureCreateInfo *mapInfo, float u, float v);
+bool Generate(struct NeModelCreateInfo *mci, const struct NeTerrainCreateInfo *tci, const struct NeTextureCreateInfo *mapInfo);
+static inline float SampleHeightmap(const struct NeTextureCreateInfo *mapInfo, float u, float v);
 
 bool
 Scn_CreateTerrain(struct NeScene *scn, const struct NeTerrainCreateInfo *tci)
 {
 	bool rc = false;
 	char *name = NULL;
-	size_t len = 0;
-	NeHandle mdl = E_INVALID_HANDLE;
+	size_t len;
+	NeHandle mdl = NE_INVALID_HANDLE;
 	NeEntityHandle entity = ES_INVALID_ENTITY;
 	struct NeStream stm = { 0 };
 	struct NeModelRender *mr = NULL;
@@ -43,7 +43,7 @@ Scn_CreateTerrain(struct NeScene *scn, const struct NeTerrainCreateInfo *tci)
 			goto exit;
 		}
 
-		if (!E_LoadTGAAsset(&stm, &mapInfo)) {
+		if (!Asset_LoadTGA(&stm, &mapInfo)) {
 			Sys_LogEntry(TR_MOD, LOG_CRITICAL, "%s is not a TGA file", tci->mapFile);
 			goto exit;
 		}
@@ -62,16 +62,16 @@ Scn_CreateTerrain(struct NeScene *scn, const struct NeTerrainCreateInfo *tci)
 		goto exit;
 	}
 
-	E_AddNewComponentS(scn, entity, E_ComponentTypeId(TRANSFORM_COMP), NULL);
-	E_AddNewComponentS(scn, entity, E_ComponentTypeId(MODEL_RENDER_COMP), NULL);
-	
-	mr = (struct NeModelRender *)E_GetComponentS(scn, entity, E_ComponentTypeId(MODEL_RENDER_COMP));
+	E_AddNewComponent(entity, NE_TRANSFORM_ID, NULL);
+	E_AddNewComponent(entity, NE_MODEL_RENDER_ID, NULL);
+
+	mr = (struct NeModelRender *)E_GetComponent(entity, NE_MODEL_RENDER_ID);
 	if (!mr) {
 		Sys_LogEntry(TR_MOD, LOG_CRITICAL, "Failed to retrieve ModelRender");
 		goto exit;
 	}
 
-	if (!_Generate(&mci, tci, &mapInfo)) {
+	if (!Generate(&mci, tci, &mapInfo)) {
 		Sys_LogEntry(TR_MOD, LOG_CRITICAL, "Terrain generation failed");
 		goto exit;
 	}
@@ -84,7 +84,7 @@ Scn_CreateTerrain(struct NeScene *scn, const struct NeTerrainCreateInfo *tci)
 		name = (char *)"__Terrain";
 
 	mdl = E_CreateResource(name, RES_MODEL, &mci);
-	if (mdl == E_INVALID_HANDLE) {
+	if (mdl == NE_INVALID_HANDLE) {
 		Sys_LogEntry(TR_MOD, LOG_CRITICAL, "Failed to create model resource");
 		goto exit;
 	}
@@ -96,7 +96,7 @@ Scn_CreateTerrain(struct NeScene *scn, const struct NeTerrainCreateInfo *tci)
 exit:
 	if (!rc) {
 		if (entity)
-			E_DestroyEntityS(scn, entity);
+			E_DestroyEntity(entity);
 
 		if (mdl)
 			E_UnloadResource(mdl);
@@ -109,7 +109,7 @@ exit:
 }
 
 bool
-_Generate(struct NeModelCreateInfo *mci, const struct NeTerrainCreateInfo *tci, const struct NeTextureCreateInfo *mapInfo)
+Generate(struct NeModelCreateInfo *mci, const struct NeTerrainCreateInfo *tci, const struct NeTextureCreateInfo *mapInfo)
 {
 	uint32_t *indices, indexCount = 0, vertexCount = 0;
 	struct NeVertex *vertices;
@@ -134,7 +134,7 @@ _Generate(struct NeModelCreateInfo *mci, const struct NeTerrainCreateInfo *tci, 
 			v.v = (float)i;
 
 			v.x = ((float)j - halfTiles) * fTileSize;
-			v.y = _SampleHeightmap(mapInfo, uvStep * j, uvStep * i) * tci->maxHeight;
+			v.y = SampleHeightmap(mapInfo, uvStep * j, uvStep * i) * tci->maxHeight;
 			v.z = -(halfTiles - i) * fTileSize;
 
 			v.nx = 0.f; v.ny = 0.f; v.nz = 0.f;
@@ -223,7 +223,7 @@ _Generate(struct NeModelCreateInfo *mci, const struct NeTerrainCreateInfo *tci, 
 }
 
 static inline float
-_SampleHeightmap(const struct NeTextureCreateInfo *mapInfo, float u, float v)
+SampleHeightmap(const struct NeTextureCreateInfo *mapInfo, float u, float v)
 {
 	if (!mapInfo)
 		return 0.f;
@@ -261,7 +261,7 @@ _SampleHeightmap(const struct NeTextureCreateInfo *mapInfo, float u, float v)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

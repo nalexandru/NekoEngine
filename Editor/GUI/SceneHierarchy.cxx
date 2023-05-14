@@ -10,33 +10,32 @@
 
 #include "Inspector.h"
 
-static NeSceneHierarchy *_dlg;
+static NeSceneHierarchy *f_dlg;
 
-static NeFutex _ftx;
-static uint64_t _sceneActivatedHandler, _entityCreateHandler, _entityDestroyHandler, _componentCreateHandler;
+static NeFutex f_ftx;
+static uint64_t f_sceneActivatedHandler, f_entityCreateHandler, f_entityDestroyHandler, f_componentCreateHandler;
 
 bool
 GUI_CreateSceneHierarchy(void)
 {
-	_dlg = new NeSceneHierarchy();
-	return _dlg != nullptr;
+	f_dlg = new NeSceneHierarchy();
+	return f_dlg != nullptr;
 }
 
 bool
 GUI_InitSceneHierarchy(void)
 {
-	_sceneActivatedHandler = E_RegisterHandler(EVT_SCENE_ACTIVATED,
-											   (NeEventHandlerProc)NeSceneHierarchy::_SceneActivated, _dlg);
-	_entityCreateHandler = E_RegisterHandler(EVT_ENTITY_CREATED,
-											 (NeEventHandlerProc)NeSceneHierarchy::_EntityCreate, _dlg);
-	_entityDestroyHandler = E_RegisterHandler(EVT_ENTITY_DESTROYED,
-											  (NeEventHandlerProc)NeSceneHierarchy::_EntityDestroy, _dlg);
-	_componentCreateHandler = E_RegisterHandler(EVT_COMPONENT_CREATED,
-												(NeEventHandlerProc)NeSceneHierarchy::_ComponentCreate, _dlg);
+	f_sceneActivatedHandler = E_RegisterHandler(EVT_SCENE_ACTIVATED,
+												(NeEventHandlerProc) NeSceneHierarchy::SceneActivated, f_dlg);
+	f_entityCreateHandler = E_RegisterHandler(EVT_ENTITY_CREATED, (NeEventHandlerProc) NeSceneHierarchy::EntityCreated, f_dlg);
+	f_entityDestroyHandler = E_RegisterHandler(EVT_ENTITY_DESTROYED,
+											   (NeEventHandlerProc) NeSceneHierarchy::EntityDestroyed, f_dlg);
+	f_componentCreateHandler = E_RegisterHandler(EVT_COMPONENT_CREATED,
+												 (NeEventHandlerProc) NeSceneHierarchy::ComponentCreated, f_dlg);
 
-	Sys_InitFutex(&_ftx);
+	Sys_InitFutex(&f_ftx);
 
-	_dlg->show();
+	f_dlg->show();
 
 	return true;
 }
@@ -44,21 +43,22 @@ GUI_InitSceneHierarchy(void)
 void
 GUI_TermSceneHierarchy(void)
 {
-	E_UnregisterHandler(_sceneActivatedHandler);
-	E_UnregisterHandler(_entityCreateHandler);
-	E_UnregisterHandler(_entityDestroyHandler);
-	E_UnregisterHandler(_componentCreateHandler);
+	E_UnregisterHandler(f_sceneActivatedHandler);
+	E_UnregisterHandler(f_entityCreateHandler);
+	E_UnregisterHandler(f_entityDestroyHandler);
+	E_UnregisterHandler(f_componentCreateHandler);
 
-	Sys_TermFutex(_ftx);
+	Sys_TermFutex(f_ftx);
 
-	_dlg->close();
-	delete _dlg;
+	f_dlg->close();
+	delete f_dlg;
 }
 
 NeSceneHierarchy::NeSceneHierarchy(QWidget *parent) : QDialog(parent)
 {
-	setWindowTitle("Scene Hierarchy");
 	setMinimumSize(250, 600);
+	setWindowTitle("Scene Hierarchy");
+	setWindowIcon(QIcon(":/EdIcon.png"));
 
 	_lyt = new QVBoxLayout(this);
 
@@ -69,19 +69,19 @@ NeSceneHierarchy::NeSceneHierarchy(QWidget *parent) : QDialog(parent)
 	_lyt->addWidget(_tree);
 
 	connect(_tree, SIGNAL(itemSelectionChanged()), this, SLOT(TreeSelectionChanged()));
+
+	//_tree->setContextMenuPolicy(Qt::ActionsContextMenu);
 }
 
 void
 NeSceneHierarchy::TreeSelectionChanged()
 {
-	Sys_LockFutex(_ftx);
+	NeFutexLock lock(f_ftx);
 
 	if (_tree->selectedItems().count())
 		GUI_InspectEntity(_tree->selectedItems().first()->data(1, Qt::UserRole).value<NeEntityHandle>());
 	else
 		GUI_InspectEntity(NULL);
-
-	Sys_UnlockFutex(_ftx);
 }
 
 void
@@ -107,11 +107,11 @@ NeSceneHierarchy::~NeSceneHierarchy()
 }
 
 void
-NeSceneHierarchy::_EntityCreate(NeSceneHierarchy *shd, NeEntityHandle eh)
+NeSceneHierarchy::EntityCreated(NeSceneHierarchy *shd, NeEntityHandle eh)
 {
-	Sys_LockFutex(_ftx);
+	NeFutexLock lock(f_ftx);
 
-	const struct NeTransform *xform = (struct NeTransform *)E_GetComponent(eh, E_ComponentTypeId(TRANSFORM_COMP));
+	const struct NeTransform *xform = (struct NeTransform *)E_GetComponent(eh, NE_TRANSFORM_ID);
 	if (!xform)
 		return;
 
@@ -120,22 +120,20 @@ NeSceneHierarchy::_EntityCreate(NeSceneHierarchy *shd, NeEntityHandle eh)
 		return;
 
 	QTreeWidgetItem *parentItem = nullptr;
-	if (xform->parent != E_INVALID_HANDLE) {
+	if (xform->parent != NE_INVALID_HANDLE) {
 		struct NeTransform *parent = (struct NeTransform *)E_ComponentPtrS(Scn_GetScene((uint8_t)xform->_sceneId), xform->parent);
 		QList<QTreeWidgetItem *> parentItems = shd->_tree->findItems(E_EntityName(parent->_owner), Qt::MatchExactly);
 		if (!parentItems.empty())
 			parentItem = parentItems.first();
 	}
 
-	_dlg->_AddTransform(xform, parentItem);
-
-	Sys_UnlockFutex(_ftx);
+	f_dlg->_AddTransform(xform, parentItem);
 }
 
 void
-NeSceneHierarchy::_EntityDestroy(NeSceneHierarchy *shd, NeEntityHandle eh)
+NeSceneHierarchy::EntityDestroyed(NeSceneHierarchy *shd, NeEntityHandle eh)
 {
-	Sys_LockFutex(_ftx);
+	NeFutexLock lock(f_ftx);
 
 	QTreeWidgetItem *item = shd->_tree->findItems(E_EntityName(eh), Qt::MatchExactly).first();
 	if (!item)
@@ -146,31 +144,27 @@ NeSceneHierarchy::_EntityDestroy(NeSceneHierarchy *shd, NeEntityHandle eh)
 		parent->removeChild(item);
 
 	delete item;
-
-	Sys_UnlockFutex(_ftx);
 }
 
 void
-NeSceneHierarchy::_ComponentCreate(NeSceneHierarchy *shd, const struct NeComponentCreationData *ccd)
+NeSceneHierarchy::ComponentCreated(NeSceneHierarchy *shd, const struct NeComponentCreationData *ccd)
 {
-	if (ccd->type != E_ComponentTypeId(TRANSFORM_COMP))
+	if (ccd->type != NE_TRANSFORM_ID)
 		return;
 
-	_EntityCreate(shd, ccd->owner);
+	EntityCreated(shd, ccd->owner);
 }
 
 void
-NeSceneHierarchy::_SceneActivated(NeSceneHierarchy *shd, struct NeScene *scn)
+NeSceneHierarchy::SceneActivated(NeSceneHierarchy *shd, struct NeScene *scn)
 {
-	Sys_LockFutex(_ftx);
+	NeFutexLock lock(f_ftx);
 
 	const struct NeTransform *xform = NULL;
-	const struct NeArray *transforms = E_GetAllComponentsS(scn, E_ComponentTypeId(TRANSFORM_COMP));
+	const struct NeArray *transforms = E_GetAllComponentsS(scn, NE_TRANSFORM_ID);
 
 	Rt_ArrayForEach(xform, transforms, const struct NeTransform *)
 		shd->_AddTransform(xform, nullptr);
-
-	Sys_UnlockFutex(_ftx);
 }
 
 /* NekoEditor
@@ -199,7 +193,7 @@ NeSceneHierarchy::_SceneActivated(NeSceneHierarchy *shd, struct NeScene *scn)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

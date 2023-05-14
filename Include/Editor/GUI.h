@@ -1,5 +1,5 @@
-#ifndef _NE_EDITOR_GUI_H_
-#define _NE_EDITOR_GUI_H_
+#ifndef NE_EDITOR_GUI_H
+#define NE_EDITOR_GUI_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -11,8 +11,6 @@ enum NeMessageBoxType
 	MB_Warning,
 	MB_Error
 };
-
-void Ed_ShowProjectDialog(void);
 
 bool Ed_CreateGUI(int argc, char *argv[]);
 bool Ed_InitGUI(void);
@@ -33,7 +31,7 @@ void Ed_TermGUI(void);
 }
 #endif
 
-#endif /* _NE_EDITOR_GUI_H_ */
+#endif /* NE_EDITOR_GUI_H */
 
 /* NekoEngine
  *
@@ -61,7 +59,7 @@ void Ed_TermGUI(void);
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

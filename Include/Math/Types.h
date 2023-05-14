@@ -1,5 +1,5 @@
-#ifndef _NE_MATH_DEFS_H_
-#define _NE_MATH_DEFS_H_
+#ifndef NE_MATH_DEFS_H
+#define NE_MATH_DEFS_H
 
 #include <System/System.h>
 #include <Engine/Types.h>
@@ -9,7 +9,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if __STDC_VERSION__ < 199901L && (!defined(_MSC_VER) || (_MSC_VER <= 1800))
+#if !defined(__cplusplus) && __STDC_VERSION__ < 199901L && (!defined(_MSC_VER) || (_MSC_VER <= 1800))
 
 // Mostly for VC6 compatibility
 
@@ -118,13 +118,27 @@ NE_ALIGNED_STRUCT(NeAABB, 16,
 	struct NeVec3 max;
 );
 
-NE_ALIGNED_STRUCT(NePlane, 16,
-	struct NeVec3 normal;
-	float distance;
+NE_ALIGNED_STRUCT(NeFrustum, 16,
+	struct NeVec4 planes[6];
+);
+#define NE_FRUSTUM_TOP_PLANE	0
+#define NE_FRUSTUM_BOTTOM_PLANE	1
+#define NE_FRUSTUM_LEFT_PLANE	2
+#define NE_FRUSTUM_RIGHT_PLANE	3
+#define NE_FRUSTUM_NEAR_PLANE	4
+#define NE_FRUSTUM_FAR_PLANE	5
+
+NE_ALIGNED_STRUCT(NeBounds, 16,
+	NE_ALIGNED_STRUCT(, 16,
+		struct NeVec3 center;
+		float radius;
+	) sphere;
+	struct NeAABB aabb;
 );
 
-NE_ALIGNED_STRUCT(NeFrustum, 16,
-	struct NePlane planes[6];
+NE_ALIGNED_STRUCT(NeRay, 16,
+	struct NeVec3 start;
+	struct NeVec3 end;
 );
 
 #pragma pack(pop)
@@ -133,7 +147,7 @@ NE_ALIGNED_STRUCT(NeFrustum, 16,
 #define M_PI_180			 0.01745329251994329576f
 #define M_180_PI			57.29577951308232087684f
 
-#endif /* _NE_MATH_DEFS_H_ */
+#endif /* NE_MATH_DEFS_H */
 
 /* NekoEngine
  *
@@ -163,7 +177,7 @@ NE_ALIGNED_STRUCT(NeFrustum, 16,
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

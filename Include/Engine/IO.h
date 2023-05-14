@@ -1,5 +1,5 @@
-#ifndef _NE_ENGINE_IO_H_
-#define _NE_ENGINE_IO_H_
+#ifndef NE_ENGINE_IO_H
+#define NE_ENGINE_IO_H
 
 #include <stdio.h>
 #include <string.h>
@@ -72,11 +72,15 @@ bool		  E_IsDirectory(const char *path);
 void		  E_FreeFileList(const char **list);
 void		  E_ProcessFiles(const char *path, const char *ext, bool recurse, void (*cb)(const char *));
 
+void		 *E_WatchDirectory(const char *path, enum NeFSEvent mask, NeDirWatchCallback callback, void *ud);
+void		  E_RemoveWatch(void *watch);
+
 bool		  E_EnableWrite(enum NeWriteDirectory wd);
 void		  E_DisableWrite(void);
 bool		  E_CreateDirectory(const char *name);
 
 bool		  E_FileStream(const char *path, enum NeFileOpenMode mode, struct NeStream *stm);
+bool		  E_MappedFileStream(const char *path, enum NeFileOpenMode mode, struct NeStream *stm);
 bool		  E_MemoryStream(void *buff, uint64_t size, struct NeStream *stm);
 void		  E_CloseStream(struct NeStream *stm);
 
@@ -96,7 +100,7 @@ E_StreamTell(const struct NeStream *stm)
 }
 
 static inline int64_t
-E_StreamSeek(struct NeStream *stm, int64_t offset, enum NeFileSeekStart whence)
+E_SeekStream(struct NeStream *stm, int64_t offset, enum NeFileSeekStart whence)
 {
 	if (stm->ptr) {
 		switch (whence) {
@@ -222,7 +226,7 @@ E_WriteStream(struct NeStream *stm, const void *ptr, int64_t size)
 }
 #endif
 
-#endif /* _NE_ENGINE_IO_H_ */
+#endif /* NE_ENGINE_IO_H */
 
 /* NekoEngine
  *
@@ -250,7 +254,7 @@ E_WriteStream(struct NeStream *stm, const void *ptr, int64_t size)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

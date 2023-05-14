@@ -10,20 +10,6 @@
 
 #include "Internal.h"
 
-struct NeUIPass;
-static bool _Init(struct NeUIPass **pass);
-static void _Term(struct NeUIPass *pass);
-static bool _Setup(struct NeUIPass *pass, struct NeArray *resources);
-static void _Execute(struct NeUIPass *pass, const struct NeArray *resources);
-
-struct NeRenderPass RP_ui =
-{
-	.Init = (NePassInitProc)_Init,
-	.Term = (NePassTermProc)_Term,
-	.Setup = (NePassSetupProc)_Setup,
-	.Execute = (NePassExecuteProc)_Execute
-};
-
 struct NeUIConstants
 {
 	uint64_t vertexAddress;
@@ -32,22 +18,24 @@ struct NeUIConstants
 	XMFLOAT4X4A mvp;
 };
 
-struct NeUIPass
+NE_RENDER_PASS(NeUIPass,
 {
 	struct NeFramebuffer *fb;
 	struct NePipeline *pipeline;
 	struct NeRenderPassDesc *rpd;
-	uint64_t outputHash, passSemaphoreHash;
 	volatile bool updated;
 	struct NeUIConstants constants;
-};
+});
 
-static void _UIUpdateJob(int i, struct NeUIPass *pass);
+static void UIUpdateJob(int i, struct NeUIPass *pass);
 
 static bool
-_Setup(struct NeUIPass *pass, struct NeArray *resources)
+NeUIPass_Setup(struct NeUIPass *pass, struct NeArray *resources)
 {
-	const struct NeTextureDesc *outDesc = Re_GraphTextureDesc(pass->outputHash, resources);
+	if (UI_pluginLoaded)
+		return false;
+
+	const struct NeTextureDesc *outDesc = Re_GraphTextureDesc(Rt_HashLiteral(RE_OUTPUT), resources);
 	struct NeFramebufferAttachmentDesc atDesc = { .format = outDesc->format, .usage = outDesc->usage };
 
 	struct NeFramebufferDesc fbDesc =
@@ -63,7 +51,7 @@ _Setup(struct NeUIPass *pass, struct NeArray *resources)
 	Re_Destroy(pass->fb);
 
 	pass->updated = false;
-	E_ExecuteJob((NeJobProc)_UIUpdateJob, pass, NULL, NULL);
+	E_ExecuteJob((NeJobProc)UIUpdateJob, pass, NULL, NULL);
 
 	XMStoreFloat4x4A(&pass->constants.mvp, XMMatrixOrthographicOffCenterRH(0.f, (float)*E_screenWidth, (float)*E_screenHeight, 0.f, 0.f, 1.f));
 
@@ -71,14 +59,15 @@ _Setup(struct NeUIPass *pass, struct NeArray *resources)
 }
 
 static void
-_Execute(struct NeUIPass *pass, const struct NeArray *resources)
+NeUIPass_Execute(struct NeUIPass *pass, const struct NeArray *resources)
 {
-	Re_SetAttachment(pass->fb, 0, Re_GraphTexture(pass->outputHash, resources));
-	const struct NeTextureDesc *outDesc = Re_GraphTextureDesc(pass->outputHash, resources);
+	struct NeTextureDesc *outDesc;
+	Re_SetAttachment(pass->fb, 0, Re_GraphTexture(Rt_HashLiteral(RE_OUTPUT), resources, NULL, &outDesc));
+	struct NeSemaphore *passSemaphore = (struct NeSemaphore *)Re_GraphData(Rt_HashLiteral(RE_PASS_SEMAPHORE), resources);
 
 	while (!pass->updated);
 
-	Re_BeginDrawCommandBuffer();
+	Re_BeginDrawCommandBuffer(passSemaphore);
 	Re_CmdBeginRenderPass(pass->rpd, pass->fb, RENDER_COMMANDS_INLINE);
 
 	Re_CmdBindPipeline(pass->pipeline);
@@ -88,20 +77,18 @@ _Execute(struct NeUIPass *pass, const struct NeArray *resources)
 
 	pass->constants.vertexAddress = Re_BufferAddress(UI_vertexBuffer, UI_vertexBufferSize * Re_frameId);
 	pass->constants.texture = 0;
-	E_ExecuteSystemS(Scn_activeScene, UI_DRAW_CONTEXT, &pass->constants);
+	E_ExecuteSystemS(Scn_activeScene, Rt_HashLiteral(UI_DRAW_CONTEXT), &pass->constants);
 
 	struct NeUIContext *ctx;
 	Rt_ArrayForEachPtr(ctx, &UI_standaloneContexts, struct NeUIContext *)
-		_UI_DrawContext((void **)&ctx, &pass->constants);
+		UI_p_DrawContext((void **)&ctx, &pass->constants);
 
 	Re_CmdEndRenderPass();
-
-	struct NeSemaphore *passSemaphore = (struct NeSemaphore *)Re_GraphData(pass->passSemaphoreHash, resources);
-	Re_QueueGraphics(Re_EndCommandBuffer(), passSemaphore, NULL);
+	Re_QueueGraphics(Re_EndCommandBuffer(), nullptr);
 }
 
 static bool
-_Init(struct NeUIPass **pass)
+NeUIPass_Init(struct NeUIPass **pass)
 {
 	*pass = (struct NeUIPass *)Sys_Alloc(sizeof(struct NeUIPass), 1, MH_Render);
 	if (!*pass)
@@ -153,9 +140,6 @@ _Init(struct NeUIPass **pass)
 	if (!(*pass)->pipeline)
 		goto error;
 
-	(*pass)->outputHash = Rt_HashString(RE_OUTPUT);
-	(*pass)->passSemaphoreHash = Rt_HashString(RE_PASS_SEMAPHORE);
-
 	return true;
 
 error:
@@ -168,13 +152,14 @@ error:
 }
 
 static void
-_Term(struct NeUIPass *pass)
+NeUIPass_Term(struct NeUIPass *pass)
 {
 	Re_DestroyRenderPassDesc(pass->rpd);
 	Sys_Free(pass);
 }
 
-static void _UIUpdateJob(int i, struct NeUIPass *pass)
+static void
+UIUpdateJob(int i, struct NeUIPass *pass)
 {
 	UI_Update(Scn_activeScene);
 	pass->updated = true;
@@ -206,7 +191,7 @@ static void _UIUpdateJob(int i, struct NeUIPass *pass)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

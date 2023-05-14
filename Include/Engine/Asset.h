@@ -1,5 +1,5 @@
-#ifndef _NE_ENGINE_ASSET_H_
-#define _NE_ENGINE_ASSET_H_
+#ifndef NE_ENGINE_ASSET_H
+#define NE_ENGINE_ASSET_H
 
 #include <Engine/Types.h>
 #include <Render/Types.h>
@@ -10,7 +10,7 @@ extern "C" {
 
 struct jsmntok;
 
-#define ASSET_INFO				\
+#define ASSET_READ_INIT()		\
 	union {						\
 		uint64_t guard;			\
 		struct {				\
@@ -42,35 +42,44 @@ struct NeMetadata
 };
 
 // Metadata
-bool E_LoadMetadata(struct NeMetadata *meta, const char *file);
-bool E_LoadMetadataFromFile(struct NeMetadata *meta, NeFile f);
-bool E_LoadMetadataFromStream(struct NeMetadata *meta, struct NeStream *stm);
-void E_LoadMetadataFloatVector(struct NeMetadata *meta, struct jsmntok *tok, float *out, uint32_t count);
+bool Asset_LoadMetadata(struct NeMetadata *meta, const char *file);
+bool Asset_LoadMetadataFromFile(struct NeMetadata *meta, NeFile f);
+bool Asset_LoadMetadataFromStream(struct NeMetadata *meta, struct NeStream *stm);
+void Asset_LoadMetadataFloatVector(struct NeMetadata *meta, struct jsmntok *tok, float *out, uint32_t count);
 
 // Models
-bool E_LoadNMeshAsset(struct NeStream *stm, struct NeModel *m);
-bool E_LoadNMorphAsset(struct NeStream *stm, struct NeModel *m);
+bool Asset_LoadMesh(struct NeStream *stm, struct NeModel *m);
+bool Asset_LoadMorphPack(struct NeStream *stm, struct NeMorphPack *m);
+bool Asset_LoadMorphPackForModel(struct NeStream *stm, struct NeModel *m);
 
 // Animation
-bool E_LoadNAnimAsset(struct NeStream *stm, struct NeAnimationClip *ac);
+bool Asset_LoadAnim(struct NeStream *stm, struct NeAnimationClip *ac);
 
 // Textures
-bool E_LoadImageAssetComp(struct NeStream *stm, struct NeTextureCreateInfo *tex, bool flip, int rcomp);
-static inline bool E_LoadImageAsset(struct NeStream *stm, struct NeTextureCreateInfo *tex, bool flip) { return E_LoadImageAssetComp(stm, tex, flip, 4); }
-bool E_LoadHDRAsset(struct NeStream *stm, struct NeTextureCreateInfo *tci, bool flip);
-bool E_LoadTGAAsset(struct NeStream *stm, struct NeTextureCreateInfo *tex);
-bool E_LoadDDSAsset(struct NeStream *stm, struct NeTextureCreateInfo *tex);
+bool Asset_LoadTexture(struct NeStream *stm, struct NeTextureCreateInfo *tci);
+bool Asset_LoadImageComp(struct NeStream *stm, struct NeTextureCreateInfo *tci, bool flip, int rcomp);
+static inline bool Asset_LoadImage(struct NeStream *stm, struct NeTextureCreateInfo *tex, bool flip) { return Asset_LoadImageComp(stm, tex, flip, 4); }
 
-bool E_LoadOggAsset(struct NeStream *stm, struct NeAudioClip *clip);
-bool E_LoadWaveAsset(struct NeStream *stm, struct NeAudioClip *clip);
+// Image formats
+bool Asset_LoadPNG(struct NeStream *stm, struct NeTextureCreateInfo *tci);
+bool Asset_LoadJPG(struct NeStream *stm, struct NeTextureCreateInfo *tci);
+bool Asset_LoadTGA(struct NeStream *stm, struct NeTextureCreateInfo *tex);
+bool Asset_LoadDDS(struct NeStream *stm, struct NeTextureCreateInfo *tex);
+bool Asset_LoadHDR(struct NeStream *stm, struct NeTextureCreateInfo *tci);
+bool Asset_LoadSTBI(struct NeStream *stm, struct NeTextureCreateInfo *tci);
 
-bool E_LoadFontAsset(struct NeStream *stm, struct NeFont *font);
+// Audio formats
+bool Asset_LoadWAV(struct NeStream *stm, struct NeAudioClip *clip);
+bool Asset_LoadOGG(struct NeStream *stm, struct NeAudioClip *clip);
+bool Asset_LoadFLAC(struct NeStream *stm, struct NeAudioClip *clip);
+
+bool Asset_LoadFont(struct NeStream *stm, struct NeFont *font);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* _NE_ENGINE_ASSET_H_ */
+#endif /* NE_ENGINE_ASSET_H */
 
 /* NekoEngine
  *
@@ -98,7 +107,7 @@ bool E_LoadFontAsset(struct NeStream *stm, struct NeFont *font);
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

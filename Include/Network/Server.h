@@ -1,5 +1,5 @@
-#ifndef _NE_NETWORK_SERVER_H_
-#define _NE_NETWORK_SERVER_H_
+#ifndef NE_NETWORK_SERVER_H
+#define NE_NETWORK_SERVER_H
 
 #include <Engine/Types.h>
 
@@ -10,4 +10,4 @@ bool Net_StartServer(struct NeServer *s);
 void Net_StopServer(struct NeServer *s);
 void Net_TermServer(struct NeServer *s);
 
-#endif /* _NE_NETWORK_SERVER_H_ */
+#endif /* NE_NETWORK_SERVER_H */

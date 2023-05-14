@@ -1,48 +1,69 @@
 #include <Math/Math.h>
-#include <Engine/Engine.h>
+#include <System/Log.h>
+#include <Render/Model.h>
 #include <Animation/Animation.h>
 
-static inline void _LerpVecKey(struct NeVec3 *v, double time, const struct NeArray *keys);
-static inline void _LerpQuatKey(struct NeQuaternion *q, double time, const struct NeArray *keys);
-static void _XformHierarchy(double time, const struct NeSkeleton *skel, const struct NeSkeletonNode *n, const XMMATRIX &parentXform, const struct NeAnimationClip *ac, struct NeMatrix *transforms);
+#define SKEL_MOD	"Skeleton"
+
+static inline void LerpVecKey(struct NeVec3 *v, float time, const struct NeArray *keys);
+static inline void LerpQuatKey(struct NeQuaternion *q, float time, const struct NeArray *keys);
+static void XformHierarchy(float time, const struct NeSkeleton *skel, const XMMATRIX &inverseXform, const struct NeSkeletonNode *n, const XMMATRIX &parentXform, const struct NeAnimationClip *ac, struct NeMatrix *transforms);
 
 bool
-Anim_InitSkeleton(struct NeSkeleton *s, const struct NeArray *bones, const struct NeArray *nodes, const struct NeMatrix *git)
+Anim_InitSkeleton(struct NeSkeleton *s, const struct NeModel *mdl)
 {
-	Rt_CloneArray(&s->bones, bones, MH_Scene);
-	Rt_CloneArray(&s->nodes, nodes, MH_Scene);
+	Rt_CloneArray(&s->nodes, &mdl->skeleton.nodes, MH_Scene);
+	Rt_InitPtrArray(&s->joints, mdl->skeleton.joints.count, MH_Scene);
 
-	//Rt_ArraySort(&s->nodes, Rt_U64CmpFunc);
-	Rt_ArraySort(&s->bones, Rt_U64CmpFunc);
+	size_t invMatSize = sizeof(*s->inverseBind) * mdl->skeleton.joints.count;
+	s->inverseBind = (struct NeMatrix *)Sys_Alloc(invMatSize, 1, MH_Scene);
+	memcpy(s->inverseBind, mdl->skeleton.inverseTransforms, invMatSize);
 
-	s->root = (struct NeSkeletonNode *)Rt_ArrayGet(&s->nodes, 0);
-	memcpy(&s->globalInverseTransform, git, sizeof(s->globalInverseTransform));
+	uint32_t *id;
+	Rt_ArrayForEach(id, &mdl->skeleton.joints, uint32_t *)
+		Rt_ArrayAddPtr(&s->joints, Rt_ArrayGet(&s->nodes, *id));
 
-	return false;
+	struct NeSkeletonNode *node;
+	Rt_ArrayForEach(node, &s->nodes, struct NeSkeletonNode *) {
+		if (node->parent)
+			continue;
+
+		s->root = node;
+		break;
+	}
+
+	if (!s->root) {
+		Sys_LogEntry(SKEL_MOD, LOG_CRITICAL, "Root node not found");
+		return false;
+	}
+
+	memcpy(&s->inverseTransform, &mdl->skeleton.inverseTransform, sizeof(s->inverseTransform));
+
+//	Rt_ArraySort(&s->nodes, Rt_U64CmpFunc);
+//	Rt_ArraySort(&s->joints, Rt_U64CmpFunc);
+
+	return true;
 }
 
 void
-Anim_UpdateSkeleton(struct NeSkeleton *s, double time, const struct NeAnimationClip *ac, struct NeMatrix *transforms)
+Anim_UpdateSkeleton(struct NeSkeleton *s, float time, const struct NeAnimationClip *ac, struct NeMatrix *transforms)
 {
-	const double tTime = time * (ac->ticks != 0 ? ac->ticks : 25.0);
-	const double aTime = M_Mod(tTime, ac->duration);
-
-	XMMATRIX xform = XMMatrixIdentity();
-	_XformHierarchy(aTime, s, (struct NeSkeletonNode *)Rt_ArrayGet(&s->nodes, 0), xform, ac, transforms);
+	XformHierarchy(time, s, M_Load(&s->inverseTransform), s->root, XMMatrixIdentity(), ac, transforms);
 }
 
 void
 Anim_TermSkeleton(struct NeSkeleton *s)
 {
-	Rt_TermArray(&s->bones);
+	Sys_Free(s->inverseBind);
+	Rt_TermArray(&s->joints);
 	Rt_TermArray(&s->nodes);
 }
 
 static inline void
-_LerpVecKey(struct NeVec3 *v, double time, const struct NeArray *keys)
+LerpVecKey(struct NeVec3 *v, float time, const struct NeArray *keys)
 {
 	if (keys->count == 1) {
-		memcpy(v, &((struct NeAnimVectorKey *)Rt_ArrayGet(keys, 0))->val, sizeof(*v));
+		memcpy(v, &((struct NeAnimVectorKey *)Rt_ArrayGet(keys, 0))->value, sizeof(*v));
 		return;
 	}
 
@@ -58,17 +79,19 @@ _LerpVecKey(struct NeVec3 *v, double time, const struct NeArray *keys)
 	const struct NeAnimVectorKey *key = (struct NeAnimVectorKey *)Rt_ArrayGet(keys, idx);
 	const struct NeAnimVectorKey *nextKey = (struct NeAnimVectorKey *)Rt_ArrayGet(keys, idx + 1);
 
-	XMStoreFloat3A((XMFLOAT3A *)v, XMVectorLerp(
-		XMLoadFloat3A((XMFLOAT3A *)&key->val), XMLoadFloat3A((XMFLOAT3A *)&nextKey->val),
-		(time - key->time) / (nextKey->time - key->time)
-	));
+	if (nextKey)
+		M_Store(v, XMVectorLerp(M_Load(&key->value), M_Load(&nextKey->value),
+			(float)((time - key->time) / (nextKey->time - key->time))
+		));
+	else
+		memcpy(v, &key->value, sizeof(*v));
 }
 
 static inline void
-_LerpQuatKey(struct NeQuaternion *q, double time, const struct NeArray *keys)
+LerpQuatKey(struct NeQuaternion *q, float time, const struct NeArray *keys)
 {
 	if (keys->count == 1) {
-		memcpy(q, &((struct NeAnimQuatKey *)Rt_ArrayGet(keys, 0))->val, sizeof(*q));
+		memcpy(q, &((struct NeAnimQuatKey *)Rt_ArrayGet(keys, 0))->value, sizeof(*q));
 		return;
 	}
 
@@ -84,14 +107,16 @@ _LerpQuatKey(struct NeQuaternion *q, double time, const struct NeArray *keys)
 	const struct NeAnimQuatKey *key = (struct NeAnimQuatKey *)Rt_ArrayGet(keys, idx);
 	const struct NeAnimQuatKey *nextKey = (struct NeAnimQuatKey *)Rt_ArrayGet(keys, idx + 1);
 
-	XMStoreFloat4A((XMFLOAT4A *)q, XMQuaternionSlerp(
-		XMLoadFloat4A((XMFLOAT4A *)&key->val), XMLoadFloat3A((XMFLOAT3A *)&nextKey->val),
-		(time - key->time) / (nextKey->time - key->time)
-	));
+	if (nextKey)
+		M_Store(q, XMQuaternionNormalize(XMQuaternionSlerp(M_Load(&key->value), M_Load(&nextKey->value),
+			(float)((time - key->time) / (nextKey->time - key->time))
+		)));
+	else
+		memcpy(q, &key->value, sizeof(*q));
 }
 
 static void
-_XformHierarchy(double time, const struct NeSkeleton *skel,
+XformHierarchy(float time, const struct NeSkeleton *skel, const XMMATRIX &inverseXform,
 				const struct NeSkeletonNode *n, const XMMATRIX &parentXform,
 				const struct NeAnimationClip *ac, struct NeMatrix *transforms)
 {
@@ -101,56 +126,53 @@ _XformHierarchy(double time, const struct NeSkeleton *skel,
 			break;
 		ch = NULL;
 	}
-	
-	XMMATRIX xform = XMMatrixIdentity();
-	
-	if (ch) {
-		if (ch->positionKeys.count) {
-			struct NeVec3 pos;
-			_LerpVecKey(&pos, time, &ch->positionKeys);
 
-			xform = XMMatrixMultiply(xform, XMMatrixTranslation(pos.x, pos.y, pos.z));
+	XMMATRIX xform = XMMatrixIdentity();
+
+	if (ch) {
+		if (ch->scalingKeys.count) {
+			struct NeVec3 scale;
+			LerpVecKey(&scale, time, &ch->scalingKeys);
+
+			xform = XMMatrixMultiply(xform, XMMatrixScaling(scale.x, scale.y, scale.z));
 		}
 
 		if (ch->rotationKeys.count) {
 			struct NeQuaternion rot;
-			_LerpQuatKey(&rot, time, &ch->rotationKeys);
+			LerpQuatKey(&rot, time, &ch->rotationKeys);
 
 			xform = XMMatrixMultiply(xform, XMMatrixRotationQuaternion(XMLoadFloat4A((XMFLOAT4A *)&rot)));
 		}
 
-		if (ch->scalingKeys.count) {
-			struct NeVec3 scale;
-			_LerpVecKey(&scale, time, &ch->scalingKeys);
-			
-			xform = XMMatrixMultiply(xform, XMMatrixScaling(scale.x, scale.y, scale.z));
+		if (ch->positionKeys.count) {
+			struct NeVec3 pos;
+			LerpVecKey(&pos, time, &ch->positionKeys);
+
+			xform = XMMatrixMultiply(xform, XMMatrixTranslation(pos.x, pos.y, pos.z));
 		}
 	} else {
-		xform = XMLoadFloat4x4A((XMFLOAT4X4A *)&n->xform);
+		xform = M_Load(&n->xform);
 	}
 
-	XMMATRIX gXform = XMMatrixMultiply(XMLoadFloat4x4A((XMFLOAT4X4A *)&skel->globalInverseTransform),
-		XMMatrixMultiply(parentXform, xform));
+	xform = XMMatrixMultiply(xform, parentXform);
 
-	const struct NeBone *b = NULL;
-	Rt_ArrayForEach(b, &skel->bones, const struct NeBone *) {
+	const struct NeSkeletonNode *b = NULL;
+	Rt_ArrayForEachPtr(b, &skel->joints, const struct NeSkeletonNode *) {
 		if (b->hash != n->hash)
 			continue;
-		
-		XMStoreFloat4x4A((XMFLOAT4X4A *)&transforms[miwa_rtafei],
-			XMMatrixMultiply(gXform, XMLoadFloat4x4A((XMFLOAT4X4A *)&b->offset)));
 
+		M_Store(&transforms[miwa_rtafei], XMMatrixMultiply(XMMatrixMultiply(M_Load(&skel->inverseBind[miwa_rtafei]), xform), inverseXform));
 		break;
 	}
-	
+
 	struct NeSkeletonNode *child;
 	Rt_ArrayForEachPtr(child, &n->children, struct NeSkeletonNode *)
-		_XformHierarchy(time, skel, child, xform, ac, transforms);
+		XformHierarchy(time, skel, inverseXform, child, xform, ac, transforms);
 }
 
 /* NekoEngine
  *
- * Skeleton.c
+ * Skeleton.cxx
  * Author: Alexandru Naiman
  *
  * -----------------------------------------------------------------------------
@@ -174,7 +196,7 @@ _XformHierarchy(double time, const struct NeSkeleton *skel,
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

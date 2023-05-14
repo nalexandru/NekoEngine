@@ -1,16 +1,7 @@
-#ifndef _VULKAN_BACKEND_H_
-#define _VULKAN_BACKEND_H_
+#ifndef VULKAN_BACKEND_H
+#define VULKAN_BACKEND_H
 
 // Build configuration
-
-/* Enable NVIDIA Aftermath support.
- * The Aftermath SDK must be extracted in Deps/Aftermath
- * Aftermath is supported only on Linux or Windows 10 and newer.
- * This option has no effect when compiling for systems other than Windows or Linux
- */
-#ifndef ENABLE_AFTERMATH
-#	define ENABLE_AFTERMATH 0
-#endif
 
 #include <Engine/BuildConfig.h>
 
@@ -81,6 +72,7 @@ struct NeRenderContext
 	{
 		struct NeArray graphics, compute, xfer;
 	} queued;
+	struct NeSemaphore *wait;
 };
 
 struct VulkanDeviceInfo
@@ -203,15 +195,15 @@ extern struct NeSemaphore Vkd_stagingSignal;
 extern uint32_t Vkd_instanceVersion;
 
 // Debug
-bool Vkd_InitDebug(void);
-bool Vkd_SetObjectName(VkDevice dev, void *handle, VkObjectType type, const char *name);
-void Vkd_TermDebug(void);
+bool VkBk_InitDebug(void);
+bool VkBk_SetObjectName(VkDevice dev, void *handle, VkObjectType type, const char *name);
+void VkBk_TermDebug(void);
 
 // Surface (Platform.c, Driver.c)
 bool Vk_CheckPresentSupport(VkPhysicalDevice dev, uint32_t family);
 
 // Context
-void Vkd_ExecuteCommands(struct NeRenderDevice *dev, struct NeRenderContext *ctx, struct NeSwapchain *sw, struct NeSemaphore *waitSemaphore);
+void VkBk_ExecuteCommands(struct NeSwapchain *sw, struct NeSemaphore *waitSemaphore);
 
 // Texture
 bool Vk_CreateImage(const struct NeTextureDesc *desc, struct NeTexture *tex, bool alias);
@@ -229,12 +221,18 @@ void Vk_TermDescriptorSet(struct NeRenderDevice *dev);
 bool Vk_LoadShaders(VkDevice dev);
 void Vk_UnloadShaders(VkDevice dev);
 
-// Staging; support for systems without CPU visible device local memory (eg. Windows 7)
-bool Vkd_InitStagingArea(struct NeRenderDevice *dev);
-void *Vkd_AllocateStagingMemory(VkDevice dev, VkBuffer buff, VkMemoryRequirements *mr);
-void Vkd_CommitStagingArea(struct NeRenderDevice *dev, VkSemaphore wait);
-void Vkd_TermStagingArea(struct NeRenderDevice *dev);
-void Vkd_StagingBarrier(VkCommandBuffer cmdBuffer);
+// Staging; support for systems without CPU visible device local memory (Windows 7)
+bool VkBk_InitStagingArea(struct NeRenderDevice *dev);
+void *VkBk_AllocateStagingMemory(VkDevice dev, VkBuffer buff, VkMemoryRequirements *mr);
+void VkBk_CommitStagingArea(struct NeRenderDevice *dev, VkSemaphore wait);
+void VkBk_TermStagingArea(struct NeRenderDevice *dev);
+void VkBk_StagingBarrier(VkCommandBuffer cmdBuffer);
+
+// DirectStorage; only for Windows 10 and newer
+bool VkBk_InitDStorage(void);
+NeDirectIOHandle VkBk_DStorageOpenFile(const char *path);
+void VkBk_DStorageCloseFile(NeDirectIOHandle handle);
+void VkBk_TermDStorage(void);
 
 static inline VkImageAspectFlags
 NeFormatAspect(enum NeTextureFormat fmt)
@@ -254,13 +252,19 @@ NeToVkTextureFormat(enum NeTextureFormat fmt)
 	case TF_R8G8B8A8_SRGB: return VK_FORMAT_R8G8B8A8_SRGB;
 	case TF_B8G8R8A8_UNORM: return VK_FORMAT_B8G8R8A8_UNORM;
 	case TF_B8G8R8A8_SRGB: return VK_FORMAT_B8G8R8A8_SRGB;
+	case TF_R16G16B16A16_UNORM: return VK_FORMAT_R16G16B16A16_UNORM;
 	case TF_R16G16B16A16_SFLOAT: return VK_FORMAT_R16G16B16A16_SFLOAT;
+	case TF_R32G32B32A32_UINT: return VK_FORMAT_R32G32B32A32_UINT;
 	case TF_R32G32B32A32_SFLOAT: return VK_FORMAT_R32G32B32A32_SFLOAT;
 	case TF_A2R10G10B10_UNORM: return VK_FORMAT_A2B10G10R10_UNORM_PACK32;
 	case TF_D32_SFLOAT: return VK_FORMAT_D32_SFLOAT;
 	case TF_D24_STENCIL8: return VK_FORMAT_D24_UNORM_S8_UINT;
 	case TF_R8G8_UNORM: return VK_FORMAT_R8G8_UNORM;
+	case TF_R16G16_UNORM: return VK_FORMAT_R16G16_UNORM;
+	case TF_R32G32_UINT: return VK_FORMAT_R32G32_UINT;
 	case TF_R8_UNORM: return VK_FORMAT_R8_UNORM;
+	case TF_R16_UNORM: return VK_FORMAT_R16_UNORM;
+	case TF_R32_UINT: return VK_FORMAT_R32_UINT;
 	case TF_BC5_UNORM: return VK_FORMAT_BC5_UNORM_BLOCK;
 	case TF_BC5_SNORM: return VK_FORMAT_BC5_SNORM_BLOCK;
 	case TF_BC6H_UF16: return VK_FORMAT_BC6H_UFLOAT_BLOCK;
@@ -287,13 +291,19 @@ VkToNeTextureFormat(VkFormat fmt)
 	case VK_FORMAT_R8G8B8A8_SRGB: return TF_R8G8B8A8_SRGB;
 	case VK_FORMAT_B8G8R8A8_UNORM: return TF_B8G8R8A8_UNORM;
 	case VK_FORMAT_B8G8R8A8_SRGB: return TF_B8G8R8A8_SRGB;
+	case VK_FORMAT_R16G16B16A16_UNORM: return TF_R16G16B16A16_UNORM;
 	case VK_FORMAT_R16G16B16A16_SFLOAT: return TF_R16G16B16A16_SFLOAT;
+	case VK_FORMAT_R32G32B32A32_UINT: return TF_R32G32B32A32_UINT;
 	case VK_FORMAT_R32G32B32A32_SFLOAT: return TF_R32G32B32A32_SFLOAT;
 	case VK_FORMAT_A2B10G10R10_UNORM_PACK32: return TF_A2R10G10B10_UNORM;
 	case VK_FORMAT_D32_SFLOAT: return TF_D32_SFLOAT;
 	case VK_FORMAT_D24_UNORM_S8_UINT: return TF_D24_STENCIL8;
 	case VK_FORMAT_R8G8_UNORM: return TF_R8G8_UNORM;
+	case VK_FORMAT_R16G16_UNORM: return TF_R16G16_UNORM;
+	case VK_FORMAT_R32G32_UINT: return TF_R32G32_UINT;
 	case VK_FORMAT_R8_UNORM: return TF_R8_UNORM;
+	case VK_FORMAT_R16_UNORM: return TF_R16_UNORM;
+	case VK_FORMAT_R32_UINT: return TF_R32_UINT;
 	case VK_FORMAT_BC5_UNORM_BLOCK: return TF_BC5_UNORM;
 	case VK_FORMAT_BC5_SNORM_BLOCK: return TF_BC5_SNORM;
 	case VK_FORMAT_BC6H_UFLOAT_BLOCK: return TF_BC6H_UF16;
@@ -560,7 +570,7 @@ VkToNeImageLayout(VkImageLayout il)
 	}
 }
 
-#endif /* _VULKAN_BACKEND_H_ */
+#endif /* VULKAN_BACKEND_H */
 
 /* NekoEngine
  *
@@ -588,7 +598,7 @@ VkToNeImageLayout(VkImageLayout il)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

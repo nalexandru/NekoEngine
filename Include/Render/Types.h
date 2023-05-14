@@ -1,5 +1,5 @@
-#ifndef _NE_RENDER_TYPES_H_
-#define _NE_RENDER_TYPES_H_
+#ifndef NE_RENDER_TYPES_H
+#define NE_RENDER_TYPES_H
 
 #include <Math/Types.h>
 
@@ -9,6 +9,7 @@ extern "C" {
 
 // Resource definitions
 
+#define RES_MORPH_PACK			"MorphPack"
 #define RES_MODEL				"Model"
 #define RES_MATERIAL			"Material"
 #define RES_TEXTURE				"Texture"
@@ -199,6 +200,7 @@ struct NePipeline;
 struct NeBlendAttachmentDesc;
 struct NeGraphicsPipelineDesc;
 struct NeComputePipelineDesc;
+struct NeRayTracingPipelineDesc;
 
 // Render Pass
 
@@ -336,17 +338,23 @@ enum NeTextureFormat
 	TF_R8G8B8A8_SRGB,
 	TF_B8G8R8A8_UNORM,
 	TF_B8G8R8A8_SRGB,
+	TF_R8G8_UNORM,
+	TF_R8_UNORM,
+
+	TF_R16G16B16A16_UNORM,
 	TF_R16G16B16A16_SFLOAT,
+	TF_R16G16_UNORM,
+	TF_R16_UNORM,
+
+	TF_R32G32B32A32_UINT,
 	TF_R32G32B32A32_SFLOAT,
+	TF_R32G32_UINT,
+	TF_R32_UINT,
 
 	TF_D32_SFLOAT,
 	TF_D24_STENCIL8,
 
 	TF_A2R10G10B10_UNORM,
-
-	TF_R8G8_UNORM,
-
-	TF_R8_UNORM,
 
 	TF_BC5_UNORM,
 	TF_BC5_SNORM,
@@ -514,7 +522,7 @@ typedef void *NeDirectIOHandle;
 }
 #endif
 
-#endif /* _NE_RENDER_TYPES_H_ */
+#endif /* NE_RENDER_TYPES_H */
 
 /* NekoEngine
  *
@@ -542,7 +550,7 @@ typedef void *NeDirectIOHandle;
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

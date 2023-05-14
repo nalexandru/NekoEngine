@@ -4,7 +4,6 @@
 #include <Scene/Components.h>
 #include <Engine/Job.h>
 #include <Engine/Config.h>
-#include <Engine/Entity.h>
 #include <Engine/Engine.h>
 #include <Engine/Events.h>
 #include <Engine/Version.h>
@@ -14,13 +13,10 @@
 #include <System/Log.h>
 #include <UI/UI.h>
 
-#ifndef _countof
-#	define _countof(array) (sizeof(array) / sizeof(array[0]))
-#endif
-
 NE_APPLICATION("NekoEngine Test Application", E_CPY_STR, E_VER_MAJOR, E_VER_MINOR, E_VER_BUILD, E_VER_REVISION);
+NE_MAIN;
 
-static uint64_t _sceneLoadedEvt;
+static uint64_t f_sceneLoadedEvt;
 
 struct FlyController
 {
@@ -51,22 +47,22 @@ static bool App_InitStatistics(struct Statistics *comp, const char **args) { ret
 static void App_TermStatistics(struct Statistics *comp) { }
 static void App_DrawStatistics(void **comp, void *args);
 
-static volatile uint64_t _jobStart;
+static volatile uint64_t f_jobStart;
 
-E_REGISTER_COMPONENT(FLY_CONTROLLER_COMP, struct FlyController, 1, App_InitFlyController, App_TermFlyController);
-E_REGISTER_COMPONENT(STATISTICS_COMP, struct Statistics, 1, App_InitStatistics, App_TermStatistics);
+NE_REGISTER_COMPONENT(FLY_CONTROLLER_COMP, struct FlyController, 1, App_InitFlyController, nullptr, App_TermFlyController);
+NE_REGISTER_COMPONENT(STATISTICS_COMP, struct Statistics, 1, App_InitStatistics, nullptr, App_TermStatistics);
 
 static void
-_SleepJob(int worker, void *args)
+SleepJob(int worker, void *args)
 {
 	Sys_Sleep(1);
-	Sys_LogEntry("JOB", LOG_DEBUG, "Worker %d completed", worker);
+	Sys_LogEntry("JOB", LOG_DEBUG, "Worker %d (id %d) completed", worker, E_WorkerId());
 }
 
 static void
-_SleepCompleted(uint64_t id, volatile bool *done)
+SleepCompleted(uint64_t id, volatile bool *done)
 {
-	Sys_LogEntry("JOB", LOG_DEBUG, "Time: %f", ((double)Sys_Time() - (double)_jobStart) * 0.000000001);
+	Sys_LogEntry("JOB", LOG_DEBUG, "Time: %f", ((double)Sys_Time() - (double)f_jobStart) * 0.000000001);
 	*done = true;
 }
 
@@ -79,22 +75,24 @@ App_EarlyInit(int argc, char *argv[])
 bool
 App_InitApplication(int argc, char *argv[])
 {
-	const char *comp[] = { TRANSFORM_COMP, CAMERA_COMP, FLY_CONTROLLER_COMP };
-	E_RegisterSystem("App_FlyController", ECSYS_GROUP_LOGIC, comp, _countof(comp), (NeECSysExecProc)App_FlyController, 0, true);
+	NeCompTypeId comp[] = { NE_TRANSFORM_ID, NE_CAMERA_ID, FLY_CONTROLLER_COMP_ID };
+	E_RegisterSystemId("App_FlyController", ECSYS_GROUP_LOGIC_HASH, comp, NE_ARRAY_SIZE(comp), (NeECSysExecProc)App_FlyController, 0, true);
 
-	comp[0] = UI_CONTEXT_COMP; comp[1] = STATISTICS_COMP;
-	E_RegisterSystem("App_DrawStatistics", ECSYS_GROUP_LOGIC, comp, 2, (NeECSysExecProc)App_DrawStatistics, 0, true);
+	comp[0] = NE_UI_CONTEXT_ID; comp[1] = STATISTICS_COMP_ID;
+	E_RegisterSystemId("App_DrawStatistics", ECSYS_GROUP_LOGIC_HASH, comp, 2, (NeECSysExecProc)App_DrawStatistics, 0, true);
 
-	_sceneLoadedEvt = E_RegisterHandler(EVT_SCENE_LOADED, App_SceneLoaded, NULL);
-	E_SetCVarStr("Scene_DefaultScene", "/Scenes/Sponza.scn");
+	f_sceneLoadedEvt = E_RegisterHandler(EVT_SCENE_LOADED, App_SceneLoaded, NULL);
+	if (!CVAR_STRING("Scene_DefaultScene"))
+		E_SetCVarStr("Scene_DefaultScene", "/Scenes/Sponza.scn");
 
 	volatile bool jobCompleted = false;
 
-	_jobStart = Sys_Time();
-	E_DispatchJobs(E_JobWorkerThreads(), _SleepJob, NULL, (NeJobCompletedProc)_SleepCompleted, (void *)&jobCompleted);
-	
+	f_jobStart = Sys_Time();
+	E_DispatchJobs(E_JobWorkerThreads(), SleepJob, NULL, (NeJobCompletedProc)SleepCompleted, (void *)&jobCompleted);
+
 	Sys_LogEntry("JOB", LOG_DEBUG, "Dispatched %d workers", E_JobWorkerThreads());
 
+	while (!jobCompleted) ;
 	while (!jobCompleted) ;
 
 	return true;
@@ -108,7 +106,7 @@ App_Frame(void)
 void
 App_TermApplication(void)
 {
-	E_UnregisterHandler(_sceneLoadedEvt);
+	E_UnregisterHandler(f_sceneLoadedEvt);
 }
 
 bool
@@ -162,15 +160,15 @@ App_FlyController(void **comp, void *args)
 	cam->rotation.y += In_Axis(ctrl->rotateHorizontal) * hRot;
 
 	const struct NeVec3 negy = { 0.f, -1.f, 0.f };
-	xform_rotate(xform, In_Axis(ctrl->rotateHorizontal) * hRot, &negy);
-	xform_update_orientation(xform);
+	Xform_Rotate(xform, In_Axis(ctrl->rotateHorizontal) * hRot, &negy);
+	Xform_UpdateOrientation(xform);
 
-	xform_rotate(xform, In_Axis(ctrl->rotateVertical) * vRot, &xform->right);
-	xform_update_orientation(xform);
+	Xform_Rotate(xform, In_Axis(ctrl->rotateVertical) * vRot, &xform->right);
+	Xform_UpdateOrientation(xform);
 
-	xform_move_forward(xform, In_Axis(ctrl->moveForward) * mvmt);
-	xform_move_right(xform, In_Axis(ctrl->moveRight) * mvmt);
-	xform_move_up(xform, In_Axis(ctrl->moveUp) * mvmt);
+	Xform_MoveForward(xform, In_Axis(ctrl->moveForward) * mvmt);
+	Xform_MoveRight(xform, In_Axis(ctrl->moveRight) * mvmt);
+	Xform_MoveUp(xform, In_Axis(ctrl->moveUp) * mvmt);
 }
 
 void
@@ -191,8 +189,8 @@ App_DrawStatistics(void **comp, void *args)
 	if (delta > 1.0) {
 		double ft = (delta / (double)stats->frames) * 1000;
 
-		snprintf(stats->fpsBuff, sizeof(stats->fpsBuff), "FPS: %d", stats->frames);
-		snprintf(stats->ftBuff, sizeof(stats->ftBuff), "Frame Time: %.02f ms", ft);
+		(void)snprintf(stats->fpsBuff, sizeof(stats->fpsBuff), "FPS: %d", stats->frames);
+		(void)snprintf(stats->ftBuff, sizeof(stats->ftBuff), "Frame Time: %.02f ms", ft);
 
 		stats->time += delta;
 		stats->frames = 0;

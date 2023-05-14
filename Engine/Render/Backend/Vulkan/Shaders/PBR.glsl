@@ -93,7 +93,7 @@ PBRMain(const Material mat, const vec4 color, const vec3 pos,
 	}
 
 	// Init PBR
-	vec4 albedo = /*Re_SampleSceneTexture(mat.diffuseMap, uv) */ mat.diffuseColor * color;
+	vec4 albedo = mat.diffuseColor * color;
 	if (mat.diffuseMap != 0)
 		albedo *= sRGBtoLinear(Re_SampleSceneTexture(mat.diffuseMap, uv), DrawInfo.scene.gamma);
 
@@ -168,7 +168,11 @@ PBRMain(const Material mat, const vec4 color, const vec3 pos,
 		specular += lightContrib * BRDF_Specular(F, V, D, mat.specularWeight);
 	}
 
-	return vec4(diffuse + specular + emissive, albedo.a);
+	vec4 finalColor = vec4(diffuse + specular + emissive, albedo.a);
+	if (DrawInfo.aoMap != 0)
+		finalColor *= Re_SampleSceneTexture(DrawInfo.aoMap, gl_FragCoord.xy).r;
+
+	return finalColor;
 }
 
 vec4
@@ -230,7 +234,7 @@ PBR_SG(const vec4 color, const vec3 pos, const vec3 n, const vec2 uv)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

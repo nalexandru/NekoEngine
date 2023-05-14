@@ -1,5 +1,5 @@
-#ifndef _NE_RENDER_MATERIAL_H_
-#define _NE_RENDER_MATERIAL_H_
+#ifndef NE_RENDER_MATERIAL_H
+#define NE_RENDER_MATERIAL_H
 
 #include <Render/Types.h>
 #include <Runtime/Runtime.h>
@@ -90,6 +90,8 @@ struct NeMaterialRenderConstants
 	uint64_t visibleIndicesAddress;
 	uint64_t instanceAddress;
 	uint64_t materialAddress;
+	uint32_t aoMap;
+	uint32_t irradianceMap;
 };
 
 extern struct NeRenderPassDesc *Re_MaterialRenderPassDesc;
@@ -109,7 +111,7 @@ void Re_TermMaterialSystem(void);
 }
 #endif
 
-#endif /* _NE_RENDER_MATERIAL_H_ */
+#endif /* NE_RENDER_MATERIAL_H */
 
 /* NekoEngine
  *
@@ -137,7 +139,7 @@ void Re_TermMaterialSystem(void);
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

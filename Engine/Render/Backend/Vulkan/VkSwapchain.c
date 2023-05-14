@@ -11,7 +11,7 @@
 
 #define VK_SWMOD	"VulkanSwapchain"
 
-static inline bool _Create(VkDevice dev, VkPhysicalDevice physDev, struct NeSwapchain *sw);
+static inline bool Create(VkDevice dev, VkPhysicalDevice physDev, struct NeSwapchain *sw);
 
 struct NeSwapchain *
 Re_CreateSwapchain(struct NeSurface *surface, bool verticalSync)
@@ -21,7 +21,7 @@ Re_CreateSwapchain(struct NeSurface *surface, bool verticalSync)
 	if (!present)
 		return NULL;
 
-	struct NeSwapchain *sw = Sys_Alloc(1, sizeof(*sw), MH_RenderDriver);
+	struct NeSwapchain *sw = Sys_Alloc(1, sizeof(*sw), MH_RenderBackend);
 
 	sw->surface = (VkSurfaceKHR)surface;
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(Re_device->physDev, (VkSurfaceKHR)surface, &sw->surfaceCapabilities);
@@ -72,11 +72,11 @@ Re_CreateSwapchain(struct NeSurface *surface, bool verticalSync)
 	for (uint32_t i = 0; i < RE_NUM_FRAMES; ++i) {
 		if (vkCreateSemaphore(Re_device->dev, &sci, Vkd_allocCb, &sw->frameStart[i]) != VK_SUCCESS)
 			goto error;
-		Vkd_SetObjectName(Re_device->dev, sw->frameStart[i], VK_OBJECT_TYPE_SEMAPHORE, "Frame start");
+		VkBk_SetObjectName(Re_device->dev, sw->frameStart[i], VK_OBJECT_TYPE_SEMAPHORE, "Frame start");
 
 		if (vkCreateSemaphore(Re_device->dev, &sci, Vkd_allocCb, &sw->frameEnd[i]) != VK_SUCCESS)
 			goto error;
-		Vkd_SetObjectName(Re_device->dev, sw->frameEnd[i], VK_OBJECT_TYPE_SEMAPHORE, "Frame end");
+		VkBk_SetObjectName(Re_device->dev, sw->frameEnd[i], VK_OBJECT_TYPE_SEMAPHORE, "Frame end");
 	}
 
 	sw->imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
@@ -85,7 +85,7 @@ Re_CreateSwapchain(struct NeSurface *surface, bool verticalSync)
 	sw->imageUsage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;	// for some reason, the validation layers add this on Windows
 #endif
 
-	if (!_Create(Re_device->dev, Re_device->physDev, sw))
+	if (!Create(Re_device->dev, Re_device->physDev, sw))
 		goto error;
 
 	return sw;
@@ -125,18 +125,6 @@ Re_DestroySwapchain(struct NeSwapchain *sw)
 void *
 Re_AcquireNextImage(struct NeSwapchain *sw)
 {
-	uint32_t imageId;
-	VkResult rc = vkAcquireNextImageKHR(Re_device->dev, sw->sw, UINT64_MAX, sw->frameStart[Re_frameId], VK_NULL_HANDLE, &imageId);
-	if (rc != VK_SUCCESS) {
-		switch (rc) {
-		case VK_SUBOPTIMAL_KHR:
-		case VK_ERROR_OUT_OF_DATE_KHR:
-			_Create(Re_device->dev, Re_device->physDev, sw);
-			return RE_INVALID_IMAGE;
-		default: return RE_INVALID_IMAGE;
-		}
-	}
-
 	VkSemaphoreWaitInfo waitInfo =
 	{
 		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,
@@ -146,8 +134,20 @@ Re_AcquireNextImage(struct NeSwapchain *sw)
 	};
 	vkWaitSemaphores(Re_device->dev, &waitInfo, UINT64_MAX);
 
+	uint32_t imageId;
+	VkResult rc = vkAcquireNextImageKHR(Re_device->dev, sw->sw, UINT64_MAX, sw->frameStart[Re_frameId], VK_NULL_HANDLE, &imageId);
+	if (rc != VK_SUCCESS) {
+		switch (rc) {
+		case VK_SUBOPTIMAL_KHR:
+		case VK_ERROR_OUT_OF_DATE_KHR:
+			Create(Re_device->dev, Re_device->physDev, sw);
+			return RE_INVALID_IMAGE;
+		default: return RE_INVALID_IMAGE;
+		}
+	}
+
 	if (!Re_deviceInfo.features.coherentMemory)
-		Vkd_CommitStagingArea(Re_device, sw->frameStart[Re_frameId]);
+		VkBk_CommitStagingArea(Re_device, sw->frameStart[Re_frameId]);
 
 	vkResetDescriptorPool(Re_device->dev, Re_device->iaDescriptorPool[Re_frameId], 0);
 
@@ -157,9 +157,7 @@ Re_AcquireNextImage(struct NeSwapchain *sw)
 bool
 Re_Present(struct NeSwapchain *sw, void *image, struct NeSemaphore *waitSemaphore)
 {
-	struct NeRenderContext *ctx = Re_CurrentContext();
-
-	Vkd_ExecuteCommands(Re_device, ctx, sw, waitSemaphore);
+	VkBk_ExecuteCommands(sw, waitSemaphore);
 
 	uint32_t imageId = (uint32_t)(uint64_t)image;
 
@@ -178,7 +176,7 @@ Re_Present(struct NeSwapchain *sw, void *image, struct NeSemaphore *waitSemaphor
 	case VK_SUCCESS: return true;
 	case VK_SUBOPTIMAL_KHR:
 	case VK_ERROR_OUT_OF_DATE_KHR:
-		return _Create(Re_device->dev, Re_device->physDev, sw);
+		return Create(Re_device->dev, Re_device->physDev, sw);
 	default: return false;
 	}
 
@@ -228,14 +226,14 @@ Re_SwapchainTexture(struct NeSwapchain *sw, void *image)
 void
 Re_ScreenResized(struct NeSwapchain *sw)
 {
-	if (!_Create(Re_device->dev, Re_device->physDev, sw)) {
+	if (!Create(Re_device->dev, Re_device->physDev, sw)) {
 		Sys_LogEntry(VKDRV_MOD, LOG_CRITICAL, "Failed to resize swapchain");
 		E_Shutdown();
 	}
 }
 
 static inline bool
-_Create(VkDevice dev, VkPhysicalDevice physDev, struct NeSwapchain *sw)
+Create(VkDevice dev, VkPhysicalDevice physDev, struct NeSwapchain *sw)
 {
 	vkDeviceWaitIdle(dev);
 
@@ -283,10 +281,10 @@ _Create(VkDevice dev, VkPhysicalDevice physDev, struct NeSwapchain *sw)
 	if (sw->imageCount != count || !sw->images || !sw->views) {
 		void *ptr;
 
-		ptr = Sys_ReAlloc(sw->images, count, sizeof(*sw->images), MH_RenderDriver);
+		ptr = Sys_ReAlloc(sw->images, count, sizeof(*sw->images), MH_RenderBackend);
 		assert(ptr); sw->images = ptr;
 
-		ptr = Sys_ReAlloc(sw->views, count, sizeof(*sw->views), MH_RenderDriver);
+		ptr = Sys_ReAlloc(sw->views, count, sizeof(*sw->views), MH_RenderBackend);
 		assert(ptr); sw->views = ptr;
 
 		sw->imageCount = count;
@@ -351,7 +349,7 @@ _Create(VkDevice dev, VkPhysicalDevice physDev, struct NeSwapchain *sw)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

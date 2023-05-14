@@ -3,7 +3,7 @@
 static id<MTLHeap> _heap;
 
 struct NeTexture *
-Re_CreateTransientTexture(const struct NeTextureDesc *tDesc, uint16_t location, uint64_t offset, uint64_t *size)
+Re_BkCreateTransientTexture(const struct NeTextureDesc *tDesc, uint16_t location, uint64_t offset, uint64_t *size)
 {
 	MTLTextureDescriptor *desc = MTL_TextureDescriptor(MTL_device, tDesc);
 	if (!desc)
@@ -18,10 +18,16 @@ Re_CreateTransientTexture(const struct NeTextureDesc *tDesc, uint16_t location, 
 	desc.storageMode = MTLStorageModePrivate;
 	desc.cpuCacheMode = MTLCPUCacheModeWriteCombined;
 	
-	tex->tex = [_heap newTextureWithDescriptor: desc offset: offset];
+#if TARGET_OS_OSX
+	uint64_t realOffset = NE_ROUND_UP(offset, 256);
+#else
+	uint64_t realOffset = NE_ROUND_UP(offset, 16);
+#endif
+	
+	tex->tex = [_heap newTextureWithDescriptor: desc offset: realOffset];
 	[desc release];
 
-	*size = [tex->tex allocatedSize];
+	*size = [tex->tex allocatedSize] + realOffset - offset;
 	
 	if (location)
 		MTL_SetTexture(location, tex->tex);
@@ -37,8 +43,14 @@ Re_BkCreateTransientBuffer(const struct NeBufferDesc *desc, uint16_t location, u
 		return NULL;
 	
 	MTLResourceOptions options = MTL_GPUMemoryTypetoResourceOptions([MTL_device hasUnifiedMemory], desc->memoryType);
+
+#if TARGET_OS_OSX
+	uint64_t realOffset = NE_ROUND_UP(offset, 256);
+#else
+	uint64_t realOffset = NE_ROUND_UP(offset, 16);
+#endif
 	
-	buff->buff = [_heap newBufferWithLength: desc->size options: options offset: offset];
+	buff->buff = [_heap newBufferWithLength: desc->size options: options offset: realOffset];
 	buff->location = location;
 	
 	if (!buff->buff) {
@@ -49,7 +61,7 @@ Re_BkCreateTransientBuffer(const struct NeBufferDesc *desc, uint16_t location, u
 	MTL_SetBuffer(location, buff->buff);
 	buff->memoryType = desc->memoryType;
 
-	*size = [buff->buff allocatedSize];
+	*size = [buff->buff allocatedSize] + realOffset - offset;
 	
 	return buff;
 }
@@ -61,7 +73,7 @@ Re_InitTransientHeap(uint64_t size)
 	heapDesc.size = size;
 	heapDesc.storageMode = MTLStorageModePrivate;
 	heapDesc.cpuCacheMode = MTLCPUCacheModeWriteCombined;
-	heapDesc.hazardTrackingMode = MTLHazardTrackingModeUntracked;
+	heapDesc.hazardTrackingMode = MTLHazardTrackingModeTracked;
 	heapDesc.type = MTLHeapTypePlacement;
 
 	_heap = [MTL_device newHeapWithDescriptor: heapDesc];
@@ -79,7 +91,7 @@ Re_ResizeTransientHeap(uint64_t size)
 	MTLHeapDescriptor *heapDesc = [[MTLHeapDescriptor alloc] init];
 	heapDesc.size = size;
 	heapDesc.storageMode = MTLStorageModePrivate;
-	heapDesc.hazardTrackingMode = MTLHazardTrackingModeUntracked;
+	heapDesc.hazardTrackingMode = MTLHazardTrackingModeTracked;
 	heapDesc.type = MTLHeapTypePlacement;
 	_heap = [MTL_device newHeapWithDescriptor: heapDesc];
 	
@@ -118,7 +130,7 @@ Re_TermTransientHeap(void)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

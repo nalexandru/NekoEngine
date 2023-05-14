@@ -8,8 +8,8 @@ file (GLOB src
 	*.c
 )
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Widgets)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Widgets WebEngineWidgets)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets WebEngineWidgets)
 
 set(QT_SOURCES
 	GUI/GUI.cxx
@@ -17,17 +17,16 @@ set(QT_SOURCES
 	GUI/Inspector.cxx
 	GUI/SceneHierarchy.cxx
 	GUI/Bindings.cxx
-	GUI/Dialogs/AboutDialog.cxx
+	GUI/Dialogs/About.cxx
+	GUI/Dialogs/MorphLoader.cxx
+	GUI/Dialogs/OpenProject.cxx
+	GUI/Dialogs/CreateProject.cxx
+	GUI/Dialogs/HelpViewer.cxx
 	GUI/Widgets/EngineView.cxx
 	GUI/Widgets/ComponentInspector.cxx
 	GUI/Widgets/DataView.cxx
 	Editor.qrc
 )
-
-if (WIN32)
-	include_directories(../Deps/assimp/include)
-	link_directories(../Deps/assimp/lib)
-endif()
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
 	qt_add_executable(NekoEditor MACOSX_BUNDLE MANUAL_FINALIZATION ${src} ${QT_SOURCES})
@@ -51,7 +50,7 @@ if(APPLE)
 		BUNDLE True
 		MACOSX_BUNDLE_GUI_IDENTIFIER xyz.nalexandru.NekoEngine
 		MACOSX_BUNDLE_BUNDLE_NAME NekoEditor
-		MACOSX_BUNDLE_BUNDLE_VERSION "0.8.276"
+		MACOSX_BUNDLE_BUNDLE_VERSION "0.8.317"
 		MACOSX_BUNDLE_SHORT_VERSION_STRING "0.8"
 		MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/Platform/macOS/EditorInfo.plist
 	)
@@ -80,9 +79,10 @@ if(APPLE)
 	)
 endif()
 
-target_link_libraries(NekoEditor PRIVATE Platform Lua PhysFS meshoptimizer assimp
+target_link_libraries(NekoEditor PRIVATE Platform lua physfs meshoptimizer freetype
 	Qt${QT_VERSION_MAJOR}::Core
 	Qt${QT_VERSION_MAJOR}::Widgets
+	Qt${QT_VERSION_MAJOR}::WebEngineWidgets
 )
 
 #set_target_properties(NekoEditor PROPERTIES
@@ -103,16 +103,14 @@ target_compile_definitions(NekoEditor PRIVATE _ENGINE_INTERNAL_)
 if(WIN32)
 	add_dependencies(NekoEditor Engine)
 	target_link_libraries(NekoEditor PRIVATE
-		mojoal -WHOLEARCHIVE:Engine\\Engine.lib
-		ntdll xinput9_1_0 ws2_32 imm32 winmm setupapi version dwmapi
-		$ENV{VULKAN_SDK}/lib/SDL2-static.lib
-	)
-
-	add_custom_command(TARGET NekoEditor POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy
-		"${CMAKE_SOURCE_DIR}/Deps/assimp/bin/assimp.dll"
-		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assimp.dll"
-	)
+			lua physfs Platform -WHOLEARCHIVE:$<TARGET_FILE:Engine>
+			ntdll xinput9_1_0 wsock32
+			zlibstatic libpng16_static jpeg-static vorbisfile vorbis ogg FLAC)
+	if (USE_XAUDIO2)
+		target_link_libraries(NekoEditor PRIVATE XAudio2)
+	else()
+		target_link_libraries(NekoEditor PRIVATE OpenAL32)
+	endif()
 elseif(APPLE)
 	target_link_libraries(NekoEditor PRIVATE "-Wl,-all_load" Engine)
 else()

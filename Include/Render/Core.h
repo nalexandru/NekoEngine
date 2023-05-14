@@ -1,5 +1,5 @@
-#ifndef _NE_RENDER_CORE_H_
-#define _NE_RENDER_CORE_H_
+#ifndef NE_RENDER_CORE_H
+#define NE_RENDER_CORE_H
 
 #include <Engine/Types.h>
 #include <Render/Device.h>
@@ -81,8 +81,77 @@ enum NeTextureLayout Re_TextureLayout(NeTextureHandle tex);
 void Re_CmdCopyBufferToTexture(NeBufferHandle src, struct NeTexture *dst, const struct NeBufferImageCopy *bic);
 void Re_CmdCopyTextureToBuffer(struct NeTexture *src, NeBufferHandle dst, const struct NeBufferImageCopy *bic);
 
+bool Re_ReserveTextureId(NeTextureHandle *handle);
+void Re_ReleaseTextureId(NeTextureHandle handle);
+
 bool Re_InitTextureSystem(void);
 void Re_TermTextureSystem(void);
+
+static inline uint32_t
+Re_TextureRowSize(enum NeTextureFormat fmt, uint32_t width)
+{
+	switch (fmt) {
+	case TF_R8G8B8A8_UNORM:
+	case TF_R8G8B8A8_SRGB:
+	case TF_B8G8R8A8_UNORM:
+	case TF_B8G8R8A8_SRGB:
+	case TF_A2R10G10B10_UNORM:
+	case TF_D24_STENCIL8:
+	case TF_D32_SFLOAT: return width * 4;
+	case TF_R16G16B16A16_SFLOAT: return width * 8;
+	case TF_R32G32B32A32_SFLOAT: return width * 16;
+	case TF_R8G8_UNORM: return width * 2;
+	case TF_R8_UNORM: return width * 1;
+	/*case TF_ETC2_R8G8B8_UNORM: return MTLPixelFormatETC2_RGB8;
+	case TF_ETC2_R8G8B8_SRGB: return MTLPixelFormatETC2_RGB8_sRGB;
+	case TF_ETC2_R8G8B8A1_UNORM: return MTLPixelFormatETC2_RGB8A1;
+	case TF_ETC2_R8G8B8A1_SRGB: return MTLPixelFormatETC2_RGB8A1_sRGB;
+	case TF_EAC_R11_UNORM: return MTLPixelFormatEAC_R11Unorm;
+	case TF_EAC_R11_SNORM: return MTLPixelFormatEAC_R11Snorm;
+	case TF_EAC_R11G11_UNORM: return MTLPixelFormatEAC_RG11Unorm;
+	case TF_EAC_R11G11_SNORM: return MTLPixelFormatEAC_RG11Snorm;*/
+	case TF_BC5_UNORM:
+	case TF_BC5_SNORM:
+	case TF_BC6H_UF16:
+	case TF_BC6H_SF16:
+	case TF_BC7_UNORM:
+	case TF_BC7_SRGB: return ((width + 3) / 4) * 16;
+	default: return 0; // this should cause a crash
+	}
+}
+
+static inline uint32_t
+Re_TextureByteSize(enum NeTextureFormat fmt, uint32_t width, uint32_t height)
+{
+	switch (fmt) {
+	case TF_R8G8B8A8_UNORM:
+	case TF_R8G8B8A8_SRGB:
+	case TF_B8G8R8A8_UNORM:
+	case TF_B8G8R8A8_SRGB:
+	case TF_A2R10G10B10_UNORM:
+	case TF_D24_STENCIL8:
+	case TF_D32_SFLOAT: return width * height * 4;
+	case TF_R16G16B16A16_SFLOAT: return width * height * 8;
+	case TF_R32G32B32A32_SFLOAT: return width * height * 16;
+	case TF_R8G8_UNORM: return width * height * 2;
+	case TF_R8_UNORM: return width * height * 1;
+	/*case TF_ETC2_R8G8B8_UNORM: return MTLPixelFormatETC2_RGB8;
+	case TF_ETC2_R8G8B8_SRGB: return MTLPixelFormatETC2_RGB8_sRGB;
+	case TF_ETC2_R8G8B8A1_UNORM: return MTLPixelFormatETC2_RGB8A1;
+	case TF_ETC2_R8G8B8A1_SRGB: return MTLPixelFormatETC2_RGB8A1_sRGB;
+	case TF_EAC_R11_UNORM: return MTLPixelFormatEAC_R11Unorm;
+	case TF_EAC_R11_SNORM: return MTLPixelFormatEAC_R11Snorm;
+	case TF_EAC_R11G11_UNORM: return MTLPixelFormatEAC_RG11Unorm;
+	case TF_EAC_R11G11_SNORM: return MTLPixelFormatEAC_RG11Snorm;*/
+	case TF_BC5_UNORM:
+	case TF_BC5_SNORM:
+	case TF_BC6H_UF16:
+	case TF_BC6H_SF16:
+	case TF_BC7_UNORM:
+	case TF_BC7_SRGB: return ((width + 3) / 4) * ((height + 3) / 4) * 16;
+	default: return 0; // this should cause a crash in the backend
+	}
+}
 
 // Sampler
 struct NeSamplerDesc
@@ -163,7 +232,7 @@ struct NeShader *Re_GetShader(const char *name);
 void *Re_ShaderModule(const char *name);
 
 // Swapchain
-extern struct NeSwapchain *Re_swapchain;
+ENGINE_API extern struct NeSwapchain *Re_swapchain;
 
 #define RE_INVALID_IMAGE	(void *)UINT64_MAX
 
@@ -248,7 +317,7 @@ struct NeBlendAttachmentDesc
 	enum NeBlendOperation alphaOp;
 	int32_t writeMask;
 };
-// TODO: is independent blend supported in Metal/D3D12 ?
+// TODO: is independent blend supported in Metal ?
 
 enum NeVertexInputRate
 {
@@ -264,12 +333,27 @@ enum NeVertexFormat
 	VF_FLOAT4
 };
 
+enum NeAttributeSemantic
+{
+	AS_POSITION = 0,
+	AS_BLENDWEIGHT = 1,
+	AS_BLENDINDICES = 2,
+	AS_NORMAL = 3,
+	AS_TEXCOORD0 = 4,
+	AS_TEXCOORD1 = 5,
+	AS_TANGENT = 6,
+	AS_BINORMAL = 7,
+	AS_TESSFACTOR = 8,
+	AS_COLOR = 9
+};
+
 struct NeVertexAttribute
 {
 	uint32_t location;
 	uint32_t binding;
 	enum NeVertexFormat format;
 	uint32_t offset;
+	enum NeAttributeSemantic semantic;
 };
 
 struct NeVertexBinding
@@ -296,7 +380,6 @@ struct NeGraphicsPipelineDesc
 	uint32_t pushConstantSize;
 	uint32_t attachmentCount;
 	const struct NeBlendAttachmentDesc *attachments;
-	enum NeTextureFormat depthFormat;
 	const char *name;
 };
 
@@ -317,6 +400,7 @@ struct NeRayTracingPipelineDesc
 	struct NeShaderStageInfo *stageInfo;
 	struct NeShaderBindingTable *sbt;
 	uint32_t maxDepth;
+	const char *name;
 };
 
 struct NePipeline *Re_GraphicsPipeline(const struct NeGraphicsPipelineDesc *desc);
@@ -408,7 +492,7 @@ void Re_DestroyRenderInterface(struct NeRenderInterface *iface);
 }
 #endif
 
-#endif /* _NE_RENDER_CORE_H_ */
+#endif /* NE_RENDER_CORE_H */
 
 /* NekoEngine
  *
@@ -436,7 +520,7 @@ void Re_DestroyRenderInterface(struct NeRenderInterface *iface);
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

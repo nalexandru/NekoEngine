@@ -1,5 +1,5 @@
-#ifndef _NE_ENGINE_EVENTS_H_
-#define _NE_ENGINE_EVENTS_H_
+#ifndef NE_ENGINE_EVENTS_H
+#define NE_ENGINE_EVENTS_H
 
 #include <Engine/Event.h>
 
@@ -7,23 +7,24 @@
 extern "C" {
 #endif
 
-#define EVT_SCENE_LOAD_STARTED		"BeginSceneLoad"
-#define EVT_SCENE_LOADED			"SceneLoaded"
-#define EVT_SCENE_ACTIVATED			"SceneActivated"
-#define EVT_SCREEN_RESIZED			"ScreenResized"
-#define EVT_COMPONENT_REGISTERED	"ComponentRegistered"
+#define EVT_SCENE_LOAD_STARTED			"BeginSceneLoad"
+#define EVT_SCENE_LOADED				"SceneLoaded"
+#define EVT_SCENE_ACTIVATED				"SceneActivated"
+#define EVT_SCREEN_RESIZED				"ScreenResized"
+#define EVT_COMPONENT_REGISTERED			"ComponentRegistered"
+#define EVT_COMPONENT_FIELDS_REGISTERED	"ComponentFieldsRegistered"
 
-#define EVT_ENTITY_CREATED			"EntityCreated"
-#define EVT_ENTITY_DESTROYED		"EntityDestroyed"
+#define EVT_ENTITY_CREATED				"EntityCreated"
+#define EVT_ENTITY_DESTROYED			"EntityDestroyed"
 
-#define EVT_COMPONENT_CREATED		"ComponentCreated"
-#define EVT_COMPONENT_DESTROYED		"ComponentDestroyed"
+#define EVT_COMPONENT_CREATED			"ComponentCreated"
+#define EVT_COMPONENT_DESTROYED			"ComponentDestroyed"
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* _NE_ENGINE_EVENTS_H_ */
+#endif /* NE_ENGINE_EVENTS_H */
 
 /* NekoEngine
  *
@@ -51,7 +52,7 @@ extern "C" {
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

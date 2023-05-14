@@ -1,5 +1,5 @@
-#ifndef _TEST_APPLICATION_H_
-#define _TEST_APPLICATION_H_
+#ifndef TEST_APPLICATION_H
+#define TEST_APPLICATION_H
 
 #ifndef _NESTR
 #define _NESTR_INTERNAL(x) #x
@@ -23,4 +23,4 @@
 
 #define A_VER_STR		L""A_VER_STR_A
 
-#endif /* _TEST_APPLICATION_H_ */
+#endif /* TEST_APPLICATION_H */

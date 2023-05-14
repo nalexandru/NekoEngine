@@ -4,7 +4,7 @@
 
 #include "VulkanBackend.h"
 
-struct NeShaderModuleInfo
+struct ShaderModuleInfo
 {
 	uint64_t hash;
 	VkShaderModule module;
@@ -13,16 +13,14 @@ struct NeShaderModuleInfo
 static struct NeArray _modules;
 
 static VkDevice _dev;
-static void _load(const char *path);
-static int32_t _sort(const struct NeShaderModuleInfo *a, const struct NeShaderModuleInfo *b);
-static int32_t _compare(const struct NeShaderModuleInfo *item, const uint64_t *hash);
+static void Load(const char *path);
 
 void *
 Re_ShaderModule(const char *name)
 {
 	uint64_t hash = Rt_HashString(name);
 
-	struct NeShaderModuleInfo *info = Rt_ArrayBSearch(&_modules, &hash, (RtCmpFunc)_compare);
+	struct ShaderModuleInfo *info = Rt_ArrayBSearch(&_modules, &hash, Rt_U64CmpFunc);
 	if (!info)
 		return NULL;
 
@@ -32,13 +30,13 @@ Re_ShaderModule(const char *name)
 bool
 Vk_LoadShaders(VkDevice dev)
 {
-	if (!Rt_InitArray(&_modules, 10, sizeof(struct NeShaderModuleInfo), MH_RenderDriver))
+	if (!Rt_InitArray(&_modules, 10, sizeof(struct ShaderModuleInfo), MH_RenderBackend))
 		return false;
 
 	_dev = dev;
 
-	E_ProcessFiles("/Shaders/Vulkan", "spv", true, _load);
-	Rt_ArraySort(&_modules, (RtSortFunc)&_sort);
+	E_ProcessFiles("/Shaders/Vulkan", "spv", true, Load);
+	Rt_ArraySort(&_modules, Rt_U64CmpFunc);
 
 	return true;
 }
@@ -46,16 +44,16 @@ Vk_LoadShaders(VkDevice dev)
 void
 Vk_UnloadShaders(VkDevice dev)
 {
-	struct NeShaderModuleInfo *info;
+	struct ShaderModuleInfo *info;
 	Rt_ArrayForEach(info, &_modules)
 		vkDestroyShaderModule(dev, info->module, Vkd_allocCb);
 	Rt_TermArray(&_modules);
 }
 
 void
-_load(const char *path)
+Load(const char *path)
 {
-	struct NeShaderModuleInfo info;
+	struct ShaderModuleInfo info;
 
 	struct NeStream stm;
 	if (!E_FileStream(path, IO_READ, &stm))
@@ -75,8 +73,8 @@ _load(const char *path)
 
 	E_CloseStream(&stm);
 
-	char *name = Sys_Alloc(sizeof(*name), strlen(path), MH_Transient);
-	name = strrchr(path, '/');
+	char *name = Rt_TransientStrDup(path);
+	name = strrchr(name, '/');
 	*name++ = 0x0;
 
 	char *ext = strrchr(name, '.');
@@ -94,28 +92,6 @@ _load(const char *path)
 		return;
 
 	Rt_ArrayAdd(&_modules, &info);
-}
-
-static int32_t
-_sort(const struct NeShaderModuleInfo *a, const struct NeShaderModuleInfo *b)
-{
-	if (a->hash == b->hash)
-		return 0;
-	else if (a->hash > b->hash)
-		return -1;
-	else
-		return 1;
-}
-
-static int32_t
-_compare(const struct NeShaderModuleInfo *item, const uint64_t *hash)
-{
-	if (item->hash == *hash)
-		return 0;
-	else if (item->hash > *hash)
-		return -1;
-	else
-		return 1;
 }
 
 /* NekoEngine
@@ -144,7 +120,7 @@ _compare(const struct NeShaderModuleInfo *item, const uint64_t *hash)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

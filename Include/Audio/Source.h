@@ -1,5 +1,5 @@
-#ifndef _NE_AUDIO_SOURCE_H_
-#define _NE_AUDIO_SOURCE_H_
+#ifndef NE_AUDIO_SOURCE_H
+#define NE_AUDIO_SOURCE_H
 
 #include <Math/Types.h>
 
@@ -8,12 +8,12 @@ extern "C" {
 #endif
 
 bool Au_InitSource(struct NeAudioSource *src);
-void Au_SetPosition(struct NeAudioSource *src, const struct NeVec3 *v);
-void Au_SetPositionF(struct NeAudioSource *src, float x, float y, float z);
-void Au_SetVelocity(struct NeAudioSource *src, const struct NeVec3 *v);
-void Au_SetVelocityF(struct NeAudioSource *src, float x, float y, float z);
-void Au_SetDirection(struct NeAudioSource *src, const struct NeVec3 *v);
-void Au_SetDirectionF(struct NeAudioSource *src, float x, float y, float z);
+void Au_Position(struct NeAudioSource *src, const struct NeVec3 *v);
+void Au_PositionF(struct NeAudioSource *src, float x, float y, float z);
+void Au_Velocity(struct NeAudioSource *src, const struct NeVec3 *v);
+void Au_VelocityF(struct NeAudioSource *src, float x, float y, float z);
+void Au_Direction(struct NeAudioSource *src, const struct NeVec3 *v);
+void Au_DirectionF(struct NeAudioSource *src, float x, float y, float z);
 void Au_Play(struct NeAudioSource *src);
 void Au_Pause(struct NeAudioSource *src);
 void Au_Stop(struct NeAudioSource *src);
@@ -31,7 +31,7 @@ void Au_TermSource(struct NeAudioSource *src);
 }
 #endif
 
-#endif /* _NE_AUDIO_SOURCE_H_ */
+#endif /* NE_AUDIO_SOURCE_H */
 
 /* NekoEngine
  *
@@ -59,7 +59,7 @@ void Au_TermSource(struct NeAudioSource *src);
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

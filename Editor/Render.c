@@ -8,21 +8,6 @@
 void
 Ed_RenderFrame(void)
 {
-	///////////////////////////////////
-	if (!Re_activeGraph) {
-		Re_activeGraph = Re_CreateGraph();
-
-		Re_AddPass(Re_activeGraph, &RP_depthPrePass);
-		Re_AddPass(Re_activeGraph, &RP_lightCulling);
-		Re_AddPass(Re_activeGraph, &RP_opaque);
-		Re_AddPass(Re_activeGraph, &RP_sky);
-		Re_AddPass(Re_activeGraph, &RP_transparent);
-//		Re_AddPass(Re_activeGraph, &RP_debugBounds);
-//		Re_AddPass(Re_activeGraph, &RP_lightBounds);
-		Re_AddPass(Re_activeGraph, &RP_ui);
-	}
-	///////////////////////////////////
-
 	void *image = Re_AcquireNextImage(Re_swapchain);
 	if (image == RE_INVALID_IMAGE)
 		return;
@@ -34,7 +19,7 @@ Ed_RenderFrame(void)
 
 	struct NeTextureDesc desc;
 	Re_SwapchainTextureDesc(Re_swapchain, &desc);
-	Re_RenderScene(Scn_activeScene, Scn_activeCamera, Re_activeGraph, &desc, Re_SwapchainTexture(Re_swapchain, image));
+	Re_RenderScene(Scn_activeScene, Scn_activeScene->camera, Re_activeGraph, &desc, Re_SwapchainTexture(Re_swapchain, image));
 
 	Re_Present(Re_swapchain, image, NULL);
 
@@ -67,7 +52,7 @@ Ed_RenderFrame(void)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

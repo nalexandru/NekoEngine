@@ -1,5 +1,5 @@
-#ifndef _NE_ANIMATION_SKELETON_H_
-#define _NE_ANIMATION_SKELETON_H_
+#ifndef NE_ANIMATION_SKELETON_H
+#define NE_ANIMATION_SKELETON_H
 
 #include <Math/Types.h>
 #include <Runtime/Runtime.h>
@@ -8,38 +8,32 @@
 extern "C" {
 #endif
 
-struct NeBone
-{
-	uint64_t hash;
-	struct NeMatrix offset;
-	char name[256];
-};
-
 struct NeSkeletonNode
 {
 	uint64_t hash;
 	struct NeMatrix xform;
 	struct NeSkeletonNode *parent;
 	struct NeArray children;
-	char name[256];
+	char name[233];
 };
 
 struct NeSkeleton
 {
 	struct NeSkeletonNode *root;
-	struct NeArray bones, nodes;
-	struct NeMatrix globalInverseTransform;
+	struct NeArray joints, nodes;
+	struct NeMatrix *inverseBind;
+	struct NeMatrix inverseTransform;
 };
 
-bool Anim_InitSkeleton(struct NeSkeleton *s, const struct NeArray *bones, const struct NeArray *nodes, const struct NeMatrix *git);
-void Anim_UpdateSkeleton(struct NeSkeleton *s, double time, const struct NeAnimationClip *ac, struct NeMatrix *transforms);
+bool Anim_InitSkeleton(struct NeSkeleton *s, const struct NeModel *mdl);
+void Anim_UpdateSkeleton(struct NeSkeleton *s, float time, const struct NeAnimationClip *ac, struct NeMatrix *transforms);
 void Anim_TermSkeleton(struct NeSkeleton *s);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* _NE_ANIMATION_SKELETON_H_ */
+#endif /* NE_ANIMATION_SKELETON_H */
 
 /* NekoEngine
  *
@@ -67,7 +61,7 @@ void Anim_TermSkeleton(struct NeSkeleton *s);
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

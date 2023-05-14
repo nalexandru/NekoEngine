@@ -10,9 +10,9 @@
 #define IOSINMOD	L"iOSInput"
 
 enum NeButton iOS_keymap[256];
-bool __InSys_rawMouseAxis = false;
+bool In_p_rawMouseAxis = false;
 
-static inline enum NeButton _mapKey(const int key);
+static inline enum NeButton MapKey(const int key);
 
 bool
 In_SysInit(void)
@@ -22,7 +22,7 @@ In_SysInit(void)
 
 	#pragma unroll(256)
 	for (uint16_t i = 0; i < 256; ++i)
-		iOS_keymap[i] = _mapKey(i);
+		iOS_keymap[i] = MapKey(i);
 	
 	In_connectedControllers = [GCController controllers].count;
 	
@@ -131,7 +131,7 @@ In_ShowPointer(bool show)
 }
 
 enum NeButton
-_mapKey(int key)
+MapKey(int key)
 {
 	switch (key) {
 	case UIKeyboardHIDUsageKeyboard0: return BTN_KEY_0;
@@ -264,7 +264,7 @@ _mapKey(int key)
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (c) 2015-2022, Alexandru Naiman
+ * Copyright (c) 2015-2023, Alexandru Naiman
  *
  * All rights reserved.
  *
@@ -283,7 +283,7 @@ _mapKey(int key)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

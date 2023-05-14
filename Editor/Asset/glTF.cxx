@@ -6,42 +6,46 @@
 #include <Engine/IO.h>
 #include <Editor/GUI.h>
 #include <Editor/Editor.h>
+#include <Editor/Asset/Asset.h>
 #include <Editor/Asset/Import.h>
 #include <System/PlatformDetect.h>
+#include <System/System.h>
+#include <System/Log.h>
+
+#define GLTF_MOD	"glTFImport"
 
 struct Matrix
 {
 	float data[16];
 };
 
+struct Vec3
+{
+	float x, y, z;
+};
+
 #define CGLTF_IMPLEMENTATION
 #include <cgltf.h>
 
-//#define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
-
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include <stb_image_write.h>
-#include "Editor/Asset/Asset.h"
 
 #define BUFFER_PTR(acc) ((uint8_t *)acc->buffer_view->buffer->data + acc->buffer_view->offset + acc->offset)
 
 ED_ASSET_IMPORTER(glTF);
 
-static inline void _ConvertMesh(const cgltf_mesh *mesh, const char *name, struct NMesh *nm);
-static inline void _ConvertNode(const cgltf_node *node, struct NeArray *nodes, int32_t parentId);
-static inline void _SaveMaterial(const cgltf_material *mat, const char *name, const char *path);
-static inline void _SaveAnimation(const cgltf_animation *anim, const char *path);
-static inline void _SaveImage(const cgltf_image *img, const char *path);
+static inline void ConvertMesh(const cgltf_mesh *mesh, const char *name, struct NMesh *nm);
+static inline void SaveMaterial(const cgltf_material *mat, const char *name, const char *path);
+static inline void SaveAnimation(const cgltf_animation *anim, const char *name, const char *path);
+static int32_t ChnCmpFunc(const struct NAnimChannel *chn, const char *name);
 
 static bool
-_MatchAsset(const char *path)
+glTF_MatchAsset(const char *path)
 {
 	return strstr(path, ".glb") != NULL || strstr(path, ".gltf") != NULL;
 }
 
 static bool
-_ImportAsset(const char *path)
+glTF_ImportAsset(const char *path, const struct NeAssetImportOptions *options)
 {
 	cgltf_options opt = {};
 	cgltf_data *gltf = NULL;
@@ -72,7 +76,7 @@ _ImportAsset(const char *path)
 
 	EdGUI_UpdateProgressDialog("Converting meshes...");
 
-	char pathBuff[4096];
+	char nameBuff[512], pathBuff[4096];
 
 	nm.indexType = IT_UINT_16;
 	for (uint32_t i = 0; i < gltf->meshes_count; ++i) {
@@ -102,17 +106,106 @@ _ImportAsset(const char *path)
 	case IT_UINT_32: nm.indexSize = sizeof(uint32_t); break;
 	}
 
-	nm.vertices = (struct NeVertex *)calloc(vertexCount, sizeof(*nm.vertices));
-	nm.indices = (uint8_t *)calloc(indexCount, nm.indexSize);
-	nm.meshes = (struct NMeshSubmesh *)calloc(meshCount, sizeof(*nm.meshes));
+	nm.vertices = (struct NeVertex *)Sys_Alloc(sizeof(*nm.vertices), vertexCount, MH_Editor);
+	nm.indices = (uint8_t *)Sys_Alloc(nm.indexSize, indexCount, MH_Editor);
+	nm.meshes = (struct NMeshSubmesh *)Sys_Alloc(sizeof(*nm.meshes), meshCount, MH_Editor);
+
+	if (gltf->skins_count)
+		nm.vertexWeights = (struct NeVertexWeight *) Sys_Alloc(sizeof(*nm.vertexWeights), vertexCount, MH_Editor);
 
 	for (uint32_t i = 0; i < gltf->meshes_count; ++i)
-		_ConvertMesh(&gltf->meshes[i], name, &nm);
+		ConvertMesh(&gltf->meshes[i], name, &nm);
 
 	snprintf(pathBuff, sizeof(pathBuff), "%s%cModels%c%s.nmesh", Ed_dataDir, ED_DIR_SEPARATOR, ED_DIR_SEPARATOR, name);
 
-	//Asset_OptimizeNMesh(&nm);
-	Asset_SaveNMesh(&nm, pathBuff);
+	if (gltf->skins_count) {
+		cgltf_skin *skin = gltf->skins;
+
+		{ // Nodes
+			nm.nodes = (NMeshNode *)Sys_Alloc(sizeof(*nm.nodes), gltf->nodes_count, MH_Editor);
+			nm.nodeCount = (uint32_t)gltf->nodes_count;
+
+			for (cgltf_size i = 0; i < gltf->nodes_count; ++i) {
+				cgltf_node *n = &gltf->nodes[i];
+				strlcpy(nm.nodes[i].name, n->name, sizeof(nm.nodes[i].name));
+
+				if (n->skin) {
+					XMMATRIX git = XMLoadFloat4x4((XMFLOAT4X4 *)n->matrix);
+					cgltf_node *p = n->parent;
+					while (p) {
+						git = XMMatrixMultiply(git, XMLoadFloat4x4((XMFLOAT4X4 *)p->matrix));
+						p = p->parent;
+					}
+					M_Store(&nm.inverseTransform, XMMatrixInverse(NULL, git));
+				}
+
+				XMMATRIX mat = XMMatrixIdentity();
+
+				if (n->has_matrix) {
+					mat = XMLoadFloat4x4((XMFLOAT4X4 *)n->matrix);
+				} else {
+					if (n->has_scale)
+						mat = XMMatrixMultiply(mat, XMMatrixScaling(n->scale[0], n->scale[1], n->scale[2]));
+
+					if (n->has_rotation)
+						mat = XMMatrixMultiply(mat, XMMatrixRotationQuaternion(XMLoadFloat4((XMFLOAT4 *)n->rotation)));
+
+					if (n->has_translation)
+						mat = XMMatrixMultiply(mat, XMMatrixTranslation(n->translation[0], n->translation[1], n->translation[2]));
+				}
+
+				XMStoreFloat4x4((XMFLOAT4X4 *)nm.nodes[i].xform, mat);
+
+				if (!n->parent) {
+					nm.nodes[i].parentId = -1;
+					continue;
+				}
+
+				for (uint32_t j = 0; j < gltf->nodes_count; ++j) {
+					if (n->parent != &gltf->nodes[j])
+						continue;
+
+					nm.nodes[i].parentId = j;
+					break;
+				}
+			}
+		}
+
+		{ // Inverse Bind Matrices
+			const size_t invMatSize = sizeof(*nm.inverseBindMatrices) * skin->inverse_bind_matrices->count;
+			struct Matrix *inverseBindMatrices = (struct Matrix *)BUFFER_PTR(skin->inverse_bind_matrices);
+
+			nm.invMatCount = (uint32_t)skin->inverse_bind_matrices->count;
+			nm.inverseBindMatrices = (NeMatrix *)Sys_Alloc(invMatSize, 1, MH_Editor);
+			memcpy(nm.inverseBindMatrices, inverseBindMatrices, invMatSize);
+		}
+
+		{ // Joints
+			nm.joints = (uint32_t *)Sys_Alloc(sizeof(*nm.joints), skin->joints_count, MH_Editor);
+			nm.jointCount = (uint32_t)skin->joints_count;
+
+			for (uint32_t i = 0; i < skin->joints_count; ++i) {
+				cgltf_node *joint = skin->joints[i];
+
+				for (uint32_t j = 0; j < gltf->nodes_count; ++j) {
+					if (joint != &gltf->nodes[j])
+						continue;
+
+					nm.joints[i] = j;
+					break;
+				}
+			}
+		}
+	}
+
+	EdAsset_OptimizeNMesh(&nm);
+	if (options->inMemory)
+		memcpy(options->dst, &nm, sizeof(nm));
+	else
+		EdAsset_SaveNMesh(&nm, pathBuff);
+
+	if (options->onlyGeometry)
+		goto exit;
 
 	EdGUI_UpdateProgressDialog("Converting materials...");
 
@@ -123,7 +216,7 @@ _ImportAsset(const char *path)
 		gltf->images[i].name = (char *)calloc(256, sizeof(char));
 		snprintf(gltf->images[i].name, 256, "%s_%d", name, i);
 	}
-	
+
 	if (gltf->materials_count) {
 		snprintf(pathBuff, sizeof(pathBuff), "%s%cMaterials%c%s", Ed_dataDir, ED_DIR_SEPARATOR, ED_DIR_SEPARATOR, name);
 		if (!Sys_DirectoryExists(pathBuff))
@@ -133,31 +226,10 @@ _ImportAsset(const char *path)
 	for (uint32_t i = 0; i < gltf->materials_count; ++i) {
 		snprintf(pathBuff, sizeof(pathBuff), "%s%cMaterials%c%s%c%s.mat", Ed_dataDir, ED_DIR_SEPARATOR, ED_DIR_SEPARATOR,
 																			name, ED_DIR_SEPARATOR, gltf->materials[i].name);
-		_SaveMaterial(&gltf->materials[i], name, pathBuff);
+		SaveMaterial(&gltf->materials[i], name, pathBuff);
 	}
 
 	EdGUI_UpdateProgressDialog("Converting animations...");
-	
-	if (gltf->nodes_count) {
-		struct NeArray nodes;
-		Rt_InitArray(&nodes, 10, sizeof(struct NMeshNode), MH_Editor);
-
-		_ConvertNode(&gltf->nodes[0], &nodes, -1);
-
-		nm.nodes = (struct NMeshNode *)nodes.data;
-		nm.nodeCount = (uint32_t)nodes.count;
-	}
-
-	if (gltf->skins_count) {
-		cgltf_skin *skin = gltf->skins;
-		struct Matrix *inverseBindMatrices = (struct Matrix *)BUFFER_PTR(skin->inverse_bind_matrices);
-
-		for (int32_t i = 0; i < skin->joints_count; ++i) {
-			cgltf_node *joint = skin->joints[i];
-
-			
-		}
-	}
 
 	if (gltf->animations_count) {
 		snprintf(pathBuff, sizeof(pathBuff), "%s%cAnimations%c%s", Ed_dataDir, ED_DIR_SEPARATOR, ED_DIR_SEPARATOR, name);
@@ -166,10 +238,18 @@ _ImportAsset(const char *path)
 	}
 
 	for (uint32_t i = 0; i < gltf->animations_count; ++i) {
-		snprintf(pathBuff, sizeof(pathBuff), "%s%cAnimations%c%s%c%s.png", Ed_dataDir, ED_DIR_SEPARATOR, ED_DIR_SEPARATOR,
-																			name, ED_DIR_SEPARATOR, gltf->animations[i].name);
-		_SaveAnimation(&gltf->animations[i], pathBuff);
+		if (!gltf->animations[i].name)
+			snprintf(nameBuff, sizeof(nameBuff), "unnamed_%d", i);
+		else
+			snprintf(nameBuff, sizeof(nameBuff), "%s", gltf->animations[i].name);
+
+		snprintf(pathBuff, sizeof(pathBuff), "%s%cAnimations%c%s%c%s.nanim", Ed_dataDir, ED_DIR_SEPARATOR, ED_DIR_SEPARATOR,
+																			name, ED_DIR_SEPARATOR, nameBuff);
+		SaveAnimation(&gltf->animations[i], nameBuff, pathBuff);
 	}
+
+	EdGUI_UpdateProgressDialog("Converting morhps...");
+
 
 	EdGUI_UpdateProgressDialog("Converting textures...");
 
@@ -180,12 +260,23 @@ _ImportAsset(const char *path)
 	}
 
 	for (uint32_t i = 0; i < gltf->images_count; ++i) {
+		if (!gltf->images[i].buffer_view || !gltf->images[i].buffer_view->buffer || !gltf->images[i].buffer_view->buffer->data)
+			continue;
+
 		snprintf(pathBuff, sizeof(pathBuff), "%s%cTextures%c%s%c%s.png", Ed_dataDir, ED_DIR_SEPARATOR, ED_DIR_SEPARATOR,
 																			name, ED_DIR_SEPARATOR, gltf->images[i].name);
-		_SaveImage(&gltf->images[i], pathBuff);
+		EdAsset_ConvertToPNG(
+			(uint8_t *) gltf->images[i].buffer_view->buffer->data + gltf->images[i].buffer_view->offset,
+			(int) gltf->images[i].buffer_view->buffer->size,
+			path
+		);
 	}
 
+exit:
 	EdGUI_HideProgressDialog();
+
+	if (!options->inMemory)
+		EdAsset_FreeNMesh(&nm);
 
 	cgltf_free(gltf);
 	free(baseDir);
@@ -194,7 +285,7 @@ _ImportAsset(const char *path)
 }
 
 static inline void
-_ConvertMesh(const cgltf_mesh *mesh, const char *name, struct NMesh *nm)
+ConvertMesh(const cgltf_mesh *mesh, const char *name, struct NMesh *nm)
 {
 	for (uint32_t i = 0; i < mesh->primitives_count; ++i) {
 		const cgltf_primitive *prim = &mesh->primitives[i];
@@ -247,7 +338,11 @@ _ConvertMesh(const cgltf_mesh *mesh, const char *name, struct NMesh *nm)
 
 		const float *pos = NULL, *norm = NULL, *tgt = NULL, *tc = NULL;
 		const float *color = NULL, *weights = NULL;
-		const int32_t *joints = NULL;
+		union {
+			const uint8_t *u8joints;
+			const uint16_t *u16joints;
+		} joints = { NULL };
+		cgltf_component_type jointType = cgltf_component_type_r_16u;
 		for (uint32_t j = 0; j < prim->attributes_count; ++j) {
 			const cgltf_attribute *attr = &prim->attributes[j];
 
@@ -260,8 +355,11 @@ _ConvertMesh(const cgltf_mesh *mesh, const char *name, struct NMesh *nm)
 			case cgltf_attribute_type_tangent: tgt = (const float *)BUFFER_PTR(attr->data); break;
 			case cgltf_attribute_type_texcoord: tc = (const float *)BUFFER_PTR(attr->data); break;
 			case cgltf_attribute_type_color: color = (const float *)BUFFER_PTR(attr->data); break;
-			case cgltf_attribute_type_joints: joints = (const int32_t *)BUFFER_PTR(attr->data); break;
 			case cgltf_attribute_type_weights: weights = (const float *)BUFFER_PTR(attr->data); break;
+			case cgltf_attribute_type_joints:
+				jointType = attr->data->component_type;
+				joints.u8joints = (const uint8_t *)BUFFER_PTR(attr->data);
+			break;
 			case cgltf_attribute_type_invalid: break;
 			default: break;
 			}
@@ -302,15 +400,26 @@ _ConvertMesh(const cgltf_mesh *mesh, const char *name, struct NMesh *nm)
 				v->r = 1.f; v->g = 1.f; v->b = 1.f; v->a = 1.f;
 			}
 
-			if (!weights || !joints)
+			if (!weights || !joints.u8joints)
 				continue;
 
 			struct NeVertexWeight *vw = &nm->vertexWeights[nm->vertexWeightCount++];
-
-			vw->j0 = *joints++;
-			vw->j1 = *joints++;
-			vw->j2 = *joints++;
-			vw->j3 = *joints++;
+			switch (jointType) {
+				case cgltf_component_type_r_8u:
+					vw->j0 = *joints.u8joints++;
+					vw->j1 = *joints.u8joints++;
+					vw->j2 = *joints.u8joints++;
+					vw->j3 = *joints.u8joints++;
+				break;
+				case cgltf_component_type_r_16u:
+					vw->j0 = *joints.u16joints++;
+					vw->j1 = *joints.u16joints++;
+					vw->j2 = *joints.u16joints++;
+					vw->j3 = *joints.u16joints++;
+				break;
+				default:
+					continue;
+			}
 
 			vw->w0 = *weights++;
 			vw->w1 = *weights++;
@@ -321,50 +430,16 @@ _ConvertMesh(const cgltf_mesh *mesh, const char *name, struct NMesh *nm)
 }
 
 static inline void
-_ConvertNode(const cgltf_node *node, struct NeArray *nodes, int32_t parentId)
-{
-	int32_t id = (int32_t)nodes->count;
-	struct NMeshNode *nmNode = (struct NMeshNode *)Rt_ArrayAllocate(nodes);
-
-	if (node->name && strlen(node->name))
-		snprintf(nmNode->name, sizeof(nmNode->name), "%s", node->name);
-
-	XMMATRIX mat = XMMatrixIdentity();
-
-	if (node->has_matrix) {
-		mat = XMLoadFloat4x4((XMFLOAT4X4 *)node->matrix);
-	} else {
-		if (node->has_scale)
-			mat = XMMatrixMultiply(mat, XMMatrixScaling(node->scale[0], node->scale[1], node->scale[2]));
-
-		if (node->has_rotation)
-			mat = XMMatrixMultiply(mat, XMMatrixRotationQuaternion(XMLoadFloat4((XMFLOAT4 *)node->rotation)));
-
-		if (node->has_translation)
-			mat = XMMatrixMultiply(mat, XMMatrixTranslation(node->translation[0], node->translation[1], node->translation[2]));
-	}
-
-	XMStoreFloat4x4((XMFLOAT4X4 *)nmNode->transform, mat);
-
-	if (node->children_count > 15) {
-		// blyat
-	}
-
-	for (uint32_t j = 0; j < node->children_count; ++j)
-		_ConvertNode(node->children[j], nodes, id);
-}
-
-static inline void
-_SaveMaterial(const cgltf_material *mat, const char *name, const char *path)
+SaveMaterial(const cgltf_material *mat, const char *name, const char *path)
 {
 	FILE *fp = fopen(path, "w");
 	assert(fp);
 	fprintf(fp, "{\n\t\"id\": \"NeMaterial\",\n\t\"version\": 1,\n\t\"name\": \"%s\",\n\t\"type\": \"Default\"", mat->name);
 
-#define ARG_F(n, v) fprintf(fp, ",\n\t\"%s\": %.02f", n, v)
-#define ARG_F3(n, v) fprintf(fp, ",\n\t\"%s\": \"%.02f, %.02f, %.02f\"", n, v[0], v[1], v[2])
-#define ARG_F4(n, v) fprintf(fp, ",\n\t\"%s\": \"%.02f, %.02f, %.02f, %.02f\"", n, v[0], v[1], v[2], v[3])
-#define ARG_IMG(n, v) fprintf(fp, ",\n\t\"%s\": \"/Textures/%s/%s.png\"", n, name, v)
+#define ARG_F(n, v) fprintf(fp, ",\n\t\"%s\": %.02f", (n), (v))
+#define ARG_F3(n, v) fprintf(fp, ",\n\t\"%s\": \"%.02f, %.02f, %.02f\"", (n), (v)[0], (v)[1], (v)[2])
+#define ARG_F4(n, v) fprintf(fp, ",\n\t\"%s\": \"%.02f, %.02f, %.02f, %.02f\"", (n), (v)[0], (v)[1], (v)[2], (v)[3])
+#define ARG_IMG(n, v) fprintf(fp, ",\n\t\"%s\": \"/Textures/%s/%s.png\"", (n), name, (v))
 
 	ARG_F("AlphaCutoff", mat->alpha_cutoff);
 	ARG_F3("EmissiveColor", mat->emissive_factor);
@@ -411,57 +486,113 @@ _SaveMaterial(const cgltf_material *mat, const char *name, const char *path)
 			ARG_IMG("TransmissionMap", mat->transmission.transmission_texture.texture->image->name);
 	}
 
-	ARG_F("SpecularWeight", mat->specular.specular_factor);
+	if (mat->has_specular)
+		ARG_F("SpecularWeight", mat->specular.specular_factor);
+
+	if (mat->has_ior)
+		ARG_F("IOR", mat->ior.ior);
+
+#undef ARG_F
+#undef ARG_C
+#undef ARG_IMG
 
 	fprintf(fp, "\n}\n");
 	fclose(fp);
 }
 
 static inline void
-_SaveAnimation(const cgltf_animation *anim, const char *path)
+SaveAnimation(const cgltf_animation *anim, const char *name, const char *path)
 {
-	struct NAnim na;
+	struct NAnim na = { .channelCount = 0 };
+	strlcpy(na.info.name, name, sizeof(na.info.name));
 
-	na.channelCount = (uint32_t)anim->channels_count;
+	struct NeArray channels;
+	Rt_InitArray(&channels, anim->channels_count / 3, sizeof(struct NAnimChannel), MH_Editor);
 
 	for (cgltf_size i = 0; i < anim->channels_count; ++i) {
 		const cgltf_animation_channel *ch = &anim->channels[i];
-		struct NAnimChannel nch;
-		
-		snprintf(nch.name, sizeof(nch.name), "%s", ch->target_node->name);
+		struct NAnimChannel *nch = (struct NAnimChannel *)Rt_ArrayFind(&channels, ch->target_node->name, (RtCmpFunc)ChnCmpFunc);
+		if (!nch) {
+			nch = (struct NAnimChannel *)Rt_ArrayAllocate(&channels);
+			strlcpy(nch->info.name, ch->target_node->name, sizeof(nch->info.name));
+		}
+
+		switch (ch->sampler->interpolation) {
+		case cgltf_interpolation_type_linear: nch->info.interpolation = NANIM_INTERP_LINEAR; break;
+		case cgltf_interpolation_type_step: nch->info.interpolation = NANIM_INTERP_STEP; break;
+		case cgltf_interpolation_type_cubic_spline: nch->info.interpolation = NANIM_INTERP_CUBIC_SPLINE; break;
+		}
+
+		const float *time = (const float *)BUFFER_PTR(ch->sampler->input);
+		for (cgltf_size j = 0; j < ch->sampler->input->count; ++j)
+			na.info.duration = M_Max(na.info.duration, time[j]);
 
 		switch (ch->target_path) {
 		case cgltf_animation_path_type_translation: {
-			
+			struct NeArray keys;
+			Rt_InitArray(&keys, ch->sampler->output->count, sizeof(struct NAnimVectorKey), MH_Editor);
+
+			const struct Vec3 *values = (const struct Vec3 *)BUFFER_PTR(ch->sampler->output);
+			for (cgltf_size j = 0; j < ch->sampler->output->count; ++j) {
+				NAnimVectorKey vk = { { values[j].x, values[j].y, values[j].z }, time[j] };
+				Rt_ArrayAdd(&keys, &vk);
+			}
+
+			nch->info.positionCount = (uint32_t)keys.count;
+			nch->positionKeys = (struct NAnimVectorKey *)keys.data;
 		} break;
-		case cgltf_animation_path_type_rotation:
-		break;
-		case cgltf_animation_path_type_scale:
-		break;
-		default:
-		break;
+		case cgltf_animation_path_type_rotation: {
+			struct NeArray keys;
+			Rt_InitArray(&keys, ch->sampler->output->count, sizeof(struct NAnimQuatKey), MH_Editor);
+
+			const NeQuaternion *values = (const struct NeQuaternion *)BUFFER_PTR(ch->sampler->output);
+			for (cgltf_size j = 0; j < ch->sampler->output->count; ++j) {
+				NAnimQuatKey qk = { { values[j].x, values[j].y, values[j].z, values[j].w }, time[j] };
+				Rt_ArrayAdd(&keys, &qk);
+			}
+
+			nch->info.rotationCount = (uint32_t)keys.count;
+			nch->rotationKeys = (struct NAnimQuatKey *)keys.data;
+		} break;
+		case cgltf_animation_path_type_scale: {
+			struct NeArray keys;
+			Rt_InitArray(&keys, ch->sampler->output->count, sizeof(struct NAnimVectorKey), MH_Editor);
+
+			const struct Vec3 *values = (const struct Vec3 *)BUFFER_PTR(ch->sampler->output);
+			for (cgltf_size j = 0; j < ch->sampler->output->count; ++j) {
+				NAnimVectorKey vk = { { values[j].x, values[j].y, values[j].z }, time[j] };
+				Rt_ArrayAdd(&keys, &vk);
+			}
+
+			nch->info.scalingCount = (uint32_t)keys.count;
+			nch->scalingKeys = (struct NAnimVectorKey *)keys.data;
+		} break;
 		}
 	}
 
-	Asset_SaveNAnim(&na, path);
+	na.channelCount = (uint32_t)channels.count;
+	na.channels = (struct NAnimChannel *)channels.data;
+
+	EdAsset_SaveNAnim(&na, path);
+
+	struct NAnimChannel *ch;
+	Rt_ArrayForEach(ch, &channels, struct NAnimChannel *) {
+		Sys_Free(ch->positionKeys);
+		Sys_Free(ch->rotationKeys);
+		Sys_Free(ch->scalingKeys);
+	}
+	Rt_TermArray(&channels);
 }
 
-static inline void
-_SaveImage(const cgltf_image *img, const char *path)
+static int32_t
+ChnCmpFunc(const struct NAnimChannel *chn, const char *name)
 {
-	assert(img->buffer_view->buffer->data);
-
-	int w, h, c;
-	stbi_uc *imageData = stbi_load_from_memory((uint8_t *)img->buffer_view->buffer->data + img->buffer_view->offset,
-												(int)img->buffer_view->buffer->size, &w, &h, &c, 4);
-	assert(imageData);
-
-	stbi_write_png(path, w, h, 4, imageData, 0);
+	return strncmp(chn->info.name, name, strnlen(name, sizeof(chn->info.name)));
 }
 
 /* NekoEditor
  *
- * glTF.c
+ * glTF.cxx
  * Author: Alexandru Naiman
  *
  * -----------------------------------------------------------------------------
@@ -485,7 +616,7 @@ _SaveImage(const cgltf_image *img, const char *path)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

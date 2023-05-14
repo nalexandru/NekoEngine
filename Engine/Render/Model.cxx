@@ -7,7 +7,7 @@
 #include <System/Memory.h>
 #include <Animation/Skeleton.h>
 
-static inline bool _InitModel(struct NeModel *mdl);
+static inline bool InitModel(struct NeModel *mdl);
 
 bool
 Re_CreateModelResource(const char *name, const struct NeModelCreateInfo *ci, struct NeModel *mdl, NeHandle h)
@@ -28,13 +28,13 @@ Re_CreateModelResource(const char *name, const struct NeModelCreateInfo *ci, str
 	mdl->indexType = ci->indexType;
 
 	if (ci->vertexWeights) {
-		if (!(mdl->cpu.vertexWeights = Sys_Alloc(ci->vertexWeightSize, 1, MH_Render)))
+		if (!(mdl->cpu.vertexWeights = (struct NeVertexWeight *)Sys_Alloc(sizeof(*mdl->cpu.vertexWeights), ci->vertexWeightCount, MH_Render)))
 			goto error;
-		memcpy(mdl->cpu.vertexWeights, ci->vertexWeights, ci->vertexWeightSize);
-		mdl->cpu.vertexWeightSize = ci->vertexWeightSize;
+		memcpy(mdl->cpu.vertexWeights, ci->vertexWeights, sizeof(*mdl->cpu.vertexWeights) * ci->vertexWeightCount);
+		mdl->cpu.vertexWeightCount = ci->vertexWeightCount;
 	} else {
 		mdl->cpu.vertexWeights = NULL;
-		mdl->cpu.vertexWeightSize = 0;
+		mdl->cpu.vertexWeightCount = 0;
 	}
 
 	if (!(mdl->meshes = (struct NeMesh *)Sys_Alloc(meshSize, 1, MH_Render)))
@@ -53,7 +53,9 @@ Re_CreateModelResource(const char *name, const struct NeModelCreateInfo *ci, str
 		Sys_Free(ci->meshes);
 	}
 
-	return _InitModel(mdl);
+	M_Store(&mdl->skeleton.inverseTransform, XMMatrixIdentity());
+
+	return InitModel(mdl);
 
 error:
 	Sys_Free(mdl->cpu.vertices);
@@ -66,7 +68,9 @@ error:
 bool
 Re_LoadModelResource(struct NeResourceLoadInfo *li, const char *args, struct NeModel *mdl, NeHandle h)
 {
-	if (!E_LoadNMeshAsset(&li->stm, mdl))
+	M_Store(&mdl->skeleton.inverseTransform, XMMatrixIdentity());
+
+	if (!Asset_LoadMesh(&li->stm, mdl))
 		return false;
 
 	if (args && strstr(args, "dynamic"))
@@ -74,7 +78,7 @@ Re_LoadModelResource(struct NeResourceLoadInfo *li, const char *args, struct NeM
 
 	Re_BuildMeshBounds(&mdl->bounds, (struct NeVertex *)mdl->cpu.vertices, 0, mdl->cpu.vertexSize / sizeof(struct NeVertex));
 
-	return _InitModel(mdl);
+	return InitModel(mdl);
 }
 
 void
@@ -90,12 +94,15 @@ Re_UnloadModelResource(struct NeModel *mdl, NeHandle h)
 	Rt_ArrayForEach(n, &mdl->skeleton.nodes, struct NeSkeletonNode *)
 		Rt_TermArray(&n->children);
 
-	Rt_TermArray(&mdl->skeleton.bones);
+	Rt_TermArray(&mdl->skeleton.joints);
 	Rt_TermArray(&mdl->skeleton.nodes);
 
+	Sys_Free(mdl->skeleton.inverseTransforms);
 	Sys_Free(mdl->cpu.vertexWeights);
 	Sys_Free(mdl->cpu.vertices);
+	Sys_Free(mdl->morph.deltas);
 	Sys_Free(mdl->cpu.indices);
+	Sys_Free(mdl->morph.info);
 	Sys_Free(mdl->meshes);
 
 	if (mdl->gpu.vertexWeightBuffer)
@@ -105,17 +112,17 @@ Re_UnloadModelResource(struct NeModel *mdl, NeHandle h)
 void
 Re_BuildMeshBounds(struct NeBounds *b, const struct NeVertex *vertices, uint32_t startVertex, uint32_t vertexCount)
 {
-	XMVECTOR center = XMVectorZero();
 	XMVECTOR min = XMVectorZero();
 	XMVECTOR max = XMVectorZero();
+	XMVECTOR center = XMVectorZero();
 
 	const uint32_t endVertex = startVertex + vertexCount;
 	for (uint32_t i = startVertex; i < endVertex; ++i) {
 		const XMVECTOR v = XMLoadFloat3((XMFLOAT3 *)&vertices[i].x);
 
-		center = XMVectorAdd(center, v);
 		min = XMVectorMin(min, v);
 		max = XMVectorMax(max, v);
+		center = XMVectorAdd(center, v);
 	}
 
 	center = XMVectorDivide(center, XMVectorReplicate((float)vertexCount));
@@ -134,7 +141,7 @@ Re_BuildMeshBounds(struct NeBounds *b, const struct NeVertex *vertices, uint32_t
 }
 
 static inline bool
-_InitModel(struct NeModel *mdl)
+InitModel(struct NeModel *mdl)
 {
 	struct NeBufferCreateInfo bci =
 	{
@@ -153,7 +160,7 @@ _InitModel(struct NeModel *mdl)
 
 	if (mdl->cpu.vertexWeights) {
 		bci.data = mdl->cpu.vertexWeights;
-		bci.desc.size = bci.dataSize = mdl->cpu.vertexWeightSize;
+		bci.desc.size = bci.dataSize = mdl->cpu.vertexWeightCount * sizeof(*mdl->cpu.vertexWeights);
 		if (!Re_CreateBuffer(&bci, &mdl->gpu.vertexWeightBuffer))
 			return false;
 	}
@@ -171,6 +178,47 @@ _InitModel(struct NeModel *mdl)
 	}
 
 	return true;
+}
+
+bool
+Re_CreateMorphPackResource(const char *name, const struct NeMorphPackCreateInfo *ci, struct NeMorphPack *mp, NeHandle h)
+{
+	mp->count = ci->count;
+	mp->morphs = (struct NeMorph *)Sys_Alloc(sizeof(*mp->morphs), mp->count, MH_Asset);
+	if (!mp->morphs)
+		return false;
+
+	memcpy(mp->morphs, ci->morphs, sizeof(*mp->morphs) * mp->count);
+
+	mp->deltaCount = ci->deltaCount;
+	mp->deltas = (struct NeMorphDelta *)Sys_Alloc(sizeof(*mp->deltas), mp->deltaCount, MH_Asset);
+	if (!mp->deltas) {
+		Sys_Free(mp->morphs);
+		return false;
+	}
+
+	memcpy(mp->deltas, ci->deltas, sizeof(*mp->deltas) * mp->deltaCount);
+
+	if (ci->keepData)
+		return true;
+
+	Sys_Free(ci->morphs);
+	Sys_Free(ci->deltas);
+
+	return true;
+}
+
+bool
+Re_LoadMorphPackResource(struct NeResourceLoadInfo *li, const char *args, struct NeMorphPack *mp, NeHandle h)
+{
+	return Asset_LoadMorphPack(&li->stm, mp);
+}
+
+void
+Re_UnloadMorphPackResource(struct NeMorphPack *mp, NeHandle h)
+{
+	Sys_Free(mp->morphs);
+	Sys_Free(mp->deltas);
 }
 
 /* NekoEngine
@@ -199,7 +247,7 @@ _InitModel(struct NeModel *mdl)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

@@ -5,13 +5,13 @@
 #include <Scene/Transform.h>
 #include <Scene/Components.h>
 
-static bool _InitTransform(struct NeTransform *xform, const char **args);
-static void _TermTransform(struct NeTransform *xform);
+static bool InitTransform(struct NeTransform *xform, const char **args);
+static void TermTransform(struct NeTransform *xform);
 
-E_REGISTER_COMPONENT(TRANSFORM_COMP, struct NeTransform, 16, _InitTransform, _TermTransform)
+NE_REGISTER_COMPONENT(NE_TRANSFORM, struct NeTransform, 16, InitTransform, nullptr, TermTransform)
 
 static bool
-_InitTransform(struct NeTransform *xform, const char **args)
+InitTransform(struct NeTransform *xform, const char **args)
 {
 	xform->position.x = xform->position.y = xform->position.z = 0.f;
 	xform->scale.x = xform->scale.y = xform->scale.z = 1.f;
@@ -22,7 +22,7 @@ _InitTransform(struct NeTransform *xform, const char **args)
 	M_Store(&xform->rotation, XMQuaternionIdentity());
 	M_Store(&xform->mat, XMMatrixIdentity());
 
-	xform->parent = E_INVALID_HANDLE;
+	xform->parent = NE_INVALID_HANDLE;
 	xform->dirty = true;
 
 	for (; args && *args; ++args) {
@@ -33,7 +33,7 @@ _InitTransform(struct NeTransform *xform, const char **args)
 			struct NeScene *s = Scn_GetScene((uint8_t)xform->_sceneId);
 
 			NeEntityHandle parent = E_FindEntityS(s, (char *)*(++args));
-			xform->parent = E_GetComponentHandleS(s, parent, E_ComponentTypeId(TRANSFORM_COMP));
+			xform->parent = E_GetComponentHandle(parent, NE_TRANSFORM_ID);
 
 			struct NeTransform *parentPtr = (struct NeTransform *)E_ComponentPtrS(s, xform->parent);
 			const NeCompHandle self = xform->_handleId;
@@ -49,7 +49,12 @@ _InitTransform(struct NeTransform *xform, const char **args)
 			r.x = strtof(ptr, &ptr);
 			r.y = strtof(ptr + 2, &ptr);
 			r.z = strtof(ptr + 2, &ptr);
-			M_Store(&xform->rotation, XMQuaternionRotationRollPitchYaw(r.x, r.y, r.z));
+			M_Store(&xform->rotation, XMQuaternionRotationRollPitchYaw(
+				XMConvertToRadians(r.x),
+				XMConvertToRadians(r.y),
+				XMConvertToRadians(r.z)
+				)
+			);
 		} else if (!strncmp(arg, "Scale", len)) {
 			char *ptr = (char *)*(++args);
 			xform->scale.x = strtof(ptr, &ptr);
@@ -64,17 +69,17 @@ _InitTransform(struct NeTransform *xform, const char **args)
 }
 
 static void
-_TermTransform(struct NeTransform *xform)
+TermTransform(struct NeTransform *xform)
 {
 	Rt_TermArray(&xform->children);
 }
 
-E_SYSTEM(SCN_UPDATE_TRANSFORM, ECSYS_GROUP_PRE_RENDER, ECSYS_PRI_TRANSFORM, false, void, 1, TRANSFORM_COMP)
+NE_SYSTEM(SCN_UPDATE_TRANSFORM, ECSYS_GROUP_PRE_RENDER, ECSYS_PRI_TRANSFORM, false, void, 1, NE_TRANSFORM)
 {
 	struct NeTransform *xform = (struct NeTransform *)comp[0];
 	
-	if (xform->parent == E_INVALID_HANDLE)
-		xform_update(xform);
+	if (xform->parent == NE_INVALID_HANDLE)
+		Xform_Update(xform);
 }
 
 /* NekoEngine
@@ -103,7 +108,7 @@ E_SYSTEM(SCN_UPDATE_TRANSFORM, ECSYS_GROUP_PRE_RENDER, ECSYS_PRI_TRANSFORM, fals
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

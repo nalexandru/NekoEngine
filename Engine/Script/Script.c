@@ -3,16 +3,15 @@
 #include <lauxlib.h>
 
 #include <Engine/IO.h>
+#include <Engine/Config.h>
 #include <System/Log.h>
 #include <System/Memory.h>
-#include <Script/Script.h>
 #include <Runtime/Runtime.h>
-
-#include "Interface.h"
+#include <Script/Interface.h>
 
 #define SCRIPTMOD	"Script"
 
-static const luaL_Reg _luaLibs[] = {
+static const luaL_Reg f_luaLibs[] = {
 	// Core Lua libs
 	{ LUA_GNAME, luaopen_base },
 	{ LUA_LOADLIBNAME, luaopen_package },
@@ -26,56 +25,46 @@ static const luaL_Reg _luaLibs[] = {
 	{ NULL, NULL }
 };
 
-static struct NeArray _initScripts, _initIfaces;
-static void *_luaAlloc(void *ud, void *ptr, size_t oSize, size_t nSize);
+struct ScriptInterface
+{
+	uint64_t hash;
+	lua_CFunction open;
+	char *script;
+	size_t scriptLen;
+};
+
+static struct NeArray f_scriptIfaces;
+static void *LuaAlloc(void *ud, void *ptr, size_t oSize, size_t nSize);
+static int LuaSearcher(lua_State *vm);
 
 lua_State *
 Sc_CreateVM(void)
 {
 	lua_State *vm;
 
-	vm = luaL_newstate_alloc(_luaAlloc);
+	vm = luaL_newstate_alloc(LuaAlloc);
 	if (!vm)
 		return NULL;
 
-	lua_setallocf(vm, _luaAlloc, NULL);
+	lua_setallocf(vm, LuaAlloc, NULL);
 
-	for (const luaL_Reg *lib = _luaLibs; lib->func; ++lib) {
+	for (const luaL_Reg *lib = f_luaLibs; lib->func; ++lib) {
 		luaL_requiref(vm, lib->name, lib->func, 1);
 		lua_pop(vm, 1);
 	}
 
-	// TODO: make engine libraries follow Lua library conventions
-	SIface_OpenSystem(vm);
-	SIface_OpenEngine(vm);
-	SIface_OpenRender(vm);
-	SIface_OpenConsole(vm);
-	SIface_OpenUI(vm);
-	SIface_OpenScriptComponent(vm);
-	SIface_OpenResource(vm);
-	SIface_OpenIO(vm);
-	SIface_OpenEvent(vm);
-	SIface_OpenInput(vm);
-	SIface_OpenTransform(vm);
-	SIface_OpenCamera(vm);
-	SIface_OpenLight(vm);
-	SIface_OpenConfig(vm);
-	SIface_OpenVec3(vm);
-	SIface_OpenVec4(vm);
-	SIface_OpenMatrix(vm);
-	SIface_OpenAudio(vm);
+	luaL_requiref(vm, "NeScriptComponent", SIface_ScriptComponent, 0);
+	lua_pop(vm, 1);
 
-	void (*initIface)(lua_State *) = NULL;
-	Rt_ArrayForEachPtr(initIface, &_initIfaces)
-		initIface(vm);
-	
-	const char *initScript = NULL;
-	Rt_ArrayForEachPtr(initScript, &_initScripts) {
-		if (luaL_dostring(vm, initScript) && lua_gettop(vm)) {
-			Sys_LogEntry(SCRIPTMOD, LOG_CRITICAL, "Failed to execute component init script: %s", lua_tostring(vm, -1));
-			lua_pop(vm, 1);
-		}
-	}
+	lua_getglobal(vm, "package");
+	lua_getfield(vm, -1, "searchers");
+
+	const lua_Unsigned len = lua_rawlen(vm, -1);
+
+	lua_pushcfunction(vm, LuaSearcher);
+	lua_rawseti(vm, -2, len + 1);
+
+	lua_pop(vm, 2);
 
 	return vm;
 }
@@ -125,18 +114,25 @@ Sc_LoadScript(lua_State *vm, const char *source)
 bool
 Sc_LoadScriptFile(lua_State *vm, const char *path)
 {
-	int64_t len;
-	char *source;
 	struct NeStream stm;
-
 	if (!E_FileStream(path, IO_READ, &stm))
 		return false;
 
-	len = E_StreamLength(&stm);
-	source = Sys_Alloc((size_t)len, 1, MH_Transient);
+	const bool rc = Sc_LoadScriptStream(vm, &stm);
 
-	E_ReadStream(&stm, source, E_StreamLength(&stm));
 	E_CloseStream(&stm);
+	return rc;
+}
+
+bool
+Sc_LoadScriptStream(lua_State *vm, struct NeStream *stm)
+{
+	const int64_t len = E_StreamLength(stm) + 1;
+	char *source = Sys_Alloc((size_t)len, 1, MH_Transient);
+
+	E_ReadStream(stm, source, E_StreamLength(stm));
+
+	source[len] = 0x0;
 
 	if (luaL_dostring(vm, source) && lua_gettop(vm)) {
 		Sys_LogEntry(SCRIPTMOD, LOG_CRITICAL, "Failed to load script: %s", lua_tostring(vm, -1));
@@ -182,28 +178,53 @@ Sc_LogStackDump(lua_State *vm, int severity)
 }
 
 bool
-Sc_RegisterInitScript(const char *script)
+Sc_RegisterInterface(const char *name, lua_CFunction open)
 {
-	return Rt_ArrayAddPtr(&_initScripts, Rt_StrDup(script, MH_Script));
+	if (!f_scriptIfaces.data)
+		if (!Rt_InitArray(&f_scriptIfaces, 10, sizeof(struct ScriptInterface), MH_System))
+			return false;
+
+	struct ScriptInterface si =
+	{
+		.hash = Rt_HashString(name),
+		.open = open
+	};
+	return Rt_ArrayAdd(&f_scriptIfaces, &si);
 }
 
 bool
-Sc_RegisterInterface(void (*initIface)(lua_State *))
+Sc_RegisterInterfaceScript(const char *name, const char *script)
 {
-	return Rt_ArrayAddPtr(&_initIfaces, initIface);
+	if (!f_scriptIfaces.data)
+		if (!Rt_InitArray(&f_scriptIfaces, 10, sizeof(struct ScriptInterface), MH_System))
+			return false;
+
+	struct ScriptInterface si =
+	{
+		.hash = Rt_HashString(name),
+		.script = Rt_StrDup(script, MH_System),
+		.scriptLen = strlen(script)
+	};
+	return Rt_ArrayAdd(&f_scriptIfaces, &si);
 }
 
 void
 Sc_DestroyVM(lua_State *vm)
 {
-	lua_close(vm);
+	if (vm)
+		lua_close(vm);
 }
 
 bool
 Sc_InitScriptSystem(void)
 {
-	Rt_InitPtrArray(&_initScripts, 10, MH_Script);
-	Rt_InitPtrArray(&_initIfaces, 10, MH_Script);
+	if (!f_scriptIfaces.data)
+		if (!Rt_InitArray(&f_scriptIfaces, 10, sizeof(struct ScriptInterface), MH_System))
+			return false;
+
+#ifdef _DEBUG
+	E_GetCVarBln("Script_CheckComponentFieldAccess", true);
+#endif
 
 	return true;
 }
@@ -211,25 +232,60 @@ Sc_InitScriptSystem(void)
 void
 Sc_TermScriptSystem(void)
 {
-	char *ptr;
-	Rt_ArrayForEachPtr(ptr, &_initScripts)
-		Sys_Free(ptr);
+	struct ScriptInterface *si;
+	Rt_ArrayForEach(si, &f_scriptIfaces)
+		Sys_Free(si->script);
 
-	Rt_TermArray(&_initScripts);
-	Rt_TermArray(&_initIfaces);
+	Rt_TermArray(&f_scriptIfaces);
 }
 
 static void *
-_luaAlloc(void *ud, void *ptr, size_t oSize, size_t nSize)
+LuaAlloc(void *ud, void *ptr, size_t oSize, size_t nSize)
 {
 	void *new = NULL;
 
 	if (nSize == 0)
 		Sys_Free(ptr);
 	else
-		new = Sys_ReAlloc(ptr, nSize, 1, MH_Script);
+		new = Sys_AlignedReAlloc(ptr, nSize, 1, 16, MH_Script);
 
 	return new;
+}
+
+static int
+LuaSearcher(lua_State *vm)
+{
+	const char *name = lua_tostring(vm, 1);
+	const uint64_t hash = Rt_HashString(name);
+
+	struct ScriptInterface *si;
+	Rt_ArrayForEach(si, &f_scriptIfaces) {
+		if (si->hash != hash)
+			continue;
+
+		if (si->open) {
+			lua_pushcfunction(vm, si->open);
+		} else {
+			if (luaL_loadbufferx(vm, si->script, si->scriptLen, name, "t") != LUA_OK)
+				return lua_error(vm);
+
+			lua_pcall(vm, 0, LUA_MULTRET, 0);
+			if (!lua_istable(vm, -1)) {
+				return lua_error(vm);
+			}
+
+			lua_pushvalue(vm, -1);
+			lua_setfield(vm, LUA_REGISTRYINDEX, name);
+
+			if (luaL_loadbufferx(vm, si->script, si->scriptLen, name, "t") != LUA_OK)
+				return lua_error(vm);
+		}
+
+		return 1;
+	}
+
+	lua_pushfstring(vm, "Module for interface %s not found", name);
+	return 1;
 }
 
 /* NekoEngine
@@ -258,7 +314,7 @@ _luaAlloc(void *ud, void *ptr, size_t oSize, size_t nSize)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

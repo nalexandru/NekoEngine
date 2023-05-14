@@ -1,5 +1,5 @@
-#ifndef _NE_ENGINE_ENTITY_H_
-#define _NE_ENGINE_ENTITY_H_
+#ifndef NE_ENGINE_ENTITY_H
+#define NE_ENGINE_ENTITY_H
 
 #include <stdarg.h>
 
@@ -45,32 +45,19 @@ static inline NeEntityHandle E_CreateEntityV(const char *name, int count, const 
 
 NeEntityHandle E_CreateEntityWithComponentsS(struct NeScene *s, const char *name, int count, ...);
 
-bool E_AddComponentS(struct NeScene *s, NeEntityHandle ent, NeCompTypeId type, NeCompHandle comp);
-static inline bool E_AddComponent(NeEntityHandle ent, NeCompTypeId type, NeCompHandle comp) { return E_AddComponentS(Scn_activeScene, ent, type, comp); }
+bool E_AddComponent(NeEntityHandle handle, NeCompTypeId type, NeCompHandle comp);
+bool E_AddNewComponent(NeEntityHandle handle, NeCompTypeId type, const void **args);
 
-bool E_AddNewComponentS(struct NeScene *s, NeEntityHandle ent, NeCompTypeId type, const void **args);
-static inline bool E_AddNewComponent(NeEntityHandle ent, NeCompTypeId type, const void **args) { return E_AddNewComponentS(Scn_activeScene, ent, type, args); }
-
-void *E_GetComponentS(struct NeScene *s, NeEntityHandle ent, NeCompTypeId type);
-static inline void *E_GetComponent(NeEntityHandle ent, NeCompTypeId type) { return Scn_activeScene ? E_GetComponentS(Scn_activeScene, ent, type) : NULL; }
-
-NeCompHandle E_GetComponentHandleS(struct NeScene *s, NeEntityHandle ent, NeCompTypeId type);
-static inline NeCompHandle E_GetComponentHandle(NeEntityHandle ent, NeCompTypeId type) { return Scn_activeScene ? E_GetComponentHandleS(Scn_activeScene, ent, type) : E_INVALID_HANDLE; }
+void *E_GetComponent(NeEntityHandle ent, NeCompTypeId type);
+NeCompHandle E_GetComponentHandle(NeEntityHandle ent, NeCompTypeId type);
 
 //
 // Retrieve the list of components; will initialize `comp` with MH_Frame memory.
 //
-void E_GetComponentsS(struct NeScene *s, NeEntityHandle ent, struct NeArray *comp);
-static inline void E_GetComponents(NeEntityHandle ent, struct NeArray *comp) { E_GetComponentsS(Scn_activeScene, ent, comp); }
-
-void E_RemoveComponentS(struct NeScene *s, NeEntityHandle ent, NeCompTypeId type);
-static inline void E_RemoveComponent(NeEntityHandle ent, NeCompTypeId type) { E_RemoveComponentS(Scn_activeScene, ent, type); }
-
-void E_DestroyEntityS(struct NeScene *s, NeEntityHandle ent);
-static inline void E_DestroyEntity(NeEntityHandle ent) { E_DestroyEntityS(Scn_activeScene, ent); }
-
-void *E_EntityPtrS(struct NeScene *s, NeEntityHandle ent);
-static inline void *E_EntityPtr(NeEntityHandle ent) { return E_EntityPtrS(Scn_activeScene, ent); }
+void E_GetComponents(NeEntityHandle ent, struct NeArray *comp);
+void E_RemoveComponent(NeEntityHandle ent, NeCompTypeId type);
+void E_DestroyEntity(NeEntityHandle ent);
+void *E_EntityPtr(NeEntityHandle ent);
 
 bool E_RegisterEntityType(const char *name, const NeCompTypeId *compTypes, uint8_t type_count);
 
@@ -83,11 +70,13 @@ void E_RenameEntity(NeEntityHandle ent, const char *name);
 NeEntityHandle E_FindEntityS(struct NeScene *s, const char *name);
 static inline NeEntityHandle E_FindEntity(const char *name) { return E_FindEntityS(Scn_activeScene, name); }
 
+void E_SendMessage(NeEntityHandle dst, uint32_t msg, const void *data);
+
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* _NE_ENGINE_ENTITY_H_ */
+#endif /* NE_ENGINE_ENTITY_H */
 
 /* NekoEngine
  *
@@ -115,7 +104,7 @@ static inline NeEntityHandle E_FindEntity(const char *name) { return E_FindEntit
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

@@ -42,41 +42,45 @@ struct NeDispatchArgs
 	NeJobCompletedProc completedHandler;
 };
 
-static NeConditionVariable _wakeCond;
-static NeFutex _wakeLock;
-static NeThread *_threads;
-static uint32_t _numThreads;
-static bool _shutdown;
-static struct NeJobQueue _jobQueue;
-static NE_ALIGN(16) volatile uint64_t _submittedJobs; 
-static THREAD_LOCAL uint32_t _workerId;
+static NeConditionVariable f_wakeCond;
+static NeFutex f_wakeLock;
+static NeThread *f_threads;
+static uint32_t f_numThreads;
+static volatile bool f_shutdown;
+static struct NeJobQueue f_jobQueue;
+static NE_ALIGN(16) volatile uint64_t f_submittedJobs;
+static THREAD_LOCAL uint32_t f_workerId;
 
-static void _ThreadProc(void *args);
-static void _DispatchWrapper(int worker, struct NeDispatchArgs *args);
-static inline bool _JQ_Push(struct NeJobQueue *jq, NeJobProc exec, void *args, NeJobCompletedProc completed, void *completionArgs, uint64_t *id);
+static void ThreadProc(void *args);
+static void DispatchWrapper(int worker, struct NeDispatchArgs *argPtr);
+static inline bool JQ_Push(struct NeJobQueue *jq, NeJobProc exec, void *args, NeJobCompletedProc completed, void *completionArgs, uint64_t *id);
 
 bool
 E_InitJobSystem(void)
 {
 	bool useLogicalCores = E_GetCVarBln("Engine_UseLogicalCores", false)->bln;
-	_numThreads = (useLogicalCores ? Sys_CpuThreadCount() : Sys_CpuCount()) - 1;
-	_numThreads = _numThreads > 1 ? _numThreads : 1;
+	f_numThreads = (useLogicalCores ? Sys_CpuThreadCount() : Sys_CpuCount()) - 1;
+	f_numThreads = f_numThreads > 1 ? f_numThreads : 1;
 
-	Sys_InitConditionVariable(&_wakeCond);
-	Sys_InitFutex(&_wakeLock);
+	const int maxJobWorkers = CVAR_INT32("Engine_MaxJobWorkers");
+	if (maxJobWorkers)
+		f_numThreads = maxJobWorkers;
 
-	_jobQueue.head = 0;
-	_jobQueue.tail = 0;
-	_jobQueue.size = 1000;
-	_jobQueue.jobs = Sys_Alloc((size_t)_jobQueue.size, sizeof(*_jobQueue.jobs), MH_System);
+	Sys_InitConditionVariable(&f_wakeCond);
+	Sys_InitFutex(&f_wakeLock);
 
-	if (!_jobQueue.jobs)
+	f_jobQueue.head = 0;
+	f_jobQueue.tail = 0;
+	f_jobQueue.size = 1000;
+	f_jobQueue.jobs = Sys_Alloc((size_t)f_jobQueue.size, sizeof(*f_jobQueue.jobs), MH_System);
+
+	if (!f_jobQueue.jobs)
 		return false;
 
-	Sys_InitFutex(&_jobQueue.lock);
+	Sys_InitFutex(&f_jobQueue.lock);
 
-	_threads = Sys_Alloc(_numThreads, sizeof(NeThread), MH_System);
-	if (!_threads)
+	f_threads = Sys_Alloc(f_numThreads, sizeof(NeThread), MH_System);
+	if (!f_threads)
 		return false;
 
 	int step, coreId;
@@ -85,29 +89,29 @@ E_InitJobSystem(void)
 	else
 		step = coreId = Sys_CpuCount() == Sys_CpuThreadCount() ? 1 : 2;
 
-	for (uint32_t i = 0; i < _numThreads; ++i) {
+	for (uint32_t i = 0; i < f_numThreads; ++i) {
 		char name[10];
 		snprintf(name, sizeof(name), "Worker %u", i);
-		Sys_InitThread(&_threads[i], name, _ThreadProc, &i);
-		Sys_SetThreadAffinity(_threads[i], coreId);
+		Sys_InitThread(&f_threads[i], name, ThreadProc, &i);
+		Sys_SetThreadAffinity(f_threads[i], coreId);
 		coreId += step;
 	}
 
-	_workerId = _numThreads;
+	f_workerId = f_numThreads;
 
 	return true;
 }
 
 uint32_t
-E_JobWorkerThreads()
+E_JobWorkerThreads(void)
 {
-	return _numThreads;
+	return f_numThreads;
 }
 
 uint32_t
 E_WorkerId(void)
 {
-	return _workerId;
+	return f_workerId;
 }
 
 uint64_t
@@ -115,9 +119,9 @@ E_ExecuteJob(NeJobProc proc, void *args, NeJobCompletedProc completed, void *com
 {
 	uint64_t id;
 
-	while (!_JQ_Push(&_jobQueue, proc, args, completed, completionArgs, &id))
+	while (!JQ_Push(&f_jobQueue, proc, args, completed, completionArgs, &id))
 		Sys_Yield();
-	Sys_Signal(_wakeCond);
+	Sys_Signal(f_wakeCond);
 
 	return id;
 }
@@ -125,32 +129,31 @@ E_ExecuteJob(NeJobProc proc, void *args, NeJobCompletedProc completed, void *com
 uint64_t
 E_DispatchJobs(uint64_t count, NeJobProc proc, void **args, NeJobCompletedProc completed, void *completionArgs)
 {
-	int i;
-	uint64_t dispatches = 0, id = 0, endId = 0;
-	uint64_t jobs = 0, extraJobs = 0, next_start = 0;
+	uint64_t dispatches, id, endId;
+	uint64_t jobs, extraJobs, next_start = 0;
 
-	if (count <= _numThreads) {
+	if (count <= f_numThreads) {
 		dispatches = count;
 		jobs = 1;
 		extraJobs = 0;
 	} else {
-		dispatches = _numThreads;
-		jobs  = count / _numThreads;
-		extraJobs = count - ((uint64_t)jobs * _numThreads);
+		dispatches = f_numThreads;
+		jobs  = count / f_numThreads;
+		extraJobs = count - ((uint64_t)jobs * f_numThreads);
 	}
-	
-	Sys_LockFutex(_jobQueue.lock);
+
+	Sys_LockFutex(f_jobQueue.lock);
 	{
-		id = _submittedJobs;
-		_submittedJobs += dispatches;
-		endId = _submittedJobs - 1;
+		id = f_submittedJobs;
+		f_submittedJobs += dispatches;
+		endId = f_submittedJobs - 1;
 	}
-	Sys_UnlockFutex(_jobQueue.lock);
+	Sys_UnlockFutex(f_jobQueue.lock);
 
 	_Atomic uint64_t *completedTasks = Sys_Alloc(sizeof(*completedTasks), 1, MH_Frame);
 	*completedTasks = 0;
 
-	for (i = 0; i < dispatches; ++i) {
+	for (int i = 0; i < dispatches; ++i) {
 		struct NeDispatchArgs *dargs = Sys_Alloc(sizeof(*dargs), 1, MH_Frame);
 
 		dargs->exec = proc;
@@ -170,11 +173,11 @@ E_DispatchJobs(uint64_t count, NeJobProc proc, void **args, NeJobCompletedProc c
 
 		next_start += dargs->count;
 
-		while(!_JQ_Push(&_jobQueue, (NeJobProc)_DispatchWrapper, dargs, NULL, NULL, NULL))
+		while(!JQ_Push(&f_jobQueue, (NeJobProc)DispatchWrapper, dargs, NULL, NULL, NULL))
 			Sys_Yield();
 	}
 
-	Sys_Broadcast(_wakeCond);
+	Sys_Broadcast(f_wakeCond);
 
 	return endId;
 }
@@ -182,51 +185,53 @@ E_DispatchJobs(uint64_t count, NeJobProc proc, void **args, NeJobCompletedProc c
 void
 E_TermJobSystem(void)
 {
-	_shutdown = true;
+	f_shutdown = true;
 
-	Sys_LockFutex(_jobQueue.lock);
-	_jobQueue.head = 0;
-	_jobQueue.tail = 0;
-	Sys_UnlockFutex(_jobQueue.lock);
+	Sys_LockFutex(f_jobQueue.lock);
+	f_jobQueue.head = 0;
+	f_jobQueue.tail = 0;
+	Sys_UnlockFutex(f_jobQueue.lock);
 
-	Sys_Broadcast(_wakeCond);
+	Sys_Broadcast(f_wakeCond);
 
-	for (uint32_t i = 0; i < _numThreads; ++i)
-		Sys_JoinThread(_threads[i]);
+	for (uint32_t i = 0; i < f_numThreads; ++i)
+		Sys_JoinThread(f_threads[i]);
 
-	Sys_TermFutex(_jobQueue.lock);
+	Sys_TermFutex(f_jobQueue.lock);
 
-	Sys_TermConditionVariable(_wakeCond);
-	Sys_TermFutex(_wakeLock);
+	Sys_TermConditionVariable(f_wakeCond);
+	Sys_TermFutex(f_wakeLock);
 
-	Sys_Free(_jobQueue.jobs);
-	Sys_Free(_threads);
+	Sys_Free(f_jobQueue.jobs);
+	Sys_Free(f_threads);
 }
 
 static void
-_ThreadProc(void *args)
+ThreadProc(void *args)
 {
 	static volatile _Atomic uint32_t workerId = 0;
 	uint32_t id = atomic_fetch_add_explicit(&workerId, 1, memory_order_acq_rel);
 	struct NeJob job = { 0, 0 };
 
-	_workerId = id;
-	Sys_LogEntry(JOBMOD, LOG_INFORMATION, "Worker %d started", _workerId);
+	f_workerId = id;
+	Sys_InitMemory();
 
-	while (!_shutdown) {
-		Sys_LockFutex(_wakeLock);
+	Sys_LogEntry(JOBMOD, LOG_INFORMATION, "Worker %d started", f_workerId);
 
-		if (_jobQueue.tail == _jobQueue.head)
-			Sys_WaitFutex(_wakeCond, _wakeLock);
+	while (!f_shutdown) {
+		Sys_LockFutex(f_wakeLock);
 
-		Sys_LockFutex(_jobQueue.lock);
-		if (_jobQueue.tail != _jobQueue.head) {
-			memcpy(&job, &_jobQueue.jobs[_jobQueue.tail], sizeof(job));
-			_jobQueue.tail = (_jobQueue.tail + 1) % _jobQueue.size;
+		if (f_jobQueue.tail == f_jobQueue.head)
+			Sys_WaitFutex(f_wakeCond, f_wakeLock);
+
+		Sys_LockFutex(f_jobQueue.lock);
+		if (f_jobQueue.tail != f_jobQueue.head) {
+			memcpy(&job, &f_jobQueue.jobs[f_jobQueue.tail], sizeof(job));
+			f_jobQueue.tail = (f_jobQueue.tail + 1) % f_jobQueue.size;
 		}
-		Sys_UnlockFutex(_jobQueue.lock);
+		Sys_UnlockFutex(f_jobQueue.lock);
 
-		Sys_UnlockFutex(_wakeLock);
+		Sys_UnlockFutex(f_wakeLock);
 
 		if (job.exec) {
 			job.exec(id, job.args);
@@ -236,10 +241,14 @@ _ThreadProc(void *args)
 			memset(&job, 0x0, sizeof(job));
 		}
 	}
+
+	Sys_LogEntry(JOBMOD, LOG_INFORMATION, "Worker %d stopped", f_workerId);
+	Sys_LogMemoryStatistics();
+	Sys_TermMemory();
 }
 
 static void
-_DispatchWrapper(int worker, struct NeDispatchArgs *argPtr)
+DispatchWrapper(int worker, struct NeDispatchArgs *argPtr)
 {
 	struct NeDispatchArgs args;
 	memcpy(&args, argPtr, sizeof(args));
@@ -255,7 +264,7 @@ _DispatchWrapper(int worker, struct NeDispatchArgs *argPtr)
 }
 
 static inline bool
-_JQ_Push(struct NeJobQueue *jq, NeJobProc exec, void *args, NeJobCompletedProc completed, void *completionArgs, uint64_t *id)
+JQ_Push(struct NeJobQueue *jq, NeJobProc exec, void *args, NeJobCompletedProc completed, void *completionArgs, uint64_t *id)
 {
 	bool ret = false;
 	uint64_t next;
@@ -264,7 +273,7 @@ _JQ_Push(struct NeJobQueue *jq, NeJobProc exec, void *args, NeJobCompletedProc c
 
 	next = (jq->head + 1) % jq->size;
 	if (next != jq->tail) {
-		jq->jobs[jq->head].id = _submittedJobs++;
+		jq->jobs[jq->head].id = f_submittedJobs++;
 		jq->jobs[jq->head].args = args;
 		jq->jobs[jq->head].exec = exec;
 		jq->jobs[jq->head].completed = completed;
@@ -309,7 +318,7 @@ _JQ_Push(struct NeJobQueue *jq, NeJobProc exec, void *args, NeJobCompletedProc c
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

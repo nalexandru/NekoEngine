@@ -45,7 +45,7 @@ Vk_CreateImage(const struct NeTextureDesc *desc, struct NeTexture *tex, bool ali
 
 #ifdef _DEBUG
 	if (desc->name)
-		Vkd_SetObjectName(Re_device->dev, tex->image, VK_OBJECT_TYPE_IMAGE, desc->name);
+		VkBk_SetObjectName(Re_device->dev, tex->image, VK_OBJECT_TYPE_IMAGE, desc->name);
 #endif
 
 	return vkCreateImage(Re_device->dev, &imageInfo, tex->transient ? Vkd_transientAllocCb : Vkd_allocCb, &tex->image) == VK_SUCCESS;
@@ -88,7 +88,7 @@ Vk_CreateImageView(const struct NeTextureDesc *desc, struct NeTexture *tex)
 
 #ifdef _DEBUG
 	if (desc->name)
-		Vkd_SetObjectName(Re_device->dev, tex->imageView, VK_OBJECT_TYPE_IMAGE_VIEW, desc->name);
+		VkBk_SetObjectName(Re_device->dev, tex->imageView, VK_OBJECT_TYPE_IMAGE_VIEW, desc->name);
 #endif
 
 	return vkCreateImageView(Re_device->dev, &viewInfo, tex->transient ? Vkd_transientAllocCb : Vkd_allocCb, &tex->imageView) == VK_SUCCESS;
@@ -97,7 +97,7 @@ Vk_CreateImageView(const struct NeTextureDesc *desc, struct NeTexture *tex)
 struct NeTexture *
 Re_BkCreateTexture(const struct NeTextureDesc *desc, uint16_t location)
 {
-	struct NeTexture *tex = Sys_Alloc(1, sizeof(*tex), MH_RenderDriver);
+	struct NeTexture *tex = Sys_Alloc(1, sizeof(*tex), MH_RenderBackend);
 	if (!tex)
 		return NULL;
 
@@ -140,7 +140,7 @@ Re_BkCreateTexture(const struct NeTextureDesc *desc, uint16_t location)
 		char *tmp = Sys_Alloc(sizeof(*tmp), tmpLen, MH_Transient);
 		snprintf(tmp, tmpLen, "%s memory", desc->name);
 
-		Vkd_SetObjectName(Re_device->dev, tex->memory, VK_OBJECT_TYPE_DEVICE_MEMORY, tmp);
+		VkBk_SetObjectName(Re_device->dev, tex->memory, VK_OBJECT_TYPE_DEVICE_MEMORY, tmp);
 	}
 #endif
 
@@ -198,7 +198,7 @@ Re_BkDestroyTexture(struct NeTexture *tex)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

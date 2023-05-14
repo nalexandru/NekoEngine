@@ -30,10 +30,12 @@ Sys_InitThread(NeThread *t, const char *name, void (*proc)(void *), void *args)
 	if (!pthread_create((pthread_t *)t, NULL, (void *(*)(void *))proc, args))
 		return false;
 		
-	#if defined(__linux__) || defined(__NetBSD__)
+	#if defined(__linux__)
 		pthread_setname_np(*((pthread_t *)t), name);
 	#elif defined(__FreeBSD__) || defined(__OpenBSD__)
 		pthread_set_name_np(*((pthread_t *)t), name);
+	#elif defined(__NetBSD__)
+		pthread_setname_np(*((pthread_t *)t), "%s", (void *)name);
 	#else
 	#	warning "Thread naming not implemented for this platform"
 	#endif
@@ -198,7 +200,7 @@ Sys_TermConditionVariable(NeConditionVariable cv)
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (c) 2015-2022, Alexandru Naiman
+ * Copyright (c) 2015-2023, Alexandru Naiman
  *
  * All rights reserved.
  *
@@ -217,7 +219,7 @@ Sys_TermConditionVariable(NeConditionVariable cv)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

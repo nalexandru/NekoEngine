@@ -33,7 +33,7 @@ struct NeTGAHeader
 #define IT_UNCOMPRESSED_BW	3
 
 static inline void
-_LoadUncompressed(uint8_t *dst, const uint8_t *src, const struct NeTGAHeader *hdr)
+LoadUncompressed(uint8_t *dst, const uint8_t *src, const struct NeTGAHeader *hdr)
 {
 	int32_t i, j;
 	int64_t w = hdr->width;
@@ -68,7 +68,7 @@ _LoadUncompressed(uint8_t *dst, const uint8_t *src, const struct NeTGAHeader *hd
 }
 
 static inline void
-_LoadCompressed(uint8_t *dst, const uint8_t *src, const struct NeTGAHeader *hdr)
+LoadCompressed(uint8_t *dst, const uint8_t *src, const struct NeTGAHeader *hdr)
 {
 	int64_t w = hdr->width;
 	int64_t h = hdr->height;
@@ -112,14 +112,14 @@ _LoadCompressed(uint8_t *dst, const uint8_t *src, const struct NeTGAHeader *hdr)
 }
 
 bool
-E_LoadTGAAsset(struct NeStream *stm, struct NeTextureCreateInfo *tci)
+Asset_LoadTGA(struct NeStream *stm, struct NeTextureCreateInfo *tci)
 {
 	uint8_t *data = NULL;
 	uint64_t imgSize, dataSize;
 	struct NeTGAHeader hdr;
 
 	E_ReadStream(stm, &hdr, sizeof(hdr));
-	E_StreamSeek(stm, hdr.identSize, IO_SEEK_CUR);
+	E_SeekStream(stm, hdr.identSize, IO_SEEK_CUR);
 
 	dataSize = E_StreamLength(stm) - sizeof(hdr) - hdr.identSize;
 
@@ -131,14 +131,14 @@ E_LoadTGAAsset(struct NeStream *stm, struct NeTextureCreateInfo *tci)
 	if (hdr.bits != 8 && hdr.bits != 24 && hdr.bits != 32)
 		return false;
 
-	if (Sys_BigEndian()) {
-		hdr.colorMapStart = Sys_SwapInt16(hdr.colorMapStart);
-		hdr.colorMapLength = Sys_SwapInt16(hdr.colorMapLength);
-		hdr.xStart = Sys_SwapInt16(hdr.xStart);
-		hdr.yStart = Sys_SwapInt16(hdr.yStart);
-		hdr.width = Sys_SwapUint16(hdr.width);
-		hdr.height = Sys_SwapUint16(hdr.height);
-	}
+#ifdef SYS_BIG_ENDIAN
+	hdr.colorMapStart = Sys_SwapInt16(hdr.colorMapStart);
+	hdr.colorMapLength = Sys_SwapInt16(hdr.colorMapLength);
+	hdr.xStart = Sys_SwapInt16(hdr.xStart);
+	hdr.yStart = Sys_SwapInt16(hdr.yStart);
+	hdr.width = Sys_SwapUint16(hdr.width);
+	hdr.height = Sys_SwapUint16(hdr.height);
+#endif
 
 	imgSize = (uint64_t)hdr.width * (uint64_t)hdr.height;
 	if (imgSize < hdr.width || imgSize < hdr.height)
@@ -164,9 +164,9 @@ E_LoadTGAAsset(struct NeStream *stm, struct NeTextureCreateInfo *tci)
 	}
 
 	if (hdr.imageType == IT_COMPRESSED)
-		_LoadCompressed(tci->data, data, &hdr);
+		LoadCompressed(tci->data, data, &hdr);
 	else
-		_LoadUncompressed(tci->data, data, &hdr);
+		LoadUncompressed(tci->data, data, &hdr);
 
 	tci->desc.width = hdr.width;
 	tci->desc.height = hdr.height;
@@ -204,7 +204,7 @@ E_LoadTGAAsset(struct NeStream *stm, struct NeTextureCreateInfo *tci)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

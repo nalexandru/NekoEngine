@@ -52,21 +52,17 @@ Sys_Yield(void)
 bool
 Sys_InitThread(NeThread *t, const char *name, void (*proc)(void *), void *args)
 {
-	HANDLE thread;
-	THREADNAME_INFO info = { 0x1000, NULL, 0, 0 };
-	
-	thread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)proc, args, 0, &info.dwThreadID);
+	THREADNAME_INFO info = { 0x1000, name, 0, 0 };
+	HANDLE thread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)proc, args, 0, &info.dwThreadID);
 	if (thread == INVALID_HANDLE_VALUE)
 		return false;
 
 	if (k32_SetThreadDescription)
 		k32_SetThreadDescription(thread, NeWin32_UTF8toUCS2(name));
 
-	info.szName = name;
-
 #ifdef MSC_VER
 	__try {
-		RaiseException(0x406D1388, 0, sizeof(info) / sizeof(ULONG_PTR), (const ULONG_PTR *)&info);
+		RaiseException(MS_VC_EXCEPTION, 0, sizeof(info) / sizeof(ULONG_PTR), (const ULONG_PTR *)&info);
 	}
 	__except (EXCEPTION_EXECUTE_HANDLER) {
 	}
@@ -106,7 +102,7 @@ Sys_JoinThreads(NeThread *threads, int count)
 NeThread
 Sys_CurrentThread(void)
 {
-	return (NeThread)GetCurrentThreadId();
+	return (NeThread)(uint64_t)GetCurrentThreadId();
 }
 
 void Sys_TermThread(NeThread t)
@@ -156,11 +152,16 @@ Sys_TermMutex(NeMutex mtx)
 bool
 Sys_InitFutex(NeFutex *ftx)
 {
+#ifdef NE_NT5_SUPPORT
+	if (!Win32_InitializeSRWLock)
+		return Sys_InitMutex((NeMutex *)ftx);
+#endif
+
 	SRWLOCK *srw = HeapAlloc(GetProcessHeap(), 0, sizeof(*srw));
 	if (!srw)
 		return false;
 
-	InitializeSRWLock(srw);
+	Win32_InitializeSRWLock(srw);
 
 	*ftx = srw;
 
@@ -170,20 +171,37 @@ Sys_InitFutex(NeFutex *ftx)
 bool
 Sys_LockFutex(NeFutex ftx)
 {
-	AcquireSRWLockExclusive((PSRWLOCK)ftx);
+#ifdef NE_NT5_SUPPORT
+	if (!Win32_AcquireSRWLockExclusive)
+		return Sys_LockMutex((NeMutex)ftx);
+#endif
+
+	Win32_AcquireSRWLockExclusive((PSRWLOCK)ftx);
 	return true;
 }
 
 bool
 Sys_UnlockFutex(NeFutex ftx)
 {
-	ReleaseSRWLockExclusive((PSRWLOCK)ftx);
+#ifdef NE_NT5_SUPPORT
+	if (!Win32_ReleaseSRWLockExclusive)
+		return Sys_UnlockMutex((NeMutex)ftx);
+#endif
+
+	Win32_ReleaseSRWLockExclusive((PSRWLOCK)ftx);
 	return true;
 }
 
 void
 Sys_TermFutex(NeFutex ftx)
 {
+#ifdef NE_NT5_SUPPORT
+	if (!Win32_InitializeSRWLock) {
+		Sys_TermMutex((NeMutex)ftx);
+		return;
+	}
+#endif
+
 	HeapFree(GetProcessHeap(), 0, ftx);
 }
 
@@ -192,46 +210,167 @@ Sys_TermFutex(NeFutex ftx)
 bool
 Sys_InitConditionVariable(NeConditionVariable *cv)
 {
+#ifdef NE_NT5_SUPPORT
+	if (!Win32_InitializeConditionVariable) {
+		struct Win32c_ConditionVariable *v = HeapAlloc(GetProcessHeap(), 0, sizeof(*v));
+
+		Win32c_InitializeConditionVariable((PCONDITION_VARIABLE)v);
+
+		*cv = v;
+		return true;
+	}
+#endif
+
 	CONDITION_VARIABLE *v = HeapAlloc(GetProcessHeap(), 0, sizeof(*v));
 	if (!v)
 		return false;
 
-	InitializeConditionVariable(v);
+	Win32_InitializeConditionVariable(v);
 
 	*cv = v;
-
 	return true;
 }
 
 void
 Sys_Signal(NeConditionVariable cv)
 {
-	WakeConditionVariable((PCONDITION_VARIABLE)cv);
+	Win32_WakeConditionVariable((PCONDITION_VARIABLE)cv);
 }
 
 void
 Sys_Broadcast(NeConditionVariable cv)
 {
-	WakeAllConditionVariable((PCONDITION_VARIABLE)cv);
+	Win32_WakeAllConditionVariable((PCONDITION_VARIABLE)cv);
 }
 
 bool
 Sys_WaitMutex(NeConditionVariable cv, NeMutex mtx)
 {
-	return SleepConditionVariableCS((PCONDITION_VARIABLE)cv, (PCRITICAL_SECTION)mtx, INFINITE);
+	return Win32_SleepConditionVariableCS((PCONDITION_VARIABLE)cv, (PCRITICAL_SECTION)mtx, INFINITE);
 }
 
 bool
 Sys_WaitFutex(NeConditionVariable cv, NeFutex ftx)
 {
-	return SleepConditionVariableSRW((PCONDITION_VARIABLE)cv, (PSRWLOCK)ftx, INFINITE, 0);
+	return Win32_SleepConditionVariableSRW((PCONDITION_VARIABLE)cv, (PSRWLOCK)ftx, INFINITE, 0);
 }
 
 void
 Sys_TermConditionVariable(NeConditionVariable cv)
 {
+#ifdef NE_NT5_SUPPORT
+	if (!Win32_InitializeConditionVariable)
+		Win32c_DeleteConditionVariable((PCONDITION_VARIABLE)cv);
+#endif
+
 	HeapFree(GetProcessHeap(), 0, cv);
 }
+
+#ifdef NE_NT5_SUPPORT
+
+#define WIN32_CV_EVT_SIGNAL		0
+#define WIN32_CV_EVT_BCAST		1
+
+static BOOL WINAPI Win32c_SleepCS(PCONDITION_VARIABLE cv, PCRITICAL_SECTION cs, DWORD ms);
+
+void WINAPI
+Win32c_InitializeConditionVariable(PCONDITION_VARIABLE cv)
+{
+	struct Win32c_ConditionVariable *v = (struct Win32c_ConditionVariable *)cv;
+	if (!cv)
+		return;
+
+	v->evt[WIN32_CV_EVT_SIGNAL] = CreateEvent(NULL, FALSE, FALSE, NULL);
+	v->evt[WIN32_CV_EVT_BCAST] = CreateEvent(NULL, TRUE, FALSE, NULL);
+
+	InitializeCriticalSection(&v->lock);
+}
+
+BOOL WINAPI
+Win32c_SleepConditionVariableCS(PCONDITION_VARIABLE cv, PCRITICAL_SECTION cs, DWORD ms)
+{
+	return Win32c_SleepCS(cv, cs, ms);
+}
+
+BOOL WINAPI
+Win32c_SleepConditionVariableSRW(PCONDITION_VARIABLE cv, PSRWLOCK srw, DWORD ms, ULONG flags)
+{
+	return Win32c_SleepCS(cv, (PCRITICAL_SECTION)srw, ms);
+}
+
+void WINAPI
+Win32c_WakeConditionVariable(PCONDITION_VARIABLE cv)
+{
+	struct Win32c_ConditionVariable *v = (struct Win32c_ConditionVariable *)cv;
+	if (!cv)
+		return;
+
+	EnterCriticalSection(&v->lock);
+	int set = v->wait > 0;
+	LeaveCriticalSection(&v->lock);
+
+	if (set)
+		SetEvent(v->evt[WIN32_CV_EVT_SIGNAL]);
+}
+
+void WINAPI
+Win32c_WakeAllConditionVariable(PCONDITION_VARIABLE cv)
+{
+	struct Win32c_ConditionVariable *v = (struct Win32c_ConditionVariable *)cv;
+	if (!cv)
+		return;
+
+	EnterCriticalSection(&v->lock);
+	int set = v->wait > 0;
+	LeaveCriticalSection(&v->lock);
+
+	if (set)
+		SetEvent(v->evt[WIN32_CV_EVT_BCAST]);
+}
+
+void WINAPI
+Win32c_DeleteConditionVariable(PCONDITION_VARIABLE cv)
+{
+	struct Win32c_ConditionVariable *v = (struct Win32c_ConditionVariable *)cv;
+	if (!cv)
+		return;
+
+	CloseHandle(v->evt[WIN32_CV_EVT_SIGNAL]);
+	CloseHandle(v->evt[WIN32_CV_EVT_BCAST]);
+
+	DeleteCriticalSection(&v->lock);
+}
+
+BOOL WINAPI
+Win32c_SleepCS(PCONDITION_VARIABLE cv, PCRITICAL_SECTION cs, DWORD ms)
+{
+	struct Win32c_ConditionVariable *v = (struct Win32c_ConditionVariable *)cv;
+	if (!cv || !cs)
+		return false;
+
+	EnterCriticalSection(&v->lock);
+	++v->wait;
+	LeaveCriticalSection(&v->lock);
+
+	LeaveCriticalSection(cs);
+
+	const DWORD rc = WaitForMultipleObjects(2, v->evt, FALSE, ms);
+	const bool success = (rc != WAIT_TIMEOUT && rc != WAIT_FAILED);
+
+	EnterCriticalSection(&v->lock);
+	--v->wait;
+	const bool lastWait = (rc == WAIT_OBJECT_0 + WIN32_CV_EVT_BCAST) && (v->wait == 0);
+	LeaveCriticalSection(&v->lock);
+
+	if (lastWait)
+		ResetEvent(v->evt[WIN32_CV_EVT_BCAST]);
+
+	EnterCriticalSection(cs);
+
+	return success;
+}
+
+#endif
 
 /* NekoEngine
  *
@@ -259,7 +398,7 @@ Sys_TermConditionVariable(NeConditionVariable cv)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

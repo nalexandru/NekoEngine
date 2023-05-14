@@ -5,8 +5,11 @@
 #include <Render/Render.h>
 #include <Scene/Components.h>
 #include <Scene/Systems.h>
+#include <System/Log.h>
 
 #include "Internal.h"
+
+#define UI_MOD	"UI"
 
 // FIXME
 #include <Engine/IO.h>
@@ -35,22 +38,26 @@ uint64_t UI_vertexBufferSize;
 uint32_t UI_maxIndices = 600;
 uint64_t UI_indexBufferSize;
 struct NeArray UI_standaloneContexts;
+bool UI_pluginLoaded = false;
 
-static uint8_t *_vertexPtr, *_indexPtr;
+static uint8_t *f_vertexPtr, *f_indexPtr;
 
-static bool _InitContext(struct NeUIContext *ctx, const void **);
-static void _UpdateBuffers(void **comp, void *args);
-static void _ResetContext(void **comp, void *args);
-static void _TermContext(struct NeUIContext *ctx);
+static bool InitContext(struct NeUIContext *ctx, const void **);
+static void UpdateBuffers(void **comp, void *args);
+static void ResetContext(void **comp, void *args);
+static void TermContext(struct NeUIContext *ctx);
 
-E_REGISTER_COMPONENT(UI_CONTEXT_COMP, struct NeUIContext, 1, _InitContext, _TermContext)
-E_REGISTER_SYSTEM(UI_RESET_CONTEXT, ECSYS_GROUP_POST_RENDER, _ResetContext, 0, false, 1, UI_CONTEXT_COMP);
-E_REGISTER_SYSTEM(UI_UPDATE_BUFFERS, ECSYS_GROUP_MANUAL, _UpdateBuffers, 0, true, 1, UI_CONTEXT_COMP);
-E_REGISTER_SYSTEM(UI_DRAW_CONTEXT, ECSYS_GROUP_MANUAL, _UI_DrawContext, 0, true, 1, UI_CONTEXT_COMP);
+NE_REGISTER_COMPONENT(NE_UI_CONTEXT, struct NeUIContext, 1, InitContext, NULL, TermContext)
+NE_REGISTER_SYSTEM(UI_RESET_CONTEXT, ECSYS_GROUP_POST_RENDER, ResetContext, 0, false, 1, NE_UI_CONTEXT);
+NE_REGISTER_SYSTEM(UI_UPDATE_BUFFERS, ECSYS_GROUP_MANUAL, UpdateBuffers, 0, true, 1, NE_UI_CONTEXT);
+NE_REGISTER_SYSTEM(UI_DRAW_CONTEXT, ECSYS_GROUP_MANUAL, UI_p_DrawContext, 0, true, 1, NE_UI_CONTEXT);
 
 bool
 UI_InitUI(void)
 {
+	if (UI_pluginLoaded)
+		return true;
+
 	if (!UI_ResizeBuffers(UI_maxVertices, UI_maxIndices))
 		return false;
 
@@ -58,15 +65,23 @@ UI_InitUI(void)
 	if (!E_FileStream("/System/System.fnt", IO_READ, &stm))
 		return false;
 
-	E_LoadFontAsset(&stm, &UI_sysFont);
+	Asset_LoadFont(&stm, &UI_sysFont);
 	E_CloseStream(&stm);
 
-	return Rt_InitPtrArray(&UI_standaloneContexts, 5, MH_System);
+	if (!Rt_InitPtrArray(&UI_standaloneContexts, 5, MH_System))
+		return false;
+
+	UI_p_InitConsoleOutput();
+
+	return true;
 }
 
 void
 UI_TermUI(void)
 {
+	if (UI_pluginLoaded)
+		return;
+
 	Rt_TermArray(&UI_standaloneContexts);
 
 	Re_UnmapBuffer(UI_vertexBuffer);
@@ -84,16 +99,16 @@ UI_Update(struct NeScene *s)
 {
 	struct NeUIUpdateBufferArgs updateArgs =
 	{
-		.vertices = (struct NeUIVertex *)(_vertexPtr + (UI_vertexBufferSize * Re_frameId)),
-		.indices = (uint16_t *)(_indexPtr + (UI_indexBufferSize * Re_frameId)),
+		.vertices = (struct NeUIVertex *)(f_vertexPtr + (UI_vertexBufferSize * Re_frameId)),
+		.indices = (uint16_t *)(f_indexPtr + (UI_indexBufferSize * Re_frameId)),
 		.vertexCount = 0,
 		.indexCount = 0
 	};
-	E_ExecuteSystemS(s, UI_UPDATE_BUFFERS, &updateArgs);
+	E_ExecuteSystemS(s, 0xe492af1852043c50llu /* Rt_HashLiteral(UI_UPDATE_BUFFERS) */, &updateArgs);
 
 	struct NeUIContext *ctx;
 	Rt_ArrayForEachPtr(ctx, &UI_standaloneContexts)
-		_UpdateBuffers((void **)&ctx, &updateArgs);
+		UpdateBuffers((void **)&ctx, &updateArgs);
 }
 
 struct NeUIContext *
@@ -123,7 +138,7 @@ void
 UI_DestroyStandaloneContext(struct NeUIContext *ctx)
 {
 	Rt_ArrayRemove(&UI_standaloneContexts, Rt_PtrArrayFindId(&UI_standaloneContexts, ctx));
-	_TermContext(ctx);
+	TermContext(ctx);
 	Sys_Free(ctx);
 }
 
@@ -152,7 +167,7 @@ UI_ResizeBuffers(uint32_t maxVertices, uint32_t maxIndices)
 		},
 	};
 	Re_CreateBuffer(&vtxInfo, &UI_vertexBuffer);
-	_vertexPtr = Re_MapBuffer(UI_vertexBuffer);
+	f_vertexPtr = Re_MapBuffer(UI_vertexBuffer);
 
 	struct NeBufferCreateInfo idxInfo =
 	{
@@ -164,13 +179,13 @@ UI_ResizeBuffers(uint32_t maxVertices, uint32_t maxIndices)
 		},
 	};
 	Re_CreateBuffer(&idxInfo, &UI_indexBuffer);
-	_indexPtr = Re_MapBuffer(UI_indexBuffer);
+	f_indexPtr = Re_MapBuffer(UI_indexBuffer);
 
-	return _vertexPtr && _indexPtr;
+	return f_vertexPtr && f_indexPtr;
 }
 
 void
-_UI_DrawContext(void **comp, void *args)
+UI_p_DrawContext(void **comp, void *args)
 {
 	struct NeUIContext *ctx = comp[0];
 	struct NeUIConstants *c = args;
@@ -193,8 +208,13 @@ _UI_DrawContext(void **comp, void *args)
 }
 
 static bool
-_InitContext(struct NeUIContext *ctx, const void **args)
+InitContext(struct NeUIContext *ctx, const void **args)
 {
+	if (UI_pluginLoaded) {
+		Sys_LogEntry(UI_MOD, LOG_CRITICAL, "The UI system is disabled because a replacement plugin was loaded.");
+		return false;
+	}
+
 	uint32_t vertexCount = 64, indexCount = 100, drawCallCount = 10;
 
 	for (; args && *args; ++args) {
@@ -222,9 +242,8 @@ _InitContext(struct NeUIContext *ctx, const void **args)
 }
 
 static void
-_UpdateBuffers(void **comp, void *a)
+UpdateBuffers(void **comp, void *a)
 {
-	size_t i = 0;
 	struct NeUIContext *ctx = comp[0];
 	struct NeUIUpdateBufferArgs *args = a;
 	static bool resize = false;
@@ -236,7 +255,7 @@ _UpdateBuffers(void **comp, void *a)
 
 	uint16_t vtxOffset = args->vertexCount;
 
-	for (i = 0; i < ctx->draws.count; ++i) {
+	for (size_t i = 0; i < ctx->draws.count; ++i) {
 		struct NeUIDrawCmd dc = *(struct NeUIDrawCmd *)Rt_ArrayGet(&ctx->draws, i);
 
 		if ((args->vertexCount + dc.vtxCount > UI_maxVertices) || (args->indexCount + dc.idxCount > UI_maxIndices)) {
@@ -262,7 +281,7 @@ _UpdateBuffers(void **comp, void *a)
 }
 
 static void
-_ResetContext(void **comp, void *args)
+ResetContext(void **comp, void *args)
 {
 	struct NeUIContext *ctx = comp[0];
 
@@ -272,7 +291,7 @@ _ResetContext(void **comp, void *args)
 }
 
 static void
-_TermContext(struct NeUIContext *ctx)
+TermContext(struct NeUIContext *ctx)
 {
 	Rt_TermArray(&ctx->vertices);
 	Rt_TermArray(&ctx->indices);
@@ -305,7 +324,7 @@ _TermContext(struct NeUIContext *ctx)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

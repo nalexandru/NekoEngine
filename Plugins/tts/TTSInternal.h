@@ -1,5 +1,5 @@
-#ifndef _NE_PLUGIN_TTS_INTERNAL_H_
-#define _NE_PLUGIN_TTS_INTERNAL_H_
+#ifndef NE_PLUGIN_TTS_INTERNAL_H
+#define NE_PLUGIN_TTS_INTERNAL_H
 
 #include <stdbool.h>
 #include <System/PlatformDetect.h>
@@ -13,6 +13,8 @@
 	void SAPI_speak(const char *text);
 	void SAPI_wait(void);
 	bool SAPI_speaking(void);
+	bool SAPI_selectVoice(const char *name);
+	bool SAPI_listVoices(struct NeVoiceInfo **info, uint32_t *count);
 	void SAPI_term(void);
 #elif defined(SYS_PLATFORM_APPLE)
 #	define NSSS_AVAILABLE
@@ -21,10 +23,12 @@
 	void NSSS_speak(const char *text);
 	void NSSS_wait(void);
 	bool NSSS_speaking(void);
+	bool NSSS_selectVoice(const char *name);
+	bool NSSS_listVoices(struct NeVoiceInfo **info, uint32_t *count);
 	void NSSS_term(void);
 #endif
 
-#endif /* _NE_PLUGIN_TTS_INTERNAL_H_ */
+#endif /* NE_PLUGIN_TTS_INTERNAL_H */
 
 /* NekoEngine TTS Plugin
 *
@@ -52,7 +56,7 @@
 * specific prior written permission.
 *
 * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
-* IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+* IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
 * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
 * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
 * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

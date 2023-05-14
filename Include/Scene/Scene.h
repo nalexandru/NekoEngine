@@ -1,5 +1,5 @@
-#ifndef _NE_SCENE_SCENE_H_
-#define _NE_SCENE_SCENE_H_
+#ifndef NE_SCENE_SCENE_H
+#define NE_SCENE_SCENE_H
 
 #include <Engine/Types.h>
 #include <Scene/Scene.h>
@@ -21,10 +21,14 @@ struct NeScene
 	NeBufferHandle sceneData;
 	uint32_t maxLights, maxInstances, lightCount;
 	size_t sceneDataSize, lightDataSize, instanceDataSize;
-	struct NeAtomicLock compLock;
+	NeHandle camera;
+
+	struct {
+		struct NeAtomicLock comp, newComp, entity, newEntity;
+	} lock;
 
 	uint8_t *dataPtr;
-	bool dataTransfered;
+	bool dataTransferred;
 
 	NeHandle environmentMap;
 	bool loaded;
@@ -33,6 +37,8 @@ struct NeScene
 	char path[256];
 	char postLoad[256];
 	uint8_t id;
+
+	struct NeArray newEntities, newCompData, newCompOffset;
 };
 
 struct NeTerrainCreateInfo
@@ -50,13 +56,17 @@ struct NeScene *Scn_GetScene(uint8_t id);
 
 struct NeScene *Scn_CreateScene(const char *name);
 struct NeScene *Scn_StartSceneLoad(const char *path);
+
 void Scn_UnloadScene(struct NeScene *scn);
+void Scn_UnloadScenes(void);
 
 bool Scn_ActivateScene(struct NeScene *scn);
 void Scn_DataAddress(const struct NeScene *s, uint64_t *sceneAddress, uint64_t *instanceAddress);
 
 void Scn_StartDrawableCollection(struct NeScene *s, const struct NeCamera *c);
 void Scn_StartDataUpdate(struct NeScene *s, const struct NeCamera *c);
+
+void Scn_Commit(struct NeScene *scn);
 
 const struct NeLightData * const Scn_VisibleLights(struct NeScene *scn);
 
@@ -68,7 +78,7 @@ uint32_t Scn_LightCount(struct NeScene *scn);
 }
 #endif
 
-#endif /* _NE_SCENE_SCENE_H_ */
+#endif /* NE_SCENE_SCENE_H */
 
 /* NekoEngine
  *
@@ -96,7 +106,7 @@ uint32_t Scn_LightCount(struct NeScene *scn);
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

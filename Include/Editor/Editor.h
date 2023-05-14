@@ -1,5 +1,5 @@
-#ifndef _NE_EDITOR_EDITOR_H_
-#define _NE_EDITOR_EDITOR_H_
+#ifndef NE_EDITOR_EDITOR_H
+#define NE_EDITOR_EDITOR_H
 
 #include <Editor/Types.h>
 #include <System/PlatformDetect.h>
@@ -44,7 +44,7 @@ struct NeComponentFields
 };
 
 extern char Ed_dataDir[];
-extern struct NeArray Ed_componentFields;
+extern struct NeTSArray Ed_componentFields;
 
 void Ed_RenderFrame(void);
 
@@ -55,7 +55,7 @@ const char *E_RealPath(const char *path);
 }
 #endif
 
-#endif /* _NE_EDITOR_EDITOR_H_ */
+#endif /* NE_EDITOR_EDITOR_H */
 
 /* NekoEngine
  *
@@ -83,7 +83,7 @@ const char *E_RealPath(const char *path);
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

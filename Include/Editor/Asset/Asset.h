@@ -1,5 +1,7 @@
-#ifndef _NE_EDITOR_ASSET_ASSET_H_
-#define _NE_EDITOR_ASSET_ASSET_H_
+#ifndef NE_EDITOR_ASSET_ASSET_H
+#define NE_EDITOR_ASSET_ASSET_H
+
+#include <Editor/Types.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -13,21 +15,29 @@ extern "C" {
 			uint32_t size;		\
 		};						\
 	} a
-#define ASSET_WRITE_SEC(i, v) a.id = i; a.size = v; fwrite(&a, sizeof(a), 1, fp)
-#define ASSET_WRITE_GUARD(x) a.guard = x; fwrite(&a, sizeof(a), 1, fp)
+#define ASSET_WRITE_SEC(i, v) a.id = i; a.size = v; if (fwrite(&a, sizeof(a), 1, fp) != 1) goto exit
+#define ASSET_WRITE_GUARD(x) a.guard = x; if (fwrite(&a, sizeof(a), 1, fp) != 1) goto exit
 
 void Ed_OpenAsset(const char *path);
 
-void Asset_OptimizeNMesh(struct NMesh *nm);
-void Asset_SaveNMesh(const struct NMesh *nm, const char *path);
+void EdAsset_OptimizeNMesh(struct NMesh *nm);
+bool EdAsset_LoadNMesh(struct NMesh *nm, const char *path);
+bool EdAsset_SaveNMesh(const struct NMesh *nm, const char *path);
+void EdAsset_FreeNMesh(struct NMesh *nm);
 
-void Asset_SaveNAnim(const struct NAnim *na, const char *path);
+void EdAsset_CalculateDeltas(const struct NeVertex *src, const struct NeVertex *dst, uint32_t count, struct NeArray *deltas);
+bool EdAsset_SaveNMorph(const struct NeMorph *nm, const struct NeMorphDelta *deltas, const char *path);
+
+bool EdAsset_SaveNAnim(const struct NAnim *na, const char *path);
+
+bool EdAsset_SavePNG(uint32_t w, uint32_t h, uint8_t *data, const char *path);
+bool EdAsset_ConvertToPNG(const uint8_t *data, size_t size, const char *path);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* _NE_EDITOR_ASSET_ASSET_H_ */
+#endif /* NE_EDITOR_ASSET_ASSET_H */
 
 /* NekoEngine
  *
@@ -55,7 +65,7 @@ void Asset_SaveNAnim(const struct NAnim *na, const char *path);
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

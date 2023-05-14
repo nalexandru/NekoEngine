@@ -17,6 +17,7 @@
 #include <sys/utsname.h>
 #include <netinet/in.h>
 
+#include <System/Log.h>
 #include <System/System.h>
 #include <System/Memory.h>
 #include <Network/Network.h>
@@ -40,8 +41,13 @@
 #define USE_MEMALIGN
 #endif
 
-#if defined(SYS_PLATFORM_FREEBSD)
+#if defined(SYS_PLATFORM_FREEBSD) || defined(SYS_PLATFORM_OPENBSD) || defined(SYS_PLATFORM_NETBSD)
 #	include <sys/sysctl.h>
+#elif defined(SYS_PLATFORM_LINUX)
+#	include <sys/inotify.h>
+#	include <linux/limits.h>
+#elif defined(SYS_PLATFORM_QNX)
+#	include <sys/neutrino.h>
 #endif
 
 Display *X11_display;
@@ -50,18 +56,27 @@ Atom X11_WM_PROTOCOLS, X11_WM_DELETE_WINDOW, X11_NET_WM_STATE, X11_NET_WM_PID,
 		X11_NET_WM_WINDOW_TYPE, X11_NET_WM_WINDOW_TYPE_NORMAL, X11_NET_WM_BYPASS_COMPOSITOR,
 		X11_NET_WORKAREA;
 
-static uint32_t _cpuCount = 0, _cpuFreq = 0, _cpuThreadCount = 0;
-static char _cpuName[128] = "Unknown";
-static char _colors[4][8] =
+static uint32_t f_cpuCount = 0, f_cpuFreq = 0, f_cpuThreadCount = 0;
+static char f_cpuName[128] = "Unknown";
+static char f_colors[4][8] =
 {
 	"\x1B[35m\0",
 	"\x1B[0m\0",
 	"\x1B[33m\0",
 	"\x1B[31m\0"
 };
-static struct utsname _uname;
+static struct utsname f_uname;
 
-static inline void _CpuInfo(void);
+static inline void CpuInfo(void);
+
+int
+Sys_Main(int argc, char *argv[])
+{
+	if (!E_Init(argc, argv))
+		return -1;
+
+	return E_Run();
+}
 
 bool
 Sys_InitDbgOut(void)
@@ -72,7 +87,7 @@ Sys_InitDbgOut(void)
 void
 Sys_DbgOut(int color, const char *module, const char *severity, const char *text)
 {
-	fprintf(stderr, "%s[%s][%s]: %s\x1B[0m\n", _colors[color], module, severity, text);
+	fprintf(stderr, "%s[%s][%s]: %s\x1B[0m\n", f_colors[color], module, severity, text);
 }
 
 void
@@ -172,37 +187,37 @@ Sys_Yield(void)
 const char *
 Sys_Hostname(void)
 {
-	return _uname.nodename;
+	return f_uname.nodename;
 }
 
 const char *
 Sys_Machine(void)
 {
-	return _uname.machine;
+	return f_uname.machine;
 }
 
 const char *
 Sys_CpuName(void)
 {
-	return _cpuName;
+	return f_cpuName;
 }
 
 uint32_t
 Sys_CpuFreq(void)
 {
-	return _cpuFreq;
+	return f_cpuFreq;
 }
 
 uint32_t
 Sys_CpuCount(void)
 {
-	return _cpuCount;
+	return f_cpuCount;
 }
 
 uint32_t
 Sys_CpuThreadCount(void)
 {
-	return _cpuThreadCount;
+	return f_cpuThreadCount;
 }
 
 uint64_t
@@ -232,7 +247,7 @@ Sys_TotalMemory(void)
 
 	return rmi.physmem;
 #else
-#	error FATAL: sys_mem_total NOT IMPLEMENTED FOR THIS PLATFORM
+#	error FATAL: Sys_TotalMemory NOT IMPLEMENTED FOR THIS PLATFORM
 	return 0;
 #endif
 }
@@ -253,6 +268,15 @@ Sys_FreeMemory(void)
 		return 0;
 
 	return mem;
+#elif defined(VM_METER)
+	struct vmtotal total;
+	size_t len = sizeof(total);
+	int mib[2] = { CTL_VM, VM_METER };
+
+	if (sysctl(mib, 2, &total, &len, NULL, 0) < 0)
+		return 0;
+
+	return total.t_free * sysconf(_SC_PAGE_SIZE);
 #elif defined(SYS_PLATFORM_IRIX)
 	struct rminfo rmi;
 
@@ -260,7 +284,7 @@ Sys_FreeMemory(void)
 
 	return rmi.freemem;
 #else
-#	error FATAL: sys_mem_free NOT IMPLEMENTED FOR THIS PLATFORM
+#	error FATAL: Sys_FreeMemory NOT IMPLEMENTED FOR THIS PLATFORM
 	return 0;
 #endif
 }
@@ -268,20 +292,20 @@ Sys_FreeMemory(void)
 const char *
 Sys_OperatingSystem(void)
 {
-	return _uname.sysname;
+	return f_uname.sysname;
 }
 
 const char *
 Sys_OperatingSystemVersionString(void)
 {
-	return _uname.release;
+	return f_uname.release;
 }
 
 struct NeSysVersion
 Sys_OperatingSystemVersion(void)
 {
 	struct NeSysVersion sv;
-	sscanf(_uname.release, "%d.%d.%d", &sv.major, &sv.minor, &sv.revision);
+	sscanf(f_uname.release, "%d.%d.%d", &sv.major, &sv.minor, &sv.revision);
 	return sv;
 }
 
@@ -389,30 +413,33 @@ void *
 Sys_LoadLibrary(const char *name)
 {
 	char *path = NULL;
-	
+
 	if (!name)
 		return dlopen(NULL, RTLD_NOW);
-	
+
 	if (access(name, R_OK) < 0) {
 		char *prefix = "", *suffix = "";
 		size_t len = strlen(name);
-		
+
 		path = Sys_Alloc(sizeof(char), 2048, MH_Transient);
 		if (!path)
 			return NULL;
-		
+
 		if (!strchr(name, '/') && strncmp(name, "lib", 3))
 			prefix = "lib";
-	
+
 		if (len < 4 || strncmp(name + len - 3, ".so", 3))
 			suffix = ".so";
-		
+
 		snprintf(path, 2048, "%s%s%s", prefix, name, suffix);
 	} else {
 		path = (char *)name;
 	}
-	
-	return dlopen(path, RTLD_NOW);
+
+	void *mod = dlopen(path, RTLD_GLOBAL | RTLD_NOW);
+	if (!mod)
+		Sys_LogEntry(UNIX_MOD, LOG_CRITICAL, "Failed to load library %s: %s", path, dlerror());
+	return mod;
 }
 
 void *
@@ -477,25 +504,25 @@ Sys_CreateDirectory(const char *path)
 {
 	if (!mkdir(path, 0700))
 		return true;
-		
+
 	if (errno != ENOENT)
 		return false;
-		
+
 	char *dir = Sys_Alloc(sizeof(*dir), 4096, MH_Transient);
 	memcpy(dir, path, strlen(path));
-	
+
 	for (char *p = dir + 1; *p; ++p) {
 		if (*p != '/')
 			continue;
 			
 		*p = 0x0;
-		
+
 		if (mkdir(dir, 0700) && errno != EEXIST)
 			return false;
-			
+
 		*p = '/';
 	}
-	
+
 	if (mkdir(path, 0700))
 		return errno == EEXIST;
 	else
@@ -515,7 +542,7 @@ Sys_ExecutableLocation(char *buff, size_t len)
 #elif defined(SYS_PLATFORM_OPENBSD)
 	memset(buff, 0x0, len);	// TODO
 #elif defined(SYS_PLATFORM_SUNOS)
-	snprintf(buff, len, "%s", getexecname());
+	strlcpy(buff, getexecname(), len);
 #elif defined(SYS_PLATFORM_NETBSD)
 	char tmp[4096];
 	snprintf(tmp, sizeof(tmp), "/proc/%d/exe", getpid());
@@ -548,39 +575,6 @@ Sys_UserName(char *buff, size_t len)
 	getlogin_r(buff, len);
 }
 
-void *
-Sys_AlignedAlloc(size_t size, size_t alignment)
-{
-#if defined(USE_POSIX_MEMALIGN)
-	void *mem;
-	if (posix_memalign(&mem, alignment, size))
-		return NULL;
-	return mem;
-#elif defined(USE_MEMALIGN)
-	return memalign(alignment, size);
-#elif defined(USE_MALLOC)
-	return malloc(size);
-#elif defined(USE_ALIGNED_ALLOC)
-	return aligned_alloc(alignment, size);
-#elif defined(USE_MM_MALLOC)
-	return _mm_malloc(size, alignment);
-#else
-#error	Aligned memory allocation not implemented for this platform
-#endif
-}
-
-void
-Sys_AlignedFree(void *mem)
-{
-#if defined(USE_MALLOC) || defined(USE_ALIGNED_ALLOC) || defined(USE_MEMALIGN) || defined(USE_POSIX_MEMALIGN)
-	return free(mem);
-#elif defined(USE_MM_MALLOC)
-	return _mm_free(mem);
-#else
-#error	Aligned memory allocation not implemented for this platform
-#endif
-}
-
 void
 Sys_ZeroMemory(void *mem, size_t len)
 {
@@ -590,7 +584,8 @@ Sys_ZeroMemory(void *mem, size_t len)
 bool
 Sys_InitPlatform(void)
 {
-	uname(&_uname);
+	uname(&f_uname);
+	CpuInfo();
 
 	XInitThreads();
 
@@ -614,8 +609,6 @@ Sys_InitPlatform(void)
 	X11_NET_WORKAREA = XInternAtom(X11_display, "_NET_WORKAREA", False);
 
 	XUnlockDisplay(X11_display);
-
-	_CpuInfo();
 
 	return true;
 }
@@ -710,24 +703,46 @@ Sys_TerminateProcess(intptr_t handle)
 	return !kill((pid_t)handle, SIGTERM);
 }
 
+bool
+Sys_LockMemory(void *mem, size_t size)
+{
+	return mlock(mem, size) == 0;
+}
+
+bool
+Sys_UnlockMemory(void *mem, size_t size)
+{
+	return munlock(mem, size) == 0;
+}
+
+void
+Sys_DebugBreak(void)
+{
+#ifdef SYS_PLATFORM_QNX
+	DebugBreak();
+#else
+	raise(SIGTRAP);
+#endif
+}
+
 bool Net_InitPlatform(void) { return true; }
 
 int32_t
 Net_Socket(enum NeSocketType type, enum NeSocketProto proto)
 {
 	int st = SOCK_STREAM, sp = IPPROTO_TCP;
-	
+
 	switch (type) {
 	case ST_STREAM: st = SOCK_STREAM; break;
 	case ST_DGRAM: st = SOCK_DGRAM; break;
 	case ST_RAW: st = SOCK_RAW; break;
 	}
-	
+
 	switch (sp) {
 	case SP_TCP: sp = IPPROTO_TCP; break;
 	case SP_UDP: sp = IPPROTO_UDP; break;
 	}
-	
+
 	return socket(AF_INET, st, sp);
 }
 
@@ -737,7 +752,7 @@ Net_Connect(int32_t socket, const char *host, uint16_t port)
 	struct hostent *h = gethostbyname(host);
 	if (!h)
 		return false;
-	
+
 	struct sockaddr_in addr =
 	{
 		.sin_family = AF_INET,
@@ -789,17 +804,8 @@ Net_Close(int32_t socket)
 void Net_TermPlatform(void) { }
 
 void
-_CpuInfo(void)
+CpuInfo(void)
 {
-#if defined(__i386__) || defined(__amd64__) || defined(__x86_64__)
-	uint32_t a = 11, b = 0, c = 1, d = 0;
-	asm volatile("cpuid" : "=a"(a), "=b"(b), "=c"(c), "=d"(d) : "0"(a), "2"(c) : );
-
-	_cpuCount = a;
-	_cpuThreadCount = b;
-#	define _HAVE_CPU_COUNT
-#endif
-
 #if defined(__linux__)
 	char buff[512];
 	char *cpuNameId = NULL, *cpuFreqId = NULL, *cpuCoreId = NULL;
@@ -835,28 +841,28 @@ _CpuInfo(void)
 	if (!cpuNameId || !cpuFreqId)
 		return;
  
-	_cpuFreq = 0;
+	f_cpuFreq = 0;
 	memset(buff, 0x0, 512);
  
 	if (fp) {
 		while (fgets(buff, 512, fp)) {
 			if (strstr(buff, cpuNameId)) {
 				char *ptr = strchr(buff, ':');
-				snprintf(_cpuName, sizeof(_cpuName), "%s", ptr ? ptr + 2 : "Unknown");
+				strlcpy(f_cpuName, ptr ? ptr + 2 : "Unknown", sizeof(f_cpuName));
 			} else if (strstr(buff, cpuFreqId)) {
 				char *ptr = strchr(buff, ':');
 				if (ptr) {
 					ptr += 2;
 					ptr[strlen(ptr) - 1] = 0x0;
-					_cpuFreq = atoi(ptr);
+					f_cpuFreq = atoi(ptr);
 				}
 			} else if (cpuCoreId && strstr(buff, cpuCoreId)) {
 				char *ptr = strchr(buff, ':');
 				if (ptr) {
 					ptr += 2;
 					ptr[strlen(ptr) - 1] = 0x0;
-					_cpuCount = atoi(ptr);
-					_cpuThreadCount = sysconf(_SC_NPROCESSORS_ONLN);
+					f_cpuCount = atoi(ptr);
+					f_cpuThreadCount = sysconf(_SC_NPROCESSORS_ONLN);
 				}
 				break;
 			}
@@ -864,14 +870,44 @@ _CpuInfo(void)
 		}
 		fclose(fp);
 	}
-#elif defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__MidnightBSD__) ||	\
-		defined(__DragonFly__) || defined(__NetBSD__)
+#elif defined(__OpenBSD__)
+	int mib[2] = { CTL_HW, HW_SMT }, smt;
+	size_t len = sizeof(smt);
+	sysctl(mib, 2, &smt, &len, NULL, 0);
+
+	mib[1] = HW_NCPUONLINE;
+	len = sizeof(f_cpuCount);
+	sysctl(mib, 2, &f_cpuCount, &len, NULL, 0);
+
+	mib[1] = HW_CPUSPEED;
+	len = sizeof(f_cpuFreq);
+	sysctl(mib, 2, &f_cpuFreq, &len, NULL, 0);
+
+	mib[1] = HW_MODEL;
+	len = sizeof(f_cpuName);
+	sysctl(mib, 2, f_cpuName, &len, NULL, 0);
+
+	f_cpuThreadCount = f_cpuCount + f_cpuCount * smt;
+#elif defined(__FreeBSD__)
+	int mib[2] = { CTL_HW, HW_NCPU };
+	size_t len = sizeof(f_cpuCount);
+	sysctl(mib, 2, &f_cpuCount, &len, NULL, 0);
+
+	len = sizeof(f_cpuFreq);
+	sysctlbyname("hw.clockrate", &f_cpuFreq, &len, NULL, 0);
+
+	mib[1] = HW_MODEL;
+	len = sizeof(f_cpuName);
+	sysctl(mib, 2, f_cpuName, &len, NULL, 0);
+
+	f_cpuThreadCount = f_cpuCount;
+#elif defined(__MidnightBSD__) || defined(__DragonFly__) || defined(__NetBSD__)
 	char buff[512];
 	
 	FILE *fp = popen("/sbin/sysctl -n hw.model", "r");
 	if (fgets(buff, sizeof(buff), fp)) {
 		buff[strlen(buff) - 1] = 0x0;
-		snprintf(_cpuName, sizeof(_cpuName), "%s", buff);
+		strlcpy(f_cpuName, buff, sizeof(f_cpuName));
 	}
 	pclose(fp);
 	
@@ -882,29 +918,143 @@ _CpuInfo(void)
 #	endif
 	if (fgets(buff, sizeof(buff), fp)) {
 		buff[strlen(buff) - 1] = 0x0;
-		_cpuFreq = atoi(buff);
+		f_cpuFreq = atoi(buff);
 	}
 	pclose(fp);
 #else
 #	warning "Cpu info not implemented for this platform (Platform/UNIX/UNIX.c)"
 #endif
 
-	if (_cpuName[strlen(_cpuName) - 1] == '\n')
-		_cpuName[strlen(_cpuName) - 1] = 0x0;
+	if (f_cpuName[strlen(f_cpuName) - 1] == '\n')
+		f_cpuName[strlen(f_cpuName) - 1] = 0x0;
 
-#ifndef _HAVE_CPU_COUNT
-#	ifdef SYS_PLATFORM_IRIX
-		_cpuCount = sysconf(_SC_NPROC_ONLN);
-#	else
-	#	ifndef _SC_NPROCESSORS_ONLN
-			_cpuCount = sysconf(HW_NCPU);
-	#	else
-			_cpuCount = sysconf(_SC_NPROCESSORS_ONLN);
-#		endif
-#	endif
-	_cpuThreadCount = _cpuCount;
+	if (f_cpuCount && f_cpuThreadCount)
+		return;
+
+#if defined(__i386__) || defined(__amd64__) || defined(__x86_64__)
+	uint32_t a = 11, b = 0, c = 1, d = 0;
+	asm volatile("cpuid" : "=a"(a), "=b"(b), "=c"(c), "=d"(d) : "0"(a), "2"(c) : );
+
+	printf("have cpu count: %d, %d\n", a, b);
+
+	f_cpuCount = a;
+	f_cpuThreadCount = b;
+
+	return;
 #endif
+
+#ifdef SYS_PLATFORM_IRIX
+		f_cpuCount = sysconf(_SC_NPROC_ONLN);
+#else
+#	ifndef _SC_NPROCESSORS_ONLN
+		f_cpuCount = sysconf(HW_NCPU);
+#	else
+		f_cpuCount = sysconf(_SC_NPROCESSORS_ONLN);
+#	endif
+#endif
+
+	f_cpuThreadCount = f_cpuCount;
 }
+
+// Directory Watch
+
+#ifdef SYS_PLATFORM_LINUX
+
+struct DirWatch
+{
+	int fd, wd;
+	NeDirWatchCallback cb;
+	void *ud;
+	pthread_t thread;
+	bool stop;
+};
+
+static void *
+DirWatchThreadProc(struct DirWatch *dw)
+{
+	uint8_t buff[sizeof(struct inotify_event) + NAME_MAX + 1];
+
+	while (!dw->stop) {
+		bzero(buff, sizeof(buff));
+		const ssize_t rd = read(dw->fd, buff, sizeof(buff));
+		if (rd < 0)
+			continue;
+
+		ssize_t offset = 0;
+		while (offset < rd) {
+			struct inotify_event *evt = (struct inotify_event *)&buff[offset];
+
+			if ((evt->mask & IN_CREATE) == IN_CREATE || (evt->mask & IN_MOVED_TO) == IN_MOVED_TO)
+				dw->cb(evt->name, FE_Create, dw->ud);
+			else if ((evt->mask & IN_DELETE) == IN_DELETE || (evt->mask & IN_MOVED_FROM) == IN_MOVED_FROM)
+				dw->cb(evt->name, FE_Delete, dw->ud);
+			else if ((evt->mask & IN_CLOSE_WRITE) == IN_CLOSE_WRITE)
+				dw->cb(evt->name, FE_Modify, dw->ud);
+
+			offset += sizeof(*evt) + evt->len;
+		}
+	}
+
+	pthread_exit(NULL);
+}
+
+void *
+Sys_CreateDirWatch(const char *path, enum NeFSEvent mask, NeDirWatchCallback callback, void *ud)
+{
+	struct DirWatch *dw = Sys_Alloc(sizeof(*dw), 1, MH_System);
+
+	dw->ud = ud;
+	dw->cb = callback;
+	dw->fd = inotify_init();
+
+	int imask = 0;
+	if ((mask & FE_Create) == FE_Create)
+		imask |= IN_CREATE | IN_MOVED_TO;
+
+	if ((mask & FE_Delete) == FE_Delete)
+		imask |= IN_DELETE | IN_MOVED_FROM;
+
+	if ((mask & FE_Modify) == FE_Modify)
+		imask |= IN_CLOSE_WRITE;
+
+	dw->wd = inotify_add_watch(dw->fd, path, imask);
+
+	pthread_create(&dw->thread, NULL, (void *(*)(void *))DirWatchThreadProc, dw);
+	return dw;
+}
+
+void
+Sys_DestroyDirWatch(void *handle)
+{
+	struct DirWatch *dw = handle;
+
+	dw->stop = true;
+
+	inotify_rm_watch(dw->fd, dw->wd);
+	close(dw->fd);
+
+	pthread_join(dw->thread, NULL);
+
+	Sys_Free(dw);
+}
+
+#elif defined(SYS_PLATFORM_FREEBSD) || defined(SYS_PLATFORM_OPENBSD) || defined(SYS_PLATFORM_NETBSD)
+
+void *
+Sys_CreateDirWatch(const char *path, enum NeFSEvent mask, NeDirWatchCallback callback, void *ud)
+{
+	return (void *)1;
+}
+
+void
+Sys_DestroyDirWatch(void *handle)
+{
+
+}
+
+#else
+#	error "Directory watch not implemented for this platform. Add an implementation of Sys_CreateDirWatch and Sys_DestroyDirWatch in UNIX.c"
+#endif
 
 /* NekoEngine
  *
@@ -913,7 +1063,7 @@ _CpuInfo(void)
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (c) 2015-2022, Alexandru Naiman
+ * Copyright (c) 2015-2023, Alexandru Naiman
  *
  * All rights reserved.
  *
@@ -932,7 +1082,7 @@ _CpuInfo(void)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

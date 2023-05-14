@@ -9,13 +9,16 @@
 #include <Render/Graph/Pass.h>
 #include <Render/Graph/Graph.h>
 
-struct NeSkyPass;
-static bool _Init(struct NeSkyPass **pass);
-static void _Term(struct NeSkyPass *pass);
-static bool _Setup(struct NeSkyPass *pass, struct NeArray *resources);
-static void _Execute(struct NeSkyPass *pass, const struct NeArray *resources);
+NE_RENDER_PASS(NeSkyPass,
+{
+	struct NeFramebuffer *fb;
+	struct NePipeline *pipeline;
+	struct NeRenderPassDesc *rpd;
+	NeBufferHandle vertexBuffer;
+	NeBufferHandle indexBuffer;
+});
 
-static float _vertices[] =
+static float f_vertices[] =
 {
 	-1.f, -1.f,  1.f,
 	 1.f, -1.f,  1.f,
@@ -27,7 +30,7 @@ static float _vertices[] =
 	-1.f,  1.f, -1.f
 };
 
-static uint16_t _indices[] =
+static uint16_t f_indices[] =
 {
 	0, 3, 2, 1, 0, 2,
 	1, 2, 6, 5, 1, 6,
@@ -35,23 +38,6 @@ static uint16_t _indices[] =
 	4, 7, 3, 0, 4, 3,
 	4, 0, 1, 5, 4, 1,
 	3, 7, 6, 2, 3, 6
-};
-
-struct NeRenderPass RP_sky =
-{
-	.Init = (NePassInitProc)_Init,
-	.Term = (NePassTermProc)_Term,
-	.Setup = (NePassSetupProc)_Setup,
-	.Execute = (NePassExecuteProc)_Execute
-};
-
-struct NeSkyPass
-{
-	struct NeFramebuffer *fb;
-	struct NePipeline *pipeline;
-	struct NeRenderPassDesc *rpd;
-	uint64_t depthHash, outputHash, passSemaphoreHash;
-	NeBufferHandle vertexBuffer, indexBuffer;
 };
 
 struct Constants
@@ -65,12 +51,12 @@ struct Constants
 };
 
 static bool 
-_Setup(struct NeSkyPass *pass, struct NeArray *resources)
+NeSkyPass_Setup(struct NeSkyPass *pass, struct NeArray *resources)
 {
-	if (Scn_activeScene->environmentMap == E_INVALID_HANDLE)
+	if (Scn_activeScene->environmentMap == NE_INVALID_HANDLE)
 		return false;
 
-	const struct NeTextureDesc *outDesc = Re_GraphTextureDesc(pass->outputHash, resources);
+	const struct NeTextureDesc *outDesc = Re_GraphTextureDesc(Rt_HashLiteral(RE_OUTPUT), resources);
 
 	struct NeFramebufferAttachmentDesc fbAtDesc[2] =
 	{
@@ -94,7 +80,7 @@ _Setup(struct NeSkyPass *pass, struct NeArray *resources)
 }
 
 static void
-_Execute(struct NeSkyPass *pass, const struct NeArray *resources)
+NeSkyPass_Execute(struct NeSkyPass *pass, const struct NeArray *resources)
 {
 	struct Constants constants =
 	{
@@ -103,12 +89,13 @@ _Execute(struct NeSkyPass *pass, const struct NeArray *resources)
 		.gamma = 2.2f,
 		.vertexAddress = Re_BufferAddress(pass->vertexBuffer, 0)
 	};
-	const struct NeTextureDesc *outDesc = Re_GraphTextureDesc(pass->outputHash, resources);
+	struct NeTextureDesc *outDesc;
+	struct NeSemaphore *passSemaphore = (struct NeSemaphore *)Re_GraphData(Rt_HashLiteral(RE_PASS_SEMAPHORE), resources);
 
-	Re_SetAttachment(pass->fb, 0, Re_GraphTexture(pass->outputHash, resources));
-	Re_SetAttachment(pass->fb, 1, Re_GraphTexture(pass->depthHash, resources));
+	Re_SetAttachment(pass->fb, 0, Re_GraphTexture(Rt_HashLiteral(RE_OUTPUT), resources, NULL, &outDesc));
+	Re_SetAttachment(pass->fb, 1, Re_GraphTexturePtr(Rt_HashLiteral(RE_DEPTH_BUFFER), resources));
 
-	Re_BeginDrawCommandBuffer();
+	Re_BeginDrawCommandBuffer(passSemaphore);
 	Re_CmdBeginRenderPass(pass->rpd, pass->fb, RENDER_COMMANDS_INLINE);
 
 	Re_CmdSetViewport(0.f, 0.f, (float)outDesc->width, (float)outDesc->height, 0.f, 1.f);
@@ -117,23 +104,22 @@ _Execute(struct NeSkyPass *pass, const struct NeArray *resources)
 	Re_CmdBindPipeline(pass->pipeline);
 
 	Re_CmdBindIndexBuffer(pass->indexBuffer, 0, IT_UINT_16);
-	
+
 	constants.invGamma = 1.f / constants.gamma;
 
-	const XMMATRIX mvp = XMMatrixMultiply(M_Load(&Scn_activeCamera->viewMatrix), M_Load(&Scn_activeCamera->projMatrix));
+	const struct NeCamera *cam = (const struct NeCamera *)Re_GraphData(Rt_HashLiteral(RE_CAMERA), resources);
+	const XMMATRIX mvp = XMMatrixMultiply(M_Load(&cam->viewMatrix), M_Load(&cam->projMatrix));
 	XMStoreFloat4x4A(&constants.mvp, XMMatrixMultiply(XMMatrixScaling(1000000.0, 1000000.0, 1000000.0), mvp));
 
 	Re_CmdPushConstants(SS_ALL, sizeof(constants), &constants);
-	Re_CmdDrawIndexed(sizeof(_indices) / sizeof(_indices[0]), 1, 0, 0, 0);
+	Re_CmdDrawIndexed(sizeof(f_indices) / sizeof(f_indices[0]), 1, 0, 0, 0);
 
 	Re_CmdEndRenderPass();
-
-	struct NeSemaphore *passSemaphore = (struct NeSemaphore *)Re_GraphData(pass->passSemaphoreHash, resources);
-	Re_QueueGraphics(Re_EndCommandBuffer(), passSemaphore, passSemaphore);
+	Re_QueueGraphics(Re_EndCommandBuffer(), passSemaphore);
 }
 
 static bool
-_Init(struct NeSkyPass **pass)
+NeSkyPass_Init(struct NeSkyPass **pass)
 {
 	*pass = (struct NeSkyPass *)Sys_Alloc(sizeof(struct NeSkyPass), 1, MH_Render);
 	if (!*pass)
@@ -178,8 +164,7 @@ _Init(struct NeSkyPass **pass)
 		.stageInfo = &shader->opaqueStages,
 		.pushConstantSize = sizeof(struct Constants),
 		.attachmentCount = sizeof(blendAttachments) / sizeof(blendAttachments[0]),
-		.attachments = blendAttachments,
-		.depthFormat = TF_D32_SFLOAT
+		.attachments = blendAttachments
 	};
 
 	///////////////// FIXME
@@ -187,12 +172,12 @@ _Init(struct NeSkyPass **pass)
 	{
 		.desc =
 		{
-			.size = sizeof(_vertices),
+			.size = sizeof(f_vertices),
 			.usage = BU_STORAGE_BUFFER | BU_TRANSFER_DST,
 			.memoryType = MT_GPU_LOCAL
 		},
-		.data = _vertices,
-		.dataSize = sizeof(_vertices),
+		.data = f_vertices,
+		.dataSize = sizeof(f_vertices),
 		.keepData = true
 	};
 
@@ -206,17 +191,13 @@ _Init(struct NeSkyPass **pass)
 	if (!(*pass)->pipeline)
 		goto error;
 
-	(*pass)->depthHash = Rt_HashString(RE_DEPTH_BUFFER);
-	(*pass)->outputHash = Rt_HashString(RE_OUTPUT);
-	(*pass)->passSemaphoreHash = Rt_HashString(RE_PASS_SEMAPHORE);
-
 	///////////////// FIXME
 	if (!Re_CreateBuffer(&bci, &(*pass)->vertexBuffer))
 		return false;
 
 	bci.desc.usage |= BU_INDEX_BUFFER;
-	bci.data = _indices;
-	bci.desc.size = bci.dataSize = sizeof(_indices);
+	bci.data = f_indices;
+	bci.desc.size = bci.dataSize = sizeof(f_indices);
 	if (!Re_CreateBuffer(&bci, &(*pass)->indexBuffer))
 		return false;
 
@@ -238,7 +219,7 @@ error:
 }
 
 static void
-_Term(struct NeSkyPass *pass)
+NeSkyPass_Term(struct NeSkyPass *pass)
 {
 	Re_Destroy(pass->vertexBuffer);
 	Re_Destroy(pass->indexBuffer);
@@ -248,7 +229,7 @@ _Term(struct NeSkyPass *pass)
 
 /* NekoEngine
  *
- * Sky.c
+ * Sky.cxx
  * Author: Alexandru Naiman
  *
  * -----------------------------------------------------------------------------
@@ -272,7 +253,7 @@ _Term(struct NeSkyPass *pass)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

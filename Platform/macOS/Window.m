@@ -1,32 +1,28 @@
 #include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include <unistd.h>
 
 #include <System/Window.h>
-#include <System/Memory.h>
 #include <Engine/Engine.h>
 
 #include "macOSPlatform.h"
 
 #import <Cocoa/Cocoa.h>
-#import <QuartzCore/CAMetalLayer.h>
 
 #import "EngineView.h"
 
-#include <System/Log.h>
+static NSWindow *f_wnd = nil;
 
-static NSWindow *_wnd = nil;
-
+#if defined(MAC_OS_X_VERSION_10_6) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6
 @interface EngineWindowDelegate : NSObject<NSWindowDelegate>
 @end
+#else
+@interface EngineWindowDelegate : NSObject
+@end
+#endif
 
 @implementation EngineWindowDelegate
 
 - (void)windowDidResize: (NSNotification *)notification
 {
-	
 }
 
 - (void)windowWillClose: (NSNotification *)notification
@@ -39,40 +35,40 @@ static NSWindow *_wnd = nil;
 bool
 Sys_CreateWindow(void)
 {
-	if (_wnd)
+	if (f_wnd)
 		return true;
-	
-	NSUInteger mask = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
-		NSWindowStyleMaskMiniaturizable | NSWindowStyleMaskResizable;
 
-	_wnd = [[NSWindow alloc]
+	const NSUInteger mask = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
+							NSWindowStyleMaskMiniaturizable | NSWindowStyleMaskResizable;
+
+	f_wnd = [[NSWindow alloc]
 		initWithContentRect: NSMakeRect(0, 0, *E_screenWidth, *E_screenHeight)
 				  styleMask: mask
 				    backing: NSBackingStoreBuffered
 					  defer: YES];
-		
-	[_wnd cascadeTopLeftFromPoint: NSMakePoint(20, 20)];
-	[_wnd setTitle: @"NekoEngine"];
 
-	NSRect frame = [[_wnd contentView] frame];
+	[f_wnd cascadeTopLeftFromPoint: NSMakePoint(20, 20)];
+	[f_wnd setTitle:@"NekoEngine"];
+
+	NSRect frame = [[f_wnd contentView] frame];
 	NSView *v = (NSView *)[[EngineView alloc] initWithFrame: frame];
 
-	[_wnd setContentView: v];
-	[_wnd setInitialFirstResponder: v];
-	[_wnd makeFirstResponder: v];
-	[_wnd setAcceptsMouseMovedEvents: true];
-	
-	[_wnd makeKeyAndOrderFront: NSApp];
-	[_wnd center];
-	
-	[_wnd setDelegate: [[EngineWindowDelegate alloc] init]];
-	
+	[f_wnd setContentView: v];
+	[f_wnd setInitialFirstResponder: v];
+	[f_wnd makeFirstResponder: v];
+	[f_wnd setAcceptsMouseMovedEvents: true];
+
+	[f_wnd makeKeyAndOrderFront: NSApp];
+	[f_wnd center];
+
+	[f_wnd setDelegate: [[EngineWindowDelegate alloc] init]];
+
 	[NSApp activateIgnoringOtherApps: YES];
 
 	E_screen = (void *)v;
 	*E_screenWidth = frame.size.width;
 	*E_screenHeight = frame.size.height;
-	
+
 	return true;
 }
 
@@ -81,18 +77,18 @@ Sys_SetEngineWindow(void *window)
 {
 	NSView *view = (NSView *)window;
 	const NSRect r = [view frame];
-	
+
 	*E_screenWidth = r.size.width;
 	*E_screenHeight = r.size.height;
-	
+
 	E_screen = window;
-	_wnd = [view window];
+	f_wnd = [view window];
 }
 
 void
 Sys_SetWindowTitle(const char *name)
 {
-	[_wnd setTitle: [NSString stringWithUTF8String: name]];
+	[f_wnd setTitle: [NSString stringWithUTF8String: name]];
 }
 
 void
@@ -107,16 +103,16 @@ void
 Sys_ShowWindow(bool show)
 {
 	if (show)
-		[_wnd orderFront: nil];
+		[f_wnd orderFront: nil];
 	else
-		[_wnd orderBack: nil];
+		[f_wnd orderBack: nil];
 }
 
 void
 Sys_WorkArea(int *top, int *left, int *right, int *bottom)
 {
 	NSRect bounds = [[NSScreen mainScreen] visibleFrame];
-	
+
 	if (top) *top = bounds.origin.y;
 	if (left) *left = bounds.origin.x;
 	if (right) *right = bounds.size.width;
@@ -143,7 +139,7 @@ Sys_DestroyWindow(void)
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (c) 2015-2022, Alexandru Naiman
+ * Copyright (c) 2015-2023, Alexandru Naiman
  *
  * All rights reserved.
  *
@@ -162,7 +158,7 @@ Sys_DestroyWindow(void)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

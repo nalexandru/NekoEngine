@@ -1204,7 +1204,7 @@ static UInt32 MY_FAST_CALL CrcUpdateT1(UInt32 v, const void *data, size_t size, 
 }
 #endif
 
-static void MY_FAST_CALL CrcGenerateTable()
+static void MY_FAST_CALL CrcGenerateTable(void)
 {
   UInt32 i;
   for (i = 0; i < 256; i++)

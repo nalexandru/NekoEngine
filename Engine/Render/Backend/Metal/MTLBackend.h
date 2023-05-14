@@ -92,6 +92,8 @@ struct NeRenderContext
 		MTLSize threadsPerThreadgroup;
 	};
 	struct NeArray submitted;
+	struct NeArray resourceBarriers;
+	bool scopeBarrier;
 	id<MTLParallelRenderCommandEncoder> parallelEncoder;
 	id<MTLIOCommandQueue> ioQueue API_AVAILABLE(macosx(13), ios(16));
 	id<MTLIOCommandBuffer> ioCmdBuffer API_AVAILABLE(macosx(13), ios(16));
@@ -132,8 +134,8 @@ struct NeSwapchain
 
 struct Mtld_SubmitInfo
 {
-	id<MTLEvent> wait, signal;
-	uint64_t waitValue, signalValue;
+	id<MTLEvent> signal;
+	uint64_t signalValue;
 	id<MTLCommandBuffer> cmdBuffer;
 };
 
@@ -248,22 +250,18 @@ bool MTL_WaitForFence(id<MTLDevice> dev, dispatch_semaphore_t ds, uint64_t timeo
 void MTL_DestroyFence(id<MTLDevice> dev, dispatch_semaphore_t ds);
 
 // Memory
-bool MTLDrv_InitMemory(void);
-id<MTLBuffer> MTLDrv_CreateBuffer(id<MTLDevice> dev, uint64_t size, MTLResourceOptions options);
-id<MTLTexture> MTLDrv_CreateTexture(id<MTLDevice> dev, MTLTextureDescriptor *desc);
-void MTLDrv_SetRenderHeaps(id<MTLRenderCommandEncoder> encoder);
-void MTLDrv_SetComputeHeaps(id<MTLComputeCommandEncoder> encoder);
-void MTLDrv_TermMemory(void);
+bool MTLBk_InitMemory(void);
+id<MTLBuffer> MTLBk_CreateBuffer(id<MTLDevice> dev, uint64_t size, MTLResourceOptions options);
+id<MTLTexture> MTLBk_CreateTexture(id<MTLDevice> dev, MTLTextureDescriptor *desc);
+void MTLBk_SetRenderHeaps(id<MTLRenderCommandEncoder> encoder);
+void MTLBk_SetComputeHeaps(id<MTLComputeCommandEncoder> encoder);
+void MTLBk_TermMemory(void);
 
 // Utility functions
 static inline MTLResourceOptions
 MTL_GPUMemoryTypetoResourceOptions(bool hasUnifiedMemory, enum NeGPUMemoryType type)
 {
-#ifdef _DEBUG
 	MTLResourceOptions options = MTLResourceHazardTrackingModeTracked;
-#else
-	MTLResourceOptions options = MTLResourceHazardTrackingModeUntracked;
-#endif
 	
 	switch (type) {
 	case MT_GPU_LOCAL: options = MTLResourceCPUCacheModeWriteCombined | MTLResourceStorageModePrivate; break;
@@ -298,11 +296,17 @@ NeToMTLTextureFormat(enum NeTextureFormat fmt)
 	case TF_R8G8B8A8_SRGB: return MTLPixelFormatRGBA8Unorm_sRGB;
 	case TF_B8G8R8A8_UNORM: return MTLPixelFormatBGRA8Unorm;
 	case TF_B8G8R8A8_SRGB: return MTLPixelFormatBGRA8Unorm_sRGB;
+	case TF_R16G16B16A16_UNORM: return MTLPixelFormatRGBA16Unorm;
 	case TF_R16G16B16A16_SFLOAT: return MTLPixelFormatRGBA16Float;
+	case TF_R32G32B32A32_UINT: return MTLPixelFormatRGBA32Uint;
 	case TF_R32G32B32A32_SFLOAT: return MTLPixelFormatRGBA32Float;
 	case TF_A2R10G10B10_UNORM: return MTLPixelFormatRGB10A2Unorm;
 	case TF_R8G8_UNORM: return MTLPixelFormatRG8Unorm;
+	case TF_R16G16_UNORM: return MTLPixelFormatRG16Unorm;
+	case TF_R32G32_UINT: return MTLPixelFormatRG32Uint;
 	case TF_R8_UNORM: return MTLPixelFormatR8Unorm;
+	case TF_R16_UNORM: return MTLPixelFormatR16Unorm;
+	case TF_R32_UINT: return MTLPixelFormatR32Uint;
 	case TF_ETC2_R8G8B8_UNORM: return MTLPixelFormatETC2_RGB8;
 	case TF_ETC2_R8G8B8_SRGB: return MTLPixelFormatETC2_RGB8_sRGB;
 	case TF_ETC2_R8G8B8A1_UNORM: return MTLPixelFormatETC2_RGB8A1;
@@ -337,11 +341,17 @@ MTLToNeTextureFormat(MTLPixelFormat fmt)
 	case MTLPixelFormatRGBA8Unorm_sRGB: return TF_R8G8B8A8_SRGB;
 	case MTLPixelFormatBGRA8Unorm: return TF_B8G8R8A8_UNORM;
 	case MTLPixelFormatBGRA8Unorm_sRGB: return TF_B8G8R8A8_SRGB;
+	case MTLPixelFormatRGBA16Unorm: return TF_R16G16B16A16_UNORM;
 	case MTLPixelFormatRGBA16Float: return TF_R16G16B16A16_SFLOAT;
+	case MTLPixelFormatRGBA32Uint: return TF_R32G32B32A32_UINT;
 	case MTLPixelFormatRGBA32Float: return TF_R32G32B32A32_SFLOAT;
 	case MTLPixelFormatRGB10A2Unorm: return TF_A2R10G10B10_UNORM;
 	case MTLPixelFormatRG8Unorm: return TF_R8G8_UNORM;
+	case MTLPixelFormatRG16Unorm: return TF_R16G16_UNORM;
+	case MTLPixelFormatRG32Uint: return TF_R32G32_UINT;
 	case MTLPixelFormatR8Unorm: return TF_R8_UNORM;
+	case MTLPixelFormatR16Unorm: return TF_R16_UNORM;
+	case MTLPixelFormatR32Uint: return TF_R32_UINT;
 	case MTLPixelFormatETC2_RGB8: return TF_ETC2_R8G8B8_UNORM;
 	case MTLPixelFormatETC2_RGB8_sRGB: return TF_ETC2_R8G8B8_SRGB;
 	case MTLPixelFormatETC2_RGB8A1: return TF_ETC2_R8G8B8A1_UNORM;
@@ -369,10 +379,11 @@ static inline NSUInteger
 MTL_TextureFormatSize(enum NeTextureFormat fmt)
 {
 	switch (fmt) {
-	case TF_R8G8B8A8_UNORM: return 4;
-	case TF_R8G8B8A8_SRGB: return 4;
-	case TF_B8G8R8A8_UNORM: return 4;
+	case TF_R8G8B8A8_UNORM:
+	case TF_R8G8B8A8_SRGB:
+	case TF_B8G8R8A8_UNORM:
 	case TF_B8G8R8A8_SRGB: return 4;
+	case TF_R16G16B16A16_UNORM:
 	case TF_R16G16B16A16_SFLOAT: return 8;
 	case TF_R32G32B32A32_SFLOAT: return 16;
 	case TF_A2R10G10B10_UNORM: return 4;
@@ -551,7 +562,7 @@ NeToMTLSamplerBorderColor(enum NeBorderColor bc)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

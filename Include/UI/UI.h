@@ -1,5 +1,5 @@
-#ifndef _NE_UI_UI_H_
-#define _NE_UI_UI_H_
+#ifndef NE_UI_UI_H
+#define NE_UI_UI_H
 
 #include <UI/Text.h>
 #include <Engine/Types.h>
@@ -20,6 +20,8 @@ struct NeUIContext
 	struct NeArray vertices, indices, draws;
 };
 
+ENGINE_API extern bool UI_pluginLoaded;
+
 bool UI_InitUI(void);
 void UI_TermUI(void);
 
@@ -34,7 +36,7 @@ bool UI_ResizeBuffers(uint32_t maxVertices, uint32_t maxIndices);
 }
 #endif
 
-#endif /* _NE_UI_UI_H_ */
+#endif /* NE_UI_UI_H */
 
 /* NekoEngine
  *
@@ -62,7 +64,7 @@ bool UI_ResizeBuffers(uint32_t maxVertices, uint32_t maxIndices);
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

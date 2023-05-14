@@ -34,6 +34,10 @@
 #include <string.h>
 #include <stdio.h>
 
+#include <System/System.h>
+
+#ifdef NE_GETOPT_COMPAT
+
 int     opterr = 1,             /* if error message should be printed */
 optind = 1,             /* index into parent argv vector */
 optopt,                 /* character checked for validity */
@@ -100,3 +104,5 @@ int getopt(int nargc, char *const nargv[], const char *ostr)
 	}
 	return (optopt);                        /* dump back option letter */
 }
+
+#endif /* NE_GETOPT_COMPAT */

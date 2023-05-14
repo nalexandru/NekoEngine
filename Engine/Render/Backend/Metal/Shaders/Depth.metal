@@ -11,8 +11,6 @@ struct VsOutput
 	float4 position [[position, invariant]];
 	float2 uv;
 	float3 normal;
-//	float3 tangent;
-//	float3 biTangent;
 	float3 vPos;
 };
 
@@ -27,9 +25,7 @@ struct VertexD
 {
 	float3 position [[attribute(0)]];
 	float3 normal [[attribute(1)]];
-	//float3 tangent [[attribute(2)]];
 	float2 uv [[attribute(2)]];
-//	float4 color [[attribute(4)]];
 };
 
 vertex struct VsOutput
@@ -111,7 +107,7 @@ Depth_FS(struct VsOutput in [[stage_in]],
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

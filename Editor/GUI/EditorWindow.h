@@ -1,5 +1,5 @@
-#ifndef _NE_EDITOR_GUI_EDITOR_WINDOW_H_
-#define _NE_EDITOR_GUI_EDITOR_WINDOW_H_
+#ifndef NE_EDITOR_GUI_EDITOR_WINDOW_H
+#define NE_EDITOR_GUI_EDITOR_WINDOW_H
 
 #include <Engine/Types.h>
 
@@ -10,6 +10,7 @@
 #include <QFileIconProvider>
 
 class NeInspector;
+class NeHelpViewer;
 
 class NeEditorWindow : public QMainWindow
 {
@@ -28,6 +29,7 @@ public:
 public slots:
 	void ImportAsset();
 	void AMDoubleClick(QListWidgetItem *item);
+	void AMContextMenu(const QPoint &pt);
 
 	void FileDialogFinished(int r);
 
@@ -66,12 +68,14 @@ private:
 	QLineEdit *_amPathEdit;
 	QFileIconProvider *_iconProvider;
 	NeInspector *_inspector;
+	NeHelpViewer *_helpViewer;
 	intptr_t _gameProcess;
 
 	void _CreateMenu(void);
+	QString _AMFilePath(const QString &name);
 };
 
-#endif /* _NE_EDITOR_GUI_EDITOR_WINDOW_H_ */
+#endif /* NE_EDITOR_GUI_EDITOR_WINDOW_H */
 
 /* NekoEditor
  *
@@ -99,7 +103,7 @@ private:
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

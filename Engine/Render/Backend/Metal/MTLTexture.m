@@ -43,13 +43,13 @@ Re_BkCreateTexture(const struct NeTextureDesc *tDesc, uint16_t location)
 	if (!desc)
 		return NULL;
 	
-	struct NeTexture *tex = Sys_Alloc(sizeof(*tex), 1, MH_RenderDriver);
+	struct NeTexture *tex = Sys_Alloc(sizeof(*tex), 1, MH_RenderBackend);
 	if (!tex) {
 		[desc release];
 		return NULL;
 	}
 	
-	tex->tex = MTLDrv_CreateTexture(MTL_device, desc);
+	tex->tex = MTLBk_CreateTexture(MTL_device, desc);
 	[desc release];
 	if (!tex->tex) {
 		Sys_Free(tex);
@@ -57,7 +57,7 @@ Re_BkCreateTexture(const struct NeTextureDesc *tDesc, uint16_t location)
 	}
 	
 	MTL_SetTexture(location, tex->tex);
-	
+
 	return tex;
 }
 
@@ -101,7 +101,7 @@ Re_BkDestroyTexture(struct NeTexture *tex)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

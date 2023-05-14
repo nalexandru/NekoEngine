@@ -1,5 +1,5 @@
-#ifndef _NE_ASSET_NMESH_H_
-#define _NE_ASSET_NMESH_H_
+#ifndef NE_ASSET_NMESH_H
+#define NE_ASSET_NMESH_H
 
 #include <Render/Model.h>
 #include <Runtime/Array.h>
@@ -10,13 +10,14 @@
 #define NMESH_VTX_ID			0x00585456u				// VTX
 #define NMESH_IDX_ID			0x00584449u				// IDX
 #define NMESH_MAT_ID			0x0054414Du				// MAT
-#define NMESH_BONE_ID			0x454E4F42u				// BONE
+#define NMESH_JOINT_ID			0x00544E4Au				// JNT
 #define NMESH_WEIGHT_ID			0x54484757u				// WGHT
 #define NMESH_NODE_ID			0x45444F4Eu				// NODE
-#define NMESH_INVT_ID			0x54564E49u				// INVT
+#define NMESH_INVT_ID			0x54564E49u				// INVM
+#define NMESH_INVMAT_ID			0x4D564E49u				// INVM
 #define NMESH_MESH_ID			0x4853454Du				// MESH
 #define NMESH_MORPH_INFO_ID		0x464E494Du				// MINF
-#define NMESH_MORPH_DELTA_ID	0x544C444Du				// MINF
+#define NMESH_MORPH_DELTA_ID	0x544C444Du				// MDLT
 #define NMESH_VTXC_ID			0x43585456u				// VTXC
 #define NMESH_END_ID			0x4D444E45u				// ENDM
 
@@ -30,18 +31,11 @@ struct NMeshSubmesh
 	char material[256];
 };
 
-struct NMeshJoint
-{
-	char name[256];
-	float inverseBindMatrix[16];
-};
-
 struct NMeshNode
 {
-	char name[256];
-	float transform[16];
 	int32_t parentId;
-	int32_t childrenIds[15];
+	float xform[16];
+	char name[233];
 };
 
 struct NMeshMorphDelta
@@ -73,18 +67,20 @@ struct NMesh
 	struct NMeshNode *nodes;
 
 	uint32_t jointCount;
-	struct NMeshJoint *joints;
+	uint32_t *joints;
+
+	uint32_t invMatCount;
+	struct NeMatrix *inverseBindMatrices;
+	struct NeMatrix inverseTransform;
 
 	uint32_t morphCount;
 	struct NeMorph *morphs;
 
 	uint32_t morphDeltaCount;
 	struct NeMorphDelta *morphDeltas;
-
-	float globalInverseTransform[16];
 };
 
-#endif /* _NE_ASSET_NMESH_H_ */
+#endif /* NE_ASSET_NMESH_H */
 
 /* NekoEngine
  *
@@ -112,7 +108,7 @@ struct NMesh
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

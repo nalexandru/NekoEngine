@@ -1,5 +1,5 @@
-#ifndef _NE_RUNTIME_RTDEFS_H_
-#define _NE_RUNTIME_RTDEFS_H_
+#ifndef NE_RUNTIME_RTDEFS_H
+#define NE_RUNTIME_RTDEFS_H
 
 #include <limits.h>
 #include <stdint.h>
@@ -23,7 +23,7 @@ extern "C" {
 #	define RT_CEXPR
 #endif
 
-#define RT_HASH(x) Rt_HashString(x)
+#define RT_HASH(x) Rt_HashLiteral(x)
 
 typedef int32_t(*RtCmpFunc)(const void *item, const void *data);
 typedef int32_t(*RtSortFunc)(const void *item, const void *data);
@@ -31,13 +31,11 @@ typedef int32_t(*RtSortFunc)(const void *item, const void *data);
 static inline RT_CEXPR const size_t
 _Rt_CalcGrowSize(size_t size, size_t elem_size, size_t min_size)
 {
-	size_t byte_size = size * elem_size;
-	size_t geom = 0;
-
+	const size_t byte_size = size * elem_size;
 	if (size > SIZE_MAX - (byte_size / 2))
 		return min_size;
 
-	geom = size + size / 2;
+	const size_t geom = size + size / 2;
 	if (geom < min_size)
 		return min_size;
 
@@ -51,6 +49,24 @@ Rt_HashString(const char *str)
 
 	while (*str) {
 		hash += *str++;
+		hash += (hash << 10);
+		hash ^= (hash >> 6);
+	}
+
+	hash += (hash << 3);
+	hash ^= (hash >> 11);
+	hash += (hash << 15);
+
+	return hash;
+}
+
+static inline RT_CEXPR const uint64_t
+Rt_HashMemory(const uint8_t *mem, size_t len)
+{
+	uint64_t hash = 0;
+
+	for (size_t i = 0; i < len; ++i) {
+		hash += mem[i];
 		hash += (hash << 10);
 		hash ^= (hash >> 6);
 	}
@@ -93,10 +109,31 @@ Rt_U64CmpFunc(const void *item, const void *data)
 }
 
 #ifdef __cplusplus
+
+static inline consteval uint64_t
+Rt_HashLiteral(const char *str)
+{
+	uint64_t hash = 0;
+
+	while (*str) {
+		hash += *str++;
+		hash += (hash << 10);
+		hash ^= (hash >> 6);
+	}
+
+	hash += (hash << 3);
+	hash ^= (hash >> 11);
+	hash += (hash << 15);
+
+	return hash;
 }
+
+}
+#else
+#	define Rt_HashLiteral Rt_HashString
 #endif
 
-#endif /* _NE_RUNTIME_RTDEFS_H_ */
+#endif /* NE_RUNTIME_RTDEFS_H */
 
 /* NekoEngine
  *
@@ -124,7 +161,7 @@ Rt_U64CmpFunc(const void *item, const void *data)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

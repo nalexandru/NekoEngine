@@ -79,34 +79,9 @@ IBL_Radiance(float3 n, float3 v, float NdotV, float r, float3 f0, float3 color, 
 }
 
 inline float4
-PBRMain_LCDebug(constant struct ShaderArguments *sa, constant struct Scene *scn, constant struct Material *mat,
-		constant int32_t *visibleLights, float4 vertexColor, float3 viewPosition, float3 n, float2 uv,
-		float metallic, float perceptualRoughness)
-{
-	if (mat->alphaMaskMap) {
-		const float mask = sa->textures[mat->alphaMaskMap].sample(sa->samplers[0], uv).r;
-		if (mask < mat->alphaCutoff)
-			discard_fragment();
-	}
-
-	float4 albedo = mat->diffuseColor * vertexColor;
-	if (mat->diffuseMap)
-		albedo *= sRGBtoLinear(sa->textures[mat->diffuseMap].sample(sa->samplers[0], uv), scn->gamma);
-
-	if (albedo.a < 0.01)
-		discard_fragment();
-
-	uint lc = 0;
-	for (uint i = 0; i < scn->lightCount && visibleLights[i] != -1; ++i)
-		++lc;
-
-	return float4(float3((0.2126 * albedo.r + 0.7152 * albedo.g + 0.0722 * albedo.b) * lc), 1.0);
-}
-
-inline float4
 PBRMain(constant struct ShaderArguments *sa, constant struct Scene *scn, constant struct Material *mat,
 		constant int32_t *visibleLights, float4 vertexColor, float3 viewPosition, float3 n, float2 uv,
-		float metallic, float perceptualRoughness)
+		float metallic, float perceptualRoughness, uint aoMap, float2 fragCoord)
 {
 	float3 f0 = float3(0.04);
 
@@ -184,12 +159,17 @@ PBRMain(constant struct ShaderArguments *sa, constant struct Scene *scn, constan
 		specular +=  lightContrib * BRDF_Specular(F, V, D, mat->specularWeight);
 	}
 
-	return float4(diffuse + specular + emissive, albedo.a);
+	float4 finalColor = float4(diffuse + specular + emissive, albedo.a);
+	if (aoMap != 0)
+		finalColor *= sa->textures[aoMap].sample(sa->samplers[0], fragCoord).r;
+
+	return finalColor;
 }
 
 inline float4
 PBR_MR(constant struct ShaderArguments *sa, constant struct Scene *scn, constant struct Material *mat,
-	   constant int32_t *visibleLights, float4 vertexColor, float3 viewPosition, float3 normal, float2 uv)
+	   constant int32_t *visibleLights, float4 vertexColor, float3 viewPosition, float3 normal, float2 uv,
+	   uint aoMap, float2 fragCoord)
 {
 	float2 mr = float2(1.0, 1.0);
 	if (mat->metallicRoughnessMap)
@@ -198,7 +178,7 @@ PBR_MR(constant struct ShaderArguments *sa, constant struct Scene *scn, constant
 	const float metallic = clamp(mr.x * mat->emissionColor.a, 0.0, 1.0);
 	const float perceptualRoughness = clamp(mr.y * mat->roughness, 0.04, 1.0);
 
-	return PBRMain(sa, scn, mat, visibleLights, vertexColor, viewPosition, normal, uv, metallic, perceptualRoughness);
+	return PBRMain(sa, scn, mat, visibleLights, vertexColor, viewPosition, normal, uv, metallic, perceptualRoughness, aoMap, fragCoord);
 }
 
 #endif /* PBR_h */
@@ -229,7 +209,7 @@ PBR_MR(constant struct ShaderArguments *sa, constant struct Scene *scn, constant
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

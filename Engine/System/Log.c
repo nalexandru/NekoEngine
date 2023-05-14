@@ -13,24 +13,30 @@
 
 #define LOG_BUFF	4096
 
-static const char *_logSeverityStr[4] =
+static const char *f_logSeverityStr[4] =
 {
 	"Debug",
 	"Information",
 	"Warning",
 	"Critical"
 };
-static const char *_logFile = NULL;
-static uint32_t *_minLogSeverity = NULL;
-static NeFutex _logFutex;
+static const char *f_logFile = NULL;
+static NeFutex f_logFutex;
+
+#if !defined(_DEBUG)
+static uint32_t *f_minLogSeverity = NULL;
+#endif
 
 bool
 Sys_InitLog(const char *file)
 {
-	_logFile = E_GetCVarStr("Engine_LogFile", file ? file : "Engine.log")->str;
-	_minLogSeverity = &E_GetCVarU32("Engine_MinLogSeverity", LOG_WARNING)->u32;
+	f_logFile = E_GetCVarStr("Engine_LogFile", file ? file : "Engine.log")->str;
 
-	return Sys_InitFutex(&_logFutex);
+#if !defined(_DEBUG)
+	f_minLogSeverity = &E_GetCVarU32("Engine_MinLogSeverity", LOG_WARNING)->u32;
+#endif
+
+	return Sys_InitFutex(&f_logFutex);
 }
 
 void
@@ -38,45 +44,42 @@ Sys_LogEntry(const char *module, uint8_t severity, const char *format, ...)
 {
 	FILE *fp = NULL;
 	va_list args;
-	size_t msg_len = 0;
-	char *buff = NULL;
+	char buff[LOG_BUFF];
 	time_t t;
 	struct tm *tm = NULL;
 
-	if (!format)
+	if (!format || !f_logFile)
 		return;
 
 #if !defined(_DEBUG)
-	if (severity < *_minLogSeverity)
+	if (severity < *f_minLogSeverity)
 		return;
 #endif
 
-	Sys_LockFutex(_logFutex);
-
-	buff = Sys_Alloc(sizeof(*buff), LOG_BUFF, MH_Transient);
-	memset(buff, 0x0, LOG_BUFF);
+	Sys_LockFutex(f_logFutex);
+	memset(buff, 0x0, sizeof(buff));
 
 	va_start(args, format);
-	vsnprintf(buff, LOG_BUFF, format, args);
+	vsnprintf(buff, sizeof(buff), format, args);
 	va_end(args);
 
-	msg_len = strnlen(buff, LOG_BUFF);
+	const size_t msg_len = strnlen(buff, sizeof(buff));
 
 	// Log all messages in debug mode
 #if !defined(_DEBUG)
-	if (severity == LOG_CRITICAL || _logFile[0] == 0x0)
+	if (severity == LOG_CRITICAL || f_logFile[0] == 0x0)
 #else
-	Sys_DbgOut(severity, module, _logSeverityStr[severity], buff);
+	Sys_DbgOut(severity, module, f_logSeverityStr[severity], buff);
 #endif
 
 	if (severity > LOG_ALL)
 		severity = LOG_ALL;
 
-	if (_logFile[0] == 0x0)
+	if (f_logFile[0] == 0x0)
 		goto exit;
 
-	if ((fp = fopen(_logFile, "a+")) == NULL) {
-		fprintf(stderr, "failed to open log file for append [%s]: %d\n", _logFile, errno);
+	if ((fp = fopen(f_logFile, "a+")) == NULL) {
+		fprintf(stderr, "failed to open log file for append [%s]: %d\n", f_logFile, errno);
 		goto exit;
 	}
 
@@ -85,8 +88,8 @@ Sys_LogEntry(const char *module, uint8_t severity, const char *format, ...)
 
 	fprintf(fp, "%04d-%02d-%02d %02d:%02d:%02d [%s][%s]: %s",
 		tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
-		tm->tm_hour, tm->tm_min, tm->tm_sec,
-		module, _logSeverityStr[severity], buff);
+			tm->tm_hour, tm->tm_min, tm->tm_sec,
+			module, f_logSeverityStr[severity], buff);
 
 	if (buff[msg_len - 1] != '\n')
 		fprintf(fp, "\n");
@@ -94,13 +97,13 @@ Sys_LogEntry(const char *module, uint8_t severity, const char *format, ...)
 	fclose(fp);
 
 exit:
-	Sys_UnlockFutex(_logFutex);
+	Sys_UnlockFutex(f_logFutex);
 }
 
 void
 Sys_TermLog(void)
 {
-	Sys_TermFutex(_logFutex);
+	Sys_TermFutex(f_logFutex);
 }
 
 /* NekoEngine
@@ -129,7 +132,7 @@ Sys_TermLog(void)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

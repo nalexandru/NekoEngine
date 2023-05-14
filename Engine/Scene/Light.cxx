@@ -3,19 +3,17 @@
 #include <Scene/Transform.h>
 #include <Scene/Components.h>
 #include <Engine/Engine.h>
-#include <Engine/Event.h>
-#include <Engine/Events.h>
 #include <Engine/ECSystem.h>
 
-static bool _InitLight(struct NeLight *cam, const char **args);
-static void _TermLight(struct NeLight *cam);
+static bool InitLight(struct NeLight *l, const char **args);
+static void TermLight(struct NeLight *l);
 
-E_REGISTER_COMPONENT(LIGHT_COMP, struct NeLight, 16, _InitLight, _TermLight)
+NE_REGISTER_COMPONENT(NE_LIGHT, struct NeLight, 16, InitLight, nullptr, TermLight)
 
 static bool
-_InitLight(struct NeLight *l, const char **args)
+InitLight(struct NeLight *l, const char **args)
 {
-	l->type = LT_DIRECTIONAL;
+	l->type = LT_Directional;
 	l->color.x = l->color.y = l->color.z = 1.f;
 	l->intensity = 1.f;
 
@@ -30,11 +28,11 @@ _InitLight(struct NeLight *l, const char **args)
 			const size_t vLen = strlen(val);
 
 			if (!strncmp(val, "Directional", vLen))
-				l->type = LT_DIRECTIONAL;
+				l->type = LT_Directional;
 			else if (!strncmp(val, "Point", vLen))
-				l->type = LT_POINT;
+				l->type = LT_Point;
 			else if (!strncmp(val, "Spot", vLen))
-				l->type = LT_SPOT;
+				l->type = LT_Spot;
 		} else if (!strncmp(arg, "Color", len)) {
 			char *ptr = (char *)*(++args);
 			l->color.x = strtof(ptr, &ptr);
@@ -56,7 +54,7 @@ _InitLight(struct NeLight *l, const char **args)
 	return true;
 }
 
-E_SYSTEM(SCN_COLLECT_LIGHTS, ECSYS_GROUP_MANUAL, 0, true, struct NeCollectLights, 2, TRANSFORM_COMP, LIGHT_COMP)
+NE_SYSTEM(SCN_COLLECT_LIGHTS, ECSYS_GROUP_MANUAL, 0, true, struct NeCollectLights, 2, NE_TRANSFORM, NE_LIGHT)
 {
 	struct NeTransform *xform = (struct NeTransform *)comp[0];
 	struct NeLight *l = (struct NeLight *)comp[1];
@@ -66,7 +64,7 @@ E_SYSTEM(SCN_COLLECT_LIGHTS, ECSYS_GROUP_MANUAL, 0, true, struct NeCollectLights
 
 	const float cosy = cosf(y);
 
-	const float yPos = l->type != LT_DIRECTIONAL ? xform->position.y : -xform->position.y;
+	const float yPos = l->type != LT_Directional ? xform->position.y : -xform->position.y;
 
 	struct NeLightData ld =
 	{
@@ -90,7 +88,7 @@ E_SYSTEM(SCN_COLLECT_LIGHTS, ECSYS_GROUP_MANUAL, 0, true, struct NeCollectLights
 }
 
 static void
-_TermLight(struct NeLight *l)
+TermLight(struct NeLight *l)
 {
 }
 
@@ -120,7 +118,7 @@ _TermLight(struct NeLight *l)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

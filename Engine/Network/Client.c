@@ -13,7 +13,7 @@ struct NeClient
 	NeThread thread;
 };
 
-static void _clientProc(struct NeClient *c);
+static void ClientProc(struct NeClient *c);
 
 bool
 Net_InitClient(struct NeClient **c, uint32_t buffSize)
@@ -38,7 +38,7 @@ Net_StartClient(struct NeClient *c, const char *host, uint16_t port)
 	if (!Net_Connect(c->sk, host, port))
 		return false;
 
-	return Sys_InitThread(&c->thread, "Client Thread", (void (*)(void *)) _clientProc, c);
+	return Sys_InitThread(&c->thread, "Client Thread", (void (*)(void *)) ClientProc, c);
 }
 
 void
@@ -58,7 +58,7 @@ Net_TermClient(struct NeClient *c)
 }
 
 static void
-_clientProc(struct NeClient *c)
+ClientProc(struct NeClient *c)
 {
 	while (!c->stop) {
 		ssize_t rd = Net_Recv(c->sk, c->buff, c->buffSize);

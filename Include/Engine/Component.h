@@ -1,5 +1,5 @@
-#ifndef _NE_ENGINE_COMPONENT_H_
-#define _NE_ENGINE_COMPONENT_H_
+#ifndef NE_ENGINE_COMPONENT_H
+#define NE_ENGINE_COMPONENT_H
 
 #include <Engine/Types.h>
 
@@ -31,13 +31,19 @@ struct NeCompBase
 struct NeScene *Scn_GetScene(uint8_t);
 ENGINE_API extern struct NeScene *Scn_activeScene;
 
-NeCompHandle E_CreateComponentS(struct NeScene *s, const char *typeName, NeEntityHandle owner, const void **args);
-static inline NeCompHandle
-E_CreateComponent(const char *typeName, NeEntityHandle owner, const void **args) { return E_CreateComponentS(Scn_activeScene, typeName, owner, args); }
+NeCompTypeId E_ComponentTypeId(const char *typeName);
+const char *E_ComponentTypeName(NeCompTypeId typeId);
+size_t E_ComponentTypeSize(NeCompTypeId typeId);
 
 NeCompHandle E_CreateComponentIdS(struct NeScene *s, NeCompTypeId typeId, NeEntityHandle owner, const void **args);
 static inline NeCompHandle
 E_CreateComponentId(NeCompTypeId id, NeEntityHandle owner, const void **args) { return E_CreateComponentIdS(Scn_activeScene, id, owner, args); }
+
+static inline NeCompHandle
+E_CreateComponentS(struct NeScene *s, const char *typeName, NeEntityHandle owner, const void **args)
+{ return E_CreateComponentIdS(s, E_ComponentTypeId(typeName), owner, args); }
+static inline NeCompHandle
+E_CreateComponent(const char *typeName, NeEntityHandle owner, const void **args) { return E_CreateComponentS(Scn_activeScene, typeName, owner, args); }
 
 void E_DestroyComponentS(struct NeScene *s, NeCompHandle comp);
 static inline void E_DestroyComponent(NeCompHandle comp) { E_DestroyComponentS(Scn_activeScene, comp); }
@@ -47,10 +53,6 @@ static inline void *E_ComponentPtr(NeCompHandle comp) { return E_ComponentPtrS(S
 
 NeCompTypeId E_ComponentTypeS(struct NeScene *s, NeCompHandle comp);
 static inline NeCompTypeId E_ComponentType(NeCompHandle comp) { return E_ComponentTypeS(Scn_activeScene, comp); }
-
-NeCompTypeId E_ComponentTypeId(const char *typeName);
-const char *E_ComponentTypeName(NeCompTypeId typeId);
-size_t E_ComponentTypeSize(NeCompTypeId typeId);
 
 size_t E_ComponentCountS(struct NeScene *s, NeCompTypeId type);
 static inline size_t E_ComponentCount(NeCompTypeId type) { return E_ComponentCountS(Scn_activeScene, type); }
@@ -64,20 +66,21 @@ static inline void E_SetComponentOwner(NeCompHandle comp, NeEntityHandle owner) 
 const struct NeArray *E_GetAllComponentsS(struct NeScene *s, NeCompTypeId type);
 static inline const struct NeArray *E_GetAllComponents(NeCompTypeId type) { return E_GetAllComponentsS(Scn_activeScene, type); }
 
-static inline NeCompHandle E_ComponentHandle(struct NeCompBase *comp) { return comp->_handleId | (uint64_t)comp->_typeId << 32; }
+#define E_ComponentHandle(comp) ((comp)->_handleId | (uint64_t)(comp)->_typeId << 32)
 static inline NeEntityHandle E_ComponentOwnerHandle(struct NeCompBase *comp) { return comp->_owner; }
 static inline struct NeScene *E_ComponentScene(struct NeCompBase *comp) { return Scn_GetScene((uint8_t)comp->_sceneId); }
 
-bool E_RegisterComponent(const char *name, size_t size, size_t alignment, NeCompInitProc init, NeCompTermProc release);
+bool E_RegisterComponent(const char *name, size_t size, size_t alignment, NeCompInitProc init, NeCompMessageHandlerProc handler, NeCompTermProc release, NeCompTypeId *id);
 
-#define E_REGISTER_COMPONENT(name, type, alignment, init, release) \
-	E_INITIALIZER(_NeCompRegister_ ## name) { E_RegisterComponent(name, sizeof(type), alignment, (NeCompInitProc)init, (NeCompTermProc)release); }
+#define NE_REGISTER_COMPONENT(name, type, alignment, init, handler, release) \
+	NeCompTypeId name ## _ID;\
+	NE_INITIALIZER(NeCompRegister_ ## name) { E_RegisterComponent(name, sizeof(type), alignment, (NeCompInitProc)init, (NeCompMessageHandlerProc)handler, (NeCompTermProc)release, &name ## _ID); }
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* _NE_ENGINE_COMPONENT_H_ */
+#endif /* NE_ENGINE_COMPONENT_H */
 
 /* NekoEngine
  *
@@ -105,7 +108,7 @@ bool E_RegisterComponent(const char *name, size_t size, size_t alignment, NeComp
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

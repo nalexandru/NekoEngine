@@ -1,5 +1,5 @@
-#ifndef _NE_ENGINE_TYPES_H_
-#define _NE_ENGINE_TYPES_H_
+#ifndef NE_ENGINE_TYPES_H
+#define NE_ENGINE_TYPES_H
 
 #include <stdint.h>
 #include <stddef.h>
@@ -35,13 +35,13 @@ public:
 	}
 };
 
-#define E_INITIALIZER(x)								\
+#define NE_INITIALIZER(x)								\
 	static void x(void);								\
 	static EngineStartupFuncClass startupFunc ## x(x);	\
 	static void x(void)
 #else
 #if defined (__GNUC__) || defined(__clang__)
-#	define E_INITIALIZER(x) \
+#	define NE_INITIALIZER(x) \
 		static void x(void) __attribute__((constructor)); \
 		static void x(void)
 #elif defined(_MSC_VER)
@@ -53,9 +53,9 @@ public:
 		static void f(void)
 
 #	ifdef _WIN64
-#		define E_INITIALIZER(x)	_INIT(x, "")
+#		define NE_INITIALIZER(x)	_INIT(x, "")
 #	else
-#		define E_INITIALIZER(x) _INIT(x, "_")
+#		define NE_INITIALIZER(x) _INIT(x, "_")
 #	endif
 #else
 #	error "You must implement NE_ALIGN and E_INITIALIZER macros in Include/Engine/Types.h for this compiler"
@@ -82,9 +82,13 @@ public:
 #	include <sys/types.h>
 #endif
 
-#define E_INVALID_HANDLE	(uint64_t)-1
+#define NE_INVALID_HANDLE	(uint64_t)-1
 #define E_HANDLE_TYPE(x)	(uint32_t)((x & (uint64_t)0xFFFFFFFF00000000) >> 32)
 #define E_HANDLE_ID(x)		(uint32_t)(x & (uint64_t)0x00000000FFFFFFFF)
+
+#define NE_ARRAY_SIZE(array) (sizeof(array) / sizeof(array[0]))
+#define NE_MUL_NO_OVERFLOW	((size_t)1 << (sizeof(size_t) * 4))
+#define NE_ROUND_UP(v, powerOf2Alignment) (((v) + (powerOf2Alignment)-1) & ~((powerOf2Alignment)-1))
 
 struct NeArray;
 struct NeQueue;
@@ -114,6 +118,10 @@ struct NeAnimationClipCreateInfo;
 struct NeEntityComp;
 struct NeComponentCreationData;
 
+struct NeMorph;
+struct NeMorphPack;
+struct NeMorphDelta;
+
 struct NeVersion
 {
 	uint8_t major;
@@ -141,17 +149,30 @@ typedef size_t NeCompTypeId;
 typedef uint64_t NeHandle;
 typedef NeHandle NeCompHandle;
 
-typedef bool (*NeCompInitProc)(void *, const void **);
-typedef void (*NeCompTermProc)(void *);
+typedef bool (*NeCompInitProc)(void *comp, const void **args);
+typedef void (*NeCompMessageHandlerProc)(void *comp, uint32_t msg, const void *data);
+typedef void (*NeCompTermProc)(void *comp);
 
 typedef void (*NeECSysExecProc)(void **comp, void *args);
 
+enum NeFSEvent
+{
+	FE_Create			= 0x00000001,
+	FE_Delete			= 0x00000002,
+	FE_Modify			= 0x00000004,
+	FE_All				= 0xFFFFFFFF
+};
+typedef void (*NeDirWatchCallback)(const char *path, enum NeFSEvent event, void *ud);
+
+struct NeRay;
 struct NeVec3;
 struct NeVec4;
 struct NeMatrix;
 
 struct NeClient;
 struct NeServer;
+
+struct NePhysics;
 
 #ifdef _WIN32
 #	define NeSocket uintptr_t
@@ -165,7 +186,7 @@ struct NeServer;
 #	define Atribute(...)
 #endif*/
 
-#endif /* _NE_ENGINE_TYPES_H_ */
+#endif /* NE_ENGINE_TYPES_H */
 
 /* NekoEngine
  *
@@ -193,7 +214,7 @@ struct NeServer;
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

@@ -20,28 +20,28 @@ struct NeMaterialBlock
 struct NeRenderPassDesc *Re_MaterialRenderPassDesc;
 struct NeRenderPassDesc *Re_TransparentMaterialRenderPassDesc;
 
-static struct NeArray _types, _freeList;
-static NeBufferHandle _materialBuffer;
-static uint8_t *_materialData, *_materialPtr, *_gpuBufferPtr;
-static uint64_t _bufferSize;
-static struct NeAtomicLock _lock = { 0, 0 };
+static struct NeArray f_types, f_freeList;
+static NeBufferHandle f_materialBuffer;
+static uint8_t *f_materialData, *f_materialPtr, *f_gpuBufferPtr;
+static uint64_t f_bufferSize;
+static struct NeAtomicLock f_lock = { 0, 0 };
 
 // default material
-static bool _initDefaultMaterial(const char **args, struct NeDefaultMaterial *data);
-static void _termDefaultMaterial(struct NeDefaultMaterial *data);
+static bool InitDefaultMaterial(const char **args, struct NeDefaultMaterial *data);
+static void TermDefaultMaterial(struct NeDefaultMaterial *data);
 
-static inline struct NePipeline *_createPipeline(const struct NeMaterialResource *res, struct NeShader *shader);
+static inline struct NePipeline *CreatePipeline(const struct NeMaterialResource *mr, struct NeShader *shader);
 
 // material type
-static inline struct NeMaterialType *_findMaterialType(const char *name, uint32_t *id);
-static inline bool _allocMaterial(uint32_t size, uint64_t *offset, void **data);
-static inline void _freeMaterial(uint64_t offset, uint32_t size);
+static inline struct NeMaterialType *FindMaterialType(const char *name, uint32_t *id);
+static inline bool AllocMaterial(uint32_t size, uint64_t *offset, void **data);
+static inline void FreeMaterial(uint64_t offset, uint32_t size);
 
-static int32_t _blockCmpFunc(const struct NeMaterialBlock *b, const uint32_t *size);
+static int32_t BlockCmpFunc(const struct NeMaterialBlock *b, const uint32_t *size);
 
-static bool _CreateMaterialResource(const char *name, const struct NeMaterialResourceCreateInfo *ci, struct NeMaterialResource *tex, NeHandle h);
-static bool _LoadMaterialResource(struct NeResourceLoadInfo *li, const char *args, struct NeMaterialResource *tex, NeHandle h);
-static void _UnloadMaterialResource(struct NeMaterialResource *tex, NeHandle h);
+static bool CreateMaterialResource(const char *name, const struct NeMaterialResourceCreateInfo *ci, struct NeMaterialResource *mr, NeHandle h);
+static bool LoadMaterialResource(struct NeResourceLoadInfo *li, const char *args, struct NeMaterialResource *mr, NeHandle h);
+static void UnloadMaterialResource(struct NeMaterialResource *mr, NeHandle h);
 
 bool
 Re_InitMaterial(NeHandle res, struct NeMaterial *mat)
@@ -50,16 +50,16 @@ Re_InitMaterial(NeHandle res, struct NeMaterial *mat)
 	if (!mr)
 		return false;
 
-	struct NeMaterialType *mt = Rt_ArrayGet(&_types, mr->typeId);
+	struct NeMaterialType *mt = Rt_ArrayGet(&f_types, mr->typeId);
 	if (!mt)
 		return false;
 
 	Sys_ZeroMemory(mat, sizeof(*mat));
 
-	if (!_allocMaterial(mt->dataSize, &mat->offset, &mat->data))
+	if (!AllocMaterial(mt->dataSize, &mat->offset, &mat->data))
 		return false;
 
-	mat->pipeline = _createPipeline(mr, mt->shader);
+	mat->pipeline = CreatePipeline(mr, mt->shader);
 	if (!mat->pipeline)
 		goto error;
 
@@ -72,7 +72,7 @@ Re_InitMaterial(NeHandle res, struct NeMaterial *mat)
 	return true;
 
 error:
-	_freeMaterial(mat->offset, mt->dataSize);
+	FreeMaterial(mat->offset, mt->dataSize);
 
 	return false;
 }
@@ -80,32 +80,32 @@ error:
 void
 Re_TermMaterial(struct NeMaterial *mat)
 {
-	if (mat->type >= _types.count) {
+	if (mat->type >= f_types.count) {
 		Sys_LogEntry(MAT_MOD, LOG_CRITICAL, "Attempt to free invalid material type for material %s", mat->name);
 		return;
 	}
 
-	struct NeMaterialType *mt = Rt_ArrayGet(&_types, mat->type);
+	struct NeMaterialType *mt = Rt_ArrayGet(&f_types, mat->type);
 	mt->term(mat->data);
 
-	_freeMaterial(mat->offset, mt->dataSize);
+	FreeMaterial(mat->offset, mt->dataSize);
 }
 
 uint64_t
 Re_MaterialAddress(struct NeMaterial *mat)
 {
-	return Re_BufferAddress(_materialBuffer, Re_frameId * _bufferSize + mat->offset);
+	return Re_BufferAddress(f_materialBuffer, Re_frameId * f_bufferSize + mat->offset);
 }
 
 static bool
-_CreateMaterialResource(const char *name, const struct NeMaterialResourceCreateInfo *ci, struct NeMaterialResource *mr, NeHandle h)
+CreateMaterialResource(const char *name, const struct NeMaterialResourceCreateInfo *ci, struct NeMaterialResource *mr, NeHandle h)
 {
 	mr->alphaBlend = ci->alphaBlend;
 	mr->primitiveType = ci->primitiveType;
-	snprintf(mr->name, sizeof(mr->name), "%s", ci->name);
+	strlcpy(mr->name, ci->name, sizeof(mr->name));
 
 	uint32_t id;
-	if (!_findMaterialType(ci->type, &id)) {
+	if (!FindMaterialType(ci->type, &id)) {
 		Sys_LogEntry(MAT_MOD, LOG_CRITICAL, "Failed to create material resource %s, material type %s does not exist", name, ci->type);
 		return false;
 	}
@@ -154,7 +154,7 @@ _CreateMaterialResource(const char *name, const struct NeMaterialResourceCreateI
 }
 
 static bool
-_LoadMaterialResource(struct NeResourceLoadInfo *li, const char *args, struct NeMaterialResource *mr, NeHandle h)
+LoadMaterialResource(struct NeResourceLoadInfo *li, const char *args, struct NeMaterialResource *mr, NeHandle h)
 {
 	struct NeMetadata meta =
 	{
@@ -162,7 +162,7 @@ _LoadMaterialResource(struct NeResourceLoadInfo *li, const char *args, struct Ne
 		.id = MATERIAL_META_ID
 	};
 
-	if (!E_LoadMetadataFromStream(&meta, &li->stm))
+	if (!Asset_LoadMetadataFromStream(&meta, &li->stm))
 		return false;
 
 	uint8_t *data = Sys_Alloc(1, meta.jsonSize, MH_Asset);
@@ -183,13 +183,13 @@ _LoadMaterialResource(struct NeResourceLoadInfo *li, const char *args, struct Ne
 		jsmntok_t val = meta.tokens[++i];
 
 		if (JSON_STRING("name", key, meta.json)) {
-			snprintf(mr->name, sizeof(mr->name), "%s", meta.json + val.start);
+			strlcpy(mr->name, meta.json + val.start, sizeof(mr->name));
 		} else if (JSON_STRING("type", key, meta.json)) {
 			char *type = meta.json + val.start;
 			meta.json[val.end] = 0x0;
 
 			uint32_t id;
-			if (!_findMaterialType(type, &id)) {
+			if (!FindMaterialType(type, &id)) {
 				Sys_LogEntry(MAT_MOD, LOG_CRITICAL, "Failed to load material resource %s, material type %s does not exist", li->path, type);
 				return false;
 			}
@@ -219,7 +219,7 @@ _LoadMaterialResource(struct NeResourceLoadInfo *li, const char *args, struct Ne
 }
 
 static void
-_UnloadMaterialResource(struct NeMaterialResource *mr, NeHandle h)
+UnloadMaterialResource(struct NeMaterialResource *mr, NeHandle h)
 {
 	Sys_Free(mr->data);
 	Rt_TermArray(&mr->args);
@@ -242,12 +242,12 @@ Re_RegisterMaterialType(const char *name, const char *shader, uint32_t dataSize,
 		return false;
 	}
 
-	snprintf(mt.name, sizeof(mt.name), "%s", name);
+	strlcpy(mt.name, name, sizeof(mt.name));
 
-	if (!Rt_ArrayAdd(&_types, &mt))
+	if (!Rt_ArrayAdd(&f_types, &mt))
 		return false;
 
-	Rt_ArraySort(&_types, Rt_U64CmpFunc);
+	Rt_ArraySort(&f_types, Rt_U64CmpFunc);
 
 	return true;
 }
@@ -255,36 +255,36 @@ Re_RegisterMaterialType(const char *name, const char *shader, uint32_t dataSize,
 bool
 Re_InitMaterialSystem(void)
 {
-	if (!E_RegisterResourceType(RES_MATERIAL, sizeof(struct NeMaterialResource), (NeResourceCreateProc)_CreateMaterialResource,
-						(NeResourceLoadProc)_LoadMaterialResource, (NeResourceUnloadProc)_UnloadMaterialResource))
+	if (!E_RegisterResourceType(RES_MATERIAL, sizeof(struct NeMaterialResource), (NeResourceCreateProc)CreateMaterialResource,
+						(NeResourceLoadProc)LoadMaterialResource, (NeResourceUnloadProc)UnloadMaterialResource))
 		return false;
 
-	_bufferSize = E_GetCVarU64("Render_MaterialBufferSize", MAT_BUFFER_SIZE)->u64;
+	f_bufferSize = E_GetCVarU64("Render_MaterialBufferSize", MAT_BUFFER_SIZE)->u64;
 	struct NeBufferCreateInfo bci =
 	{
 		.desc =
 		{
-			.size = _bufferSize * RE_NUM_FRAMES,
+			.size = f_bufferSize * RE_NUM_FRAMES,
 			.usage = BU_TRANSFER_DST | BU_STORAGE_BUFFER,
 			.memoryType = MT_CPU_COHERENT
 		},
 	};
-	if (!Re_CreateBuffer(&bci, &_materialBuffer))
+	if (!Re_CreateBuffer(&bci, &f_materialBuffer))
 		return false;
 
-	_gpuBufferPtr = Re_MapBuffer(_materialBuffer);
-	if (!_gpuBufferPtr) {
-		Re_Destroy(_materialBuffer);
+	f_gpuBufferPtr = Re_MapBuffer(f_materialBuffer);
+	if (!f_gpuBufferPtr) {
+		Re_Destroy(f_materialBuffer);
 		return false;
 	}
 
-	_materialData = Sys_Alloc(1, _bufferSize, MH_Render);
-	_materialPtr = _materialData;
+	f_materialData = Sys_Alloc(1, f_bufferSize, MH_Render);
+	f_materialPtr = f_materialData;
 
-	Rt_InitArray(&_types, 10, sizeof(struct NeMaterialType), MH_Render);
+	Rt_InitArray(&f_types, 10, sizeof(struct NeMaterialType), MH_Render);
 
 	Re_RegisterMaterialType("Default", "DefaultPBR_MR", sizeof(struct NeDefaultMaterial),
-							(NeMaterialInitProc)_initDefaultMaterial, (NeMaterialTermProc)_termDefaultMaterial);
+							(NeMaterialInitProc)InitDefaultMaterial, (NeMaterialTermProc)TermDefaultMaterial);
 
 	enum NeAttachmentSampleCount samples = ASC_1_SAMPLE;// E_GetCVarI32("Render_Samples", ASC_1_SAMPLE)->i32;
 
@@ -330,7 +330,7 @@ Re_InitMaterialSystem(void)
 	atDesc.finalLayout = TL_PRESENT_SRC;
 	Re_TransparentMaterialRenderPassDesc = Re_CreateRenderPassDesc(&atDesc, 1, &depthDesc, &normalDesc, 1);
 
-	Rt_InitArray(&_freeList, 10, sizeof(struct NeMaterialBlock), MH_Render);
+	Rt_InitArray(&f_freeList, 10, sizeof(struct NeMaterialBlock), MH_Render);
 
 	return true;
 }
@@ -338,9 +338,9 @@ Re_InitMaterialSystem(void)
 void
 Re_TransferMaterials(void)
 {
-	Sys_AtomicLockRead(&_lock);
-	memcpy(_gpuBufferPtr + _bufferSize * Re_frameId, _materialData, _bufferSize);
-	Sys_AtomicUnlockRead(&_lock);
+	Sys_AtomicLockRead(&f_lock);
+	memcpy(f_gpuBufferPtr + f_bufferSize * Re_frameId, f_materialData, f_bufferSize);
+	Sys_AtomicUnlockRead(&f_lock);
 }
 
 void
@@ -349,20 +349,20 @@ Re_TermMaterialSystem(void)
 	Re_DestroyRenderPassDesc(Re_TransparentMaterialRenderPassDesc);
 	Re_DestroyRenderPassDesc(Re_MaterialRenderPassDesc);
 
-	Sys_Free(_materialData);
-	Rt_TermArray(&_types);
-	Rt_TermArray(&_freeList);
-	Re_Destroy(_materialBuffer);
+	Sys_Free(f_materialData);
+	Rt_TermArray(&f_types);
+	Rt_TermArray(&f_freeList);
+	Re_Destroy(f_materialBuffer);
 }
 
 static bool
-_initDefaultMaterial(const char **args, struct NeDefaultMaterial *data)
+InitDefaultMaterial(const char **args, struct NeDefaultMaterial *data)
 {
-	NeHandle diffuseMap = E_INVALID_HANDLE, normalMap = E_INVALID_HANDLE,
-			metallicRoughnessMap = E_INVALID_HANDLE, occlusionMap = E_INVALID_HANDLE,
-			clearCoatMap = E_INVALID_HANDLE, clearCoatRoughnessMap = E_INVALID_HANDLE,
-			clearCoatNormalMap = E_INVALID_HANDLE, emissiveMap = E_INVALID_HANDLE,
-			transmissionMap = E_INVALID_HANDLE, opacityMap = E_INVALID_HANDLE;
+	NeHandle diffuseMap = NE_INVALID_HANDLE, normalMap = NE_INVALID_HANDLE,
+			metallicRoughnessMap = NE_INVALID_HANDLE, occlusionMap = NE_INVALID_HANDLE,
+			clearCoatMap = NE_INVALID_HANDLE, clearCoatRoughnessMap = NE_INVALID_HANDLE,
+			clearCoatNormalMap = NE_INVALID_HANDLE, emissiveMap = NE_INVALID_HANDLE,
+			transmissionMap = NE_INVALID_HANDLE, opacityMap = NE_INVALID_HANDLE;
 
 	data->metallic = 1.f;
 	data->roughness = 1.f;
@@ -425,22 +425,22 @@ _initDefaultMaterial(const char **args, struct NeDefaultMaterial *data)
 		}
 	}
 
-	data->diffuseMap = diffuseMap != E_INVALID_HANDLE ? E_ResHandleToGPU(diffuseMap) : 0;
-	data->normalMap = normalMap != E_INVALID_HANDLE ? E_ResHandleToGPU(normalMap) : 0;
-	data->metallicRoughnessMap = metallicRoughnessMap != E_INVALID_HANDLE ? E_ResHandleToGPU(metallicRoughnessMap) : 0;
-	data->occlusionMap = occlusionMap != E_INVALID_HANDLE ? E_ResHandleToGPU(occlusionMap) : 0;
-	data->transmissionMap = transmissionMap != E_INVALID_HANDLE ? E_ResHandleToGPU(transmissionMap) : 0;
-	data->emissionMap = emissiveMap != E_INVALID_HANDLE ? E_ResHandleToGPU(emissiveMap) : 0;
-	data->clearCoatRoughnessMap = clearCoatRoughnessMap != E_INVALID_HANDLE ? E_ResHandleToGPU(clearCoatRoughnessMap) : 0;
-	data->clearCoatNormalMap = clearCoatNormalMap != E_INVALID_HANDLE ? E_ResHandleToGPU(clearCoatNormalMap) : 0;
-	data->clearCoatMap = clearCoatMap != E_INVALID_HANDLE ? E_ResHandleToGPU(clearCoatMap) : 0;
-	data->alphaMaskMap = opacityMap != E_INVALID_HANDLE ? E_ResHandleToGPU(opacityMap) : 0;
+	data->diffuseMap = diffuseMap != NE_INVALID_HANDLE ? E_ResHandleToGPU(diffuseMap) : 0;
+	data->normalMap = normalMap != NE_INVALID_HANDLE ? E_ResHandleToGPU(normalMap) : 0;
+	data->metallicRoughnessMap = metallicRoughnessMap != NE_INVALID_HANDLE ? E_ResHandleToGPU(metallicRoughnessMap) : 0;
+	data->occlusionMap = occlusionMap != NE_INVALID_HANDLE ? E_ResHandleToGPU(occlusionMap) : 0;
+	data->transmissionMap = transmissionMap != NE_INVALID_HANDLE ? E_ResHandleToGPU(transmissionMap) : 0;
+	data->emissionMap = emissiveMap != NE_INVALID_HANDLE ? E_ResHandleToGPU(emissiveMap) : 0;
+	data->clearCoatRoughnessMap = clearCoatRoughnessMap != NE_INVALID_HANDLE ? E_ResHandleToGPU(clearCoatRoughnessMap) : 0;
+	data->clearCoatNormalMap = clearCoatNormalMap != NE_INVALID_HANDLE ? E_ResHandleToGPU(clearCoatNormalMap) : 0;
+	data->clearCoatMap = clearCoatMap != NE_INVALID_HANDLE ? E_ResHandleToGPU(clearCoatMap) : 0;
+	data->alphaMaskMap = opacityMap != NE_INVALID_HANDLE ? E_ResHandleToGPU(opacityMap) : 0;
 
 	return true;
 }
 
 static void
-_termDefaultMaterial(struct NeDefaultMaterial *data)
+TermDefaultMaterial(struct NeDefaultMaterial *data)
 {
 #define UNLOAD_TEX(x) if (x) E_UnloadResource(E_GPUHandleToRes(x, RES_TEXTURE))
 	
@@ -457,15 +457,15 @@ _termDefaultMaterial(struct NeDefaultMaterial *data)
 }
 
 static inline struct NePipeline *
-_createPipeline(const struct NeMaterialResource *mr, struct NeShader *shader)
+CreatePipeline(const struct NeMaterialResource *mr, struct NeShader *shader)
 {
 	struct NeVertexAttribute attribs[] =
 	{
-		{ 0, 0, VF_FLOAT3, 0 },						// float x, y, z;
-	//	{ 2, 0, VF_FLOAT3, sizeof(float) * 6 },		// float tx, ty, tz;
-		{ 1, 0, VF_FLOAT2, sizeof(float) * 9 },		// float u, v;
-		{ 2, 0, VF_FLOAT4, sizeof(float) * 11 },	// float r, g, b, a;
-        { 3, 0, VF_FLOAT3, sizeof(float) * 3 }  	// float nx, ny, nz;
+		{ 0, 0, VF_FLOAT3, 0, AS_POSITION },					// float x, y, z;
+	//	{ 2, 0, VF_FLOAT3, sizeof(float) * 6 },					// float tx, ty, tz;
+		{ 1, 0, VF_FLOAT2, sizeof(float) * 9, AS_TEXCOORD0 },	// float u, v;
+		{ 2, 0, VF_FLOAT4, sizeof(float) * 11, AS_COLOR },		// float r, g, b, a;
+		{ 3, 0, VF_FLOAT3, sizeof(float) * 3, AS_NORMAL }		// float nx, ny, nz;
 	};
 
 	struct NeVertexBinding bindings[] =
@@ -497,7 +497,6 @@ _createPipeline(const struct NeMaterialResource *mr, struct NeShader *shader)
 		.pushConstantSize = sizeof(struct NeMaterialRenderConstants),
 		.attachmentCount = sizeof(blendAttachments) / sizeof(blendAttachments[0]),
 		.attachments = blendAttachments,
-		.depthFormat = TF_D32_SFLOAT,
 
 		.vertexDesc.attributes = attribs,
 		.vertexDesc.attributeCount = sizeof(attribs) / sizeof(attribs[0]) - (mr->alphaBlend ? 0 : 1),
@@ -518,10 +517,10 @@ _createPipeline(const struct NeMaterialResource *mr, struct NeShader *shader)
 }
 
 static inline struct NeMaterialType *
-_findMaterialType(const char *name, uint32_t *id)
+FindMaterialType(const char *name, uint32_t *id)
 {
 	uint64_t hash = Rt_HashString(name);
-	size_t typeId = Rt_ArrayBSearchId(&_types, &hash, Rt_U64CmpFunc);
+	size_t typeId = Rt_ArrayBSearchId(&f_types, &hash, Rt_U64CmpFunc);
 
 	if (typeId == RT_NOT_FOUND)
 		return NULL;
@@ -529,57 +528,57 @@ _findMaterialType(const char *name, uint32_t *id)
 	if (id)
 		*id = (uint32_t)typeId;
 
-	return Rt_ArrayGet(&_types, typeId);
+	return Rt_ArrayGet(&f_types, typeId);
 }
 
 static inline bool
-_allocMaterial(uint32_t size, uint64_t *offset, void **data)
+AllocMaterial(uint32_t size, uint64_t *offset, void **data)
 {
-	Sys_AtomicLockWrite(&_lock);
+	Sys_AtomicLockWrite(&f_lock);
 	
 	/*
 	 * This will search only for a free block with the same size; this
 	 * is usually true.
 	 */
-	if (_freeList.count) {
-		size_t id = Rt_ArrayFindId(&_freeList, &size, (RtCmpFunc)_blockCmpFunc);
+	if (f_freeList.count) {
+		size_t id = Rt_ArrayFindId(&f_freeList, &size, (RtCmpFunc)BlockCmpFunc);
 		if (id != RT_NOT_FOUND) {
-			struct NeMaterialBlock *b = Rt_ArrayGet(&_freeList, id);
+			struct NeMaterialBlock *b = Rt_ArrayGet(&f_freeList, id);
 			*offset = b->offset;
-			*data = _materialData + *offset;
-			Rt_ArrayRemove(&_freeList, id);
+			*data = f_materialData + *offset;
+			Rt_ArrayRemove(&f_freeList, id);
 			return true;
 		}
 	}
 	
-	*offset = _materialPtr - _materialData;
+	*offset = f_materialPtr - f_materialData;
 
-	if (*offset + size >= _bufferSize) {
-		Sys_AtomicUnlockWrite(&_lock);
+	if (*offset + size >= f_bufferSize) {
+		Sys_AtomicUnlockWrite(&f_lock);
 		return false;
 	}
 
-	*data = _materialPtr;
-	_materialPtr += size;
+	*data = f_materialPtr;
+	f_materialPtr += size;
 
-	Sys_AtomicUnlockWrite(&_lock);
+	Sys_AtomicUnlockWrite(&f_lock);
 
 	return true;
 }
 
 static inline void
-_freeMaterial(uint64_t offset, uint32_t size)
+FreeMaterial(uint64_t offset, uint32_t size)
 {
-	Sys_AtomicLockWrite(&_lock);
+	Sys_AtomicLockWrite(&f_lock);
 	
 	struct NeMaterialBlock b = { .offset = offset, .size = size };
-	Rt_ArrayAdd(&_freeList, &b);
+	Rt_ArrayAdd(&f_freeList, &b);
 
-	Sys_AtomicUnlockWrite(&_lock);
+	Sys_AtomicUnlockWrite(&f_lock);
 }
 
 static int32_t
-_blockCmpFunc(const struct NeMaterialBlock *b, const uint32_t *size)
+BlockCmpFunc(const struct NeMaterialBlock *b, const uint32_t *size)
 {
 	return (b->size == *size) ? 0 : -1;
 }
@@ -610,7 +609,7 @@ _blockCmpFunc(const struct NeMaterialBlock *b, const uint32_t *size)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

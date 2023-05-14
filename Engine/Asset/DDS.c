@@ -113,45 +113,50 @@ struct NeDDS_HEADER_DXT10
 	uint32_t miscFlags2;
 };
 
-static inline void _swap(uint32_t *p, uint32_t count);
-static inline void _readCompressedFormat(const struct NeDDS_HEADER *hdr, const struct NeDDS_HEADER_DXT10 *hdrDXT10, struct NeTextureCreateInfo *tci);
+#ifdef SYS_BIG_ENDIAN
+static inline void Swap(uint32_t *p, uint32_t count);
+#endif
+
+static inline void ReadCompressedFormat(const struct NeDDS_HEADER *hdr, const struct NeDDS_HEADER_DXT10 *hdrDXT10, struct NeTextureCreateInfo *tci);
 
 bool
-E_LoadDDSAsset(struct NeStream *stm, struct NeTextureCreateInfo *tci)
+Asset_LoadDDS(struct NeStream *stm, struct NeTextureCreateInfo *tci)
 {
 	void *data = NULL;
 	uint32_t magic = 0;
 	struct NeDDS_HEADER hdr = { 0 };
 	struct NeDDS_HEADER_DXT10 hdrDXT10 = { 0 };
-	
+
 	E_ReadStream(stm, &magic, sizeof(magic));
-	if (Sys_BigEndian())
-		magic = Sys_SwapUint32(magic);
-		
+
+#ifdef SYS_BIG_ENDIAN
+	magic = Sys_SwapUint32(magic);
+#endif
+
 	if (magic != DDS_MAGIC)
 		return false;
-		
+
 	E_ReadStream(stm, &hdr, sizeof(hdr));
-	
+
 	if (hdr.ddspf.dwFlags & DDPF_FOURCC && hdr.ddspf.dwFourCC == FOURCC_DX10)
 		E_ReadStream(stm, &hdrDXT10, sizeof(hdrDXT10));
-	
-	if (Sys_BigEndian()) {
-		_swap((uint32_t *)&hdr, sizeof(hdr) / sizeof(uint32_t));
-		_swap((uint32_t *)&hdrDXT10, sizeof(hdrDXT10) / sizeof(uint32_t));
-	}
-	
+
+#ifdef SYS_BIG_ENDIAN
+	Swap((uint32_t *)&hdr, sizeof(hdr) / sizeof(uint32_t));
+	Swap((uint32_t *)&hdrDXT10, sizeof(hdrDXT10) / sizeof(uint32_t));
+#endif
+
 	// validate header
 	if (hdr.dwSize != sizeof(hdr))
 		return false;
-		
+
 	if (hdr.ddspf.dwFlags & DDPF_FOURCC)
-		_readCompressedFormat(&hdr, &hdrDXT10, tci);
+		ReadCompressedFormat(&hdr, &hdrDXT10, tci);
 	else
 		return false;
 
 	tci->desc.type = hdr.dwCaps2 & DDSCAPS2_CUBEMAP ? TT_Cube : TT_2D;
-	
+
 	// all ok
 	tci->dataSize = (uint32_t)stm->size - (uint32_t)stm->pos;
 	data = Sys_Alloc(tci->dataSize, 1, MH_Asset);
@@ -167,16 +172,18 @@ E_LoadDDSAsset(struct NeStream *stm, struct NeTextureCreateInfo *tci)
 	return true;
 }
 
+#ifdef SYS_BIG_ENDIAN
 static inline void
-_swap(uint32_t *p, uint32_t count)
+Swap(uint32_t *p, uint32_t count)
 {
 	uint32_t i;
 	for (i = 0; i < count; ++i)
 		p[i] = Sys_SwapUint32(p[i]);
 }
+#endif
 
 static inline void
-_readCompressedFormat(const struct NeDDS_HEADER *hdr,
+ReadCompressedFormat(const struct NeDDS_HEADER *hdr,
 	const struct NeDDS_HEADER_DXT10 *hdrDXT10, struct NeTextureCreateInfo *tci)
 {
 	switch (hdr->ddspf.dwFourCC) {
@@ -229,7 +236,7 @@ _readCompressedFormat(const struct NeDDS_HEADER *hdr,
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

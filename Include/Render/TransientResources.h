@@ -1,5 +1,5 @@
-#ifndef _NE_RENDER_TRANSIENT_RESOURCES_H_
-#define _NE_RENDER_TRANSIENT_RESOURCES_H_
+#ifndef NE_RENDER_TRANSIENT_RESOURCES_H
+#define NE_RENDER_TRANSIENT_RESOURCES_H
 
 #include <Render/Types.h>
 #include <Render/Device.h>
@@ -11,8 +11,10 @@ extern "C" {
 bool Re_InitTransientHeap(uint64_t size);
 bool Re_ResizeTransientHeap(uint64_t size);
 
-struct NeTexture *Re_CreateTransientTexture(const struct NeTextureDesc *desc, uint16_t location, uint64_t offset, uint64_t *size);
-struct NeBuffer *Re_CreateTransientBuffer(const struct NeBufferDesc *desc, NeBufferHandle location, uint64_t offset, uint64_t *size);
+struct NeTexture *Re_CreateTransientTexture(const struct NeTextureDesc *desc, uint16_t location);
+struct NeBuffer *Re_CreateTransientBuffer(const struct NeBufferDesc *desc, NeBufferHandle location);
+
+void Re_ResetTransientHeap(void);
 
 void Re_TermTransientHeap(void);
 
@@ -20,7 +22,7 @@ void Re_TermTransientHeap(void);
 }
 #endif
 
-#endif /* _NE_RENDER_TRANSIENT_RESOURCES_H_ */
+#endif /* NE_RENDER_TRANSIENT_RESOURCES_H */
 
 /* NekoEngine
  *
@@ -48,7 +50,7 @@ void Re_TermTransientHeap(void);
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

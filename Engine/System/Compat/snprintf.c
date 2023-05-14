@@ -243,7 +243,7 @@
 
 #include <System/System.h>
 
-#ifdef SNPRINTF_COMPAT
+#ifdef NE_SNPRINTF_COMPAT
 
 #if (defined(_WIN32) || defined(_WIN64)) && (_MSC_VER > 1200) && !defined(_XBOX)
 	#if (_MSC_VER <= 1800)
@@ -1054,4 +1054,4 @@ int portable_vsnprintf(char *str, size_t str_m, const char *fmt, va_list ap) {
 }
 #endif
 
-#endif /* HAVE_SNPRINTF */
+#endif /* NE_SNPRINTF_COMPAT */

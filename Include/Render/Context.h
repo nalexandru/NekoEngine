@@ -1,5 +1,5 @@
-#ifndef _NE_RENDER_DRIVER_CONTEXT_H_
-#define _NE_RENDER_DRIVER_CONTEXT_H_
+#ifndef NE_RENDER_DRIVER_CONTEXT_H
+#define NE_RENDER_DRIVER_CONTEXT_H
 
 #include <Engine/Job.h>
 #include <Render/Types.h>
@@ -57,9 +57,15 @@ struct NeBufferImageCopy
 	struct NeImageSize imageSize;
 };
 
+#define RE_NUM_CONTEXTS		E_JobWorkerThreads() + 1
+
 ENGINE_API extern struct NeRenderDevice *Re_device;
 extern THREAD_LOCAL struct NeRenderContext *Re_context;
 ENGINE_API extern struct NeRenderContext **Re_contexts;
+
+struct NeRenderContext *Re_CreateContext(void);
+void Re_ResetContext(struct NeRenderContext *ctx);
+void Re_DestroyContext(struct NeRenderContext *ctx);
 
 static inline struct NeRenderContext *
 Re_CurrentContext(void)
@@ -69,15 +75,15 @@ Re_CurrentContext(void)
 	return Re_context;
 }
 
+NeCommandBufferHandle Re_BeginSecondary(struct NeRenderPassDesc *rpd);
+void Re_BeginDrawCommandBuffer(struct NeSemaphore *wait);
+void Re_BeginComputeCommandBuffer(struct NeSemaphore *wait);
+void Re_BeginTransferCommandBuffer(struct NeSemaphore *wait);
+NeCommandBufferHandle Re_EndCommandBuffer(void);
+
 void Re_CmdBindVertexBuffer(NeBufferHandle handle, uint64_t offset);
 void Re_CmdBindVertexBuffers(uint32_t count, NeBufferHandle *handles, uint64_t *offsets, uint32_t start);
 void Re_CmdBindIndexBuffer(NeBufferHandle handle, uint64_t offset, enum NeIndexType type);
-
-NeCommandBufferHandle Re_BeginSecondary(struct NeRenderPassDesc *rpd);
-void Re_BeginDrawCommandBuffer(void);
-void Re_BeginComputeCommandBuffer(void);
-void Re_BeginTransferCommandBuffer(void);
-NeCommandBufferHandle Re_EndCommandBuffer(void);
 
 void Re_CmdBindPipeline(struct NePipeline *pipeline);
 void Re_CmdPushConstants(NeShaderStageFlags stage, uint32_t size, const void *data);
@@ -112,11 +118,11 @@ void Re_CmdBlit(const struct NeTexture *src, struct NeTexture *dst, const struct
 
 void Re_CmdLoadBuffer(struct NeBuffer *buff, uint64_t offset, uint64_t size, void *handle, uint64_t sourceOffset);
 void Re_CmdLoadTexture(struct NeTexture *tex, uint32_t slice, uint32_t level, uint32_t width, uint32_t height, uint32_t depth,
-					   uint32_t bytesPerRow, struct NeImageOffset *origin, void *handle, uint64_t sourceOffset);
+						uint32_t bytesPerRow, struct NeImageOffset *origin, void *handle, uint64_t sourceOffset);
 
-bool Re_QueueCompute(NeCommandBufferHandle cmdBuffer, struct NeSemaphore *wait, struct NeSemaphore *signal);
-bool Re_QueueGraphics(NeCommandBufferHandle cmdBuffer, struct NeSemaphore *wait, struct NeSemaphore *signal);
-bool Re_QueueTransfer(NeCommandBufferHandle cmdBuffer, struct NeSemaphore *wait, struct NeSemaphore *signal);
+bool Re_QueueCompute(NeCommandBufferHandle cmdBuffer, struct NeSemaphore *signal);
+bool Re_QueueGraphics(NeCommandBufferHandle cmdBuffer, struct NeSemaphore *signal);
+bool Re_QueueTransfer(NeCommandBufferHandle cmdBuffer, struct NeSemaphore *signal);
 
 bool Re_ExecuteCompute(NeCommandBufferHandle cmdBuffer);
 bool Re_ExecuteGraphics(NeCommandBufferHandle cmdBuffer);
@@ -126,16 +132,16 @@ void Re_BeginDirectIO(void);
 bool Re_SubmitDirectIO(bool *completed);
 bool Re_ExecuteDirectIO(void);
 
-void Re_Barrier(enum NePipelineDependency dep,
-	uint32_t memBarrierCount, const struct NeMemoryBarrier *memBarriers,
-	uint32_t bufferBarrierCount, const struct NeBufferBarrier *bufferBarriers,
-	uint32_t imageBarrierCount, const struct NeImageBarrier *imageBarriers);
+void Re_CmdBarrier(enum NePipelineDependency dep,
+					uint32_t memBarrierCount, const struct NeMemoryBarrier *memBarriers,
+					uint32_t bufferBarrierCount, const struct NeBufferBarrier *bufferBarriers,
+					uint32_t imageBarrierCount, const struct NeImageBarrier *imageBarriers);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* _NE_RENDER_DRIVER_CONTEXT_H_ */
+#endif /* NE_RENDER_DRIVER_CONTEXT_H */
 
 /* NekoEngine
  *
@@ -163,7 +169,7 @@ void Re_Barrier(enum NePipelineDependency dep,
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

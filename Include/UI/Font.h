@@ -1,25 +1,12 @@
-#ifndef _NE_UI_FONT_H_
-#define _NE_UI_FONT_H_
+#ifndef NE_UI_FONT_H
+#define NE_UI_FONT_H
 
 #include <Engine/Types.h>
+#include <Asset/NFont.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-struct NeGlyph
-{
-	float u, v, tw, th;
-	struct {
-		int32_t x;
-		int32_t y;
-	} bearing;
-	struct {
-		int32_t w;
-		int32_t h;
-	} size;
-	uint32_t adv;
-};
 
 struct NeFont
 {
@@ -32,7 +19,7 @@ struct NeFont
 }
 #endif
 
-#endif /* _NE_UI_FONT_H_ */
+#endif /* NE_UI_FONT_H */
 
 /* NekoEngine
  *
@@ -60,7 +47,7 @@ struct NeFont
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

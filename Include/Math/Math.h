@@ -1,51 +1,15 @@
-#ifndef _NE_MATH_MATH_H_
-#define _NE_MATH_MATH_H_
+#ifndef NE_MATH_MATH_H
+#define NE_MATH_MATH_H
 
 #include <DirectXMath.h>
 #include <Math/Types.h>
+#include <Math/Util.h>
+#include <Math/Frustum.h>
+#include <Math/Bounds.h>
 
 using namespace DirectX;
 
-template<typename T>
-static inline T
-M_Clamp(T x, T min, T max)
-{
-	return x < min ? min : (x > max ? max : x);
-}
-
-template<typename T>
-static inline T
-M_Max(T a, T b)
-{
-	return a > b ? a : b;
-}
-
-template<typename T>
-static inline T
-M_Min(T a, T b)
-{
-	return a < b ? a : b;
-}
-
-template<typename T>
-static inline T
-M_Lerp(T x, T y, T t)
-{
-	return x + t * (y - x);
-}
-
-template<typename T>
-static inline T
-M_Mod(T x, T y)
-{
-	return x - y * floor(x / y);
-}
-
-static inline bool
-M_FloatEqual(float lhs, float rhs)
-{
-	return (fabsf(lhs - rhs) <= FLT_EPSILON * fmaxf(1.f, fmaxf(lhs, rhs)));
-}
+// Projection
 
 static inline struct NeMatrix *
 M_InfinitePerspectiveMatrixRZ(struct NeMatrix *dst, float fov_y, float aspect, float z_near)
@@ -62,68 +26,6 @@ M_InfinitePerspectiveMatrixRZ(struct NeMatrix *dst, float fov_y, float aspect, f
 
 	XMStoreFloat4x4A((XMFLOAT4X4A *)dst, XMLoadFloat4x4((XMFLOAT4X4 *)m));
 	return dst;
-}
-
-// Load/Store
-
-static inline XMVECTOR
-M_Load(const struct NeVec2 *v) noexcept
-{
-	return XMLoadFloat2A((XMFLOAT2A *)v);
-}
-
-static inline XMVECTOR
-M_Load(const struct NeVec3 *v) noexcept
-{
-	return XMLoadFloat3A((XMFLOAT3A *)v);
-}
-
-static inline XMVECTOR
-M_Load(const struct NeVec4 *v) noexcept
-{
-	return XMLoadFloat4A((XMFLOAT4A *)v);
-}
-
-static inline XMVECTOR
-M_Load(const struct NeQuaternion *v) noexcept
-{
-	return XMLoadFloat4A((XMFLOAT4A *)v);
-}
-
-static inline XMMATRIX
-M_Load(const struct NeMatrix *m) noexcept
-{
-	return XMLoadFloat4x4A((XMFLOAT4X4A *)m);
-}
-
-static inline void
-M_Store(struct NeVec2 *d, XMVECTOR v)
-{
-	XMStoreFloat2A((XMFLOAT2A *)d, v);
-}
-
-static inline void
-M_Store(struct NeVec3 *d, XMVECTOR v)
-{
-	XMStoreFloat3A((XMFLOAT3A *)d, v);
-}
-
-static inline void
-M_Store(struct NeVec4 *d, XMVECTOR v)
-{
-	XMStoreFloat4A((XMFLOAT4A *)d, v);
-}
-
-static inline void
-M_Store(struct NeQuaternion *d, XMVECTOR v)
-{
-	XMStoreFloat4A((XMFLOAT4A *)d, v);
-}
-
-static inline void
-M_Store(struct NeMatrix *d, XMMATRIX v)
-{
-	XMStoreFloat4x4A((XMFLOAT4X4A *)d, v);
 }
 
 // Quaternion
@@ -164,7 +66,7 @@ M_QuatYaw(const struct NeQuaternion *q)
 	return XMConvertToDegrees(asinf(M_Clamp(-2.f * (q->x * q->z - q->w * q->y), -1.f, 1.f)));
 }
 
-#endif /* _NE_MATH_MATH_H_ */
+#endif /* NE_MATH_MATH_H */
 
 /* NekoEngine
  *
@@ -194,7 +96,7 @@ M_QuatYaw(const struct NeQuaternion *q)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

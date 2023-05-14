@@ -1,5 +1,5 @@
-#ifndef _NE_ANIMATION_CLIP_H_
-#define _NE_ANIMATION_CLIP_H_
+#ifndef NE_ANIMATION_CLIP_H
+#define NE_ANIMATION_CLIP_H
 
 #include <Math/Types.h>
 #include <Runtime/Runtime.h>
@@ -8,21 +8,29 @@
 extern "C" {
 #endif
 
+enum NeAnimInterpolation
+{
+	AI_LINEAR = 0,
+	AI_STEP = 1,
+	AI_CUBIC_SPLINE = 2
+};
+
 struct NeAnimVectorKey
 {
-	struct NeVec3 val;
-	double time;
+	struct NeVec3 value;
+	float time;
 };
 
 struct NeAnimQuatKey
 {
-	struct NeQuaternion val;
-	double time;
+	struct NeQuaternion value;
+	float time;
 };
 
 struct NeAnimationChannel
 {
 	uint64_t hash;
+	enum NeAnimInterpolation interpolation;
 	struct NeArray positionKeys, rotationKeys, scalingKeys;
 	char name[256];
 };
@@ -30,17 +38,14 @@ struct NeAnimationChannel
 struct NeAnimationClip
 {
 	struct NeArray channels;
-	double ticks;
-	double duration;
+	float duration;
 	char name[256];
 };
 
 struct NeAnimationClipCreateInfo
 {
 	char name[256];
-
-	double ticks;
-	double duration;
+	float duration;
 
 	uint32_t channelCount;
 	struct {
@@ -61,7 +66,7 @@ struct NeAnimationClipCreateInfo
 }
 #endif
 
-#endif /* _NE_ANIMATION_CLIP_H_ */
+#endif /* NE_ANIMATION_CLIP_H */
 
 /* NekoEngine
  *
@@ -89,7 +94,7 @@ struct NeAnimationClipCreateInfo
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

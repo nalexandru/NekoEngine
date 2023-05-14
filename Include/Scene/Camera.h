@@ -1,5 +1,5 @@
-#ifndef _NE_SCENE_CAMERA_H_
-#define _NE_SCENE_CAMERA_H_
+#ifndef NE_SCENE_CAMERA_H
+#define NE_SCENE_CAMERA_H
 
 #include <Math/Types.h>
 #include <Engine/Component.h>
@@ -7,6 +7,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#define SCN_ACTIVATE_CAMERA		"Scn_ActivateCamera"
 
 enum NeProjectionType
 {
@@ -27,17 +29,14 @@ struct NeCamera
 	enum NeProjectionType projection;
 	
 	uint64_t evt;
+	bool activate;
 };
-
-ENGINE_API extern struct NeCamera *Scn_activeCamera;
-
-void Scn_ActivateCamera(struct NeCamera *cam);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* _NE_SCENE_CAMERA_H_ */
+#endif /* NE_SCENE_CAMERA_H */
 
 /* NekoEngine
  *
@@ -65,7 +64,7 @@ void Scn_ActivateCamera(struct NeCamera *cam);
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

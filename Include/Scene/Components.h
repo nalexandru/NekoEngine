@@ -1,26 +1,39 @@
-#ifndef _NE_SCENE_COMPONENTS_H_
-#define _NE_SCENE_COMPONENTS_H_
+#ifndef NE_SCENE_COMPONENTS_H
+#define NE_SCENE_COMPONENTS_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define CAMERA_COMP			"Camera"
-#define TRANSFORM_COMP		"Transform"
-#define MODEL_RENDER_COMP	"ModelRender"
-#define AUDIO_SOURCE_COMP	"AudioSource"
-#define AUDIO_LISTENER_COMP	"AudioListener"
-#define UI_CONTEXT_COMP		"UIContext"
-#define ANIMATOR_COMP		"Animator"
-#define LIGHT_COMP			"Light"
-#define PROFILER_DRAW_COMP	"ProfilerDraw"
-#define MODEL_MORPH_COMP	"ModelMorph"
+#include <Engine/Types.h>
+
+#define NE_CAMERA			"Camera"
+#define NE_TRANSFORM		"Transform"
+#define NE_MODEL_RENDER		"ModelRender"
+#define NE_AUDIO_SOURCE		"AudioSource"
+#define NE_AUDIO_LISTENER	"AudioListener"
+#define NE_UI_CONTEXT		"UIContext"
+#define NE_ANIMATOR			"Animator"
+#define NE_LIGHT			"Light"
+#define NE_PROFILER_DRAW	"ProfilerDraw"
+#define NE_MODEL_MORPH		"ModelMorph"
+
+extern NeCompTypeId NE_CAMERA_ID;
+extern NeCompTypeId NE_TRANSFORM_ID;
+extern NeCompTypeId NE_MODEL_RENDER_ID;
+extern NeCompTypeId NE_AUDIO_SOURCE_ID;
+extern NeCompTypeId NE_AUDIO_LISTENER_ID;
+extern NeCompTypeId NE_UI_CONTEXT_ID;
+extern NeCompTypeId NE_ANIMATOR_ID;
+extern NeCompTypeId NE_LIGHT_ID;
+extern NeCompTypeId NE_PROFILER_DRAW_ID;
+extern NeCompTypeId NE_MODEL_MORPH_ID;
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* _NE_SCENE_COMPONENTS_H_ */
+#endif /* NE_SCENE_COMPONENTS_H */
 
 /* NekoEngine
  *
@@ -48,7 +61,7 @@ extern "C" {
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

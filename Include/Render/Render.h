@@ -1,5 +1,5 @@
-#ifndef _NE_RENDER_RENDER_H_
-#define _NE_RENDER_RENDER_H_
+#ifndef NE_RENDER_RENDER_H
+#define NE_RENDER_RENDER_H
 
 #include <Render/Types.h>
 #include <Render/Core.h>
@@ -23,14 +23,14 @@ ENGINE_API extern struct NeSurface *Re_surface;
 
 bool Re_InitRender(void);
 void Re_RenderFrame(void);
-void Re_RenderScene(struct NeScene *scn, struct NeCamera *cam, struct NeRenderGraph *graph, const struct NeTextureDesc *desc, struct NeTexture *target);
+void Re_RenderScene(struct NeScene *scn, NeHandle camHandle, struct NeRenderGraph *graph, const struct NeTextureDesc *desc, struct NeTexture *target);
 void Re_TermRender(void);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* _NE_RENDER_RENDER_H_ */
+#endif /* NE_RENDER_RENDER_H */
 
 /* NekoEngine
  *
@@ -58,7 +58,7 @@ void Re_TermRender(void);
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

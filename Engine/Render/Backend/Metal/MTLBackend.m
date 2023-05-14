@@ -12,13 +12,13 @@ const char *Re_backendName = "Metal";
 bool
 Re_InitBackend(void)
 {
-	return MTLDrv_InitMemory();
+	return MTLBk_InitMemory();
 }
 
 void
 Re_TermBackend(void)
 {
-	MTLDrv_TermMemory();
+	MTLBk_TermMemory();
 }
 
 NeDirectIOHandle
@@ -63,8 +63,8 @@ Re_EnumerateDevices(uint32_t *count, struct NeRenderDeviceInfo *info)
 		id<MTLDevice> dev = devices[i];
 		if (![dev supportsFamily: MTLGPUFamilyMac2])
 			continue;
-		
-		snprintf(info[i].deviceName, sizeof(info[i].deviceName), "%s", [[dev name] UTF8String]);
+
+		strlcpy(info[i].deviceName, [[dev name] UTF8String], sizeof(info[i].deviceName));
 		info[i].localMemorySize = [dev recommendedMaxWorkingSetSize];
 
 		info[i].features.rayTracing = [dev supportsRaytracing];
@@ -73,6 +73,7 @@ Re_EnumerateDevices(uint32_t *count, struct NeRenderDeviceInfo *info)
 		info[i].features.discrete = ![dev isLowPower];
 		info[i].features.canPresent = ![dev isHeadless];
 		info[i].limits.maxTextureSize = 16384;
+		info[i].limits.maxPushConstantsSize = 4096;
 		info[i].features.drawIndirectCount = false;
 		info[i].features.bcTextureCompression = true;
 		info[i].features.astcTextureCompression = false;
@@ -127,7 +128,7 @@ Re_EnumerateDevices(uint32_t *count, struct NeRenderDeviceInfo *info)
 		return true;
 	}
 	
-	snprintf(info->deviceName, sizeof(info->deviceName), "%s", [[dev name] UTF8String]);
+	strlcpy(info->deviceName, [[dev name] UTF8String], sizeof(info->deviceName));
 	info->localMemorySize = 1024 * 1024 * 1024;
 
 	info->features.rayTracing = [dev supportsRaytracing];
@@ -140,16 +141,17 @@ Re_EnumerateDevices(uint32_t *count, struct NeRenderDeviceInfo *info)
 	info->features.astcTextureCompression = true;
 	info->features.secondaryCommandBuffers = false;
 	info->limits.maxTextureSize = 16384;
+	info->limits.maxPushConstantsSize = 4096;
 	info->features.coherentMemory = true;
 
 	info->hardwareInfo.vendorId = 0x106B;
 
 	if (@available(iOS 16, *)) {
-		info[i].features.directIO = true;
-		info[i].features.meshShading = true;
+		info->features.directIO = true;
+		info->features.meshShading = true;
 	} else {
-		info[i].features.directIO = false;
-		info[i].features.meshShading = false;
+		info->features.directIO = false;
+		info->features.meshShading = false;
 	}
 
 	if ([dev supportsFamily: MTLGPUFamilyApple8])
@@ -192,7 +194,7 @@ Re_EnumerateDevices(uint32_t *count, struct NeRenderDeviceInfo *info)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

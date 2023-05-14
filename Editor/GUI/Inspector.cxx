@@ -1,3 +1,5 @@
+#include <QIcon>
+
 #include "Inspector.h"
 
 #include <Scene/Scene.h>
@@ -5,45 +7,46 @@
 
 #include "Widgets/ComponentInspector.h"
 
-static NeInspector *_dlg;
+static NeInspector *f_dlg;
 
 NeInspector *
 GUI_CreateInspector(void)
 {
-	_dlg = new NeInspector();
-	return _dlg;
+	f_dlg = new NeInspector();
+	return f_dlg;
 }
 
 bool
 GUI_InitInspector(void)
 {
-	_dlg->show();
+	f_dlg->show();
 	return true;
 }
 
 void
 GUI_InspectScene(void)
 {
-	_dlg->InspectScene();
+	f_dlg->InspectScene();
 }
 
 void
 GUI_InspectEntity(NeEntityHandle handle)
 {
-	_dlg->InspectEntity(handle);
+	f_dlg->InspectEntity(handle);
 }
 
 void
 GUI_TermInspector(void)
 {
-	_dlg->close();
-	delete _dlg;
+	f_dlg->close();
+	delete f_dlg;
 }
 
-NeInspector::NeInspector(QWidget *parent) : QDialog(parent)
+NeInspector::NeInspector(QWidget *parent) : QDialog(parent), _currentEntity(0)
 {
-	setWindowTitle("Inspector");
 	setMinimumSize(350, 600);
+	setWindowTitle("Inspector");
+	setWindowIcon(QIcon(":/EdIcon.png"));
 
 	QVBoxLayout *top = new QVBoxLayout(this);
 
@@ -136,7 +139,7 @@ NeInspector::~NeInspector()
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

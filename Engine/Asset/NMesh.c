@@ -10,9 +10,9 @@
 #define NMESH_MOD	"NMesh"
 
 bool
-E_LoadNMeshAsset(struct NeStream *stm, struct NeModel *m)
+Asset_LoadMesh(struct NeStream *stm, struct NeModel *m)
 {
-	ASSET_INFO;
+	ASSET_READ_INIT();
 
 	char *matName = Sys_Alloc(sizeof(*matName), 258, MH_Asset);
 
@@ -34,43 +34,37 @@ E_LoadNMeshAsset(struct NeStream *stm, struct NeModel *m)
 			m->cpu.indexSize = a.size;
 			m->cpu.indices = Sys_Alloc(a.size, 1, MH_Asset);
 			E_ReadStream(stm, m->cpu.indices, a.size);
-		} else if (a.id == NMESH_BONE_ID) {
-			size_t count = a.size / sizeof(struct NMeshJoint);
-
-			struct NMeshJoint *meshJoints = Sys_Alloc(a.size, 1, MH_Asset);
-			E_ReadStream(stm, meshJoints, a.size);
-
-			Rt_InitArray(&m->skeleton.bones, count, sizeof(struct NeBone), MH_Asset);
-			Rt_FillArray(&m->skeleton.bones);
-			for (size_t i = 0; i < count; ++i) {
-				const struct NMeshJoint *mj = &meshJoints[i];
-				struct NeBone *b = Rt_ArrayGet(&m->skeleton.bones, i);
-
-				b->hash = Rt_HashString(mj->name);
-				memcpy(b->name, mj->name, sizeof(b->name));
-				memcpy(&b->offset, mj->inverseBindMatrix, sizeof(b->offset));
-			}
-
-			Sys_Free(meshJoints);
+		} else if (a.id == NMESH_JOINT_ID) {
+			Rt_InitArray(&m->skeleton.joints, a.size, sizeof(uint32_t), MH_Asset);
+			Rt_FillArray(&m->skeleton.joints);
+			E_ReadStream(stm, m->skeleton.joints.data, Rt_ArrayByteSize(&m->skeleton.joints));
 		} else if (a.id == NMESH_WEIGHT_ID) {
-			m->cpu.vertexWeightSize = a.size;
-			m->cpu.vertexWeights = Sys_Alloc(a.size, 1, MH_Asset);
-			E_ReadStream(stm, m->cpu.vertexWeights, a.size);
+			m->cpu.vertexWeightCount = a.size;
+			m->cpu.vertexWeights = Sys_Alloc(a.size, sizeof(*m->cpu.vertexWeights), MH_Asset);
+			E_ReadStream(stm, m->cpu.vertexWeights, sizeof(*m->cpu.vertexWeights) * m->cpu.vertexWeightCount);
+		} else if (a.id == NMESH_INVMAT_ID) {
+			m->skeleton.inverseTransforms = Sys_Alloc(sizeof(*m->skeleton.inverseTransforms), a.size, MH_Asset);
+			if (!m->skeleton.inverseTransforms)
+				goto error;
+
+			E_ReadStream(stm, m->skeleton.inverseTransforms, sizeof(*m->skeleton.inverseTransforms) * a.size);
+		} else if (a.id == NMESH_INVT_ID) {
+			if (a.size != 1)
+				goto error;
+			E_ReadStream(stm, &m->skeleton.inverseTransform, sizeof(m->skeleton.inverseTransform));
 		} else if (a.id == NMESH_NODE_ID) {
-			size_t count = a.size / sizeof(struct NMeshNode);
+			struct NMeshNode *meshNodes = Sys_Alloc(sizeof(*meshNodes), a.size, MH_Asset);
+			E_ReadStream(stm, meshNodes, a.size * sizeof(*meshNodes));
 
-			struct NMeshNode *meshNodes = Sys_Alloc(a.size, 1, MH_Asset);
-			E_ReadStream(stm, meshNodes, a.size);
-
-			Rt_InitArray(&m->skeleton.nodes, count, sizeof(struct NeSkeletonNode), MH_Asset);
+			Rt_InitArray(&m->skeleton.nodes, a.size, sizeof(struct NeSkeletonNode), MH_Asset);
 			Rt_FillArray(&m->skeleton.nodes);
-			for (size_t i = 0; i < count; ++i) {
+			for (size_t i = 0; i < a.size; ++i) {
 				const struct NMeshNode *mn = &meshNodes[i];
 				struct NeSkeletonNode *n = Rt_ArrayGet(&m->skeleton.nodes, i);
 
 				n->hash = Rt_HashString(mn->name);
 				memcpy(n->name, mn->name, sizeof(n->name));
-				memcpy(&n->xform, mn->transform, sizeof(n->xform));
+				memcpy(&n->xform, mn->xform, sizeof(n->xform));
 
 				if (mn->parentId < 0)
 					continue;
@@ -85,11 +79,6 @@ E_LoadNMeshAsset(struct NeStream *stm, struct NeModel *m)
 			}
 
 			Sys_Free(meshNodes);
-		} else if (a.id == NMESH_INVT_ID) {
-			if (a.size != sizeof(m->skeleton.globalInverseTransform.m))
-				goto error;
-
-			E_ReadStream(stm, m->skeleton.globalInverseTransform.m, sizeof(m->skeleton.globalInverseTransform.m));
 		} else if (a.id == NMESH_MESH_ID) {
 			struct NMeshSubmesh submesh = {0 };
 
@@ -123,11 +112,11 @@ E_LoadNMeshAsset(struct NeStream *stm, struct NeModel *m)
 			if (E_ReadStream(stm, m->morph.deltas, a.size) != a.size)
 				goto error;
 		} else if (a.id == NMESH_END_ID) {
-			E_StreamSeek(stm, -((int64_t)sizeof(a)), IO_SEEK_CUR);
+			E_SeekStream(stm, -((int64_t)sizeof(a)), IO_SEEK_CUR);
 			break;
 		} else {
 			Sys_LogEntry(NMESH_MOD, LOG_WARNING, "Unknown section id = 0x%x, size = %d", a.id, a.size);
-			E_StreamSeek(stm, a.size, IO_SEEK_CUR);
+			E_SeekStream(stm, a.size, IO_SEEK_CUR);
 		}
 
 		ASSET_CHECK_GUARD(NMESH_SEC_FOOTER);
@@ -140,9 +129,10 @@ E_LoadNMeshAsset(struct NeStream *stm, struct NeModel *m)
 	return true;
 
 error:
-	Rt_TermArray(&m->skeleton.bones);
+	Rt_TermArray(&m->skeleton.joints);
 	Rt_TermArray(&m->skeleton.nodes);
 
+	Sys_Free(m->skeleton.inverseTransforms);
 	Sys_Free(m->cpu.vertices);
 	Sys_Free(m->cpu.indices);
 	Sys_Free(m->meshes);
@@ -177,7 +167,7 @@ error:
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

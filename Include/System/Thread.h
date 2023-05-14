@@ -1,5 +1,5 @@
-#ifndef _NE_SYSTEM_THREAD_H_
-#define _NE_SYSTEM_THREAD_H_
+#ifndef NE_SYSTEM_THREAD_H
+#define NE_SYSTEM_THREAD_H
 
 #include <Engine/Types.h>
 
@@ -47,9 +47,32 @@ void Sys_TermConditionVariable(NeConditionVariable cv);
 
 #ifdef __cplusplus
 }
+
+struct NeAdoptLock { explicit NeAdoptLock() = default; };
+
+class NeFutexLock
+{
+public:
+	NeFutexLock(NeFutex ftx) : _ftx(ftx) { Sys_LockFutex(_ftx); }
+	NeFutexLock(struct NeAdoptLock, NeFutex ftx) : _ftx(ftx) { }
+	~NeFutexLock() { Sys_UnlockFutex(_ftx); }
+private:
+	NeFutex _ftx;
+};
+
+class NeMutexLock
+{
+public:
+	NeMutexLock(NeMutex mtx) : _mtx(mtx) { Sys_LockMutex(_mtx); }
+	NeMutexLock(struct NeAdoptLock, NeMutex mtx) : _mtx(mtx) { }
+	~NeMutexLock() { Sys_UnlockMutex(_mtx); }
+private:
+	NeMutex _mtx;
+};
+
 #endif
 
-#endif /* _NE_SYSTEM_THREAD_H_ */
+#endif /* NE_SYSTEM_THREAD_H */
 
 /* NekoEngine
  *
@@ -77,7 +100,7 @@ void Sys_TermConditionVariable(NeConditionVariable cv);
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

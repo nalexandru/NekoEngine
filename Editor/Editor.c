@@ -17,31 +17,26 @@
 
 #include <Scene/Components.h>
 
-#ifndef _countof
-#	define _countof(array) (sizeof(array) / sizeof(array[0]))
-#endif
-
 NE_APPLICATION("NekoEditor", E_CPY_STR, E_VER_MAJOR, E_VER_MINOR, E_VER_BUILD, E_VER_REVISION);
+NE_MAIN;
 
 char Ed_dataDir[ED_MAX_PATH] = { 0 };
-struct NeArray Ed_componentFields = {0 };
+struct NeTSArray Ed_componentFields = { 0 };
 
-static uint64_t _sceneLoadedEvt;
+static uint64_t f_sceneLoadedEvt, f_fieldsRegisteredEvt;
 
-static void _SceneLoaded(void *user, void *args);
+static void SceneLoaded(void *user, void *args);
 //static void _ComponentRegistered(void *user, struct NeCompType *type);
+static void ComponentFieldsRegistered(void *user, struct NeComponentFields *fields);
 
 bool
 App_EarlyInit(int argc, char *argv[])
 {
-	Ed_ShowProjectDialog();
-	if (!Ed_activeProject)
-		return false;
+	if (!Ed_componentFields.a.data)
+		Rt_InitTSArray(&Ed_componentFields, 10, sizeof(struct NeComponentFields), MH_Editor);
+	f_fieldsRegisteredEvt = E_RegisterHandler(EVT_COMPONENT_FIELDS_REGISTERED, (NeEventHandlerProc)ComponentFieldsRegistered, NULL);
 
-	if (!Ed_componentFields.data)
-		Rt_InitArray(&Ed_componentFields, 10, sizeof(struct NeComponentFields), MH_Editor);
-
-//	E_SetCVarBln("Window_CreateHidden", true);
+	E_SetCVarBln("Win32_DisableRawInput", true);
 
 	if (!Ed_CreateGUI(argc, argv))
 		return false;
@@ -55,8 +50,8 @@ App_InitApplication(int argc, char *argv[])
 	if (!Init_AssetImporter())
 		return false;
 
-	_sceneLoadedEvt = E_RegisterHandler(EVT_SCENE_LOADED, _SceneLoaded, NULL);
-	
+	f_sceneLoadedEvt = E_RegisterHandler(EVT_SCENE_LOADED, SceneLoaded, NULL);
+
 	Scn_StartSceneLoad("/Scenes/EditorTest.scn");
 
 	return Ed_InitGUI();
@@ -71,21 +66,36 @@ App_Frame(void)
 void
 App_TermApplication(void)
 {
+	E_UnregisterHandler(f_fieldsRegisteredEvt);
+	E_UnregisterHandler(f_sceneLoadedEvt);
+
 	Ed_TermGUI();
 
 	Term_AssetImporter();
 
 	struct NeComponentFields *ins;
-	Rt_ArrayForEach(ins, &Ed_componentFields)
+	Rt_LockTSArray(&Ed_componentFields);
+	Rt_ArrayForEach(ins, &Ed_componentFields.a)
 		Sys_Free(ins->fields);
+	Rt_UnlockTSArray(&Ed_componentFields);
 
-	Rt_TermArray(&Ed_componentFields);
+	Rt_TermTSArray(&Ed_componentFields);
 }
 
-void
-_SceneLoaded(void *user, void *args)
+static void
+SceneLoaded(void *user, void *args)
 {
 	Scn_ActivateScene((struct NeScene *)args);
+}
+
+static void
+ComponentFieldsRegistered(void *user, struct NeComponentFields *fields)
+{
+	struct NeComponentFields *f = Rt_TSArrayAllocate(&Ed_componentFields);
+	memcpy(f, fields, sizeof(*f));
+
+	f->fields = Sys_Alloc(sizeof(*f->fields), fields->fieldCount, MH_Editor);
+	memcpy(f->fields, fields->fields, sizeof(*f->fields) * fields->fieldCount);
 }
 
 /* NekoEditor
@@ -114,7 +124,7 @@ _SceneLoaded(void *user, void *args)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

@@ -16,12 +16,11 @@
 const char *Re_backendName = "Vulkan";
 
 VkInstance Vkd_inst = VK_NULL_HANDLE;
-struct NeArray Vkd_contexts;
 uint32_t Vkd_instanceVersion;
 
-static const char *_instLayers[10] = { 0 };
-static uint32_t _instLayerCount = 0;
-static const char *_instExtensions[10] =
+static const char *f_instLayers[10] = {0 };
+static uint32_t f_instLayerCount = 0;
+static const char *f_instExtensions[10] =
 {
 	VK_KHR_SURFACE_EXTENSION_NAME,
 	VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME,
@@ -35,7 +34,7 @@ static uint32_t _instExtensionCount = 3;
 static uint32_t _instExtensionCount = 2;
 #endif
 
-extern const char *PlatformSurfaceExtensionName;
+extern const char *Vkd_PlatformSurfaceExtensionName;
 
 bool
 Re_InitBackend(void)
@@ -105,23 +104,23 @@ Re_InitBackend(void)
 		.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
 		.pApplicationInfo = &appInfo,
 		.enabledLayerCount = 0,
-		.ppEnabledLayerNames = _instLayers,
+		.ppEnabledLayerNames = f_instLayers,
 		.enabledExtensionCount = 0,
-		.ppEnabledExtensionNames = _instExtensions
+		.ppEnabledExtensionNames = f_instExtensions
 	};
 
-	_instExtensions[_instExtensionCount++] = PlatformSurfaceExtensionName;
+	f_instExtensions[_instExtensionCount++] = Vkd_PlatformSurfaceExtensionName;
 
 #ifdef _DEBUG
-	if (E_GetCVarBln("VulkanBackend_Validation", true)->bln) {
+	if (E_GetCVarBln("Vulkan_Validation", true)->bln) {
 #else
-	if (E_GetCVarBln("VulkanBackend_Validation", false)->bln) {
+	if (E_GetCVarBln("Vulkan_Validation", false)->bln) {
 #endif
-		_instLayers[_instLayerCount++] = "VK_LAYER_KHRONOS_validation";
+		f_instLayers[f_instLayerCount++] = "VK_LAYER_KHRONOS_validation";
 		Sys_LogEntry(VKDRV_MOD, LOG_INFORMATION, "Validation enabled");
 	}
 
-	instInfo.enabledLayerCount = _instLayerCount;
+	instInfo.enabledLayerCount = f_instLayerCount;
 	instInfo.enabledExtensionCount = _instExtensionCount;
 
 	rc = vkCreateInstance(&instInfo, Vkd_allocCb, &Vkd_inst);
@@ -140,11 +139,8 @@ Re_InitBackend(void)
 
 	volkLoadInstance(Vkd_inst);
 
-#ifdef _DEBUG
-	Vkd_InitDebug();
-#endif
-
-	Rt_InitPtrArray(&Vkd_contexts, (size_t)E_JobWorkerThreads() + 1, MH_RenderDriver);
+	if (CVAR_BOOL("Render_Debug"))
+		VkBk_InitDebug();
 
 	return true;
 }
@@ -152,10 +148,8 @@ Re_InitBackend(void)
 void
 Re_TermBackend(void)
 {
-	Rt_TermArray(&Vkd_contexts);
-
 #ifdef _DEBUG
-	Vkd_TermDebug();
+	VkBk_TermDebug();
 #endif
 
 	vkDestroyInstance(Vkd_inst, Vkd_allocCb);
@@ -241,7 +235,7 @@ Re_EnumerateDevices(uint32_t *count, struct NeRenderDeviceInfo *info)
 				!vk12Features->shaderStorageBufferArrayNonUniformIndexing || !vk12Features->bufferDeviceAddress || !vk12Features->separateDepthStencilLayouts)
 			continue;
 
-		snprintf(info[oi].deviceName, sizeof(info[oi].deviceName), "%s", props->deviceName);
+		strlcpy(info[oi].deviceName, props->deviceName, sizeof(info[oi].deviceName));
 
 		info[oi].features.meshShading = msFeatures->meshShader;
 		info[oi].features.rayTracing = rtFeatures->rayTracingPipeline;
@@ -254,6 +248,7 @@ Re_EnumerateDevices(uint32_t *count, struct NeRenderDeviceInfo *info)
 		info[oi].features.directIO = false;
 
 		info[oi].limits.maxTextureSize = props->limits.maxImageDimension2D;
+		info[oi].limits.maxPushConstantsSize = props->limits.maxPushConstantsSize;
 
 		uint32_t familyCount;
 		vkGetPhysicalDeviceQueueFamilyProperties(dev[i], &familyCount, NULL);
@@ -336,7 +331,7 @@ Re_BkCloseFile(NeDirectIOHandle handle)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

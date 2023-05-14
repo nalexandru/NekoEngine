@@ -47,13 +47,13 @@ float In_axisSensivity[255];
 uint8_t In_connectedControllers = 0;
 struct NeControllerState In_controllerState[IN_MAX_CONTROLLERS];
 
-bool __InSys_enableMouseAxis = false;
-extern bool __InSys_rawMouseAxis;
+bool In_p_enableMouseAxis = false;
+extern bool In_p_rawMouseAxis;
 
-static bool _prevButtonState[BTN_STATE_COUNT];
-static struct NeControllerState _prevControllerState[IN_MAX_CONTROLLERS];
-static struct NeArray _map;
-static struct NeArray _virtualAxis;
+static bool f_prevButtonState[BTN_STATE_COUNT];
+static struct NeControllerState f_prevControllerState[IN_MAX_CONTROLLERS];
+static struct NeArray f_map;
+static struct NeArray f_virtualAxis;
 
 #define GPAD_BTN(x, state) (state.buttons & (1 << (x - BTN_GPAD_BTN_BASE)))
 
@@ -161,8 +161,8 @@ In_InitInput(void)
 void
 In_TermInput(void)
 {
-	Rt_TermArray(&_map);
-	Rt_TermArray(&_virtualAxis);
+	Rt_TermArray(&f_map);
+	Rt_TermArray(&f_virtualAxis);
 
 	if (In_pointerCaptured)
 		In_CapturePointer(false);
@@ -185,25 +185,24 @@ In_Key(enum NeButton key, bool down)
 void
 In_Update(void)
 {
-	memmove(_prevButtonState, In_buttonState, sizeof(_prevButtonState));
-	memmove(_prevControllerState, In_controllerState, sizeof(_prevControllerState));
+	memmove(f_prevButtonState, In_buttonState, sizeof(f_prevButtonState));
+	memmove(f_prevControllerState, In_controllerState, sizeof(f_prevControllerState));
 
 	In_SysPollControllers();
 
-	if (!__InSys_enableMouseAxis || !In_pointerCaptured)
+	if (!In_p_enableMouseAxis || !In_pointerCaptured)
 		return;
 
-	if (__InSys_rawMouseAxis) {
+	if (In_p_rawMouseAxis) {
 		In_mouseAxis[0] = In_mouseAxis[1] = 0.f;
 	} else {
 		uint16_t x = 0, y = 0, hwidth = *E_screenWidth / 2, hheight = *E_screenHeight / 2;
-		float dx = 0.f, dy = 0.f;
-	
+
 		In_PointerPosition(&x, &y);
-		dx = (float)(hwidth - x) * 100.f;
-		dy = (float)(hheight - y) * 100.f;
+		const float dx = (float)(hwidth - x) * 100.f;
+		const float dy = (float)(hheight - y) * 100.f;
 		In_SetPointerPosition(hwidth, hheight);
-	
+
 		In_mouseAxis[AXIS_MOUSE_X - MOUSE_AXIS_START] = dx / hwidth;
 		In_mouseAxis[AXIS_MOUSE_Y - MOUSE_AXIS_START] = dy / hheight;
 
@@ -214,7 +213,7 @@ In_Update(void)
 void
 In_EnableMouseAxis(bool enable)
 {
-	__InSys_enableMouseAxis = enable;
+	In_p_enableMouseAxis = enable;
 
 	if (enable) {
 		if (!In_pointerCaptured) {
@@ -234,14 +233,13 @@ In_EnableMouseAxis(bool enable)
 enum NeAxis
 In_CreateVirtualAxis(const char *name, enum NeButton min, enum NeButton max)
 {
-	uint32_t axis = 0;
 	const struct NeKeyAxis ka = { max, min, Rt_HashString(name) };
 
-	if (!_virtualAxis.count)
-		Rt_InitArray(&_virtualAxis, sizeof(struct NeKeyAxis), 10, MH_System);
+	if (!f_virtualAxis.count)
+		Rt_InitArray(&f_virtualAxis, sizeof(struct NeKeyAxis), 10, MH_System);
 
-	axis = (enum NeAxis)(_virtualAxis.count + VIRTUAL_AXIS_START);
-	Rt_ArrayAdd(&_virtualAxis, &ka);
+	const uint32_t axis = (enum NeAxis)(f_virtualAxis.count + VIRTUAL_AXIS_START);
+	Rt_ArrayAdd(&f_virtualAxis, &ka);
 
 	return (enum NeAxis)axis;
 }
@@ -253,8 +251,8 @@ In_GetVirtualAxis(const char *name)
 	struct NeKeyAxis *ka;
 	uint64_t hash = Rt_HashString(name);
 
-	for (i = 0; i < _virtualAxis.count; ++i) {
-		ka = Rt_ArrayGet(&_virtualAxis, i);
+	for (i = 0; i < f_virtualAxis.count; ++i) {
+		ka = Rt_ArrayGet(&f_virtualAxis, i);
 		if (ka->hash == hash)
 			return (enum NeAxis)(i + VIRTUAL_AXIS_START);
 	}
@@ -265,22 +263,20 @@ In_GetVirtualAxis(const char *name)
 uint32_t
 In_CreateMap(const char *name)
 {
-	size_t i;
-	uint32_t id = 0;
 	struct NeInputMap m, *em;
 	m.hash = Rt_HashString(name);
 
-	if (!_map.size)
-		Rt_InitArray(&_map, 10, sizeof(struct NeInputMap), MH_System);
+	if (!f_map.size)
+		Rt_InitArray(&f_map, 10, sizeof(struct NeInputMap), MH_System);
 
-	for (i = 0; i < _map.count; ++i) {
-		em = Rt_ArrayGet(&_map, i);
+	for (size_t i = 0; i < f_map.count; ++i) {
+		em = Rt_ArrayGet(&f_map, i);
 		if (em->hash == m.hash)
 			return (uint32_t)i;
 	}
 
-	id = (uint32_t)_map.count;
-	Rt_ArrayAdd(&_map, &m);
+	const uint32_t id = (uint32_t)f_map.count;
+	Rt_ArrayAdd(&f_map, &m);
 
 	return id;
 }
@@ -288,7 +284,7 @@ In_CreateMap(const char *name)
 void
 In_MapPrimaryButton(uint32_t map, enum NeButton btn, uint8_t controller)
 {
-	struct NeInputMap *m = Rt_ArrayGet(&_map, map);
+	struct NeInputMap *m = Rt_ArrayGet(&f_map, map);
 	m->key.primary = btn;
 	m->key.primaryDevice = controller;
 }
@@ -296,7 +292,7 @@ In_MapPrimaryButton(uint32_t map, enum NeButton btn, uint8_t controller)
 void
 In_MapSecondaryButton(uint32_t map, enum NeButton btn, uint8_t controller)
 {
-	struct NeInputMap *m = Rt_ArrayGet(&_map, map);
+	struct NeInputMap *m = Rt_ArrayGet(&f_map, map);
 	m->key.secondary = btn;
 	m->key.secondaryDevice = controller;
 }
@@ -304,7 +300,7 @@ In_MapSecondaryButton(uint32_t map, enum NeButton btn, uint8_t controller)
 void
 In_MapPrimaryAxis(uint32_t map, enum NeAxis axis, uint8_t controller)
 {
-	struct NeInputMap *m = Rt_ArrayGet(&_map, map);
+	struct NeInputMap *m = Rt_ArrayGet(&f_map, map);
 	m->axis.primary = axis;
 	m->axis.primaryDevice = controller;
 }
@@ -312,7 +308,7 @@ In_MapPrimaryAxis(uint32_t map, enum NeAxis axis, uint8_t controller)
 void
 In_MapSecondaryAxis(uint32_t map, enum NeAxis axis, uint8_t controller)
 {
-	struct NeInputMap *m = Rt_ArrayGet(&_map, map);
+	struct NeInputMap *m = Rt_ArrayGet(&f_map, map);
 	m->axis.secondary = axis;
 	m->axis.secondaryDevice = controller;
 }
@@ -320,28 +316,28 @@ In_MapSecondaryAxis(uint32_t map, enum NeAxis axis, uint8_t controller)
 bool
 In_Button(uint32_t map)
 {
-	struct NeInputMap *m = Rt_ArrayGet(&_map, map);
+	struct NeInputMap *m = Rt_ArrayGet(&f_map, map);
 	return In_UnmappedButton(m->key.primary, m->key.primaryDevice) || In_UnmappedButton(m->key.secondary, m->key.secondaryDevice);
 }
 
 bool
 In_ButtonUp(uint32_t map)
 {
-	struct NeInputMap *m = Rt_ArrayGet(&_map, map);
+	struct NeInputMap *m = Rt_ArrayGet(&f_map, map);
 	return In_UnmappedButtonUp(m->key.primary, m->key.primaryDevice) || In_UnmappedButtonUp(m->key.secondary, m->key.secondaryDevice);
 }
 
 bool
 In_ButtonDown(uint32_t map)
 {
-	struct NeInputMap *m = Rt_ArrayGet(&_map, map);
+	struct NeInputMap *m = Rt_ArrayGet(&f_map, map);
 	return In_UnmappedButtonDown(m->key.primary, m->key.primaryDevice) || In_UnmappedButtonDown(m->key.secondary, m->key.secondaryDevice);
 }
 
 float
 In_Axis(uint32_t map)
 {
-	struct NeInputMap *m = Rt_ArrayGet(&_map, map);
+	struct NeInputMap *m = Rt_ArrayGet(&f_map, map);
 	return In_UnmappedAxis(m->axis.primary, m->axis.primaryDevice) + In_UnmappedAxis(m->axis.secondary, m->axis.secondaryDevice);
 }
 
@@ -354,7 +350,7 @@ In_UnmappedButton(enum NeButton btn, uint8_t controller)
 bool
 In_UnmappedButtonUp(enum NeButton btn, uint8_t controller)
 {
-	const bool prev = btn < BTN_STATE_COUNT ? _prevButtonState[btn] : GPAD_BTN(btn, _prevControllerState[controller]);
+	const bool prev = btn < BTN_STATE_COUNT ? f_prevButtonState[btn] : GPAD_BTN(btn, f_prevControllerState[controller]);
 	const bool cur = btn < BTN_STATE_COUNT ? In_buttonState[btn] : GPAD_BTN(btn, In_controllerState[controller]);
 	return prev && !cur;
 }
@@ -362,7 +358,7 @@ In_UnmappedButtonUp(enum NeButton btn, uint8_t controller)
 bool
 In_UnmappedButtonDown(enum NeButton btn, uint8_t controller)
 {
-	const bool prev = btn < BTN_STATE_COUNT ? _prevButtonState[btn] : GPAD_BTN(btn, _prevControllerState[controller]);
+	const bool prev = btn < BTN_STATE_COUNT ? f_prevButtonState[btn] : GPAD_BTN(btn, f_prevControllerState[controller]);
 	const bool cur = btn < BTN_STATE_COUNT ? In_buttonState[btn] : GPAD_BTN(btn, In_controllerState[controller]);
 	return !prev && cur;
 }
@@ -378,7 +374,7 @@ In_UnmappedAxis(enum NeAxis axis, uint8_t controller)
 	} else if (axis == AXIS_MOUSE_X || axis == AXIS_MOUSE_Y) {
 		return In_mouseAxis[axis - MOUSE_AXIS_START] * In_axisSensivity[axis];
 	} else {
-		ka = Rt_ArrayGet(&_virtualAxis, (size_t)axis - VIRTUAL_AXIS_START);
+		ka = Rt_ArrayGet(&f_virtualAxis, (size_t)axis - VIRTUAL_AXIS_START);
 		if (!ka)
 			return 0.f;
 
@@ -435,6 +431,7 @@ In_KeycodeToChar(enum NeButton key, bool shift)
 			case 0x37: return 0x26;
 			case 0x38: return 0x2A;
 			case 0x39: return 0x28;
+			case ';': return ':';
 			case '\'': return '"';
 			}
 		}
@@ -469,7 +466,7 @@ In_KeycodeToChar(enum NeButton key, bool shift)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

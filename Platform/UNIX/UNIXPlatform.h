@@ -1,5 +1,5 @@
-#ifndef _UNIX_PLATFORM_H_
-#define _UNIX_PLATFORM_H_
+#ifndef NE_UNIX_PLATFORM_H
+#define NE_UNIX_PLATFORM_H
 
 #include <Input/Input.h>
 
@@ -7,6 +7,8 @@
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include <X11/Xutil.h>
+
+#define UNIX_MOD	"UNIX"
 
 extern Display *X11_display;
 extern XVisualInfo X11_visualInfo;
@@ -18,7 +20,7 @@ extern enum NeButton X11_keymap[];
 
 bool HandleInput(XEvent *ev);
 
-#endif /* _UNIX_PLATFORM_H_ */
+#endif /* NE_UNIX_PLATFORM_H */
 
 /* NekoEngine
  *
@@ -27,7 +29,7 @@ bool HandleInput(XEvent *ev);
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (c) 2015-2022, Alexandru Naiman
+ * Copyright (c) 2015-2023, Alexandru Naiman
  *
  * All rights reserved.
  *
@@ -46,7 +48,7 @@ bool HandleInput(XEvent *ev);
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

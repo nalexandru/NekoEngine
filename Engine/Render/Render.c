@@ -16,6 +16,8 @@
 #include <Render/Graph/Graph.h>
 #include <Render/Backend.h>
 
+#include "Internal.h"
+
 // This is not part of the exposed IO API
 const char *E_RealPath(const char *path);
 
@@ -39,6 +41,13 @@ Re_InitRender(void)
 	if (E_GetCVarBln("Render_WaitForDebugger", false)->bln)
 		Sys_MessageBox("NekoEngine", "Attach the graphics debugger now", MSG_ICON_INFO);
 
+#ifdef _DEBUG
+	if (E_GetCVarBln("Render_Debug", true)->bln)
+#else
+	if (E_GetCVarBln("Render_Debug", false)->bln)
+#endif
+		Sys_LogEntry(RE_MOD, LOG_WARNING, "Debugging enabled. Performance will be affected");
+
 #ifndef SYS_PLATFORM_APPLE
 	if (CVAR_BOOL("Engine_EnableXR"))
 		CHK_FAIL(E_InitXR(), "Failed to create OpenXR instance");
@@ -61,17 +70,17 @@ Re_InitRender(void)
 		for (uint32_t i = 0; i < devCount; ++i) {
 			if (!info[i].features.canPresent)
 				continue;
-	
+
 			if (info[i].features.rayTracing) {
-				if (!haveRt || (haveRt && vramSize < info[i].localMemorySize))
+				if (!haveRt || vramSize < info[i].localMemorySize)
 					goto updateSelection;
 			} else {
 				if (vramSize < info[i].localMemorySize)
 					goto updateSelection;
 			}
-	
+
 			continue;
-	
+
 		updateSelection:
 			selected = &info[i];
 			vramSize = info[i].localMemorySize;
@@ -119,8 +128,12 @@ Re_InitRender(void)
 	CHK_FAIL(Re_InitMaterialSystem(), "Failed to initialize material system");
 
 	CHK_FAIL(E_RegisterResourceType(RES_MODEL, sizeof(struct NeModel), (NeResourceCreateProc)Re_CreateModelResource,
-							(NeResourceLoadProc)Re_LoadModelResource, (NeResourceUnloadProc)Re_UnloadModelResource),
-			"Failed to register model resource");
+									(NeResourceLoadProc)Re_LoadModelResource, (NeResourceUnloadProc)Re_UnloadModelResource),
+			 "Failed to register model resource");
+
+	CHK_FAIL(E_RegisterResourceType(RES_MORPH_PACK, sizeof(struct NeMorphPack), (NeResourceCreateProc)Re_CreateMorphPackResource,
+							(NeResourceLoadProc)Re_LoadMorphPackResource, (NeResourceUnloadProc)Re_UnloadMorphPackResource),
+			"Failed to register morph pack resource");
 
 	return true;
 }
@@ -146,6 +159,8 @@ Re_TermRender(void)
 	Re_WaitIdle();
 
 	Re_DestroyGraph(Re_activeGraph);
+
+	ReP_DestroyRenderPasses();
 
 	Re_TermMaterialSystem();
 
@@ -199,7 +214,7 @@ Re_TermRender(void)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

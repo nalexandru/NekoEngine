@@ -1,5 +1,5 @@
-#ifndef _NE_NETWORK_CLIENT_H_
-#define _NE_NETWORK_CLIENT_H_
+#ifndef NE_NETWORK_CLIENT_H
+#define NE_NETWORK_CLIENT_H
 
 #include <Engine/Types.h>
 
@@ -15,4 +15,4 @@ bool Net_StartClient(struct NeClient *c, const char *host, uint16_t port);
 void Net_StopClient(struct NeClient *c);
 void Net_TermClient(struct NeClient *c);
 
-#endif /* _NE_NETWORK_CLIENT_H_ */
+#endif /* NE_NETWORK_CLIENT_H */

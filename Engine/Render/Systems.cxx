@@ -8,16 +8,15 @@
 #include <Engine/ECSystem.h>
 #include <Scene/Transform.h>
 #include <Scene/Components.h>
-#include <System/Thread.h>
 
 #include NE_ATOMIC_HDR
 
-E_SYSTEM(RE_COLLECT_DRAWABLES, ECSYS_GROUP_MANUAL, 0, false, struct NeCollectDrawablesArgs, 2, TRANSFORM_COMP, MODEL_RENDER_COMP)
+NE_SYSTEM(RE_COLLECT_DRAWABLES, ECSYS_GROUP_MANUAL, 0, false, struct NeCollectDrawablesArgs, 2, NE_TRANSFORM, NE_MODEL_RENDER)
 {
 	struct NeTransform *xform = (struct NeTransform *)comp[0];
 	struct NeModelRender *mr = (struct NeModelRender *)comp[1];
 	struct NeModel *mdl = NULL;
-	struct NeMatrix mvp {};
+	struct NeMatrix mvp{};
 
 	const uint32_t array = atomic_fetch_add(&args->nextArray, 1);
 	struct NeArray *drawables = &args->opaqueDrawableArrays[array];
@@ -28,42 +27,20 @@ E_SYSTEM(RE_COLLECT_DRAWABLES, ECSYS_GROUP_MANUAL, 0, false, struct NeCollectDra
 	if (!mdl)
 		return;
 
-//	if (!frustum_contains_aabb3(&args->camFrustum, &mdl->bounds.aabb))
-//		return;
-
-//	XMMATRIX tmp = XMMatrixMultiply(XMLoadFloat4x4A((XMFLOAT4X4A *)&xform->mat),
-//		XMLoadFloat4x4A((XMFLOAT4X4A *)&Scn_activeCamera->viewMatrix));
-//	tmp = XMMatrixMultiply(tmp, XMLoadFloat4x4A((XMFLOAT4X4A *)&Scn_activeCamera->projMatrix));
-
 	M_Store(&mvp, XMMatrixMultiply(M_Load(&xform->mat), M_Load(&args->vp)));
 
+	atomic_fetch_add(&args->totalDrawables, mr->meshCount);
+
+	struct NeBounds bounds{};
+	M_XformBounds(&mr->bounds, &xform->mat, &bounds);
+	if (!M_FrustumContainsBounds(&args->camFrustum, &bounds))
+		return;
+
 	uint32_t visibleMeshes = 0;
-	for (uint32_t i = 0; i < mdl->meshCount; ++i) {
-		//struct NeBounds bounds {};
-		
-	/*	struct NeVec3 edge;
-		M_Add(&edge, &mdl->meshes[i].bounds.sphere.center, M_MulVec3S(&edge, &M_Vec3PositiveX, mdl->meshes[i].bounds.sphere.radius));
-
-		struct NeVec4 tv4;
-		M_MulMatrixVec4(&tv4, &mvp,
-				M_Vec4(&tv4,
-					mdl->meshes[i].bounds.sphere.center.x,
-					mdl->meshes[i].bounds.sphere.center.y,
-					mdl->meshes[i].bounds.sphere.center.z, 1.f));
-		M_Vec3(&bounds.sphere.center, tv4.x, tv4.y, tv4.z);
-
-		M_MulMatrixVec4(&tv4, &mvp, M_Vec4(&tv4, edge.x, edge.y, edge.z, 1.f));
-		M_Vec3(&edge, tv4.x, tv4.y, tv4.z);
-		
-		bounds.sphere.radius = M_Vec3Distance(&bounds.sphere.center, &edge);
-
-		M_TransformAABB(&bounds.aabb, &mdl->meshes[i].bounds.aabb, &xform->mat);*/
-
-//		if (!M_FrustumContainsSphere(&args->camFrustum, &bounds.sphere.center, bounds.sphere.radius))
-//		if (!M_FrustumContainsAABB(&args->camFrustum, &mdl->meshes[i].bounds.aabb))
-//			continue;
-
-		++visibleMeshes;
+	for (uint32_t i = 0; i < mr->meshCount; ++i) {
+		M_XformBounds(&mr->meshBounds[i], &xform->mat, &bounds);
+		if (!M_FrustumContainsBounds(&args->camFrustum, &bounds))
+			continue;
 
 		struct NeDrawable *d = NULL;
 
@@ -71,12 +48,7 @@ E_SYSTEM(RE_COLLECT_DRAWABLES, ECSYS_GROUP_MANUAL, 0, false, struct NeCollectDra
 			d = (struct NeDrawable *)Rt_ArrayAllocate(drawables);
 		} else {
 			d = (struct NeDrawable *)Rt_ArrayAllocate(blendedDrawables);
-			d->distance = XMVectorGetX(
-				XMVector3Length(
-					XMVectorSubtract(
-						XMLoadFloat3A((XMFLOAT3A *)&args->camPos), XMLoadFloat3A((XMFLOAT3A *)&xform->position))
-				)
-			);
+			d->distance = M_Vector3Distance(M_Load(&args->camPos), M_Load(&xform->position));
 		}
 
 		d->instanceId = (uint32_t)instances->count;
@@ -96,8 +68,7 @@ E_SYSTEM(RE_COLLECT_DRAWABLES, ECSYS_GROUP_MANUAL, 0, false, struct NeCollectDra
 		d->material = &mr->materials[i];
 		d->materialAddress = Re_MaterialAddress(&mr->materials[i]);
 
-	//	M_TransformAABB(&d->bounds.aabb, &mdl->meshes[i].bounds.aabb, &xform->mat);
-	//	d->bounds = &mdl->meshes[i].bounds;
+		memcpy(&d->bounds, &bounds, sizeof(d->bounds));
 		d->modelMatrix = &xform->mat;
 
 		memcpy(&d->mvp, &mvp, sizeof(d->mvp));
@@ -109,9 +80,7 @@ E_SYSTEM(RE_COLLECT_DRAWABLES, ECSYS_GROUP_MANUAL, 0, false, struct NeCollectDra
 		mi->materialAddress = Re_MaterialAddress(&mr->materials[i]);
 	}
 
-	atomic_fetch_add(&args->totalDrawables, mdl->meshCount);
 	atomic_fetch_add(&args->visibleDrawables, visibleMeshes);
-	//Sys_LogEntry("Culling", LOG_DEBUG, "%d visible out of %d", visibleMeshes, mdl->meshCount);
 }
 
 /* NekoEngine
@@ -140,7 +109,7 @@ E_SYSTEM(RE_COLLECT_DRAWABLES, ECSYS_GROUP_MANUAL, 0, false, struct NeCollectDra
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

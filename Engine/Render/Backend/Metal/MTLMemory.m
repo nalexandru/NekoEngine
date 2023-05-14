@@ -10,19 +10,19 @@ struct HeapInfo
 static struct NeArray _textureHeapInfo, _bufferHeapInfo, _textureHeaps, _bufferHeaps;
 
 bool
-MTLDrv_InitMemory(void)
+MTLBk_InitMemory(void)
 {
-	Rt_InitArray(&_bufferHeapInfo, 10, sizeof(struct HeapInfo), MH_RenderDriver);
-	Rt_InitArray(&_textureHeapInfo, 10, sizeof(struct HeapInfo), MH_RenderDriver);
+	Rt_InitArray(&_bufferHeapInfo, 10, sizeof(struct HeapInfo), MH_RenderBackend);
+	Rt_InitArray(&_textureHeapInfo, 10, sizeof(struct HeapInfo), MH_RenderBackend);
 
-	Rt_InitPtrArray(&_bufferHeaps, 10, MH_RenderDriver);
-	Rt_InitPtrArray(&_textureHeaps, 10, MH_RenderDriver);
+	Rt_InitPtrArray(&_bufferHeaps, 10, MH_RenderBackend);
+	Rt_InitPtrArray(&_textureHeaps, 10, MH_RenderBackend);
 
 	return true;
 }
 
 id<MTLBuffer>
-MTLDrv_CreateBuffer(id<MTLDevice> dev, uint64_t size, MTLResourceOptions options)
+MTLBk_CreateBuffer(id<MTLDevice> dev, uint64_t size, MTLResourceOptions options)
 {
 	struct HeapInfo *info;
 	Rt_ArrayForEach(info, &_bufferHeapInfo) {
@@ -37,7 +37,7 @@ MTLDrv_CreateBuffer(id<MTLDevice> dev, uint64_t size, MTLResourceOptions options
 	MTLHeapDescriptor *heapDesc = [[MTLHeapDescriptor alloc] init];
 	heapDesc.size = E_GetCVarU32("MetalBackend_BufferHeapSize", 128 * 1024 * 1024)->u32;
 	heapDesc.resourceOptions = options;
-	heapDesc.hazardTrackingMode = MTLHazardTrackingModeUntracked;
+	heapDesc.hazardTrackingMode = MTLHazardTrackingModeTracked;
 	heapDesc.type = MTLHeapTypeAutomatic;
 
 	id<MTLHeap> heap = [dev newHeapWithDescriptor: heapDesc];
@@ -52,7 +52,7 @@ MTLDrv_CreateBuffer(id<MTLDevice> dev, uint64_t size, MTLResourceOptions options
 }
 
 id<MTLTexture>
-MTLDrv_CreateTexture(id<MTLDevice> dev, MTLTextureDescriptor *desc)
+MTLBk_CreateTexture(id<MTLDevice> dev, MTLTextureDescriptor *desc)
 {
 	struct HeapInfo *info;
 	Rt_ArrayForEach(info, &_textureHeapInfo) {
@@ -67,7 +67,7 @@ MTLDrv_CreateTexture(id<MTLDevice> dev, MTLTextureDescriptor *desc)
 	MTLHeapDescriptor *heapDesc = [[MTLHeapDescriptor alloc] init];
 	heapDesc.size = E_GetCVarU32("MetalBackend_TextureHeapSize", 256 * 1024 * 1024)->u32;
 	heapDesc.resourceOptions = [desc resourceOptions];
-	heapDesc.hazardTrackingMode = MTLHazardTrackingModeUntracked;
+	heapDesc.hazardTrackingMode = MTLHazardTrackingModeTracked;
 	heapDesc.type = MTLHeapTypeAutomatic;
 	id<MTLHeap> heap = [dev newHeapWithDescriptor: heapDesc];
 
@@ -79,7 +79,7 @@ MTLDrv_CreateTexture(id<MTLDevice> dev, MTLTextureDescriptor *desc)
 }
 
 void
-MTLDrv_SetRenderHeaps(id<MTLRenderCommandEncoder> encoder)
+MTLBk_SetRenderHeaps(id<MTLRenderCommandEncoder> encoder)
 {
 	if (@available(macOS 13, iOS 16, *)) {
 		if (_textureHeaps.count)
@@ -98,7 +98,7 @@ MTLDrv_SetRenderHeaps(id<MTLRenderCommandEncoder> encoder)
 }
 
 void
-MTLDrv_SetComputeHeaps(id<MTLComputeCommandEncoder> encoder)
+MTLBk_SetComputeHeaps(id<MTLComputeCommandEncoder> encoder)
 {
 	if (_textureHeaps.count)
 		[encoder useHeaps: (id<MTLHeap> *)_textureHeaps.data count: _textureHeaps.count];
@@ -108,7 +108,7 @@ MTLDrv_SetComputeHeaps(id<MTLComputeCommandEncoder> encoder)
 }
 
 void
-MTLDrv_TermMemory(void)
+MTLBk_TermMemory(void)
 {
 	struct HeapInfo *info;
 
@@ -149,7 +149,7 @@ MTLDrv_TermMemory(void)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

@@ -1,5 +1,5 @@
-#ifndef _NE_AUDIO_CLIP_H_
-#define _NE_AUDIO_CLIP_H_
+#ifndef NE_AUDIO_CLIP_H
+#define NE_AUDIO_CLIP_H
 
 #include <Engine/Types.h>
 #include <Engine/Component.h>
@@ -12,8 +12,6 @@ extern "C" {
 
 struct NeAudioClip
 {
-	NE_COMPONENT_BASE;
-
 	uint32_t handle;
 	uint16_t *data;
 	uint32_t byteSize;
@@ -36,7 +34,7 @@ void Au_UnloadClip(struct NeAudioClip *model, NeHandle h);
 }
 #endif
 
-#endif /* _NE_AUDIO_CLIP_H_ */
+#endif /* NE_AUDIO_CLIP_H */
 
 /* NekoEngine
  *
@@ -64,7 +62,7 @@ void Au_UnloadClip(struct NeAudioClip *model, NeHandle h);
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

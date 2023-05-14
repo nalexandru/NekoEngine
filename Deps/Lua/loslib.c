@@ -22,10 +22,11 @@
 #include "lualib.h"
 
 #ifdef __APPLE__
-// I'm too lazy to figgure out what #define is needed so ima just put these here
+// I'm too lazy to figure out what #define is needed so ima just put these here
 struct tm* gmtime_r(const time_t*, struct tm*);
 struct tm* localtime_r(const time_t*, struct tm*);
 #endif
+
 
 /*
 ** {==================================================================
@@ -35,23 +36,14 @@ struct tm* localtime_r(const time_t*, struct tm*);
 */
 #if !defined(LUA_STRFTIMEOPTIONS)	/* { */
 
-/* options for ANSI C 89 (only 1-char options) */
-#define L_STRFTIMEC89		"aAbBcdHIjmMpSUwWxXyYZ%"
-
-/* options for ISO C 99 and POSIX */
-#define L_STRFTIMEC99 "aAbBcCdDeFgGhHIjmMnprRStTuUVwWxXyYzZ%" \
-    "||" "EcECExEXEyEY" "OdOeOHOIOmOMOSOuOUOVOwOWOy"  /* two-char options */
-
-/* options for Windows */
-#define L_STRFTIMEWIN "aAbBcdHIjmMpSUwWxXyYzZ%" \
-    "||" "#c#x#d#H#I#j#m#M#S#U#w#W#y#Y"  /* two-char options */
-
 #if defined(LUA_USE_WINDOWS) || defined(LUA_USE_XBOX)
-#define LUA_STRFTIMEOPTIONS	L_STRFTIMEWIN
-#elif defined(LUA_USE_C89)
-#define LUA_STRFTIMEOPTIONS	L_STRFTIMEC89
+#define LUA_STRFTIMEOPTIONS  "aAbBcdHIjmMpSUwWxXyYzZ%" \
+    "||" "#c#x#d#H#I#j#m#M#S#U#w#W#y#Y"  /* two-char options */
+#elif defined(LUA_USE_C89)  /* ANSI C 89 (only 1-char options) */
+#define LUA_STRFTIMEOPTIONS  "aAbBcdHIjmMpSUwWxXyYZ%"
 #else  /* C99 specification */
-#define LUA_STRFTIMEOPTIONS	L_STRFTIMEC99
+#define LUA_STRFTIMEOPTIONS  "aAbBcCdDeFgGhHIjmMnprRStTuUVwWxXyYzZ%" \
+    "||" "EcECExEXEyEY" "OdOeOHOIOmOMOSOuOUOVOwOWOy"  /* two-char options */
 #endif
 
 #endif					/* } */
@@ -143,13 +135,22 @@ struct tm* localtime_r(const time_t*, struct tm*);
 /* }================================================================== */
 
 
+#if !defined(l_system)
+#if defined(LUA_USE_IOS)
+/* Despite claiming to be ISO C, iOS does not implement 'system'. */
+#define l_system(cmd) ((cmd) == NULL ? 0 : -1)
+#else
+#define l_system(cmd)	system(cmd)  /* default definition */
+#endif
+#endif
+
 
 static int os_execute (lua_State *L) {
-#if !defined(__PS3__) && !defined(LUA_USE_XBOX) && !defined(LUA_IOS)
+#if !defined(LUA_USE_PS3) && !defined(LUA_USE_XBOX) && !defined(LUA_USE_IOS)
   const char *cmd = luaL_optstring(L, 1, NULL);
   int stat;
   errno = 0;
-  stat = system(cmd);
+  stat = l_system(cmd);
   if (cmd != NULL)
     return luaL_execresult(L, stat);
   else {
@@ -157,7 +158,8 @@ static int os_execute (lua_State *L) {
     return 1;
   }
 #else
-    return 1;
+  lua_pushboolean(L, 0);  /* true if there is a shell */
+  return 1;
 #endif
 }
 
@@ -176,7 +178,7 @@ static int os_rename (lua_State *L) {
 
 
 static int os_tmpname (lua_State *L) {
-#if !defined(__PS3__)
+#if !defined(LUA_USE_PS3)
   char buff[LUA_TMPNAMBUFSIZE];
   int err;
   lua_tmpnam(buff, err);
@@ -191,10 +193,10 @@ static int os_tmpname (lua_State *L) {
 
 
 static int os_getenv (lua_State *L) {
-#if !defined(__PS3__) && !defined(LUA_USE_XBOX)
+#if !defined(LUA_USE_PS3) && !defined(LUA_USE_XBOX)
   lua_pushstring(L, getenv(luaL_checkstring(L, 1)));  /* if NULL push nil */
 #else
-  lua_pushstring(L, NULL);  /* no such thing */
+  lua_pushstring(L, NULL);  /* getenv does not exist on consoles */
 #endif
   return 1;
 }
@@ -277,9 +279,7 @@ static int getfield (lua_State *L, const char *key, int d, int delta) {
     res = d;
   }
   else {
-    /* unsigned avoids overflow when lua_Integer has 32 bits */
-    if (!(res >= 0 ? (lua_Unsigned)res <= (lua_Unsigned)INT_MAX + delta
-                   : (lua_Integer)INT_MIN + delta <= res))
+    if (!(res >= 0 ? res - delta <= INT_MAX : INT_MIN + delta <= res))
       return luaL_error(L, "field '%s' is out-of-bound", key);
     res -= delta;
   }

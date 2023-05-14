@@ -7,15 +7,13 @@ using namespace metal;
 
 struct VertexWeight
 {
-	int i0, i1, i2, i3, i4, i5, i6;
-	float w0, w1, w2, w3, w4, w5, w6;
-	uint boneCount;
-	uint reserved;
+	int j0, j1, j2, j3;
+	float w0, w1, w2, w3;
 };
 
 struct ComputeArgs
 {
-	NE_BUFFER(bone);
+	NE_BUFFER(joint);
 	NE_BUFFER(weight);
 	NE_BUFFER(src);
 	NE_BUFFER(dst);
@@ -28,29 +26,27 @@ Skinning_CS(texture2d<float, access::read> depthBuffer [[texture(0)]],
 			 uint3 globalId [[thread_position_in_grid]])
 {
 	uint vertexId = globalId.x;
-	
+
 	const struct Vertex vtx = ((device struct Vertex *)(args->buffers[computeArgs->srcBuffer] + computeArgs->srcOffset))[vertexId];
-	const struct VertexWeight weights = ((device struct VertexWeight *)(args->buffers[computeArgs->weightBuffer] + computeArgs->weightOffset))[vertexId];
-	device float4x4 *bones = (device float4x4 *)(args->buffers[computeArgs->boneBuffer] + computeArgs->boneOffset);
+	const struct VertexWeight vw = ((device struct VertexWeight *)(args->buffers[computeArgs->weightBuffer] + computeArgs->weightOffset))[vertexId];
+	device float4x4 *joints = (device float4x4 *)(args->buffers[computeArgs->jointBuffer] + computeArgs->jointOffset);
 	device struct Vertex *dst = &((device struct Vertex *)(args->buffers[computeArgs->dstBuffer] + computeArgs->dstOffset))[vertexId];
-	
-	float4x4 xform = bones[weights.i0] * weights.w0;
-	xform += bones[weights.i1] * weights.w1;
-	xform += bones[weights.i2] * weights.w2;
-	xform += bones[weights.i3] * weights.w3;
-	xform += bones[weights.i4] * weights.w4;
-	xform += bones[weights.i5] * weights.w5;
-	xform += bones[weights.i6] * weights.w6;
-	
+
+	float4x4 xform =
+		vw.w0 * joints[vw.j0] +
+		vw.w1 * joints[vw.j1] +
+		vw.w2 * joints[vw.j2] +
+		vw.w3 * joints[vw.j3];
+
 	float4 pos = xform * float4(vtx.x, vtx.y, vtx.z, 1.0);
 	dst->x = pos.x; dst->y = pos.y; dst->z = pos.z;
-	
+
 	float4 norm = xform * float4(vtx.nx, vtx.ny, vtx.nz, 1.0);
 	dst->nx = norm.x; dst->ny = norm.y; dst->nz = norm.z;
-	
+
 	float4 tgt = xform * float4(vtx.tx, vtx.ty, vtx.tz, 1.0);
 	dst->tx = tgt.x; dst->ty = tgt.y; dst->tz = tgt.z;
-	
+
 	dst->u = vtx.u; dst->v = vtx.v;
 	dst->r = vtx.r; dst->g = vtx.g; dst->b = vtx.b; dst->a = vtx.a;
 }
@@ -81,7 +77,7 @@ Skinning_CS(texture2d<float, access::read> depthBuffer [[texture(0)]],
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

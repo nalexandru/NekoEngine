@@ -1,18 +1,17 @@
-#include <System/System.h>
 #include <System/Thread.h>
 #include <System/AtomicLock.h>
 
 void
 Sys_InitAtomicLock(struct NeAtomicLock *lock)
 {
-	lock->read = 0;
-	lock->write = 0;
+	atomic_store(&lock->read, 0);
+	atomic_store(&lock->write, 0);
 }
 
 void
 Sys_AtomicLockRead(volatile struct NeAtomicLock *lock)
 {
-	while (lock->write != 0)
+	while (atomic_load(&lock->write) != 0)
 		Sys_Yield();
 
 	atomic_fetch_add_explicit(&lock->read, 1, memory_order_acquire);
@@ -28,11 +27,12 @@ void
 Sys_AtomicLockWrite(volatile struct NeAtomicLock *lock)
 {
 	int expected = 0;
-	while (atomic_compare_exchange_strong_explicit(&lock->write, &expected, 1,
-			memory_order_acquire, memory_order_acquire))
-		;
-	
-	while (lock->read != 0)
+	while (!atomic_compare_exchange_weak_explicit(&lock->write, &expected, 1, memory_order_acquire, memory_order_relaxed)) {
+		expected = 0;
+		Sys_Yield();
+	}
+
+	while (atomic_load(&lock->read) != 0)
 		Sys_Yield();
 }
 
@@ -68,7 +68,7 @@ Sys_AtomicUnlockWrite(volatile struct NeAtomicLock *lock)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

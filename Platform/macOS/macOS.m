@@ -39,10 +39,23 @@ extern char Darwin_osVersionString[INFO_STR_LEN];
 extern char Darwin_cpuName[INFO_STR_LEN];
 extern NSURL *Darwin_appSupportURL;
 
-static inline void _CpuInfo(void);
+static inline void CpuInfo(void);
 
 bool Sys_InitDarwinPlatform(void);
 void Sys_TermDarwinPlatform(void);
+
+int
+Sys_Main(int argc, char *argv[])
+{
+	bool rc = false;
+AUTORELEASE_BEGIN
+	rc = E_Init(argc, argv);
+AUTORELEASE_END
+	if (!rc)
+		return -1;
+
+	return E_Run();
+}
 
 enum NeMachineType
 Sys_MachineType(void)
@@ -56,14 +69,14 @@ Sys_MessageBox(const char *title, const char *message, int icon)
 	NSAlert *a = [[NSAlert alloc] init];
 	[a addButtonWithTitle:@"OK"];
 	[a setMessageText: [NSString stringWithUTF8String: message]];
-	
+
 	switch (icon) {
 	case MSG_ICON_NONE: break;
 	case MSG_ICON_INFO: [a setAlertStyle: NSAlertStyleInformational]; break;
 	case MSG_ICON_WARN: [a setAlertStyle: NSAlertStyleWarning]; break;
 	case MSG_ICON_ERROR: [a setAlertStyle: NSAlertStyleCritical]; break;
 	}
-	
+
 	[a runModal];
 	[a release];
 }
@@ -71,7 +84,7 @@ Sys_MessageBox(const char *title, const char *message, int icon)
 bool
 Sys_ProcessEvents(void)
 {
-	@autoreleasepool {
+	AUTORELEASE_BEGIN
 		while (1) {
 			NSEvent *e = [NSApp nextEventMatchingMask: NSEventMaskAny
 											untilDate: [NSDate distantPast]
@@ -83,7 +96,7 @@ Sys_ProcessEvents(void)
 
 			[NSApp sendEvent: e];
 		}
-	}
+	AUTORELEASE_END
 
 	return true;
 }
@@ -91,13 +104,15 @@ Sys_ProcessEvents(void)
 bool
 Sys_InitPlatform(void)
 {
-	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-	
+	AUTORELEASE_BEGIN
+
 	NSApplicationLoad();
 	[NSApplication sharedApplication];
 	[NSApp finishLaunching];
 	
+#if defined(MAC_OS_X_VERSION_10_6) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6
 	[NSApp setActivationPolicy: NSApplicationActivationPolicyRegular];
+#endif
 
 	EngineAppDelegate *d = [[EngineAppDelegate alloc] init];
 	[NSApp setDelegate: d];
@@ -130,18 +145,18 @@ Sys_InitPlatform(void)
 
 	if (!Sys_InitDarwinPlatform())
 		return false;
-	
-	_CpuInfo();
-	
+
+	CpuInfo();
+
 	snprintf(Darwin_osName, sizeof(Darwin_osName), "%s (macOS)", Darwin_uname.sysname);
 	snprintf(Darwin_osVersionString, sizeof(Darwin_osVersionString), "%s (%s)", Darwin_uname.release,
 				[[[NSProcessInfo processInfo] operatingSystemVersionString] UTF8String]);
 
 	if (!Sys_DirectoryExists("Data"))
 		E_SetCVarStr("Engine_DataDir", [[[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent: @"Data"] UTF8String]);
-	
-	[pool drain];
-	
+
+	AUTORELEASE_END
+
 	return true;
 }
 
@@ -152,13 +167,13 @@ Sys_TermPlatform(void)
 }
 
 intptr_t
-Sys_GetCurrentProcess()
+Sys_GetCurrentProcess(void)
 {
 	return (intptr_t)getpid();
 }
 
 int32_t
-Sys_GetCurrentProcessId()
+Sys_GetCurrentProcessId(void)
 {
 	return getpid();
 }
@@ -234,17 +249,17 @@ Sys_TerminateProcess(intptr_t handle)
 }
 
 void
-_CpuInfo(void)
+CpuInfo(void)
 {
 	processor_basic_info_t cpuInfo;
 	mach_msg_type_number_t msgCount;
-	
+
 	host_processor_info(mach_host_self(), PROCESSOR_BASIC_INFO, &Darwin_numCpus,
 						(processor_info_array_t *)&cpuInfo, &msgCount);
-	
+
 	size_t len = sizeof(Darwin_cpuName);
 	sysctlbyname("machdep.cpu.brand_string", Darwin_cpuName, &len, NULL, 0);
-	
+
 #ifdef __arm64
 	// FIXME
 	if (strstr(Darwin_cpuName, "M1"))
@@ -256,46 +271,46 @@ _CpuInfo(void)
 	bool ghz = false;
 	float f = 0.f;
 	static int sout, serr;
-	
+
 	// slience stdout, stderr
 	fflush(stdout);
 	fflush(stderr);
-	
+
 	null = open("/dev/null", O_WRONLY);
-	
+
 	sout = dup(STDOUT_FILENO);
 	dup2(null, STDOUT_FILENO);
-	
+
 	serr = dup(STDERR_FILENO);
 	dup2(null, STDERR_FILENO);
-	
+
 	close(null);
-	
+
 	fp = popen("system_profiler SPHardwareDataType | grep 'Processor Speed' | cut -c 24-", "r");
 	fgets(buff, sizeof(buff), fp);
 	pclose(fp);
-	
+
 	while (*(p++)) {
 		if (*p == ',')
 			*p = '.';
-		
+
 		if (*p != ' ')
 			continue;
-			
+
 		*p = 0x0;
 		if (*(++p) == 'G')
 			ghz = true;
-			
+
 		break;
 	}
-	
+
 	f = atof(buff) * (ghz ? 1000.f : 1.f);
 	Darwin_cpuFreq = (int32_t)f;
-	
+
 	// restore stdout, stderr
 	fflush(stdout);
 	dup2(sout, STDOUT_FILENO);
-	
+
 	fflush(stderr);
 	dup2(serr, STDERR_FILENO);
 #endif
@@ -308,7 +323,7 @@ _CpuInfo(void)
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (c) 2015-2022, Alexandru Naiman
+ * Copyright (c) 2015-2023, Alexandru Naiman
  *
  * All rights reserved.
  *
@@ -327,7 +342,7 @@ _CpuInfo(void)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

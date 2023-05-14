@@ -5,7 +5,7 @@
 
 #include "VulkanBackend.h"
 
-#if (defined(SYS_PLATFORM_WINDOWS) || defined(SYS_PLATFORM_LINUX)) && (ENABLE_AFTERMATH == 1)
+#if ENABLE_AFTERMATH == 1
 #	include <System/System.h>
 #	include <Engine/Version.h>
 #	include <Engine/Application.h>
@@ -16,18 +16,17 @@
 
 #	define VKD_AFTERMATH
 
-static void _InitAftermath(void);
-static void _TermAftermath(void);
-
-#endif
+static void InitAftermath(void);
+static void TermAftermath(void);
+#endif /* ENABLE_AFTERMATH == 1 */
 
 static VkDebugUtilsMessengerEXT _msg;
 
-static VkBool32 VKAPI_CALL _debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT, VkDebugUtilsMessageTypeFlagsEXT,
+static VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT, VkDebugUtilsMessageTypeFlagsEXT,
 											const VkDebugUtilsMessengerCallbackDataEXT *, void *);
 
 static inline const char *
-_objectType(VkObjectType type)
+ObjectType(VkObjectType type)
 {
 	switch (type) {
 	case VK_OBJECT_TYPE_INSTANCE: return "Instance";
@@ -83,8 +82,8 @@ _objectType(VkObjectType type)
 }
 
 bool
-Vkd_InitDebug(void)
-{		
+VkBk_InitDebug(void)
+{
 	VkDebugUtilsMessengerCreateInfoEXT ci =
 	{
 		.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
@@ -92,20 +91,22 @@ Vkd_InitDebug(void)
 						VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
 		.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
 							VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
-		.pfnUserCallback = _debugCallback
+		.pfnUserCallback = DebugCallback
 	};
 	if (vkCreateDebugUtilsMessengerEXT(Vkd_inst, &ci, Vkd_allocCb, &_msg) != VK_SUCCESS)
 		return false;
 
+	Vkd_transientAllocCb = NULL;
+
 #ifdef VKD_AFTERMATH
-	_InitAftermath();
+	InitAftermath();
 #endif
-	
+
 	return true;
 }
 
 bool
-Vkd_SetObjectName(VkDevice dev, void *handle, VkObjectType type, const char *name)
+VkBk_SetObjectName(VkDevice dev, void *handle, VkObjectType type, const char *name)
 {
 	if (!vkSetDebugUtilsObjectNameEXT)
 		return true;
@@ -121,20 +122,17 @@ Vkd_SetObjectName(VkDevice dev, void *handle, VkObjectType type, const char *nam
 }
 
 void
-Vkd_TermDebug(void)
+VkBk_TermDebug(void)
 {
 	vkDestroyDebugUtilsMessengerEXT(Vkd_inst, _msg, Vkd_allocCb);
-	
+
 #ifdef VKD_AFTERMATH
-	_TermAftermath();
+	TermAftermath();
 #endif
 }
 
-static VkBool32 VKAPI_CALL _debugCallback(
-	VkDebugUtilsMessageSeverityFlagBitsEXT flags,
-	VkDebugUtilsMessageTypeFlagsEXT type,
-	const VkDebugUtilsMessengerCallbackDataEXT *data,
-	void *userData)
+static VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT flags, VkDebugUtilsMessageTypeFlagsEXT type,
+	const VkDebugUtilsMessengerCallbackDataEXT *data, void *userData)
 {
 	if (!data->messageIdNumber)
 		return VK_FALSE;
@@ -152,64 +150,65 @@ static VkBool32 VKAPI_CALL _debugCallback(
 
 	for (uint32_t i = 0; i < data->objectCount; ++i)
 		Sys_LogEntry(VKDRV_MOD, severity, "\tObject [%llu][%s][%s]", data->pObjects[i].objectHandle,
-										_objectType(data->pObjects[i].objectType), data->pObjects[i].pObjectName);
+										ObjectType(data->pObjects[i].objectType), data->pObjects[i].pObjectName);
 
 	return VK_FALSE;
 }
 
 #ifdef VKD_AFTERMATH
 
-static char _aftermathDumpRoot[256];
-static NeMutex _aftermathMutex;
+static char f_aftermathDumpRoot[256];
+static NeMutex f_aftermathMutex;
 
-static void *_aftermathModule;
-static PFN_GFSDK_Aftermath_EnableGpuCrashDumps _Aftermath_EnableGpuCrashDumps;
-static PFN_GFSDK_Aftermath_DisableGpuCrashDumps _Aftermath_DisableGpuCrashDumps;
-static PFN_GFSDK_Aftermath_GpuCrashDump_CreateDecoder _Aftermath_GpuCrashDump_CreateDecoder;
-static PFN_GFSDK_Aftermath_GpuCrashDump_GenerateJSON _Aftermath_GpuCrashDump_GenerateJSON;
-static PFN_GFSDK_Aftermath_GpuCrashDump_GetJSON _Aftermath_GpuCrashDump_GetJSON;
-static PFN_GFSDK_Aftermath_GpuCrashDump_DestroyDecoder _Aftermath_GpuCrashDump_DestroyDecoder;
-static PFN_GFSDK_Aftermath_GetShaderDebugInfoIdentifier _Aftermath_GetShaderDebugInfoIdentifier;
+static void *f_aftermathModule;
+static PFN_GFSDK_Aftermath_EnableGpuCrashDumps Aftermath_EnableGpuCrashDumps;
+static PFN_GFSDK_Aftermath_DisableGpuCrashDumps Aftermath_DisableGpuCrashDumps;
+static PFN_GFSDK_Aftermath_GpuCrashDump_CreateDecoder Aftermath_GpuCrashDump_CreateDecoder;
+static PFN_GFSDK_Aftermath_GpuCrashDump_GenerateJSON Aftermath_GpuCrashDump_GenerateJSON;
+static PFN_GFSDK_Aftermath_GpuCrashDump_GetJSON Aftermath_GpuCrashDump_GetJSON;
+static PFN_GFSDK_Aftermath_GpuCrashDump_DestroyDecoder Aftermath_GpuCrashDump_DestroyDecoder;
+static PFN_GFSDK_Aftermath_GetShaderDebugInfoIdentifier Aftermath_GetShaderDebugInfoIdentifier;
 
-static void _GpuCrashDumpCb(const void *pGpuCrashDump, const uint32_t gpuCrashDumpSize, void *pUserData);
-static void _ShaderDebugInfoCb(const void *pShaderDebugInfo, const uint32_t shaderDebugInfoSize, void *pUserData);
-static void _GpuCrashDumpDescriptionCb(PFN_GFSDK_Aftermath_AddGpuCrashDumpDescription addValue, void *pUserData);
+static void GpuCrashDumpCb(const void *pGpuCrashDump, uint32_t gpuCrashDumpSize, void *pUserData);
+static void ShaderDebugInfoCb(const void *pShaderDebugInfo, uint32_t shaderDebugInfoSize, void *pUserData);
+static void GpuCrashDumpDescriptionCb(PFN_GFSDK_Aftermath_AddGpuCrashDumpDescription addValue, void *pUserData);
+static void ResolveMarkerCb(const void* pMarker, void* pUserData, void** resolvedMarkerData, uint32_t* markerSize);
 
-static void _ShaderDebugInfoLookupCb(const GFSDK_Aftermath_ShaderDebugInfoIdentifier* pIdentifier, PFN_GFSDK_Aftermath_SetData setShaderDebugInfo, void* pUserData);
-static void _ShaderLookupCb(const GFSDK_Aftermath_ShaderHash* pShaderHash, PFN_GFSDK_Aftermath_SetData setShaderBinary, void* pUserData);
-static void _ShaderInstructionsLookupCb(const GFSDK_Aftermath_ShaderInstructionsHash* pShaderInstructionsHash, PFN_GFSDK_Aftermath_SetData setShaderBinary, void* pUserData);
-static void _ShaderSourceDebugInfoLookupCb(const GFSDK_Aftermath_ShaderDebugName* pShaderDebugName, PFN_GFSDK_Aftermath_SetData setShaderBinary, void* pUserData);
+static void ShaderDebugInfoLookupCb(const GFSDK_Aftermath_ShaderDebugInfoIdentifier* pIdentifier, PFN_GFSDK_Aftermath_SetData setShaderDebugInfo, void* pUserData);
+static void ShaderLookupCb(const GFSDK_Aftermath_ShaderBinaryHash* pShaderHash, PFN_GFSDK_Aftermath_SetData setShaderBinary, void* pUserData);
+static void ShaderSourceDebugInfoLookupCb(const GFSDK_Aftermath_ShaderDebugName* pShaderDebugName, PFN_GFSDK_Aftermath_SetData setShaderBinary, void* pUserData);
 
 static void
-_InitAftermath(void)
+InitAftermath(void)
 {
-	_aftermathModule = Sys_LoadLibrary("GFSDK_Aftermath_Lib.x64");
-	if (!_aftermathModule)
+	f_aftermathModule = Sys_LoadLibrary("GFSDK_Aftermath_Lib.x64");
+	if (!f_aftermathModule)
 		return;
 
 #define LOAD_PROC(x) \
-	x = Sys_GetProcAddress(_aftermathModule, "GFSDK" #x);	\
+	x = Sys_GetProcAddress(f_aftermathModule, "GFSDK" #x);	\
 	if (!x) goto unload
 
-	LOAD_PROC(_Aftermath_EnableGpuCrashDumps);
-	LOAD_PROC(_Aftermath_DisableGpuCrashDumps);
-	LOAD_PROC(_Aftermath_GpuCrashDump_CreateDecoder);
-	LOAD_PROC(_Aftermath_GpuCrashDump_GenerateJSON);
-	LOAD_PROC(_Aftermath_GpuCrashDump_GetJSON);
-	LOAD_PROC(_Aftermath_GpuCrashDump_DestroyDecoder);
-	LOAD_PROC(_Aftermath_GetShaderDebugInfoIdentifier);
+	LOAD_PROC(Aftermath_EnableGpuCrashDumps);
+	LOAD_PROC(Aftermath_DisableGpuCrashDumps);
+	LOAD_PROC(Aftermath_GpuCrashDump_CreateDecoder);
+	LOAD_PROC(Aftermath_GpuCrashDump_GenerateJSON);
+	LOAD_PROC(Aftermath_GpuCrashDump_GetJSON);
+	LOAD_PROC(Aftermath_GpuCrashDump_DestroyDecoder);
+	LOAD_PROC(Aftermath_GetShaderDebugInfoIdentifier);
 
 #undef LOAD_PROC
 
-	Sys_InitMutex(&_aftermathMutex);
+	Sys_InitMutex(&f_aftermathMutex);
 
-	GFSDK_Aftermath_Result rc = _Aftermath_EnableGpuCrashDumps(
+	GFSDK_Aftermath_Result rc = Aftermath_EnableGpuCrashDumps(
 		GFSDK_Aftermath_Version_API,
 		GFSDK_Aftermath_GpuCrashDumpWatchedApiFlags_Vulkan,
 		GFSDK_Aftermath_GpuCrashDumpFeatureFlags_DeferDebugInfoCallbacks,
-		_GpuCrashDumpCb,
-		_ShaderDebugInfoCb,
-		_GpuCrashDumpDescriptionCb,
+		GpuCrashDumpCb,
+		ShaderDebugInfoCb,
+		GpuCrashDumpDescriptionCb,
+		ResolveMarkerCb,
 		NULL
 	);
 
@@ -219,70 +218,75 @@ _InitAftermath(void)
 	return;
 
 unload:
-	Sys_UnloadLibrary(_aftermathModule);
+	Sys_UnloadLibrary(f_aftermathModule);
 }
 
 static void
-_TermAftermath(void)
+TermAftermath(void)
 {
-	if (!_aftermathModule)
+	if (!f_aftermathModule)
 		return;
 
-	_Aftermath_DisableGpuCrashDumps();
+	Aftermath_DisableGpuCrashDumps();
 
-	Sys_TermMutex(_aftermathMutex);
-	Sys_UnloadLibrary(_aftermathModule);
+	Sys_TermMutex(f_aftermathMutex);
+	Sys_UnloadLibrary(f_aftermathModule);
 }
 
 static void
-_GpuCrashDumpCb(const void *pGpuCrashDump, const uint32_t gpuCrashDumpSize, void *pUserData)
+GpuCrashDumpCb(const void *pGpuCrashDump, const uint32_t gpuCrashDumpSize, void *pUserData)
 {
-	Sys_LockMutex(_aftermathMutex);
+	FILE *fp = NULL;
+	uint32_t jsonSize = 0;
+	char path[256], appData[256], *json = NULL;
+
+	Sys_LockMutex(f_aftermathMutex);
+
+	time_t t = time(0);
+	struct tm *tm = localtime(&t);
 
 	GFSDK_Aftermath_GpuCrashDump_Decoder decoder = { 0 };
-	GFSDK_Aftermath_Result rc = _Aftermath_GpuCrashDump_CreateDecoder(
+	GFSDK_Aftermath_Result rc = Aftermath_GpuCrashDump_CreateDecoder(
 		GFSDK_Aftermath_Version_API,
 		pGpuCrashDump,
 		gpuCrashDumpSize,
 		&decoder
 	);
+	if (!GFSDK_Aftermath_SUCCEED(rc))
+		goto error;
 
-	char appData[256];
 	Sys_DirectoryPath(SD_APP_DATA, appData, sizeof(appData));
 
-	time_t t = time(0);
-	struct tm *tm = localtime(&t);
-
-	Sys_ZeroMemory(_aftermathDumpRoot, sizeof(_aftermathDumpRoot));
-	snprintf(_aftermathDumpRoot, sizeof(_aftermathDumpRoot), "%s/GpuDump/Vulkan/%04d-%02d-%02d_%02d:%02d:%02d", appData,
+	Sys_ZeroMemory(f_aftermathDumpRoot, sizeof(f_aftermathDumpRoot));
+	snprintf(f_aftermathDumpRoot, sizeof(f_aftermathDumpRoot), "%s/GpuDump/Vulkan/%04d-%02d-%02d_%02d:%02d:%02d", appData,
 		tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
-		tm->tm_hour, tm->tm_min, tm->tm_sec);
-	Sys_CreateDirectory(_aftermathDumpRoot);
+			 tm->tm_hour, tm->tm_min, tm->tm_sec);
+	Sys_CreateDirectory(f_aftermathDumpRoot);
 
-	char path[256];
-	snprintf(path, sizeof(path), "%s/crash.nv-gpudmp", _aftermathDumpRoot);
+	snprintf(path, sizeof(path), "%s/crash.nv-gpudmp", f_aftermathDumpRoot);
 
-	FILE *fp = fopen(path, "wb");
+	fp = fopen(path, "wb");
 	if (fp) {
 		fwrite(pGpuCrashDump, gpuCrashDumpSize, 1, fp);
 		fclose(fp);
 	}
 
-	uint32_t jsonSize = 0;
-	rc = _Aftermath_GpuCrashDump_GenerateJSON(
+	rc = Aftermath_GpuCrashDump_GenerateJSON(
 		decoder,
 		GFSDK_Aftermath_GpuCrashDumpDecoderFlags_ALL_INFO,
 		GFSDK_Aftermath_GpuCrashDumpFormatterFlags_NONE,
-		_ShaderDebugInfoLookupCb,
-		_ShaderLookupCb,
-		_ShaderInstructionsLookupCb,
-		_ShaderSourceDebugInfoLookupCb,
+		ShaderDebugInfoLookupCb,
+		ShaderLookupCb,
+		ShaderSourceDebugInfoLookupCb,
 		NULL,
 		&jsonSize
 	);
+	if (!GFSDK_Aftermath_SUCCEED(rc))
+		goto error;
 
-	char *json = Sys_Alloc(sizeof(*json), jsonSize, MH_System);
-	rc = _Aftermath_GpuCrashDump_GetJSON(decoder, jsonSize, json);
+	json = Sys_Alloc(sizeof(*json), jsonSize, MH_System);
+	if (!GFSDK_Aftermath_SUCCEED(Aftermath_GpuCrashDump_GetJSON(decoder, jsonSize, json)))
+		goto error;
 
 	strncat(path, ".json", sizeof(path) - strlen(path));
 	fp = fopen(path, "wb");
@@ -291,43 +295,49 @@ _GpuCrashDumpCb(const void *pGpuCrashDump, const uint32_t gpuCrashDumpSize, void
 		fclose(fp);
 	}
 
+error:
 	Sys_Free(json);
-	_Aftermath_GpuCrashDump_DestroyDecoder(decoder);
+	Aftermath_GpuCrashDump_DestroyDecoder(decoder);
 
-	Sys_UnlockMutex(_aftermathMutex);
+	Sys_UnlockMutex(f_aftermathMutex);
 }
 
 static void
-_ShaderDebugInfoCb(const void *pShaderDebugInfo, const uint32_t shaderDebugInfoSize, void *pUserData)
+ShaderDebugInfoCb(const void *pShaderDebugInfo, const uint32_t shaderDebugInfoSize, void *pUserData)
 {
-	Sys_LockMutex(_aftermathMutex);
+	char path[256];
+	FILE *fp = NULL;
+
+	Sys_LockMutex(f_aftermathMutex);
 
 	GFSDK_Aftermath_ShaderDebugInfoIdentifier sdii;
-	GFSDK_Aftermath_Result rc = _Aftermath_GetShaderDebugInfoIdentifier(
+	GFSDK_Aftermath_Result rc = Aftermath_GetShaderDebugInfoIdentifier(
 		GFSDK_Aftermath_Version_API,
 		pShaderDebugInfo,
 		shaderDebugInfoSize,
 		&sdii
 	);
+	if (!GFSDK_Aftermath_SUCCEED(rc))
+		goto error;
 
-	char path[256];
 #ifdef _WIN32
-	snprintf(path, sizeof(path), "%s/shader-%llu%llu.nvdbg", _aftermathDumpRoot, sdii.id[0], sdii.id[1]);
+	snprintf(path, sizeof(path), "%s/shader-%llu%llu.nvdbg", f_aftermathDumpRoot, sdii.id[0], sdii.id[1]);
 #else
 	snprintf(path, sizeof(path), "%s/shader-%lu%lu.nvdbg", _aftermathDumpRoot, sdii.id[0], sdii.id[1]);
 #endif
 
-	FILE *fp = fopen(path, "wb");
+	fp = fopen(path, "wb");
 	if (fp) {
 		fwrite(pShaderDebugInfo, shaderDebugInfoSize, 1, fp);
 		fclose(fp);
 	}
 
-	Sys_UnlockMutex(_aftermathMutex);
+error:
+	Sys_UnlockMutex(f_aftermathMutex);
 }
 
 static void
-_GpuCrashDumpDescriptionCb(PFN_GFSDK_Aftermath_AddGpuCrashDumpDescription addValue, void *pUserData)
+GpuCrashDumpDescriptionCb(PFN_GFSDK_Aftermath_AddGpuCrashDumpDescription addValue, void *pUserData)
 {
 	addValue(GFSDK_Aftermath_GpuCrashDumpDescriptionKey_ApplicationName, App_applicationInfo.name);
 
@@ -343,33 +353,32 @@ _GpuCrashDumpDescriptionCb(PFN_GFSDK_Aftermath_AddGpuCrashDumpDescription addVal
 }
 
 static void
-_ShaderDebugInfoLookupCb(const GFSDK_Aftermath_ShaderDebugInfoIdentifier *pIdentifier,
-	PFN_GFSDK_Aftermath_SetData setShaderDebugInfo, void *pUserData)
+ResolveMarkerCb(const void* pMarker, void* pUserData, void** resolvedMarkerData, uint32_t* markerSize)
+{
+	// TODO
+}
+
+static void
+ShaderDebugInfoLookupCb(const GFSDK_Aftermath_ShaderDebugInfoIdentifier *pIdentifier,
+						PFN_GFSDK_Aftermath_SetData setShaderDebugInfo, void *pUserData)
 {
 	// TODO: https://github.com/NVIDIA/nsight-aftermath-samples/blob/987837f656b69cb0252c954f62a468c0aab61c6e/D3D12HelloNsightAftermath/NsightAftermathGpuCrashTracker.cpp#L297
 }
 
 static void
-_ShaderLookupCb(const GFSDK_Aftermath_ShaderHash *pShaderHash, PFN_GFSDK_Aftermath_SetData setShaderBinary, void *pUserData)
+ShaderLookupCb(const GFSDK_Aftermath_ShaderBinaryHash *pShaderHash, PFN_GFSDK_Aftermath_SetData setShaderBinary, void *pUserData)
 {
 
 }
 
 static void
-_ShaderInstructionsLookupCb(const GFSDK_Aftermath_ShaderInstructionsHash *pShaderInstructionsHash,
-	PFN_GFSDK_Aftermath_SetData setShaderBinary, void *pUserData)
+ShaderSourceDebugInfoLookupCb(const GFSDK_Aftermath_ShaderDebugName *pShaderDebugName,
+							  PFN_GFSDK_Aftermath_SetData setShaderBinary, void *pUserData)
 {
 
 }
 
-static void
-_ShaderSourceDebugInfoLookupCb(const GFSDK_Aftermath_ShaderDebugName *pShaderDebugName,
-	PFN_GFSDK_Aftermath_SetData setShaderBinary, void *pUserData)
-{
-
-}
-
-#endif /* (defined(SYS_PLATFORM_WINDOWS) || defined(SYS_PLATFORM_LINUX)) && defined(ENABLE_AFTERMATH) */
+#endif /* VKD_AFTERMATH */
 
 /* NekoEngine
  *
@@ -397,7 +406,7 @@ _ShaderSourceDebugInfoLookupCb(const GFSDK_Aftermath_ShaderDebugName *pShaderDeb
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

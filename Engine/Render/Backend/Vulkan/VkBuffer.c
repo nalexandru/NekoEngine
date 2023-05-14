@@ -5,7 +5,7 @@
 struct NeBuffer *
 Re_BkCreateBuffer(const struct NeBufferDesc *desc, uint16_t location)
 {
-	struct NeBuffer *buff = Sys_Alloc(1, sizeof(*buff), MH_RenderDriver);
+	struct NeBuffer *buff = Sys_Alloc(1, sizeof(*buff), MH_RenderBackend);
 	if (!buff)
 		return NULL;
 
@@ -22,7 +22,7 @@ Re_BkCreateBuffer(const struct NeBufferDesc *desc, uint16_t location)
 	vkGetBufferMemoryRequirements(Re_device->dev, buff->buff, &req);
 
 	if (desc->memoryType == MT_CPU_COHERENT && !Re_deviceInfo.features.coherentMemory) {
-		buff->staging = Vkd_AllocateStagingMemory(Re_device->dev, buff->buff, &req);
+		buff->staging = VkBk_AllocateStagingMemory(Re_device->dev, buff->buff, &req);
 	} else {
 		VkMemoryDedicatedAllocateInfo dai =
 		{
@@ -48,14 +48,14 @@ Re_BkCreateBuffer(const struct NeBufferDesc *desc, uint16_t location)
 
 #ifdef _DEBUG
 	if (desc->name) {
-		Vkd_SetObjectName(Re_device->dev, buff->buff, VK_OBJECT_TYPE_BUFFER, desc->name);
+		VkBk_SetObjectName(Re_device->dev, buff->buff, VK_OBJECT_TYPE_BUFFER, desc->name);
 	
 		if (buff->memory) {
 			size_t tmpLen = strlen(desc->name) + 8;
 			char *tmp = Sys_Alloc(sizeof(*tmp), tmpLen, MH_Transient);
 			snprintf(tmp, tmpLen, "%s memory", desc->name);
 
-			Vkd_SetObjectName(Re_device->dev, buff->memory, VK_OBJECT_TYPE_DEVICE_MEMORY, tmp);
+			VkBk_SetObjectName(Re_device->dev, buff->memory, VK_OBJECT_TYPE_DEVICE_MEMORY, tmp);
 		}
 	}
 #endif
@@ -212,7 +212,7 @@ Re_BkDestroyBuffer(struct NeBuffer *buff)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

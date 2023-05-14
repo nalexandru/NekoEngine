@@ -55,15 +55,15 @@ E_InitXR(void)
 	//	.enabledApiLayerNames;
 	};
 
-	snprintf(ci.applicationInfo.applicationName, sizeof(ci.applicationInfo.applicationName), "%s", App_applicationInfo.name);
-	snprintf(ci.applicationInfo.engineName, sizeof(ci.applicationInfo.engineName), "%s", "NekoEngine");
+	strlcpy(ci.applicationInfo.applicationName, App_applicationInfo.name, sizeof(ci.applicationInfo.applicationName));
+	strlcpy(ci.applicationInfo.engineName, "NekoEngine", sizeof(ci.applicationInfo.engineName));
 
 	if (xrCreateInstance(&ci, &E_xrInstance) != XR_SUCCESS)
 		return false;
 
 	XrActionSetCreateInfo asci = { .type = XR_TYPE_ACTION_SET_CREATE_INFO, .priority = 1 };
-	snprintf(asci.actionSetName, sizeof(asci.actionSetName), "%s", "NE_MASTER_ACTION_SET");
-	snprintf(asci.localizedActionSetName, sizeof(asci.localizedActionSetName), "%s", "NE_MASTER_ACTION_SET");
+	strlcpy(asci.actionSetName, "NE_MASTER_ACTION_SET", sizeof(asci.actionSetName));
+	strlcpy(asci.localizedActionSetName, "NE_MASTER_ACTION_SET", sizeof(asci.localizedActionSetName));
 
 //	XrResult rc = xrCreateActionSet(E_xrInstance, &asci, &E_masterActionSet);
 	//if (xrCreateActionSet(E_xrInstance, &asci, &E_masterActionSet) != XR_SUCCESS)
@@ -185,11 +185,11 @@ E_CreateXrSwapchain(void)
 	*E_screenHeight = swci.height;
 
 	xrEnumerateSwapchainImages(E_xrColorSwapchain, 0, &E_xrSwapchainImageCount, NULL);
-	E_xrColorImages = Sys_Alloc(sizeof(*E_xrColorImages), E_xrSwapchainImageCount, MH_RenderDriver);
+	E_xrColorImages = Sys_Alloc(sizeof(*E_xrColorImages), E_xrSwapchainImageCount, MH_RenderBackend);
 	xrEnumerateSwapchainImages(E_xrColorSwapchain, E_xrSwapchainImageCount, &E_xrSwapchainImageCount, E_xrColorImages);
 
 	xrEnumerateSwapchainImages(E_xrDepthSwapchain, 0, &E_xrSwapchainImageCount, NULL);
-	E_xrDepthImages = Sys_Alloc(sizeof(*E_xrDepthImages), E_xrSwapchainImageCount, MH_RenderDriver);
+	E_xrDepthImages = Sys_Alloc(sizeof(*E_xrDepthImages), E_xrSwapchainImageCount, MH_RenderBackend);
 	xrEnumerateSwapchainImages(E_xrDepthSwapchain, E_xrSwapchainImageCount, &E_xrSwapchainImageCount, E_xrDepthImages);
 
 	return true;
@@ -344,7 +344,7 @@ void E_TermXR(void) { }
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

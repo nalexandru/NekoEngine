@@ -5,6 +5,7 @@
 #include <UI/Font.h>
 #include <UI/Text.h>
 #include <Runtime/Runtime.h>
+#include <Render/Types.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,7 +33,8 @@ extern NeBufferHandle UI_vertexBuffer, UI_indexBuffer;
 extern uint64_t UI_vertexBufferSize, UI_indexBufferSize;
 extern struct NeArray UI_standaloneContexts;
 
-void _UI_DrawContext(void **comp, void *a);
+void UI_p_DrawContext(void **comp, void *a);
+void UI_p_InitConsoleOutput(void);
 
 #ifdef __cplusplus
 }
@@ -66,7 +68,7 @@ void _UI_DrawContext(void **comp, void *a);
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

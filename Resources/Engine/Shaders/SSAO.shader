@@ -5,6 +5,6 @@
 	"type": "graphics",
 	"modules": [
 		{ "stage": "vertex", "name": "Fullscreen_VS" },
-		{ "stage": "fragment", "name": "UI_FS" },
+		{ "stage": "fragment", "name": "SSAO_FS" },
 	]
 }

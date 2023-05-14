@@ -14,24 +14,24 @@
 
 enum NeButton X11_keymap[256];
 
-bool __InSys_rawMouseAxis = false;
+bool In_p_rawMouseAxis = false;
 
-static int _opcode, _event, _error;
+static int f_opcode, f_event, f_error;
 
-static inline enum NeButton _mapKey(const int key);
+static inline enum NeButton MapKey(const int key);
 
 bool
 In_SysInit(void)
 {
 	for (uint16_t i = 0; i < 256; ++i)
-		X11_keymap[i] = _mapKey(i);
+		X11_keymap[i] = MapKey(i);
 
-	if (!XQueryExtension(X11_display, "XInputExtension", &_opcode, &_event, &_error)) {
+	if (!XQueryExtension(X11_display, "XInputExtension", &f_opcode, &f_event, &f_error)) {
 		Sys_LogEntry(X11INMOD, LOG_WARNING, "X Input Extension not available");
 		return true;
 	}
 
-	__InSys_rawMouseAxis = true;
+	In_p_rawMouseAxis = true;
 
 	uint8_t maskData[(XI_LASTEVENT + 7) / 8] = { 0 };
 	XIEventMask mask =
@@ -130,7 +130,7 @@ HandleInput(XEvent *ev)
 {
 	static Time prevTime = { 0 };
 
-	if (ev->xcookie.type != GenericEvent || ev->xcookie.extension != _opcode || !XGetEventData(X11_display, &ev->xcookie))
+	if (ev->xcookie.type != GenericEvent || ev->xcookie.extension != f_opcode || !XGetEventData(X11_display, &ev->xcookie))
 		return false;
 
 	XIDeviceEvent *de = ev->xcookie.data;
@@ -182,7 +182,7 @@ HandleInput(XEvent *ev)
 }
 
 enum NeButton
-_mapKey(int key)
+MapKey(int key)
 {
 	if (key < 8 || key > 254)
 		return BTN_KEY_UNRECOGNIZED;
@@ -324,7 +324,7 @@ _mapKey(int key)
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (c) 2015-2022, Alexandru Naiman
+ * Copyright (c) 2015-2023, Alexandru Naiman
  *
  * All rights reserved.
  *
@@ -343,7 +343,7 @@ _mapKey(int key)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

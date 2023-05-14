@@ -1,5 +1,5 @@
-#ifndef _NE_RENDER_BACKEND_H_
-#define _NE_RENDER_BACKEND_H_
+#ifndef NE_RENDER_BACKEND_H
+#define NE_RENDER_BACKEND_H
 
 #include <Render/Types.h>
 
@@ -37,6 +37,7 @@ void Re_BkCmdBindVertexBuffers(uint32_t count, struct NeBuffer **buffers, uint64
 
 // Texture
 struct NeTexture *Re_BkCreateTexture(const struct NeTextureDesc *desc, uint16_t location);
+struct NeTexture *Re_BkCreateTransientTexture(const struct NeTextureDesc *desc, uint16_t location, uint64_t offset, uint64_t *size);
 enum NeTextureLayout Re_BkTextureLayout(const struct NeTexture *tex);
 void Re_BkDestroyTexture(struct NeTexture *tex);
 
@@ -108,11 +109,23 @@ struct NeRenderInterface
 };
 #endif
 
+#ifdef RE_NATIVE_OPENGL
+#include <GL/gl.h>
+
+struct NeRenderInterface
+{
+	GLuint(*Texture)(struct NeTexture *);
+	GLuint(*Buffer)(struct NeBuffer *);
+
+//	id<MTLDevice> device;
+};
+#endif
+
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* _NE_RENDER_BACKEND_H_ */
+#endif /* NE_RENDER_BACKEND_H */
 
 /* NekoEngine
  *
@@ -140,7 +153,7 @@ struct NeRenderInterface
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

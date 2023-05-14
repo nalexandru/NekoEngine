@@ -6,74 +6,81 @@
 #include <Engine/Config.h>
 #include <Script/Script.h>
 #include <Runtime/Runtime.h>
+#include <Interfaces/ConsoleOutput.h>
+#include <Engine/Plugin.h>
+#include <System/Log.h>
 
-static bool _visible, _enabled;
-static lua_State *_consoleVM;
-static struct NeArray _text, _line, _history;
-static uint32_t _lineLength = 81;
-static size_t _historyId = 0;
-static uint32_t *_screenBufferSize = NULL;
-static struct NeUIContext *_consoleCtx = NULL;
+#define CONSOLE_MOD		"Console"
+
+static bool f_visible, f_enabled;
+static lua_State *f_consoleVM;
+static struct NeArray f_text, f_line, f_history;
+static uint32_t f_lineLength = 81, f_screenBufferSize;
+static size_t f_historyId = 0;
+static struct NeConsoleOutput *f_output;
 
 static inline void
-_AppendText(const char *text)
+AppendText(const char *text)
 {
-	if (*_screenBufferSize == _text.count)
-		Rt_ArrayRemove(&_text, 0);
+	if (f_screenBufferSize == f_text.count)
+		Rt_ArrayRemove(&f_text, 0);
 
-	Rt_ArrayAdd(&_text, text);
+	Rt_ArrayAdd(&f_text, text);
 }
 
 bool
 E_InitConsole(void)
 {
-	_enabled = E_GetCVarBln("Console_Enable", true)->bln;
-
-	if (!_enabled)
+	f_enabled = E_GetCVarBln("Console_Enable", true)->bln;
+	if (!f_enabled)
 		return true;
 
-	_consoleVM = Sc_CreateVM();
-	if (!_consoleVM)
+	f_output = E_GetInterface(NEIF_CONSOLE_OUTPUT);
+	if (!f_output) {
+		Sys_LogEntry(CONSOLE_MOD, LOG_CRITICAL, "Console output interface not found. The console will not be available");
+		return true;
+	}
+
+	f_consoleVM = Sc_CreateVM();
+	if (!f_consoleVM)
 		return false;
 
-	_lineLength = ((uint32_t)*E_screenWidth / 12) + 1;
-	_screenBufferSize = &E_GetCVarU32("Console_ScreenBufferSize", 50)->u32;
+	f_lineLength = ((uint32_t)*E_screenWidth / 12) + 1;
+	f_screenBufferSize = E_GetCVarU32("Console_ScreenBufferSize", 50)->u32;
 
-	Rt_InitArray(&_text, *_screenBufferSize, sizeof(char) * _lineLength, MH_System);
-	Rt_InitArray(&_line, _lineLength, sizeof(char), MH_System);
-	Rt_InitArray(&_history, 10, _lineLength * sizeof(char), MH_System);
+	Rt_InitArray(&f_text, f_screenBufferSize, sizeof(char) * f_lineLength, MH_System);
+	Rt_InitArray(&f_line, f_lineLength, sizeof(char), MH_System);
+	Rt_InitArray(&f_history, 10, f_lineLength * sizeof(char), MH_System);
 
-	_consoleCtx = UI_CreateStandaloneContext(4000, 6000, *_screenBufferSize + 2);
-
-	return true;
+	return f_output->Init(f_screenBufferSize + 2);
 }
 
 void
 E_ConsolePuts(const char *s)
 {
-	if (!_enabled)
+	if (!f_enabled)
 		return;
 
 	size_t len = strlen(s);
 
-	char *buff = Sys_Alloc(sizeof(*buff), _lineLength, MH_Transient);
-	if (len > _lineLength) {
+	char *buff = Sys_Alloc(sizeof(*buff), f_lineLength, MH_Transient);
+	if (len > f_lineLength) {
 		const char *e = s + len;
-		while (e - s >= _lineLength) {
-			snprintf(buff, _lineLength, "%s", s);
-			_AppendText(buff);
-			s += _lineLength - 1;
+		while (e - s >= f_lineLength) {
+			strlcpy(buff, s, f_lineLength);
+			AppendText(buff);
+			s += f_lineLength - 1;
 		}
 	}
 
-	snprintf(buff, _lineLength, "%s", s);
-	_AppendText(buff);
+	strlcpy(buff, s, f_lineLength);
+	AppendText(buff);
 }
 
 void
 E_ConsolePrint(const char *fmt, ...)
 {
-	if (!_enabled)
+	if (!f_enabled)
 		return;
 
 	va_list args;
@@ -89,16 +96,16 @@ E_ConsolePrint(const char *fmt, ...)
 void
 E_ClearConsole(void)
 {
-	if (!_enabled)
+	if (!f_enabled)
 		return;
 
-	Rt_ClearArray(&_text, false);
+	Rt_ClearArray(&f_text, false);
 }
 
 void
 E_ConsoleExec(const char *line)
 {
-	if (!_enabled)
+	if (!f_enabled)
 		return;
 
 	if (!strncmp(line, "set ", 4)) {
@@ -149,11 +156,11 @@ E_ConsoleExec(const char *line)
 			cv = cv->next;
 		}
 	} else if (!strncmp(line, "exec ", 5)) {
-		const char *err = Sc_ExecuteFile(_consoleVM, line + 5);
+		const char *err = Sc_ExecuteFile(f_consoleVM, line + 5);
 		if (err)
 			E_ConsolePrint("ERROR: %hs", err);
 	} else {
-		const char *err = Sc_Execute(_consoleVM, line);
+		const char *err = Sc_Execute(f_consoleVM, line);
 		if (err)
 			E_ConsolePrint("ERROR: %hs", err);
 	}
@@ -162,89 +169,102 @@ E_ConsoleExec(const char *line)
 void
 E_DrawConsole(void)
 {
-	if (!_enabled || !_visible)
+	if (!f_enabled || !f_visible)
 		return;
 
-	float y = *E_screenHeight - 30.f;
+	const uint32_t lh = f_output->LineHeight();
+	uint32_t y = *E_screenHeight - lh - 10;
 
-	UI_DrawText(_consoleCtx, "> ", 0, y, 20, NULL);
-	UI_DrawText(_consoleCtx, (const char *)_line.data, 20, y, 20, NULL);
+	f_output->Puts("> ", 0, y);
+	f_output->Puts((const char *)f_line.data, lh, y);
 
-	y -= 20 * (_text.count + 1);
+	y -= lh * ((uint32_t)f_text.count + 1);
 
 	char *text;
-	Rt_ArrayForEach(text, &_text) {
-		UI_DrawText(_consoleCtx, text, 0, y, 20, NULL);
-		y += 20;
+	Rt_ArrayForEach(text, &f_text) {
+		f_output->Puts(text, 0, y);
+		y += lh;
 	}
+}
+
+void
+E_ShowConsole(bool visible)
+{
+	f_visible = visible;
+}
+
+bool
+E_ConsoleVisible(void)
+{
+	return f_visible;
 }
 
 bool
 E_ConsoleKey(enum NeButton key, bool down)
 {
-	if (!_enabled)
+	if (!f_enabled)
 		return false;
 
 	char ch = 0x0;
 	static bool _shift = false;
 
-	if (!_visible && key != BTN_KEY_TILDE)
+	if (!f_visible && key != BTN_KEY_TILDE)
 		return false;
 
 	if (down) {
 		switch (key) {
 		case BTN_KEY_UP:
-			if (!_history.count)
+			if (!f_history.count)
 				break;
 
-			Rt_ClearArray(&_line, false);
-			snprintf((char *)_line.data, Rt_ArrayByteSize(&_line), "%s", (const char *)Rt_ArrayGet(&_history, _historyId));
-			_line.count = strlen((const char *)_line.data);
+			Rt_ClearArray(&f_line, false);
+			strlcpy((char *)f_line.data, (const char *)Rt_ArrayGet(&f_history, f_historyId), Rt_ArrayByteSize(&f_line));
+			f_line.count = strlen((const char *)f_line.data);
 
-			if (_historyId) --_historyId;
+			if (f_historyId) --f_historyId;
 		break;
 		case BTN_KEY_DOWN:
-			if (!_history.count)
+			if (!f_history.count)
 				break;
 
-			if (_historyId == _history.count - 1) {
-				Rt_ClearArray(&_line, false);
-				memset(_line.data, 0x0, Rt_ArrayByteSize(&_line));
+			if (f_historyId == f_history.count - 1) {
+				Rt_ClearArray(&f_line, false);
+				memset(f_line.data, 0x0, Rt_ArrayByteSize(&f_line));
 				break;
 			}
 
-			if (_historyId < _history.count - 1) ++_historyId;
+			if (f_historyId < f_history.count - 1) ++f_historyId;
 
-			Rt_ClearArray(&_line, false);
-			snprintf((char *)_line.data, Rt_ArrayByteSize(&_line), "%s", (const char *)Rt_ArrayGet(&_history, _historyId));
-			_line.count = strlen((const char *)_line.data);
+			Rt_ClearArray(&f_line, false);
+			strlcpy((char *)f_line.data, (const char *)Rt_ArrayGet(&f_history, f_historyId), Rt_ArrayByteSize(&f_line));
+			f_line.count = strlen((const char *)f_line.data);
 		break;
 		case BTN_KEY_LEFT: break;
 		case BTN_KEY_RIGHT: break;
 		case BTN_KEY_RETURN:
-			Rt_ArrayAdd(&_line, &ch);
-			E_ConsoleExec((const char *)_line.data);
+			Rt_ArrayAdd(&f_line, &ch);
+			E_ConsoleExec((const char *)f_line.data);
 
-			Rt_ArrayAdd(&_history, _line.data);
-			_historyId = _history.count - 1;
+			Rt_ArrayAdd(&f_history, f_line.data);
+				f_historyId = f_history.count - 1;
 
-			Rt_ClearArray(&_line, false);
-			memset(_line.data, 0x0, Rt_ArrayByteSize(&_line));
+			Rt_ClearArray(&f_line, false);
+			memset(f_line.data, 0x0, Rt_ArrayByteSize(&f_line));
 		break;
 		case BTN_KEY_BKSPACE:
-			if (_line.count) {
-				--_line.count;
-				_line.data[_line.count] = 0x0;
+			if (f_line.count) {
+				--f_line.count;
+				f_line.data[f_line.count] = 0x0;
 			}
 		break;
 		case BTN_KEY_DELETE: break;
-		case BTN_KEY_TILDE: _visible = !_visible; break;
+		case BTN_KEY_TILDE: f_visible = !f_visible; break;
 		case BTN_KEY_RSHIFT:
 		case BTN_KEY_LSHIFT: _shift = true; break;
 		default:
 			ch = In_KeycodeToChar(key, _shift);
 			if (ch != 0x0)
-				Rt_ArrayAdd(&_line, &ch);
+				Rt_ArrayAdd(&f_line, &ch);
 		break;
 		}
 	} else {
@@ -258,14 +278,14 @@ E_ConsoleKey(enum NeButton key, bool down)
 void
 E_TermConsole(void)
 {
-	if (!_enabled)
+	if (!f_enabled)
 		return;
 
-	UI_DestroyStandaloneContext(_consoleCtx);
-	Rt_TermArray(&_history);
-	Rt_TermArray(&_line);
-	Rt_TermArray(&_text);
-	Sc_DestroyVM(_consoleVM);
+	f_output->Term();
+	Rt_TermArray(&f_history);
+	Rt_TermArray(&f_line);
+	Rt_TermArray(&f_text);
+	Sc_DestroyVM(f_consoleVM);
 }
 
 /* NekoEngine
@@ -294,7 +314,7 @@ E_TermConsole(void)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

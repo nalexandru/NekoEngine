@@ -13,41 +13,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\Deps\Lua\lapi.h" />
-    <ClInclude Include="..\Deps\Lua\lauxlib.h" />
-    <ClInclude Include="..\Deps\Lua\lcode.h" />
-    <ClInclude Include="..\Deps\Lua\lctype.h" />
-    <ClInclude Include="..\Deps\Lua\ldebug.h" />
-    <ClInclude Include="..\Deps\Lua\ldo.h" />
-    <ClInclude Include="..\Deps\Lua\lfunc.h" />
-    <ClInclude Include="..\Deps\Lua\lgc.h" />
-    <ClInclude Include="..\Deps\Lua\ljumptab.h" />
-    <ClInclude Include="..\Deps\Lua\llex.h" />
-    <ClInclude Include="..\Deps\Lua\llimits.h" />
-    <ClInclude Include="..\Deps\Lua\lmem.h" />
-    <ClInclude Include="..\Deps\Lua\lobject.h" />
-    <ClInclude Include="..\Deps\Lua\lopcodes.h" />
-    <ClInclude Include="..\Deps\Lua\lopnames.h" />
-    <ClInclude Include="..\Deps\Lua\lparser.h" />
-    <ClInclude Include="..\Deps\Lua\lprefix.h" />
-    <ClInclude Include="..\Deps\Lua\lstate.h" />
-    <ClInclude Include="..\Deps\Lua\lstring.h" />
-    <ClInclude Include="..\Deps\Lua\ltable.h" />
-    <ClInclude Include="..\Deps\Lua\ltm.h" />
-    <ClInclude Include="..\Deps\Lua\lua.h" />
-    <ClInclude Include="..\Deps\Lua\luaconf.h" />
-    <ClInclude Include="..\Deps\Lua\lualib.h" />
-    <ClInclude Include="..\Deps\Lua\lundump.h" />
-    <ClInclude Include="..\Deps\Lua\lvm.h" />
-    <ClInclude Include="..\Deps\Lua\lzio.h" />
-    <ClInclude Include="..\Deps\mojoAL\AL\al.h" />
-    <ClInclude Include="..\Deps\mojoAL\AL\alc.h" />
-    <ClInclude Include="..\Deps\PhysFS\physfs.h" />
-    <ClInclude Include="..\Deps\PhysFS\physfs_casefolding.h" />
-    <ClInclude Include="..\Deps\PhysFS\physfs_internal.h" />
-    <ClInclude Include="..\Deps\PhysFS\physfs_lzmasdk.h" />
-    <ClInclude Include="..\Deps\PhysFS\physfs_miniz.h" />
-    <ClInclude Include="..\Deps\PhysFS\physfs_platforms.h" />
     <ClInclude Include="..\Include\Animation\Animation.h" />
     <ClInclude Include="..\Include\Animation\Animator.h" />
     <ClInclude Include="..\Include\Animation\Clip.h" />
@@ -122,74 +87,28 @@
     <ClInclude Include="..\Include\UI\UI.h" />
     <ClInclude Include="..\Platform\Win32\Compat\stdatomic.h" />
     <ClInclude Include="..\Platform\Win32\Win32Platform.h" />
+    <ClInclude Include="Audio\OpenAL\Internal.h" />
     <ClInclude Include="Engine\ECS.h" />
     <ClInclude Include="Render\Backend\Vulkan\volk.h" />
     <ClInclude Include="Render\Backend\Vulkan\VulkanBackend.h" />
     <ClInclude Include="Render\Internal.h" />
-    <ClInclude Include="Script\Interface.h" />
+    <ClInclude Include="Script\Engine\EngineInterface.h" />
     <ClInclude Include="UI\Internal.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\Deps\Lua\lapi.c" />
-    <ClCompile Include="..\Deps\Lua\lauxlib.c" />
-    <ClCompile Include="..\Deps\Lua\lbaselib.c" />
-    <ClCompile Include="..\Deps\Lua\lcode.c" />
-    <ClCompile Include="..\Deps\Lua\lcorolib.c" />
-    <ClCompile Include="..\Deps\Lua\lctype.c" />
-    <ClCompile Include="..\Deps\Lua\ldblib.c" />
-    <ClCompile Include="..\Deps\Lua\ldebug.c" />
-    <ClCompile Include="..\Deps\Lua\ldo.c" />
-    <ClCompile Include="..\Deps\Lua\ldump.c" />
-    <ClCompile Include="..\Deps\Lua\lfunc.c" />
-    <ClCompile Include="..\Deps\Lua\lgc.c" />
-    <ClCompile Include="..\Deps\Lua\linit.c" />
-    <ClCompile Include="..\Deps\Lua\liolib.c" />
-    <ClCompile Include="..\Deps\Lua\llex.c" />
-    <ClCompile Include="..\Deps\Lua\lmathlib.c" />
-    <ClCompile Include="..\Deps\Lua\lmem.c" />
-    <ClCompile Include="..\Deps\Lua\loadlib.c" />
-    <ClCompile Include="..\Deps\Lua\lobject.c" />
-    <ClCompile Include="..\Deps\Lua\lopcodes.c" />
-    <ClCompile Include="..\Deps\Lua\loslib.c" />
-    <ClCompile Include="..\Deps\Lua\lparser.c" />
-    <ClCompile Include="..\Deps\Lua\lstate.c" />
-    <ClCompile Include="..\Deps\Lua\lstring.c" />
-    <ClCompile Include="..\Deps\Lua\lstrlib.c" />
-    <ClCompile Include="..\Deps\Lua\ltable.c" />
-    <ClCompile Include="..\Deps\Lua\ltablib.c" />
-    <ClCompile Include="..\Deps\Lua\ltm.c" />
-    <ClCompile Include="..\Deps\Lua\lundump.c" />
-    <ClCompile Include="..\Deps\Lua\lutf8lib.c" />
-    <ClCompile Include="..\Deps\Lua\lvm.c" />
-    <ClCompile Include="..\Deps\Lua\lzio.c" />
-    <ClCompile Include="..\Deps\mojoAL\mojoal.c" />
-    <ClCompile Include="..\Deps\PhysFS\physfs.c" />
-    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_7z.c" />
-    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_dir.c" />
-    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_grp.c" />
-    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_hog.c" />
-    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_iso9660.c" />
-    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_mvl.c" />
-    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_qpak.c" />
-    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_slb.c" />
-    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_unpacked.c" />
-    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_vdf.c" />
-    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_wad.c" />
-    <ClCompile Include="..\Deps\PhysFS\physfs_archiver_zip.c" />
-    <ClCompile Include="..\Deps\PhysFS\physfs_byteorder.c" />
-    <ClCompile Include="..\Deps\PhysFS\physfs_platform_windows.c" />
-    <ClCompile Include="..\Deps\PhysFS\physfs_unicode.c" />
     <ClCompile Include="..\Platform\Win32\Compat\stdatomic.c" />
+    <ClCompile Include="..\Platform\Win32\Compat\strcasecmp.c" />
     <ClCompile Include="..\Platform\Win32\Compat\strlcat.c" />
-    <ClCompile Include="..\Platform\Win32\Main.c" />
+    <ClCompile Include="..\Platform\Win32\Compat\strlcpy.c" />
     <ClCompile Include="..\Platform\Win32\Thread.c" />
     <ClCompile Include="..\Platform\Win32\Win32.c" />
     <ClCompile Include="..\Platform\Win32\Win32Input.c" />
     <ClCompile Include="..\Platform\Win32\Window.c" />
     <ClCompile Include="Animation\Animation.c" />
     <ClCompile Include="Animation\AnimationClip.c" />
-    <ClCompile Include="Animation\Animator.c" />
+    <ClCompile Include="Animation\Animator.cxx" />
     <ClCompile Include="Animation\Skeleton.cxx" />
+    <ClCompile Include="Asset\Audio.c" />
     <ClCompile Include="Asset\DDS.c" />
     <ClCompile Include="Asset\Font.c" />
     <ClCompile Include="Asset\Image.c" />
@@ -197,12 +116,11 @@
     <ClCompile Include="Asset\NAnim.c" />
     <ClCompile Include="Asset\NMesh.c" />
     <ClCompile Include="Asset\NMorph.c" />
-    <ClCompile Include="Asset\Ogg.c" />
+    <ClCompile Include="Asset\NTexture.c" />
     <ClCompile Include="Asset\TGA.c" />
-    <ClCompile Include="Asset\Wave.c" />
-    <ClCompile Include="Audio\Audio.cxx" />
-    <ClCompile Include="Audio\AudioClip.c" />
-    <ClCompile Include="Audio\Source.c" />
+    <ClCompile Include="Audio\OpenAL\OAL_Audio.cxx" />
+    <ClCompile Include="Audio\OpenAL\OAL_Clip.c" />
+    <ClCompile Include="Audio\OpenAL\OAL_Source.c" />
     <ClCompile Include="Engine\Component.c" />
     <ClCompile Include="Engine\Config.c" />
     <ClCompile Include="Engine\Console.c" />
@@ -216,7 +134,6 @@
     </ClCompile>
     <ClCompile Include="Engine\Job.c" />
     <ClCompile Include="Engine\Plugin.c" />
-    <ClCompile Include="Engine\Profiler.c" />
     <ClCompile Include="Engine\Resource.c" />
     <ClCompile Include="Engine\XR.c" />
     <ClCompile Include="Input\Input.c" />
@@ -226,6 +143,7 @@
     <ClCompile Include="Render\Backend\Pipeline.c" />
     <ClCompile Include="Render\Backend\Shader.c" />
     <ClCompile Include="Render\Backend\Texture.c" />
+    <ClCompile Include="Render\Backend\TransientResources.c" />
     <ClCompile Include="Render\Backend\Vulkan\Platform\VkDirectStorage.c" />
     <ClCompile Include="Render\Backend\Vulkan\VkAccelerationStructure.c" />
     <ClCompile Include="Render\Backend\Vulkan\VkBuffer.c" />
@@ -255,19 +173,20 @@
     <ClCompile Include="Render\Components\ModelMorph.c" />
     <ClCompile Include="Render\Components\ModelRender.c" />
     <ClCompile Include="Render\Frame.c" />
-    <ClCompile Include="Render\Graph\Graph.c" />
+    <ClCompile Include="Render\Graph\Graph.cxx" />
     <ClCompile Include="Render\Material.c" />
     <ClCompile Include="Render\Model.cxx" />
-    <ClCompile Include="Render\Pass\AccelerationStructureBuild.c" />
+    <ClCompile Include="Render\Pass\AccelerationStructureBuild.cxx" />
     <ClCompile Include="Render\Pass\Debug\DebugBounds.cxx" />
     <ClCompile Include="Render\Pass\Debug\LightBounds.cxx" />
-    <ClCompile Include="Render\Pass\Depth.c" />
-    <ClCompile Include="Render\Pass\LightCulling.c" />
-    <ClCompile Include="Render\Pass\Opaque.c" />
-    <ClCompile Include="Render\Pass\Skinning.c" />
+    <ClCompile Include="Render\Pass\Depth.cxx" />
+    <ClCompile Include="Render\Pass\LightCulling.cxx" />
+    <ClCompile Include="Render\Pass\Opaque.cxx" />
+    <ClCompile Include="Render\Pass\ShadowMap.cxx" />
+    <ClCompile Include="Render\Pass\Skinning.cxx" />
     <ClCompile Include="Render\Pass\Sky.cxx" />
-    <ClCompile Include="Render\Pass\SSAO.c" />
-    <ClCompile Include="Render\Pass\Transparent.c" />
+    <ClCompile Include="Render\Pass\SSAO.cxx" />
+    <ClCompile Include="Render\Pass\Transparent.cxx" />
     <ClCompile Include="Render\Render.c" />
     <ClCompile Include="Render\Systems.cxx" />
     <ClCompile Include="Scene\Camera.cxx" />
@@ -276,25 +195,27 @@
     <ClCompile Include="Scene\Scene.cxx" />
     <ClCompile Include="Scene\Terrain.cxx" />
     <ClCompile Include="Scene\Transform.cxx" />
-    <ClCompile Include="Script\l_Audio.c" />
-    <ClCompile Include="Script\l_Camera.c" />
-    <ClCompile Include="Script\l_Config.c" />
-    <ClCompile Include="Script\l_Console.c" />
-    <ClCompile Include="Script\l_Engine.c" />
-    <ClCompile Include="Script\l_Event.c" />
+    <ClCompile Include="Script\Engine\l_Audio.c" />
+    <ClCompile Include="Script\Engine\l_Camera.cxx" />
+    <ClCompile Include="Script\Engine\l_Config.c" />
+    <ClCompile Include="Script\Engine\l_Console.c" />
+    <ClCompile Include="Script\Engine\l_Engine.c" />
+    <ClCompile Include="Script\Engine\l_Event.c" />
+    <ClCompile Include="Script\Engine\l_Light.cxx" />
+    <ClCompile Include="Script\Engine\l_Math.cxx" />
+    <ClCompile Include="Script\Engine\l_ModelMorph.c" />
+    <ClCompile Include="Script\Engine\l_Resource.c" />
+    <ClCompile Include="Script\Engine\l_Scene.c" />
+    <ClCompile Include="Script\Engine\l_Transform.cxx" />
+    <ClCompile Include="Script\l_Array.c" />
+    <ClCompile Include="Script\l_Debug.c" />
     <ClCompile Include="Script\l_Input.c" />
     <ClCompile Include="Script\l_IO.c" />
-    <ClCompile Include="Script\l_Light.c" />
-    <ClCompile Include="Script\l_Matrix.cxx" />
     <ClCompile Include="Script\l_Render.c" />
-    <ClCompile Include="Script\l_Resource.c" />
-    <ClCompile Include="Script\l_System.c" />
-    <ClCompile Include="Script\l_Transform.cxx" />
-    <ClCompile Include="Script\l_UI.c" />
-    <ClCompile Include="Script\l_Vec3.cxx" />
-    <ClCompile Include="Script\l_Vec4.cxx" />
-    <ClCompile Include="Script\Script.c" />
     <ClCompile Include="Script\l_ScriptComponent.c" />
+    <ClCompile Include="Script\l_System.c" />
+    <ClCompile Include="Script\l_UI.c" />
+    <ClCompile Include="Script\Script.c" />
     <ClCompile Include="System\AtomicLock.c" />
     <ClCompile Include="System\Compat\getopt.c" />
     <ClCompile Include="System\Compat\reallocarray.c" />
@@ -303,6 +224,7 @@
     <ClCompile Include="System\System.c" />
     <ClCompile Include="UI\Text.c" />
     <ClCompile Include="UI\UI.c" />
+    <ClCompile Include="UI\UIConsoleOutput.c" />
     <ClCompile Include="UI\UIPass.cxx" />
   </ItemGroup>
   <ItemGroup>
@@ -350,6 +272,12 @@
       <FileType>Document</FileType>
     </CustomBuild>
     <CustomBuild Include="Render\Backend\Vulkan\Shaders\Skinning_CS.comp">
+      <FileType>Document</FileType>
+    </CustomBuild>
+    <CustomBuild Include="Render\Backend\Vulkan\Shaders\SSAOBlur_FS.frag">
+      <FileType>Document</FileType>
+    </CustomBuild>
+    <CustomBuild Include="Render\Backend\Vulkan\Shaders\SSAO_FS.frag">
       <FileType>Document</FileType>
     </CustomBuild>
     <None Include="Render\Backend\Vulkan\Shaders\Texture.glsl" />
@@ -400,27 +328,27 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(SolutionDir)Deps\steamworks\public;C:\Program Files\Mono\include;$(VK_SDK_PATH)\Include;$(SolutionDir)\Deps\Aftermath\include;$(SolutionDir)\Deps\OpenXR\include;$(SolutionDir)Include;$(SolutionDir)Deps;$(SolutionDir)Deps\PhysFS;$(SolutionDir)Deps\Lua;$(SolutionDir)Deps\mojoAL;$(SolutionDir)Platform\Win32\Compat;$(IncludePath)</IncludePath>
+    <IncludePath>$(OPENAL_SDK)\include\al;$(OPENAL_SDK)\include;$(SolutionDir)\Deps\Windows\AMD64\include;$(SolutionDir)Deps\steamworks\public;$(VK_SDK_PATH)\Include;$(SolutionDir)\Deps\Aftermath\include;$(SolutionDir)\Deps\OpenXR\include;$(SolutionDir)Include;$(SolutionDir)Deps;$(SolutionDir)Deps\PhysFS;$(SolutionDir)Deps\Lua;$(SolutionDir)Deps\mojoAL;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)\bin\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\build\$(Configuration)\$(ProjectName)\</IntDir>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <LibraryPath>$(SolutionDir)Deps\steamworks\redistributable_bin\win64;C:\Program Files\Mono\lib;$(SolutionDir)Deps\Aftermath\lib\x64;$(SolutionDir)Deps\OpenXR\x64\lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(OPENAL_SDK)\lib;$(OPENAL_SDK)\libs\Win64;$(SolutionDir)\Deps\Windows\AMD64\lib;$(SolutionDir)Deps\steamworks\redistributable_bin\win64;$(SolutionDir)Deps\Aftermath\lib\x64;$(SolutionDir)Deps\OpenXR\x64\lib;$(LibraryPath)</LibraryPath>
     <CustomBuildBeforeTargets>PreBuildEvent</CustomBuildBeforeTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)Deps\steamworks\public;C:\Program Files\Mono\include;$(VK_SDK_PATH)\Include;$(SolutionDir)\Deps\Aftermath\include;$(SolutionDir)\Deps\OpenXR\include;$(SolutionDir)Include;$(SolutionDir)Deps;$(SolutionDir)Deps\PhysFS;$(SolutionDir)Deps\Lua;$(SolutionDir)Deps\mojoAL;$(SolutionDir)Platform\Win32\Compat;$(IncludePath)</IncludePath>
+    <IncludePath>$(OPENAL_SDK)\include\al;$(OPENAL_SDK)\include;$(SolutionDir)\Deps\Windows\AMD64\include;$(SolutionDir)Deps\steamworks\public;$(VK_SDK_PATH)\Include;$(SolutionDir)\Deps\Aftermath\include;$(SolutionDir)\Deps\OpenXR\include;$(SolutionDir)Include;$(SolutionDir)Deps;$(SolutionDir)Deps\PhysFS;$(SolutionDir)Deps\Lua;$(SolutionDir)Deps\mojoAL;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)\bin\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\build\$(Configuration)\$(ProjectName)\</IntDir>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <LibraryPath>$(SolutionDir)Deps\steamworks\redistributable_bin\win64;C:\Program Files\Mono\lib;$(SolutionDir)Deps\Aftermath\lib\x64;$(SolutionDir)Deps\OpenXR\x64\lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(OPENAL_SDK)\lib;$(OPENAL_SDK)\libs\Win64;$(SolutionDir)\Deps\Windows\AMD64\lib;$(SolutionDir)Deps\steamworks\redistributable_bin\win64;$(SolutionDir)Deps\Aftermath\lib\x64;$(SolutionDir)Deps\OpenXR\x64\lib;$(LibraryPath)</LibraryPath>
     <CustomBuildBeforeTargets>PreBuildEvent</CustomBuildBeforeTargets>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_XM_NO_XMVECTOR_OVERLOADS_;AL_LIBTYPE_STATIC;_ENGINE_INTERNAL_;_CRT_SECURE_NO_WARNINGS;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_XM_NO_XMVECTOR_OVERLOADS_;_CRTDBG_MAP_ALLOC;_ENGINE_INTERNAL_;_CRT_SECURE_NO_WARNINGS;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>
@@ -434,6 +362,7 @@
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <RemoveUnreferencedCodeData>false</RemoveUnreferencedCodeData>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalOptions>/experimental:c11atomics %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -477,7 +406,7 @@ del $(IntDir)Shaders.h</Command>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_XM_NO_XMVECTOR_OVERLOADS_;AL_LIBTYPE_STATIC;_ENGINE_INTERNAL_;_CRT_SECURE_NO_WARNINGS;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_XM_NO_XMVECTOR_OVERLOADS_;_CRTDBG_MAP_ALLOC;_ENGINE_INTERNAL_;_CRT_SECURE_NO_WARNINGS;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>
@@ -495,6 +424,7 @@ del $(IntDir)Shaders.h</Command>
       <Optimization>Disabled</Optimization>
       <RemoveUnreferencedCodeData>false</RemoveUnreferencedCodeData>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalOptions>/experimental:c11atomics %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>

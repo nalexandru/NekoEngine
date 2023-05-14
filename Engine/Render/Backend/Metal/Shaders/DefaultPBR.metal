@@ -34,6 +34,8 @@ struct DrawInfo
 	NE_BUFFER(visibleIndicesAddress);
 	NE_BUFFER(instance);
 	NE_BUFFER(material);
+	uint aoMap;
+	uint irradianceMap;
 };
 
 float Attenuate(float range, float dist);
@@ -123,7 +125,7 @@ DefaultPBR_MR_O_FS(struct VsOutput in [[stage_in]],
 	const uint lightOffset = (tile.y * scn->xTileCount + tile.x) * scn->lightCount;
 	constant int32_t *visibleIndices = (constant int32_t *)(args->buffers[drawInfo->visibleIndicesAddressBuffer] + drawInfo->visibleIndicesAddressOffset);
 
-	const float4 color = PBR_MR(args, scn, mat, &visibleIndices[lightOffset], in.color, in.vPos, wsNormal.xyz, in.uv);
+	const float4 color = PBR_MR(args, scn, mat, &visibleIndices[lightOffset], in.color, in.vPos, wsNormal.xyz, in.uv, drawInfo->aoMap, in.position.xy);
 	return float4(tonemap(color.rgb, scn->exposure, scn->invGamma), color.a);
 }
 
@@ -162,7 +164,7 @@ DefaultPBR_MR_T_FS(struct VsOutputT in [[stage_in]],
 	const uint lightOffset = (tile.y * scn->xTileCount + tile.x) * scn->lightCount;
 	constant int32_t *visibleIndices = (constant int32_t *)(args->buffers[drawInfo->visibleIndicesAddressBuffer] + drawInfo->visibleIndicesAddressOffset);
 
-	const float4 color = PBR_MR(args, scn, mat, &visibleIndices[lightOffset], in.color, in.vPos, normalize(normal), in.uv);
+	const float4 color = PBR_MR(args, scn, mat, &visibleIndices[lightOffset], in.color, in.vPos, normalize(normal), in.uv, drawInfo->aoMap, in.position.xy);
 	return float4(tonemap(color.rgb, scn->exposure, scn->invGamma), color.a);
 }
 
@@ -172,45 +174,6 @@ DefaultPBR_SG_FS(struct VsOutput in [[stage_in]])
 {
 	return in.color;
 }
-
-/*float4
-AccumulateLights(MaterialInfo mi, float3 vPos, constant struct Scene *scn)
-{
-	/constant struct Light *lights = (constant struct Light *)(scn + sizeof(struct Scene));
-
-	float4 color = float4(0.0);
-	for (uint i = 0; i < scn->lightCount; ++i) {
-		struct Light l = lights[i];
-		float3 dir = float3(0.0), view = float3(0.0), light = float3(0.0);
-
-		if (l.type == LT_DIRECTIONAL) {
-			dir = l.direction;
-			light = l.intensity * l.color;
-		} else if (l.type == LT_SPOT) {
-			dir = l.position - vPos;
-
-			const float d = length(dir);
-			const float ratten = Attenuate(l.outerRadius, d);
-			const float satten = AttenuateSpot(dir, l.direction, l.outerCutoff, l.innerCutoff);
-			const float intensity = ratten * satten * l.intensity;
-
-			light =  intensity * l.color;
-		} else if (l.type == LT_POINT) {
-			dir = l.position - vPos;
-
-			const float d = length(dir);
-			const float intensity = l.intensity * max(min(1.0 - pow(d / l.outerRadius, 4.0), 1.0), 0.0) / pow(d, 2.0);
-
-			light = intensity * l.color;
-		}
-
-		color += float4(light, 1.0) * Re_EvaluateMaterial(mi, dir, view);
-	}
-
-	color = mi.diffuseColor;
-	return color;*
-	return float4(0.0);
-}*/
 
 /* NekoEngine
  *
@@ -238,7 +201,7 @@ AccumulateLights(MaterialInfo mi, float3 vPos, constant struct Scene *scn)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

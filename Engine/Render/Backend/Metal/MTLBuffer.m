@@ -3,14 +3,14 @@
 struct NeBuffer *
 Re_BkCreateBuffer(const struct NeBufferDesc *desc, uint16_t location)
 {
-	struct NeBuffer *buff = Sys_Alloc(sizeof(*buff), 1, MH_RenderDriver);
+	struct NeBuffer *buff = Sys_Alloc(sizeof(*buff), 1, MH_RenderBackend);
 	if (!buff)
 		return NULL;
 	
 	MTLResourceOptions options = MTL_GPUMemoryTypetoResourceOptions([MTL_device hasUnifiedMemory], desc->memoryType);
 
 	if (desc->usage > (BU_TRANSFER_SRC | BU_TRANSFER_DST))
-		buff->buff = MTLDrv_CreateBuffer(MTL_device, desc->size, options);
+		buff->buff = MTLBk_CreateBuffer(MTL_device, desc->size, options);
 	else
 		buff->buff = [MTL_device newBufferWithLength: desc->size options: options];
 
@@ -141,7 +141,7 @@ Re_BkDestroyBuffer(struct NeBuffer *buff)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

@@ -47,7 +47,7 @@ Re_DestroySurface(struct NeSurface *surface)
 struct NeSwapchain *
 Re_CreateSwapchain(struct NeSurface *surface, bool verticalSync)
 {
-	struct NeSwapchain *sw = Sys_Alloc(1, sizeof(*sw), MH_RenderDriver);
+	struct NeSwapchain *sw = Sys_Alloc(1, sizeof(*sw), MH_RenderBackend);
 	if (!sw)
 		return NULL;
 
@@ -98,11 +98,6 @@ Re_Present(struct NeSwapchain *sw, void *image, struct NeSemaphore *waitSemaphor
 
 	struct Mtld_SubmitInfo *si;
 	Rt_ArrayForEach(si, &ctx->submitted) {
-		if (si->wait)
-			[si->cmdBuffer encodeWaitForEvent: si->wait value: si->waitValue];
-		else
-			[si->cmdBuffer encodeWaitForEvent: sw->event value: sw->value];
-
 		if (si->signal)
 			[si->cmdBuffer encodeSignalEvent: si->signal value: si->signalValue];
 		else
@@ -187,7 +182,7 @@ Re_ScreenResized(struct NeSwapchain *sw)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

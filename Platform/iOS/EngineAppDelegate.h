@@ -1,3 +1,6 @@
+#ifndef NE_IOS_ENGINE_APP_DELEGATE_H
+#define NE_IOS_ENGINE_APP_DELEGATE_H
+
 #import <UIKit/UIKit.h>
 #import <MetalKit/MetalKit.h>
 
@@ -10,6 +13,8 @@
 
 @end
 
+#endif /* NE_IOS_ENGINE_APP_DELEGATE_H */
+
 /* NekoEngine
  *
  * EngineAppDelegate.h
@@ -17,7 +22,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (c) 2015-2022, Alexandru Naiman
+ * Copyright (c) 2015-2023, Alexandru Naiman
  *
  * All rights reserved.
  *
@@ -36,7 +41,7 @@
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

@@ -12,14 +12,23 @@
 extern "C" {
 #endif
 
-typedef bool (*NeScriptCompInitProc)(void *, const void **, const char *);
-typedef void (*NeScriptCompTermProc)(void *, const char *);
+typedef bool (*NeScriptCompInitProc)(void *comp, const void **args, const char *type, const char *script);
+typedef void (*NeScriptCompTermProc)(void *comp, const char *type, const char *script);
+
+struct NeEntityMessage
+{
+	NeEntityHandle dst;
+	uint32_t msg;
+	const void *data;
+};
 
 struct NeEntity
 {
 	size_t id;
+	uint32_t sceneId;
 	uint32_t compCount;
 	struct NeEntityComp comp[MAX_ENTITY_COMPONENTS];
+	struct NeQueue mbox;
 	uint64_t hash;
 	char name[MAX_ENTITY_NAME];
 };
@@ -36,6 +45,8 @@ struct NeCompType
 {
 	uint64_t hash;
 	size_t size, alignment;
+	bool scriptMessageHandler;
+	NeCompMessageHandlerProc messageHandler;
 	union {
 		NeCompInitProc init;
 		NeScriptCompInitProc initScript;
@@ -50,18 +61,31 @@ struct NeCompType
 struct NeECSystem
 {
 	NeECSysExecProc exec;
-	lua_State *vm;
-	NeCompTypeId *compTypes;
+	union {
+		lua_State *vm;
+		lua_State **vms;
+	};
 	uint64_t nameHash;
 	uint64_t groupHash;
-	int32_t priority;
 	size_t typeCount;
-	bool singleThread;
+	bool singleThread, enabled;
+	int32_t priority;
+	NeCompTypeId compTypes[MAX_ENTITY_COMPONENTS];
+	uint64_t scriptHash;
+	char *reload;
 };
 
 typedef bool (*NeCompSysRegisterAllProc)(void);
 
-size_t E_ComponentSize(struct NeScene *s, const struct NeCompBase *comp);
+extern struct NeQueue *ECS_mboxes;
+
+const struct NeCompType *ECS_ComponentType(NeCompTypeId typeId);
+void *ECS_CommitedComponentPtr(struct NeScene *s, NeCompHandle handle);
+void *ECS_ComponentPtr(struct NeScene *s, NeCompHandle handle);
+void *ECS_GetComponent(struct NeScene *s, NeEntityHandle handle, NeCompTypeId type);
+
+void E_DistributeMessages(void);
+void E_ProcessMessages(struct NeScene *s);
 
 bool E_InitComponents(void);
 void E_TermComponents(void);
@@ -76,6 +100,7 @@ bool E_InitSceneEntities(struct NeScene *s);
 void E_TermSceneEntities(struct NeScene *s);
 
 bool E_InitECSystems(void);
+void E_ReloadSystemScripts(void);
 void E_TermECSystems(void);
 
 #ifdef __cplusplus
@@ -110,7 +135,7 @@ void E_TermECSystems(void);
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

@@ -32,7 +32,7 @@ struct NeResInfo
 	uint32_t id;
 	int32_t references;
 	uint32_t mutable;
-	char path[256];
+	char path[236];
 };
 
 struct NeResource
@@ -41,17 +41,17 @@ struct NeResource
 	uint8_t dataStart;
 };
 
-static struct NeArray _ResTypes;
+static struct NeArray f_ResTypes;
 
-static inline NeHandle _NewResource(const char *path, const char *type, const void *ci, bool create, bool mutable);
-static inline struct NeResource *_DecodeHandle(NeHandle res, struct NeResType **rt);
-static inline void _RealUnload(struct NeResType *rt, struct NeResource *res);
-static inline void _UnloadAll(struct NeResType *);
+static inline NeHandle NewResource(const char *path, const char *type, const void *ci, bool create, bool mutable);
+static inline struct NeResource *DecodeHandle(NeHandle res, struct NeResType **rt);
+static inline void RealUnload(struct NeResType *rt, struct NeResource *res);
+static inline void UnloadAll(struct NeResType *);
 
-static inline bool _InitResourceList(uint64_t count, size_t size, struct NeResourceList *rl);
-static inline void _ResourceListAlloc(struct NeResourceList *rl, uint64_t *id, void **ptr);
-static inline void _ResourceListFree(struct NeResourceList *rl, uint64_t id, bool unlock);
-static inline void _TermResourceList(struct NeResourceList *rl);
+static inline bool InitResourceList(uint64_t count, size_t size, struct NeResourceList *rl);
+static inline void ResourceListAlloc(struct NeResourceList *rl, uint64_t *id, void **ptr);
+static inline void ResourceListFree(struct NeResourceList *rl, uint64_t id, bool unlock);
+static inline void TermResourceList(struct NeResourceList *rl);
 
 bool
 E_RegisterResourceType(const char *name, size_t size, NeResourceCreateProc create, NeResourceLoadProc load, NeResourceUnloadProc unload)
@@ -67,44 +67,44 @@ E_RegisterResourceType(const char *name, size_t size, NeResourceCreateProc creat
 	rt.create = create;
 	rt.size = size;
 
-	ert = Rt_ArrayFind(&_ResTypes, &rt, Rt_U64CmpFunc);
+	ert = Rt_ArrayFind(&f_ResTypes, &rt, Rt_U64CmpFunc);
 	if (ert) {
 		// TODO: Support multiple handlers ?
 		Sys_LogEntry(RES_MOD, LOG_WARNING, "Attempt to register handler for [%s] multiple times", name);
 		return false;
 	}
 
-	if (!_InitResourceList(50, size + sizeof(struct NeResInfo), &rt.list)) {
+	if (!InitResourceList(50, size + sizeof(struct NeResInfo), &rt.list)) {
 		Sys_LogEntry(RES_MOD, LOG_CRITICAL, "Failed to initialize resource list for type [%s]", name);
 		return false;
 	}
 
-	return Rt_ArrayAdd(&_ResTypes, &rt);
+	return Rt_ArrayAdd(&f_ResTypes, &rt);
 }
 
 NeHandle
 E_CreateResource(const char *name, const char *type, const void *info)
 {
-	return _NewResource(name, type, info, true, false);
+	return NewResource(name, type, info, true, false);
 }
 
 NeHandle
 E_LoadResource(const char *path, const char *type)
 {
-	return _NewResource(path, type, NULL, false, false);
+	return NewResource(path, type, NULL, false, false);
 }
 
 NeHandle
 E_AllocateResource(const char *name, const char *type)
 {
-	return _NewResource(name, type, NULL, false, true);
+	return NewResource(name, type, NULL, false, true);
 }
 
 void *
 E_ResourcePtr(NeHandle res)
 {
 	struct NeResType *rt;
-	struct NeResource *rptr = _DecodeHandle(res, &rt);
+	struct NeResource *rptr = DecodeHandle(res, &rt);
 	return rptr ? &rptr->dataStart : NULL;
 }
 
@@ -112,7 +112,7 @@ int32_t
 E_ResourceReferences(NeHandle res)
 {
 	struct NeResType *rt;
-	struct NeResource *rptr = _DecodeHandle(res, &rt);
+	struct NeResource *rptr = DecodeHandle(res, &rt);
 	return rptr ? rptr->info.references : 0;
 }
 
@@ -120,7 +120,7 @@ void
 E_RetainResource(NeHandle res)
 {
 	struct NeResType *rt;
-	struct NeResource *rptr = _DecodeHandle(res, &rt);
+	struct NeResource *rptr = DecodeHandle(res, &rt);
 	if (rptr)
 		++rptr->info.references;
 }
@@ -129,7 +129,7 @@ void
 E_ReleaseResource(NeHandle res)
 {
 	struct NeResType *rt;
-	struct NeResource *rptr = _DecodeHandle(res, &rt);
+	struct NeResource *rptr = DecodeHandle(res, &rt);
 	if (rptr)
 		--rptr->info.references;
 }
@@ -137,10 +137,9 @@ E_ReleaseResource(NeHandle res)
 NeHandle
 E_GPUHandleToRes(uint16_t handle, const char *type)
 {
-	uint32_t rtId = 0;
-	uint64_t hash = Rt_HashString(type);
+	const uint64_t hash = Rt_HashString(type);
 
-	rtId = (uint32_t)Rt_ArrayFindId(&_ResTypes, &hash, Rt_U64CmpFunc);
+	const uint32_t rtId = (uint32_t)Rt_ArrayFindId(&f_ResTypes, &hash, Rt_U64CmpFunc);
 	if (rtId == (uint32_t)RT_NOT_FOUND)
 		return (uint32_t)-1;
 
@@ -151,7 +150,7 @@ bool
 E_UpdateResource(NeHandle res, const void *data)
 {
 	struct NeResType *rt;
-	struct NeResource *rptr = _DecodeHandle(res, &rt);
+	struct NeResource *rptr = DecodeHandle(res, &rt);
 
 	if (!rptr || !rptr->info.mutable)
 		return false;
@@ -167,10 +166,10 @@ E_UnloadResource(NeHandle res)
 	struct NeResType *rt;
 	struct NeResource *rptr = NULL;
 
-	if (res == E_INVALID_HANDLE)
+	if (res == NE_INVALID_HANDLE)
 		return;
 
-	rptr = _DecodeHandle(res, &rt);
+	rptr = DecodeHandle(res, &rt);
 	if (!rptr)
 		return;
 
@@ -180,13 +179,13 @@ E_UnloadResource(NeHandle res)
 	if (--rptr->info.references > 0)
 		return;
 
-	_RealUnload(rt, rptr);
+	RealUnload(rt, rptr);
 }
 
 bool
 E_InitResourceSystem(void)
 {
-	if (!Rt_InitArray(&_ResTypes, 10, sizeof(struct NeResType), MH_System))
+	if (!Rt_InitArray(&f_ResTypes, 10, sizeof(struct NeResType), MH_System))
 		return false;
 
 	return true;
@@ -195,49 +194,43 @@ E_InitResourceSystem(void)
 void
 E_PurgeResources(void)
 {
-	size_t i = 0;
-	for (i = 0; i < _ResTypes.count; ++i)
-		_UnloadAll(Rt_ArrayGet(&_ResTypes, i));
+	for (size_t i = 0; i < f_ResTypes.count; ++i)
+		UnloadAll(Rt_ArrayGet(&f_ResTypes, i));
 }
 
 void
 E_TermResourceSystem(void)
 {
-	size_t i = 0;
+	for (size_t i = 0; i < f_ResTypes.count; ++i)
+		TermResourceList(&((struct NeResType *)Rt_ArrayGet(&f_ResTypes, i))->list);
 
-	for (i = 0; i < _ResTypes.count; ++i)
-		_TermResourceList(&((struct NeResType *)Rt_ArrayGet(&_ResTypes, i))->list);
-
-	Rt_TermArray(&_ResTypes);
-	memset(&_ResTypes, 0x0, sizeof(_ResTypes));
+	Rt_TermArray(&f_ResTypes);
+	memset(&f_ResTypes, 0x0, sizeof(f_ResTypes));
 }
 
 static inline NeHandle
-_NewResource(const char *path, const char *type, const void *ci, bool create, bool mutable)
+NewResource(const char *path, const char *type, const void *ci, bool create, bool mutable)
 {
 	bool rc = false;
-	uint32_t rt_id = 0;
-	NeHandle ret = E_INVALID_HANDLE;
-	uint64_t path_hash = 0, type_hash = 0;
+	NeHandle ret = NE_INVALID_HANDLE;
 	struct NeResType *rt = NULL;
 	struct NeResource *res = NULL;
 	struct NeResourceLoadInfo li = { 0 };
-	size_t i = 0;
 
 	if (!path || !type)
-		return E_INVALID_HANDLE;
+		return NE_INVALID_HANDLE;
 
-	path_hash = Rt_HashString(path);
-	type_hash = Rt_HashString(type);
+	const uint64_t path_hash = Rt_HashString(path);
+	const uint64_t type_hash = Rt_HashString(type);
 
-	rt_id = (uint32_t)Rt_ArrayFindId(&_ResTypes, &type_hash, Rt_U64CmpFunc);
-	rt = Rt_ArrayGet(&_ResTypes, rt_id);
+	const uint32_t rt_id = (uint32_t)Rt_ArrayFindId(&f_ResTypes, &type_hash, Rt_U64CmpFunc);
+	rt = Rt_ArrayGet(&f_ResTypes, rt_id);
 	if (!rt) {
 		Sys_LogEntry(RES_MOD, LOG_CRITICAL, "Resource type [%s] not found", type);
-		return E_INVALID_HANDLE;
+		return NE_INVALID_HANDLE;
 	}
 
-	for (i = 0; i < rt->list.res.count; ++i) {
+	for (size_t i = 0; i < rt->list.res.count; ++i) {
 		res = Rt_ArrayGet(&rt->list.res, i);
 
 		if (res->info.pathHash != path_hash)
@@ -250,12 +243,12 @@ _NewResource(const char *path, const char *type, const void *ci, bool create, bo
 		goto exit;
 	}
 
-	_ResourceListAlloc(&rt->list, &ret, (void **)&res);
+	ResourceListAlloc(&rt->list, &ret, (void **)&res);
 
 	if (!res)
-		return E_INVALID_HANDLE;
+		return NE_INVALID_HANDLE;
 
-	snprintf(res->info.path, sizeof(res->info.path), "%s", path);
+	strlcpy(res->info.path, path, sizeof(res->info.path));
 	res->info.pathHash = Rt_HashString(res->info.path);
 	res->info.id = (uint32_t)ret;
 	res->info.references = 1;
@@ -269,7 +262,7 @@ _NewResource(const char *path, const char *type, const void *ci, bool create, bo
 
 			if (rt->load) {
 				if ((args = strchr(path, ':'))) {
-					snprintf(path_str, sizeof(path_str), "%s", path);
+					strlcpy(path_str, path, sizeof(path_str));
 
 					args = path_str + (args - path);
 					path = path_str;
@@ -295,21 +288,21 @@ _NewResource(const char *path, const char *type, const void *ci, bool create, bo
 
 exit:
 	if (!rc) {
-		_ResourceListFree(&rt->list, ret, true);
+		ResourceListFree(&rt->list, ret, true);
 		memset(res, 0x0, sizeof(*res));
 	} else {
 		ret |= (uint64_t)rt_id << 32;
 	}
 
-	return rc ? ret : E_INVALID_HANDLE;
+	return rc ? ret : NE_INVALID_HANDLE;
 }
 
 static inline struct NeResource *
-_DecodeHandle(NeHandle res, struct NeResType **rt)
+DecodeHandle(NeHandle res, struct NeResType **rt)
 {
 	uint32_t id = E_HANDLE_ID(res);
 
-	*rt = Rt_ArrayGet(&_ResTypes, E_HANDLE_TYPE(res));
+	*rt = Rt_ArrayGet(&f_ResTypes, E_HANDLE_TYPE(res));
 	if (!*rt)
 		return NULL;
 
@@ -317,9 +310,9 @@ _DecodeHandle(NeHandle res, struct NeResType **rt)
 }
 
 static inline void
-_RealUnload(struct NeResType *rt, struct NeResource *res)
+RealUnload(struct NeResType *rt, struct NeResource *res)
 {
-	_ResourceListFree(&rt->list, res->info.id, false);
+	ResourceListFree(&rt->list, res->info.id, false);
 
 	if (rt->unload)
 		rt->unload(&res->dataStart, res->info.id);
@@ -330,10 +323,9 @@ _RealUnload(struct NeResType *rt, struct NeResource *res)
 }
 
 static inline void
-_UnloadAll(struct NeResType *rt)
+UnloadAll(struct NeResType *rt)
 {
-	size_t i = 0;
-	for (i = 0; i < rt->list.res.count; ++i) {
+	for (size_t i = 0; i < rt->list.res.count; ++i) {
 		struct NeResource *rptr = Rt_ArrayGet(&rt->list.res, i);
 
 		if (!rptr->info.pathHash)
@@ -348,12 +340,12 @@ _UnloadAll(struct NeResType *rt)
 			rptr->info.references = 0;
 		}
 
-		_RealUnload(rt, rptr);
+		RealUnload(rt, rptr);
 	}
 }
 
 static inline bool
-_InitResourceList(uint64_t count, size_t size, struct NeResourceList *rl)
+InitResourceList(uint64_t count, size_t size, struct NeResourceList *rl)
 {
 	if (!Rt_InitArray(&rl->res, (size_t)count, size, MH_System))
 		return false;
@@ -367,7 +359,7 @@ _InitResourceList(uint64_t count, size_t size, struct NeResourceList *rl)
 }
 
 static inline void
-_ResourceListAlloc(struct NeResourceList *rl, uint64_t *id, void **ptr)
+ResourceListAlloc(struct NeResourceList *rl, uint64_t *id, void **ptr)
 {
 	Sys_AtomicLockWrite(&rl->lock);
 
@@ -385,7 +377,7 @@ _ResourceListAlloc(struct NeResourceList *rl, uint64_t *id, void **ptr)
 }
 
 static inline void
-_ResourceListFree(struct NeResourceList *rl, uint64_t id, bool unlock)
+ResourceListFree(struct NeResourceList *rl, uint64_t id, bool unlock)
 {
 	Sys_AtomicLockWrite(&rl->lock);
 
@@ -396,7 +388,7 @@ _ResourceListFree(struct NeResourceList *rl, uint64_t id, bool unlock)
 }
 
 static inline void
-_TermResourceList(struct NeResourceList *rl)
+TermResourceList(struct NeResourceList *rl)
 {
 	Rt_TermArray(&rl->res);
 	Rt_TermArray(&rl->free);
@@ -428,7 +420,7 @@ _TermResourceList(struct NeResourceList *rl)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

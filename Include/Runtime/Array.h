@@ -1,5 +1,5 @@
-#ifndef _NE_RUNTIME_ARRAY_H_
-#define _NE_RUNTIME_ARRAY_H_
+#ifndef NE_RUNTIME_ARRAY_H
+#define NE_RUNTIME_ARRAY_H
 
 #include <string.h>
 #include <stdint.h>
@@ -47,14 +47,14 @@ Rt_InitArray(struct NeArray *a, size_t size, size_t elemSize, enum NeMemoryHeap 
 
 	Sys_ZeroMemory(a, sizeof(*a));
 
-	a->data = (uint8_t *)Sys_Alloc(size, elemSize, heap);
+	a->data = (uint8_t *)Sys_Alloc(elemSize, size, heap);
 	if (!a->data)
 		return false;
 
 	a->count = 0;
 	a->size = size;
 	a->elemSize = elemSize;
-	a->align = 1;
+	a->align = NE_DEFAULT_ALIGNMENT;
 	a->heap = heap;
 
 	return true;
@@ -69,7 +69,7 @@ Rt_InitArray(struct NeArray *a, size_t size, size_t elemSize, enum NeMemoryHeap 
  * @elemSize: size of one array element
  */
 static inline bool
-Rt_InitAlignedArray(struct NeArray *a, size_t size, size_t elemSize, size_t alignment)
+Rt_InitAlignedArray(struct NeArray *a, size_t size, size_t elemSize, size_t alignment, enum NeMemoryHeap heap)
 {
 	if (!a || !size || !elemSize)
 		return false;
@@ -79,7 +79,7 @@ Rt_InitAlignedArray(struct NeArray *a, size_t size, size_t elemSize, size_t alig
 
 	memset(a, 0x0, sizeof(*a));
 
-	a->data = (uint8_t *)aligned_alloc(alignment, size * elemSize);
+	a->data = (uint8_t *)Sys_AlignedAlloc(elemSize, size, alignment, heap);
 	if (!a->data)
 		return false;
 
@@ -112,7 +112,7 @@ Rt_CloneArray(struct NeArray *dst, const struct NeArray *src, enum NeMemoryHeap 
 	if (!dst || !src)
 		return false;
 
-	uint8_t *data = (uint8_t *)Sys_Alloc(src->size, src->elemSize, heap);
+	uint8_t *data = (uint8_t *)Sys_Alloc(src->elemSize, src->size, heap);
 	if (!data)
 		return false;
 
@@ -188,29 +188,40 @@ Rt_ResizeArray(struct NeArray *a, size_t size)
 	if (a->size == size)
 		return true;
 
-	if (a->align > 1) {
-		if ((a->data = (uint8_t *)aligned_alloc(a->align, size * a->elemSize)) == NULL) {
-			a->data = ptr;
-			return false;
-		}
-
-		memcpy(a->data, ptr, Rt_ArrayUsedByteSize(a));
-#ifndef SYS_PLATFORM_WINDOWS
-		free(ptr);
-#else
-		_aligned_free(ptr);
-#endif
-	} else {
-		if ((a->data = (uint8_t *)Sys_ReAlloc(a->data, size, a->elemSize, a->heap)) == NULL) {
-			a->data = ptr;
-			return false;
-		}
+	if ((a->data = (uint8_t *)Sys_AlignedReAlloc(a->data, size, a->elemSize, a->align, a->heap)) == NULL) {
+		a->data = ptr;
+		return false;
 	}
 
 	a->size = size;
 
 	if (a->size < a->count)
 		a->count = a->size;
+
+	return true;
+}
+
+/**
+ * Rt_CopyArray - copy an array
+ * @dst: destination array
+ * @src: the array to clone
+ *
+ * Return: 0 on success
+ */
+static inline bool
+Rt_CopyArray(struct NeArray *dst, const struct NeArray *src)
+{
+	if (!dst || !src)
+		return false;
+
+	if (dst->elemSize != src->elemSize)
+		return false;
+
+	if (dst->size < src->count + dst->count)
+		Rt_ResizeArray(dst, src->count + dst->count);
+
+	memcpy(dst->data + (dst->count * dst->elemSize), src->data, src->size * src->elemSize);
+	dst->count += src->count;
 
 	return true;
 }
@@ -249,10 +260,7 @@ Rt_ArrayAdd(struct NeArray *a, const void *data)
  * Returns: OK on success
  */
 static inline bool
-Rt_ArrayAddPtr(struct NeArray *a, const void *data)
-{
-	return Rt_ArrayAdd(a, &data);
-}
+Rt_ArrayAddPtr(struct NeArray *a, const void *data) { return Rt_ArrayAdd(a, &data); }
 
 /**
  * Rt_ArrayAddArray - add the contents of an array to the array
@@ -287,20 +295,18 @@ Rt_ArrayAddArray(struct NeArray *a, const struct NeArray *src)
 static inline void *
 Rt_ArrayAllocate(struct NeArray *a)
 {
-	void *ptr = NULL;
-
 	if (a->count == a->size)
 		if (!Rt_ResizeArray(a, _Rt_CalcGrowSize(a->size, a->elemSize, a->size + RT_DEF_INC)))
 			return NULL;
 
-	ptr = a->data + a->elemSize * a->count++;
+	void *ptr = a->data + a->elemSize * a->count++;
 	Sys_ZeroMemory(ptr, a->elemSize);
 
 	return ptr;
 }
 
 // Actual insert function
-static inline bool __miwa_array_insert(struct NeArray *, const void *, size_t, bool);
+static inline bool ArrayInsert(struct NeArray *a, const void *data, size_t pos, bool ordered);
 
 /**
  * Rt_ArrayInsert - insert an item in the array
@@ -315,10 +321,7 @@ static inline bool __miwa_array_insert(struct NeArray *, const void *, size_t, b
  * Returns: OK on success
  */
 static inline bool
-Rt_ArrayInsert(struct NeArray *a, const void *item, size_t pos)
-{
-	return __miwa_array_insert(a, item, pos, true);
-}
+Rt_ArrayInsert(struct NeArray *a, const void *item, size_t pos) { return ArrayInsert(a, item, pos, true); }
 
 /**
  * Rt_ArrayInsertPtr - insert a pointer in the array
@@ -327,15 +330,12 @@ Rt_ArrayInsert(struct NeArray *a, const void *item, size_t pos)
  * @pos: position to insert the item at
  *
  * Convenience function for arrays of pointers. Behaves exactly like
- * rt_array_insert()
+ * ArrayInsert()
  *
  * Returns: OK on success
  */
 static inline bool
-Rt_ArrayInsertPtr(struct NeArray *a, const void *item, size_t pos)
-{
-	return __miwa_array_insert(a, &item, pos, true);
-}
+Rt_ArrayInsertPtr(struct NeArray *a, const void *item, size_t pos) { return ArrayInsert(a, &item, pos, true); }
 
 /**
  * Rt_ArrayFastInsert - insert an item in the array
@@ -351,10 +351,7 @@ Rt_ArrayInsertPtr(struct NeArray *a, const void *item, size_t pos)
  * Returns: OK on success
  */
 static inline bool
-Rt_ArrayFastInsert(struct NeArray *a, const void *item, size_t pos)
-{
-	return __miwa_array_insert(a, item, pos, false);
-}
+Rt_ArrayFastInsert(struct NeArray *a, const void *item, size_t pos) { return ArrayInsert(a, item, pos, false); }
 
 /**
  * Rt_ArrayFastInsertPtr - insert a pointer in the array
@@ -368,22 +365,17 @@ Rt_ArrayFastInsert(struct NeArray *a, const void *item, size_t pos)
  * Returns: OK on success
  */
 static inline bool
-Rt_ArrayFastInsertPtr(struct NeArray *a, const void *item, size_t pos)
-{
-	return __miwa_array_insert(a, &item, pos, false);
-}
+Rt_ArrayFastInsertPtr(struct NeArray *a, const void *item, size_t pos) { return ArrayInsert(a, &item, pos, false); }
 
 static inline bool
 Rt_ArrayRemove(struct NeArray *a, size_t index)
 {
-	size_t i = 0;
-
-	if (!a->count || index > a->count - 1)
+	if (!a->count || index >= a->count)
 		return false;
 
 	--a->count;
 
-	for (i = index + 1; i <= a->count; ++i)
+	for (size_t i = index + 1; i <= a->count; ++i)
 		memcpy(a->data + a->elemSize * (i - 1), a->data + a->elemSize * i, a->elemSize);
 
 	return true;
@@ -392,7 +384,7 @@ Rt_ArrayRemove(struct NeArray *a, size_t index)
 static inline void *
 Rt_ArrayGet(const struct NeArray *a, size_t id)
 {
-	if (id > a->size)
+	if (id >= a->count)
 		return NULL;
 
 	return a->data + a->elemSize * id;
@@ -401,7 +393,7 @@ Rt_ArrayGet(const struct NeArray *a, size_t id)
 static inline void *
 Rt_ArrayGetPtr(const struct NeArray *a, size_t id)
 {
-	if (id > a->size)
+	if (id >= a->count)
 		return NULL;
 
 	return *(void **)Rt_ArrayGet(a, id);
@@ -410,9 +402,7 @@ Rt_ArrayGetPtr(const struct NeArray *a, size_t id)
 static inline void *
 Rt_ArrayFind(const struct NeArray *a, const void *data, RtCmpFunc cmpFunc)
 {
-	size_t i;
-
-	for (i = 0; i < a->count; ++i)
+	for (size_t i = 0; i < a->count; ++i)
 		if (!cmpFunc(a->data + a->elemSize * i, data))
 			return a->data + a->elemSize * i;
 
@@ -422,9 +412,7 @@ Rt_ArrayFind(const struct NeArray *a, const void *data, RtCmpFunc cmpFunc)
 static inline size_t
 Rt_ArrayFindId(const struct NeArray *a, const void *data, RtCmpFunc cmpFunc)
 {
-	size_t i;
-
-	for (i = 0; i < a->count; ++i)
+	for (size_t i = 0; i < a->count; ++i)
 		if (!cmpFunc(a->data + a->elemSize * i, data))
 			return i;
 
@@ -434,9 +422,7 @@ Rt_ArrayFindId(const struct NeArray *a, const void *data, RtCmpFunc cmpFunc)
 static inline size_t
 Rt_PtrArrayFindId(const struct NeArray *a, const void *ptr)
 {
-	size_t i;
-
-	for (i = 0; i < a->count; ++i)
+	for (size_t i = 0; i < a->count; ++i)
 		if (Rt_ArrayGetPtr(a, i) == ptr)
 			return i;
 
@@ -446,19 +432,15 @@ Rt_PtrArrayFindId(const struct NeArray *a, const void *ptr)
 static inline void *
 Rt_ArrayBSearch(const struct NeArray *a, const void *data, RtCmpFunc cmpFunc)
 {
-	size_t start = 0, end = a->count - 1, mid;
-	int32_t c;
-	void *elem = 0;
-
 	if (!a->count)
 		return NULL;
 
+	size_t start = 0, end = a->count - 1;
 	while (start <= end && start < a->count && end < a->count) {
-		mid = start + (end - start) / 2;
+		const size_t mid = start + (end - start) / 2;
+		void *elem = a->data + a->elemSize * mid;
 
-		elem = a->data + a->elemSize * mid;
-
-		c = cmpFunc(elem, data);
+		const int32_t c = cmpFunc(elem, data);
 		if (!c)
 			return elem;
 		else if (c < 0)
@@ -473,19 +455,15 @@ Rt_ArrayBSearch(const struct NeArray *a, const void *data, RtCmpFunc cmpFunc)
 static inline size_t
 Rt_ArrayBSearchId(const struct NeArray *a, const void *data, RtCmpFunc cmpFunc)
 {
-	size_t start = 0, end = a->count - 1, mid;
-	int32_t c;
-	void *elem = 0;
-
 	if (!a->count)
 		return RT_NOT_FOUND;
 
+	size_t start = 0, end = a->count - 1;
 	while (start <= end && start < a->count && end < a->count) {
-		mid = start + (end - start) / 2;
+		const size_t mid = start + (end - start) / 2;
+		const void *elem = a->data + a->elemSize * mid;
 
-		elem = a->data + a->elemSize * mid;
-
-		c = cmpFunc(elem, data);
+		const int32_t c = cmpFunc(elem, data);
 		if (!c)
 			return mid;
 		else if (c < 0)
@@ -498,31 +476,24 @@ Rt_ArrayBSearchId(const struct NeArray *a, const void *data, RtCmpFunc cmpFunc)
 }
 
 static inline void
-Rt_ArraySort(struct NeArray *a, RtSortFunc sortFunc)
-{
-	qsort(a->data, a->count, a->elemSize, sortFunc);
-}
+Rt_ArraySort(struct NeArray *a, RtSortFunc sortFunc) { qsort(a->data, a->count, a->elemSize, sortFunc); }
 
 static inline bool
 Rt_ArrayReverse(struct NeArray *a)
 {
-	void *tmp = NULL;
-	uint64_t s = 0, e = 0;
-	void *start = 0, *end = 0;
-
 	if (!a->count)
 		return false;
 
-	tmp = Sys_Alloc(1, a->elemSize, MH_Transient);
+	void *tmp = Sys_Alloc(1, a->elemSize, MH_Transient);
 	if (!tmp)
 		return false;
 
-	s = 0;
-	e = a->count - 1;
+	uint64_t s = 0;
+	uint64_t e = a->count - 1;
 
 	while (s < e) {
-		start = a->data + a->elemSize * s++;
-		end = a->data + a->elemSize * e--;
+		void *start = a->data + a->elemSize * s++;
+		void *end = a->data + a->elemSize * e--;
 
 		memcpy(tmp, start, a->elemSize);
 		memcpy(start, end, a->elemSize);
@@ -535,11 +506,11 @@ Rt_ArrayReverse(struct NeArray *a)
 static inline size_t
 Rt_ArrayUpperBound(const struct NeArray *a, const void *data, RtCmpFunc cmpFunc)
 {
-	size_t low = 0, mid = 0;
+	size_t low = 0;
 	size_t high = a->count;
 
 	while (low < high) {
-		mid = (low + high) / 2;
+		const size_t mid = (low + high) / 2;
 
 		if (cmpFunc(a->data + a->elemSize * mid, data) < 0)
 			high = mid;
@@ -553,11 +524,11 @@ Rt_ArrayUpperBound(const struct NeArray *a, const void *data, RtCmpFunc cmpFunc)
 static inline size_t
 Rt_ArrayLowerBound(const struct NeArray *a, const void *data, RtCmpFunc cmpFunc)
 {
-	size_t low = 0, mid = 0;
+	size_t low = 0;
 	size_t high = a->count;
 
 	while (low < high) {
-		mid = (low + high) / 2;
+		const size_t mid = (low + high) / 2;
 
 		if (cmpFunc(a->data + a->elemSize * mid, data) >= 0)
 			high = mid;
@@ -569,7 +540,7 @@ Rt_ArrayLowerBound(const struct NeArray *a, const void *data, RtCmpFunc cmpFunc)
 }
 
 #define Rt_FillArray(a) (a)->count = (a)->size
-#define Rt_ZeroArray(a) memset((a)->data, 0x0, (a)->elemSize * (a)->count); a->count = 0
+#define Rt_ZeroArray(a) memset((a)->data, 0x0, (a)->elemSize * (a)->count); (a)->count = 0
 
 static inline void
 Rt_ClearArray(struct NeArray *a, bool freeMemory)
@@ -579,18 +550,9 @@ Rt_ClearArray(struct NeArray *a, bool freeMemory)
 	if (!freeMemory || !a->data)
 		return;
 
-	a->size = 0;
-
-	if (a->align > 1)
-#ifndef SYS_PLATFORM_WINDOWS
-		free(a->data);
-#else
-		_aligned_free(a->data);
-#endif
-	else
-		Sys_Free(a->data);
-
+	Sys_Free(a->data);
 	a->data = NULL;
+	a->size = 0;
 }
 
 static inline void
@@ -603,16 +565,16 @@ Rt_TermArray(struct NeArray *a)
 }
 
 #ifdef __cplusplus
-#define Rt_ArrayForEach(var, a, type)					\
-	for (size_t miwa_rtafei = 0;						\
-		(miwa_rtafei < (a)->count) &&					\
-			(var = (type)Rt_ArrayGet(a, miwa_rtafei));	\
+#define Rt_ArrayForEach(var, a, type)						\
+	for (size_t miwa_rtafei = 0;							\
+		(miwa_rtafei < (a)->count) &&						\
+			((var) = (type)Rt_ArrayGet(a, miwa_rtafei));	\
 		++miwa_rtafei)
 
 #define Rt_ArrayForEachPtr(var, a, type)					\
 	for (size_t miwa_rtafei = 0;							\
 		(miwa_rtafei < (a)->count) &&						\
-			(var = (type)Rt_ArrayGetPtr(a, miwa_rtafei));	\
+			((var) = (type)Rt_ArrayGetPtr(a, miwa_rtafei));	\
 		++miwa_rtafei)
 #else
 #define Rt_ArrayForEach(var, a)						\
@@ -631,21 +593,17 @@ Rt_TermArray(struct NeArray *a)
 // You are not supposed to call this function directly;
 // Use the wrappers defined above instead.
 static inline bool
-__miwa_array_insert(struct NeArray *a, const void *data, size_t pos, bool ordered)
+ArrayInsert(struct NeArray *a, const void *data, size_t pos, bool ordered)
 {
-	size_t i = 0;
-
 	if (a->count == a->size)
-		if (Rt_ResizeArray(a, _Rt_CalcGrowSize(a->size,
-				a->elemSize, a->size + RT_DEF_INC)))
+		if (Rt_ResizeArray(a, _Rt_CalcGrowSize(a->size, a->elemSize, a->size + RT_DEF_INC)))
 			return false;
 
-	if (!ordered) {
+	if (!ordered)
 		memcpy(a->data + a->elemSize * a->count, Rt_ArrayGet(a, pos), a->elemSize);
-	} else {
-		for (i = a->count; i > pos; --i)
+	else
+		for (size_t i = a->count; i > pos; --i)
 			memcpy(a->data + a->elemSize * i, a->data + a->elemSize * (i - 1), a->elemSize);
-	}
 
 	memcpy(a->data + a->elemSize * pos, data, a->elemSize);
 	++a->count;
@@ -657,7 +615,7 @@ __miwa_array_insert(struct NeArray *a, const void *data, size_t pos, bool ordere
 }
 #endif
 
-#endif /* _NE_RUNTIME_ARRAY_H_ */
+#endif /* NE_RUNTIME_ARRAY_H */
 
 /* NekoEngine
  *
@@ -685,7 +643,7 @@ __miwa_array_insert(struct NeArray *a, const void *data, size_t pos, bool ordere
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

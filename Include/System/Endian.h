@@ -1,23 +1,13 @@
-#ifndef _NE_SYSTEM_ENDIAN_H_
-#define _NE_SYSTEM_ENDIAN_H_
+#ifndef NE_SYSTEM_ENDIAN_H
+#define NE_SYSTEM_ENDIAN_H
 
 #include <stdint.h>
+
+#include <System/PlatformDetect.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-static inline bool
-Sys_BigEndian(void)
-{
-	union
-	{
-		uint32_t i;
-		char c[4];
-	} bint = { 0x01020304 };
-
-	return (bint.c[0] == 1); 
-}
 
 static inline int16_t
 Sys_SwapInt16(int16_t val)
@@ -71,7 +61,7 @@ Sys_SwapFloat(float val)
 }
 #endif
 
-#endif /* _NE_SYSTEM_ENDIAN_H_ */
+#endif /* NE_SYSTEM_ENDIAN_H */
 
 /* NekoEngine
  *
@@ -99,7 +89,7 @@ Sys_SwapFloat(float val)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

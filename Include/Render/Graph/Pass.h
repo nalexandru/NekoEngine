@@ -1,5 +1,5 @@
-#ifndef _NE_RENDER_GRAPH_PASS_H_
-#define _NE_RENDER_GRAPH_PASS_H_
+#ifndef NE_RENDER_GRAPH_PASS_H
+#define NE_RENDER_GRAPH_PASS_H
 
 #include <Render/Types.h>
 #include <Render/Core.h>
@@ -18,26 +18,32 @@ struct NeRenderPass
 {
 	NePassInitProc Init;
 	NePassTermProc Term;
-
 	NePassSetupProc Setup;
 	NePassExecuteProc Execute;
 };
 
-extern struct NeRenderPass RP_depthPrePass;
-extern struct NeRenderPass RP_lightCulling;
-extern struct NeRenderPass RP_ui;
-extern struct NeRenderPass RP_opaque;
-extern struct NeRenderPass RP_transparent;
-extern struct NeRenderPass RP_sky;
-extern struct NeRenderPass RP_debugBounds;
-extern struct NeRenderPass RP_lightBounds;
-extern struct NeRenderPass RP_skinning;
+void Re_RegisterPass(const char *name, const struct NeRenderPass *pass);
+
+#define NE_RENDER_PASS(passName, passDefinition)												\
+struct passName passDefinition;																	\
+static bool passName ## _Init(struct passName **pass);											\
+static void passName ## _Term(struct passName *pass);											\
+static bool passName ## _Setup(struct passName *pass, struct NeArray *resources);				\
+static void passName ## _Execute(struct passName *pass, const struct NeArray *resources);		\
+struct NeRenderPass NeRP_ ## passName =															\
+{																								\
+	.Init = (NePassInitProc)passName ## _Init,													\
+	.Term = (NePassTermProc)passName ## _Term,													\
+	.Setup = (NePassSetupProc)passName ## _Setup,												\
+	.Execute = (NePassExecuteProc)passName ## _Execute											\
+};																								\
+NE_INITIALIZER(NeRPRegister_ ## passName) { Re_RegisterPass(#passName, &NeRP_ ## passName); }
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* _NE_RENDER_GRAPH_PASS_H_ */
+#endif /* NE_RENDER_GRAPH_PASS_H */
 
 /* NekoEngine
  *
@@ -65,7 +71,7 @@ extern struct NeRenderPass RP_skinning;
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

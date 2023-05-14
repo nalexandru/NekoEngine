@@ -3,12 +3,12 @@ EXPORTS
 	E_screenWidth DATA
 	E_screenHeight DATA
 	E_deltaTime DATA
-	Scn_activeCamera DATA
 	Scn_activeScene DATA
 	Re_frameId DATA
 	Re_context DATA
 	Re_contexts DATA
 	Re_deviceInfo DATA
+	Re_swapchain DATA
 
 	reallocarray
 
@@ -18,9 +18,11 @@ EXPORTS
 
 	E_ResourcePtr
 
+	E_FindEntityS
+	E_SendMessage
 	E_CreateEntityS
-	E_AddNewComponentS
-	E_CreateComponentS
+	E_AddComponent
+	E_AddNewComponent
 	E_CreateComponentIdS
 	E_DestroyComponentS
 	E_ComponentPtrS
@@ -32,6 +34,7 @@ EXPORTS
 	E_GetAllComponentsS
 	E_RegisterComponent
 	E_RenameEntity
+	E_ConsoleVisible
 
 	E_GetCVarStr
 	E_GetCVarI32
@@ -124,8 +127,8 @@ EXPORTS
 	Sys_DirectoryExists
 	Sys_CreateDirectory
 
-	Sys_Alloc
-	Sys_ReAlloc
+	Sys_AlignedAlloc
+	Sys_AlignedReAlloc
 	Sys_Free
 	Sys_ZeroMemory
 
@@ -141,17 +144,17 @@ EXPORTS
 	Sys_SetThreadAffinity
 	Sys_JoinThread
 	Sys_TermThread
-	
+
 	Sys_InitMutex
 	Sys_LockMutex
 	Sys_UnlockMutex
 	Sys_TermMutex
-	
+
 	Sys_InitFutex
 	Sys_LockFutex
 	Sys_UnlockFutex
 	Sys_TermFutex
-	
+
 	Sys_InitConditionVariable
 	Sys_Signal
 	Sys_Broadcast
@@ -159,8 +162,127 @@ EXPORTS
 	Sys_WaitFutex
 	Sys_TermConditionVariable
 
-	Sc_RegisterInitScript
 	Sc_RegisterInterface
+	Sc_RegisterInterfaceScript
+
+	Re_BeginDrawCommandBuffer
+	Re_BeginComputeCommandBuffer
+	Re_BeginTransferCommandBuffer
+	Re_EndCommandBuffer
+	Re_CmdBindVertexBuffer
+	Re_CmdBindVertexBuffers
+	Re_CmdBindIndexBuffer
+	Re_CmdBindPipeline
+	Re_CmdPushConstants
+	Re_CmdExecuteSecondary
+	Re_CmdBeginRenderPass
+	Re_CmdEndRenderPass
+	Re_CmdSetViewport
+	Re_CmdSetScissor
+	Re_CmdSetLineWidth
+	Re_CmdDraw
+	Re_CmdDrawIndexed
+	Re_CmdDrawIndirect
+	Re_CmdDrawIndexedIndirect
+	Re_CmdDrawMeshTasks
+	Re_CmdDrawMeshTasksIndirect
+	Re_CmdDrawMeshTasksIndirectCount
+	Re_CmdDispatch
+	Re_CmdDispatchIndirect
+	Re_CmdTraceRays
+	Re_CmdTraceRaysIndirect
+	Re_CmdBlit
+	Re_CmdLoadBuffer
+	Re_CmdLoadTexture
+	Re_QueueCompute
+	Re_QueueGraphics
+	Re_QueueTransfer
+	Re_ExecuteCompute
+	Re_ExecuteGraphics
+	Re_ExecuteTransfer
+	Re_BeginDirectIO
+	Re_SubmitDirectIO
+	Re_ExecuteDirectIO
+	Re_CmdBarrier
+	Re_CreateBuffer
+	Re_UpdateBuffer
+	Re_CmdUpdateBuffer
+	Re_CmdCopyBuffer
+	Re_MapBuffer
+	Re_FlushBuffer
+	Re_UnmapBuffer
+	Re_BufferAddress
+	Re_BufferDesc
+	Re_ReserveBufferId
+	Re_ReleaseBufferId
+	Re_TextureDesc
+	Re_TextureLayout
+	Re_CmdCopyBufferToTexture
+	Re_CmdCopyTextureToBuffer
+	Re_ReserveTextureId
+	Re_ReleaseTextureId
+	Re_CreateSampler
+	Re_DestroySampler
+	Re_CreateFramebuffer
+	Re_SetAttachment
+	Re_DestroyFramebuffer
+	Re_GetShader
+	Re_AcquireNextImage
+	Re_Present
+	Re_SwapchainFormat
+	Re_SwapchainTexture
+	Re_SwapchainDesc
+	Re_SwapchainTextureDesc
+	Re_GraphicsPipeline
+	Re_ComputePipeline
+	Re_RayTracingPipeline
+	Re_CreateSemaphore
+	Re_WaitSemaphore
+	Re_WaitSemaphores
+	Re_SignalSemaphore
+	Re_DestroySemaphore
+	Re_CreateFence
+	Re_WaitForFence
+	Re_DestroyFence
+	Re_CreateRenderPassDesc
+	Re_DestroyRenderPassDesc
+	Re_OpenFile
+	Re_CloseFile
+	Re_CreateRenderInterface
+	Re_DestroyRenderInterface
+	Re_TDestroyHNeBuffer
+	Re_TDestroyNeBuffer
+	Re_TDestroyNeTexture
+	Re_TDestroyNeFramebuffer
+	Re_TDestroyNeAccelerationStructure
+	Re_TDestroyNeSampler
+	Re_WaitIdle
+	Re_OffsetAddress
+	Re_MaterialAddress
+	Re_RegisterMaterialType
+	Re_BuildMeshBounds
+	Re_CreateAccelerationStructure
+	Re_AccelerationStructureHandle
+	Re_DestroyAccelerationStructure
+	Re_CreateShaderBindingTable
+	Re_SBTAddShader
+	Re_BuildShaderBindingTable
+	Re_DestroyShaderBindingTable
+	Re_CmdBuildAccelerationStructures
+	Re_CreateTransientTexture
+	Re_CreateTransientBuffer
+	Re_AddGraphTexture
+	Re_AddGraphBuffer
+	Re_AddGraphData
+	Re_GraphTexture
+	Re_GraphTextureLocation
+	Re_GraphTexturePtr
+	Re_GraphTextureDesc
+	Re_GraphBuffer
+	Re_GraphData
+	Re_SetMorph
+	Re_SetModel
+	Re_RegisterPass
 
 	NeWin32_UTF8toUCS2
 	NeWin32_UCS2toUTF8
@@ -168,9 +290,28 @@ EXPORTS
 	lua_createtable
 	lua_setglobal
 	lua_getglobal
-
+	lua_settop
+	lua_gettop
+	lua_isnumber
+	lua_isinteger
+	lua_type
+	lua_toboolean
+	lua_tonumberx
+	lua_tointegerx
+	lua_touserdata
+	lua_pushnumber
 	lua_pushboolean
-
+	lua_pushinteger
+	lua_pushstring
+	lua_setfield
+	luaL_optlstring
+	luaL_checknumber
+	luaL_optnumber
+	luaL_optinteger
+	luaL_newmetatable
+	luaL_checkudata
 	luaL_checkversion_
 	luaL_checklstring
 	luaL_setfuncs
+	lua_rawseti
+	lua_rawgeti

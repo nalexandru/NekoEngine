@@ -17,7 +17,7 @@ Re_BkGraphicsPipeline(const struct NeGraphicsPipelineDesc *gpDesc)
 	if (_cache)
 		desc.binaryArchives = @[ _cache ];
 	
-	struct NePipeline *p = Sys_Alloc(sizeof(*p), 1, MH_RenderDriver);
+	struct NePipeline *p = Sys_Alloc(sizeof(*p), 1, MH_RenderBackend);
 	if (!p) {
 		[desc release];
 		return NULL;
@@ -69,9 +69,8 @@ Re_BkGraphicsPipeline(const struct NeGraphicsPipelineDesc *gpDesc)
 		desc.colorAttachments[i].destinationAlphaBlendFactor = NeToMTLBlendFactor(gpDesc->attachments[i].dstAlpha);
 	}
 
-	bool depth = false;
 	if (gpDesc->flags & RE_DEPTH_TEST) {
-		desc.depthAttachmentPixelFormat = NeToMTLTextureFormat(gpDesc->depthFormat);
+		desc.depthAttachmentPixelFormat = gpDesc->renderPassDesc->depthFormat;
 	
 		MTLDepthStencilDescriptor *dssDesc = [[MTLDepthStencilDescriptor alloc] init];
 		
@@ -88,8 +87,6 @@ Re_BkGraphicsPipeline(const struct NeGraphicsPipelineDesc *gpDesc)
 		
 		p->render.depthStencil = [MTL_device newDepthStencilStateWithDescriptor: dssDesc];
 		[dssDesc release];
-
-		depth = true;
 	}
 
 	for (uint32_t i = 0; i < gpDesc->renderPassDesc->inputAttachments; ++i) {
@@ -115,10 +112,9 @@ Re_BkGraphicsPipeline(const struct NeGraphicsPipelineDesc *gpDesc)
 	if (!pso) {
 		Sys_LogEntry(MPMOD, LOG_CRITICAL, "Failed to create graphics pipeline: %s",
 					 [[err localizedDescription] UTF8String]);
-		
 		return NULL;
 	}
-		
+
 	switch (gpDesc->flags & RE_TOPOLOGY_BITS) {
 	case RE_TOPOLOGY_TRIANGLES: p->render.primitiveType = MTLPrimitiveTypeTriangle; break;
 	case RE_TOPOLOGY_LINES: p->render.primitiveType = MTLPrimitiveTypeLine; break;
@@ -164,7 +160,7 @@ Re_BkComputePipeline(const struct NeComputePipelineDesc *cpDesc)
 	[desc release];
 	
 	if (pso) {
-		struct NePipeline *p = Sys_Alloc(sizeof(*p), 1, MH_RenderDriver);
+		struct NePipeline *p = Sys_Alloc(sizeof(*p), 1, MH_RenderBackend);
 		p->type = PS_COMPUTE;
 		p->compute.state = pso;
 		p->compute.threadsPerThreadgroup = MTLSizeMake(cpDesc->threadsPerThreadgroup.x,
@@ -195,7 +191,7 @@ Re_BkRayTracingPipeline(const struct NeRayTracingPipelineDesc *desc)
 	[pDesc release];
 	
 	if (pso) {
-		struct NePipeline *p = Sys_Alloc(sizeof(*p), 1, MH_RenderDriver);
+		struct NePipeline *p = Sys_Alloc(sizeof(*p), 1, MH_RenderBackend);
 		p->type = PS_RAY_TRACING;
 		p->render.state = pso;
 		
@@ -286,7 +282,7 @@ Re_BkDestroyPipeline(struct NePipeline *p)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

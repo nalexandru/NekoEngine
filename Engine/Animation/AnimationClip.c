@@ -7,7 +7,6 @@ Anim_CreateClip(const char *name, const struct NeAnimationClipCreateInfo *ci, st
 {
 	memcpy(ac->name, ci->name, sizeof(ac->name));
 
-	ac->ticks = ci->ticks;
 	ac->duration = ci->duration;
 
 	if (!Rt_InitArray(&ac->channels, ci->channelCount, sizeof(struct NeAnimationChannel), MH_Asset))
@@ -62,7 +61,7 @@ error:
 bool
 Anim_LoadClip(struct NeResourceLoadInfo *li, const char *args, struct NeAnimationClip *ac, NeHandle h)
 {
-	return E_LoadNAnimAsset(&li->stm, ac);
+	return Asset_LoadAnim(&li->stm, ac);
 }
 
 void
@@ -103,7 +102,7 @@ Anim_UnloadClip(struct NeAnimationClip *ac, NeHandle h)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

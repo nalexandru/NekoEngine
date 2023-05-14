@@ -7,10 +7,11 @@
 #include <System/Window.h>
 #include <System/Memory.h>
 #include <Engine/Engine.h>
+#include <Engine/Config.h>
 
 #include "UNIXPlatform.h"
 
-static Window _wnd;
+static Window f_wnd;
 
 bool
 Sys_CreateWindow(void)
@@ -32,7 +33,7 @@ Sys_CreateWindow(void)
 	swa.override_redirect = False;
 	swa.background_pixel = 0;
 
-	_wnd = XCreateWindow(X11_display, root, x, y, *E_screenWidth, *E_screenHeight, 0,
+	f_wnd = XCreateWindow(X11_display, root, x, y, *E_screenWidth, *E_screenHeight, 0,
 						X11_visualInfo.depth, InputOutput, X11_visualInfo.visual,
 						CWBackPixel | CWEventMask | CWOverrideRedirect, &swa);
 
@@ -52,33 +53,33 @@ Sys_CreateWindow(void)
 	wmHints.input = True;
 	wmHints.flags = InputHint;
 
-	XSetWMProperties(X11_display, _wnd, NULL, NULL, NULL, 0, &sizeHints, &wmHints, &classHint);
+	XSetWMProperties(X11_display, f_wnd, NULL, NULL, NULL, 0, &sizeHints, &wmHints, &classHint);
 
 	if (X11_NET_WM_PID) {
 		pid = getpid();
-		XChangeProperty(X11_display, _wnd,
+		XChangeProperty(X11_display, f_wnd,
 						X11_NET_WM_PID, XA_CARDINAL, 32, PropModeReplace,
 						(const unsigned char *)&pid, 1);
 	}
 
 	if (X11_NET_WM_WINDOW_TYPE && X11_NET_WM_WINDOW_TYPE_NORMAL)
-		XChangeProperty(X11_display, _wnd,
+		XChangeProperty(X11_display, f_wnd,
 						X11_NET_WM_WINDOW_TYPE, XA_ATOM, 32, PropModeReplace,
 						(const unsigned char *)&X11_NET_WM_WINDOW_TYPE_NORMAL, 1);
 
-	if (X11_NET_WM_BYPASS_COMPOSITOR)
-		XChangeProperty(X11_display, _wnd,
+	if (E_GetCVarBln("X11_BypassCompositor", true)->bln && X11_NET_WM_BYPASS_COMPOSITOR)
+		XChangeProperty(X11_display, f_wnd,
 						X11_NET_WM_BYPASS_COMPOSITOR, XA_CARDINAL, 32,
 						PropModeReplace, (const unsigned char *)&compositor, 1);
 
-	XSetWMProtocols(X11_display, _wnd, &X11_WM_DELETE_WINDOW, 1);
+	XSetWMProtocols(X11_display, f_wnd, &X11_WM_DELETE_WINDOW, 1);
 
-	XMapWindow(X11_display, _wnd);
-	XStoreName(X11_display, _wnd, "Olivia");
+	XMapWindow(X11_display, f_wnd);
+	XStoreName(X11_display, f_wnd, "Olivia");
 
 	memset(&xev, 0x0, sizeof(xev));
 	xev.type = ClientMessage;
-	xev.xclient.window = _wnd;
+	xev.xclient.window = f_wnd;
 	xev.xclient.message_type = X11_NET_WM_STATE;
 	xev.xclient.format = 32;
 	xev.xclient.data.l[0] = 1;
@@ -86,7 +87,7 @@ Sys_CreateWindow(void)
 
 	XSendEvent(X11_display, root, False, SubstructureNotifyMask, &xev);
 
-	E_screen = (void *)_wnd;
+	E_screen = (void *)f_wnd;
 
 	return true;
 }
@@ -124,7 +125,7 @@ Sys_WorkArea(int *top, int *left, int *right, int *bottom)
 	unsigned long count, bytes;
 
 	XGetWindowProperty(X11_display, XRootWindow(X11_display, 0), X11_NET_WORKAREA, 0, LONG_MAX,
-					   False, XA_CARDINAL, &type, &format, &count, &bytes, (unsigned char **)&workArea);
+						False, XA_CARDINAL, &type, &format, &count, &bytes, (unsigned char **)&workArea);
 
 	if (top) *top = workArea[1];
 	if (left) *left = workArea[0];
@@ -153,7 +154,7 @@ Sys_DestroyWindow(void)
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (c) 2015-2022, Alexandru Naiman
+ * Copyright (c) 2015-2023, Alexandru Naiman
  *
  * All rights reserved.
  *
@@ -172,7 +173,7 @@ Sys_DestroyWindow(void)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

@@ -1,4 +1,5 @@
 #include <Engine/IO.h>
+#include <Engine/Job.h>
 #include <Engine/Types.h>
 #include <Engine/Entity.h>
 #include <Engine/Events.h>
@@ -11,11 +12,47 @@
 
 #define ENT_MOD	"Entity"
 
-static struct NeArray _entityTypes;
+struct NeQueue *ECS_mboxes = NULL;
 
-static inline bool _AddComponent(struct NeScene *s, struct NeEntity *, NeCompTypeId, NeCompHandle);
-static inline bool _CreateComponent(struct NeScene *s, struct NeEntity *ent, NeCompTypeId type, const void **args);
-static void _LoadEntity(const char *path);
+static struct NeArray f_entityTypes;
+static struct NeAtomicLock f_entityTypeLock;
+
+static inline bool AddComponent(struct NeScene *s, struct NeEntity *, NeCompTypeId, NeCompHandle);
+static inline bool CreateComponent(struct NeScene *s, struct NeEntity *ent, NeCompTypeId type, const void **args);
+static void LoadEntity(const char *path);
+static void ProcessEntityMessages(int workerId, struct NeEntity *ent);
+
+static inline bool
+AddEntity(struct NeScene *s, struct NeEntity *ent, const char *name, bool broadcast)
+{
+	Rt_InitQueue(&ent->mbox, 10, sizeof(struct NeEntityMessage), MH_Scene);
+	E_RenameEntity(ent, name ? name : "unnamed");
+
+	Sys_AtomicLockWrite(&s->lock.newEntity);
+	bool rc = Rt_ArrayAddPtr(&s->newEntities, ent);
+	Sys_AtomicUnlockWrite(&s->lock.newEntity);
+
+	if (!rc) {
+		Sys_Free(ent);
+		return false;
+	}
+
+	if (broadcast)
+		E_Broadcast(EVT_ENTITY_CREATED, ent);
+
+	return true;
+}
+
+static inline struct NeEntity *
+AllocEntity(struct NeScene *s)
+{
+	struct NeEntity *ent = Sys_Alloc(1, sizeof(*ent), MH_Scene);
+	if (!ent)
+		return NULL;
+
+	ent->sceneId = s->id;
+	return ent;
+}
 
 NeEntityHandle
 E_CreateEntityS(struct NeScene *s, const char *name, const char *typeName)
@@ -25,28 +62,23 @@ E_CreateEntityS(struct NeScene *s, const char *name, const char *typeName)
 	struct NeEntityType *type = NULL;
 
 	if (typeName) {
+		Sys_AtomicLockRead(&f_entityTypeLock);
+
 		hash = Rt_HashString(typeName);
-		type = Rt_ArrayFind(&_entityTypes, &hash, Rt_U64CmpFunc);
+		type = Rt_ArrayFind(&f_entityTypes, &hash, Rt_U64CmpFunc);
 		if (!type) {
 			Sys_LogEntry(ENT_MOD, LOG_CRITICAL, "Entity type %s not found");
 			return ES_INVALID_ENTITY;
 		}
 
 		ent = E_CreateEntityWithArgArrayS(s, name, type->compTypes, type->initialArguments, type->compCount);
+
+		Sys_AtomicUnlockRead(&f_entityTypeLock);
 	} else {
-		ent = Sys_Alloc(1, sizeof(*ent), MH_Scene);
-
-		if (!ent)
+		ent = AllocEntity(s);
+		if (!ent || !AddEntity(s, ent, name, true))
 			return ES_INVALID_ENTITY;
-
-		E_RenameEntity(ent, name ? name : "unnamed");
-		if (!Rt_ArrayAddPtr(&s->entities, ent)) {
-			Sys_Free(ent);
-			return ES_INVALID_ENTITY;
-		}
 	}
-
-	E_Broadcast(EVT_ENTITY_CREATED, ent);
 
 	return ent;
 }
@@ -54,94 +86,64 @@ E_CreateEntityS(struct NeScene *s, const char *name, const char *typeName)
 NeEntityHandle
 E_CreateEntityWithArgsS(struct NeScene *s, const char *name, const NeCompTypeId *compTypes, const void ***compArgs, uint8_t count)
 {
-	uint8_t i = 0;
 	struct NeEntity *ent = NULL;
 
 	if (count > MAX_ENTITY_COMPONENTS)
 		return ES_INVALID_ENTITY;
 
-	ent = Sys_Alloc(1, sizeof(*ent), MH_Scene);
-	if (!ent)
+	if (!(ent = AllocEntity(s)))
 		return ES_INVALID_ENTITY;
 
-	for (i = 0; i < count; ++i) {
-		if (!_CreateComponent(s, ent, compTypes[i], compArgs ? compArgs[i] : NULL)) {
+	for (uint8_t i = 0; i < count; ++i) {
+		if (!CreateComponent(s, ent, compTypes[i], compArgs ? compArgs[i] : NULL)) {
 			Sys_Free(ent);
 			return ES_INVALID_ENTITY;
 		}
 	}
 
-	E_RenameEntity(ent, name ? name : "unnamed");
-	if (!Rt_ArrayAddPtr(&s->entities, ent)) {
-		Sys_Free(ent);
-		return ES_INVALID_ENTITY;
-	}
-
-	E_Broadcast(EVT_ENTITY_CREATED, ent);
-
-	return ent;
+	return AddEntity(s, ent, name, true) ? ent : ES_INVALID_ENTITY;
 }
 
 NeEntityHandle
 E_CreateEntityWithArgArrayS(struct NeScene *s, const char *name, const NeCompTypeId *compTypes, const struct NeArray *compArgs, uint8_t count)
 {
-	uint8_t i = 0;
 	struct NeEntity *ent = NULL;
 
 	if (count > MAX_ENTITY_COMPONENTS)
 		return ES_INVALID_ENTITY;
 
-	ent = Sys_Alloc(1, sizeof(*ent), MH_Scene);
-	if (!ent)
+	if (!(ent = AllocEntity(s)))
 		return ES_INVALID_ENTITY;
 
-	for (i = 0; i < count; ++i) {
-		if (!_CreateComponent(s, ent, compTypes[i], compArgs ? (const void **)compArgs[i].data : NULL)) {
+	for (uint8_t i = 0; i < count; ++i) {
+		if (!CreateComponent(s, ent, compTypes[i], compArgs ? (const void **)compArgs[i].data : NULL)) {
 			Sys_Free(ent);
 			return ES_INVALID_ENTITY;
 		}
 	}
 
-	E_RenameEntity(ent, name ? name : "unnamed");
-	if (!Rt_ArrayAddPtr(&s->entities, ent)) {
-		Sys_Free(ent);
-		return ES_INVALID_ENTITY;
-	}
-
-	E_Broadcast(EVT_ENTITY_CREATED, ent);
-
-	return ent;
+	return AddEntity(s, ent, name, true) ? ent : ES_INVALID_ENTITY;
 }
 
 NeEntityHandle
 E_CreateEntityVS(struct NeScene *s, const char *name, int count, const struct NeEntityCompInfo *info)
 {
-	uint8_t i = 0;
 	struct NeEntity *ent = NULL;
 
 	if (count > MAX_ENTITY_COMPONENTS)
 		return ES_INVALID_ENTITY;
 
-	ent = Sys_Alloc(1, sizeof(*ent), MH_Scene);
-	if (!ent)
+	if (!(ent = AllocEntity(s)))
 		return ES_INVALID_ENTITY;
 
-	for (i = 0; i < count; ++i) {
-		if (!_CreateComponent(s, ent, E_ComponentTypeId(info[i].type), info[i].args)) {
+	for (int i = 0; i < count; ++i) {
+		if (!CreateComponent(s, ent, E_ComponentTypeId(info[i].type), info[i].args)) {
 			Sys_Free(ent);
 			return ES_INVALID_ENTITY;
 		}
 	}
 
-	E_RenameEntity(ent, name ? name : "unnamed");
-	if (!Rt_ArrayAddPtr(&s->entities, ent)) {
-		Sys_Free(ent);
-		return ES_INVALID_ENTITY;
-	}
-
-	E_Broadcast(EVT_ENTITY_CREATED, ent);
-
-	return ent;
+	return AddEntity(s, ent, name, true) ? ent : ES_INVALID_ENTITY;
 }
 
 NeEntityHandle
@@ -150,32 +152,27 @@ E_CreateEntityWithComponentsS(struct NeScene *s, const char *name, int count, ..
 	va_list va;
 	struct NeEntity *ent = NULL;
 	NeCompHandle handle;
-	uint8_t i = 0;
 
 	if (count > MAX_ENTITY_COMPONENTS)
 		return ES_INVALID_ENTITY;
 
-	ent = Sys_Alloc(1, sizeof(*ent), MH_Scene);
-	if (!ent)
+	if (!(ent = AllocEntity(s)))
 		return ES_INVALID_ENTITY;
 
 	va_start(va, count);
-	for (i = 0; i < count; ++i) {
+	for (int i = 0; i < count; ++i) {
 		handle = va_arg(va, NeCompHandle);
 
-		if (!_AddComponent(s, ent, E_ComponentTypeS(s, handle), handle)) {
+		if (!AddComponent(s, ent, E_ComponentTypeS(s, handle), handle)) {
 			Sys_Free(ent);
 			return ES_INVALID_ENTITY;
 		}
 	}
 
-	E_RenameEntity(ent, name ? name : "unnamed");
-	if (!Rt_ArrayAddPtr(&s->entities, ent)) {
-		Sys_Free(ent);
+	if (!AddEntity(s, ent, name, false))
 		return ES_INVALID_ENTITY;
-	}
 
-	for (i = 0; i < ent->compCount; ++i)
+	for (uint32_t i = 0; i < ent->compCount; ++i)
 		E_SetComponentOwnerS(s, ent->comp[i].handle, ent);
 
 	E_Broadcast(EVT_ENTITY_CREATED, ent);
@@ -184,45 +181,46 @@ E_CreateEntityWithComponentsS(struct NeScene *s, const char *name, int count, ..
 }
 
 bool
-E_AddComponentS(struct NeScene *s, NeEntityHandle ent, NeCompTypeId type, NeCompHandle comp)
+E_AddComponent(NeEntityHandle handle, NeCompTypeId type, NeCompHandle comp)
 {
-	return _AddComponent(s, ent, type, comp);
+	struct NeEntity *ent = handle;
+	return AddComponent(Scn_GetScene(ent->sceneId), ent, type, comp);
 }
 
 bool
-E_AddNewComponentS(struct NeScene *s, NeEntityHandle ent, NeCompTypeId type, const void **args)
+E_AddNewComponent(NeEntityHandle handle, NeCompTypeId type, const void **args)
 {
-	return _CreateComponent(s, ent, type, args);
+	struct NeEntity *ent = handle;
+	return CreateComponent(Scn_GetScene(ent->sceneId), ent, type, args);
 }
 
 void *
-E_GetComponentS(struct NeScene *s, NeEntityHandle handle, NeCompTypeId type)
+E_GetComponent(NeEntityHandle handle, NeCompTypeId type)
 {
-	uint8_t i = 0;
 	struct NeEntity *ent = handle;
+	struct NeScene *scn = Scn_GetScene(ent->sceneId);
 
-	for (i = 0; i < ent->compCount; ++i)
+	for (uint8_t i = 0; i < ent->compCount; ++i)
 		if (ent->comp[i].type == type)
-			return E_ComponentPtrS(s, ent->comp[i].handle);
+			return E_ComponentPtrS(scn, ent->comp[i].handle);
 
 	return NULL;
 }
 
 NeCompHandle
-E_GetComponentHandleS(struct NeScene *s, NeEntityHandle handle, NeCompTypeId type)
+E_GetComponentHandle(NeEntityHandle handle, NeCompTypeId type)
 {
-	uint8_t i = 0;
 	struct NeEntity *ent = handle;
 
-	for (i = 0; i < ent->compCount; ++i)
+	for (uint8_t i = 0; i < ent->compCount; ++i)
 		if (ent->comp[i].type == type)
 			return ent->comp[i].handle;
 
-	return E_INVALID_HANDLE;
+	return NE_INVALID_HANDLE;
 }
 
 void
-E_GetComponentsS(struct NeScene *s, NeEntityHandle handle, struct NeArray *comp)
+E_GetComponents(NeEntityHandle handle, struct NeArray *comp)
 {
 	struct NeEntity *ent = handle;
 	Rt_InitArray(comp, ent->compCount, sizeof(struct NeEntityComp), MH_Frame);
@@ -231,16 +229,17 @@ E_GetComponentsS(struct NeScene *s, NeEntityHandle handle, struct NeArray *comp)
 }
 
 void
-E_RemoveComponentS(struct NeScene *s, NeEntityHandle handle, NeCompTypeId type)
+E_RemoveComponent(NeEntityHandle handle, NeCompTypeId type)
 {
+	uint32_t id;
 	struct NeEntity *ent = handle;
-	uint8_t id = 0;
+	struct NeScene *scn = Scn_GetScene(ent->sceneId);
 
 	for (id = 0; id < ent->compCount; ++id)
 		if (ent->comp[id].type == type)
 			break;
 
-	E_DestroyComponentS(s, ent->comp[id].handle);
+	E_DestroyComponentS(scn, ent->comp[id].handle);
 	--ent->compCount;
 
 	if (id == ent->compCount)
@@ -250,23 +249,28 @@ E_RemoveComponentS(struct NeScene *s, NeEntityHandle handle, NeCompTypeId type)
 }
 
 void
-E_DestroyEntityS(struct NeScene *s, NeEntityHandle handle)
+E_DestroyEntity(NeEntityHandle handle)
 {
 	struct NeEntity *ent = handle;
-	size_t dst_id = 0;
-	uint8_t i = 0;
+	struct NeScene *scn = Scn_GetScene(ent->sceneId);
 
-	for (i = 0; i < ent->compCount; ++i)
-		E_DestroyComponentS(s, ent->comp[i].handle);
+	for (uint8_t i = 0; i < ent->compCount; ++i)
+		E_DestroyComponentS(scn, ent->comp[i].handle);
 
-	dst_id = ent->id;
+	Rt_TermQueue(&ent->mbox);
+
+	const size_t dst_id = ent->id;
 	Sys_Free(ent);
 
-	memcpy(Rt_ArrayGet(&s->entities, dst_id), Rt_ArrayLast(&s->entities), s->entities.elemSize);
+	Sys_AtomicLockWrite(&scn->lock.entity);
 
-	ent = Rt_ArrayGetPtr(&s->entities, dst_id);
+	memcpy(Rt_ArrayGet(&scn->entities, dst_id), Rt_ArrayLast(&scn->entities), scn->entities.elemSize);
+
+	ent = Rt_ArrayGetPtr(&scn->entities, dst_id);
 	ent->id = dst_id;
-	--s->entities.count;
+	--scn->entities.count;
+
+	Sys_AtomicUnlockWrite(&scn->lock.entity);
 
 	E_Broadcast(EVT_ENTITY_DESTROYED, handle);
 }
@@ -283,20 +287,34 @@ E_RegisterEntityType(const char *typeName, const NeCompTypeId *compTypes, uint8_
 	type.compCount = typeCount;
 	memcpy(type.compTypes, compTypes, sizeof(NeCompTypeId) * typeCount);
 
-	return Rt_ArrayAdd(&_entityTypes, &type);
+	Sys_AtomicLockWrite(&f_entityTypeLock);
+	bool rc = Rt_ArrayAdd(&f_entityTypes, &type);
+	Sys_AtomicUnlockWrite(&f_entityTypeLock);
+
+	return rc;
 }
 
 void *
-E_EntityPtrS(struct NeScene *s, NeEntityHandle handle)
+E_EntityPtr(NeEntityHandle handle)
 {
 	struct NeEntity *ent = handle;
-	return Rt_ArrayGetPtr(&s->entities, ent->id);
+	struct NeScene *scn = Scn_GetScene(ent->sceneId);
+
+	Sys_AtomicLockRead(&scn->lock.entity);
+	void *ptr = Rt_ArrayGetPtr(&scn->entities, ent->id);
+	Sys_AtomicUnlockRead(&scn->lock.entity);
+
+	return ptr;
 }
 
 uint32_t
 E_EntityCountS(struct NeScene *s)
 {
-	return (uint32_t)s->entities.count;
+	Sys_AtomicLockRead(&s->lock.entity);
+	int count = (uint32_t)s->entities.count;
+	Sys_AtomicUnlockRead(&s->lock.entity);
+
+	return count;
 }
 
 const char *
@@ -310,7 +328,7 @@ void
 E_RenameEntity(NeEntityHandle handle, const char *name)
 {
 	struct NeEntity *ent = handle;
-	strncpy(ent->name, name, MAX_ENTITY_NAME);
+	strlcpy(ent->name, name, MAX_ENTITY_NAME);
 	ent->hash = Rt_HashString(ent->name);
 }
 
@@ -320,31 +338,126 @@ E_FindEntityS(struct NeScene *s, const char *name)
 	struct NeEntity *ent = NULL;
 	uint64_t hash = Rt_HashString(name);
 
-	Rt_ArrayForEachPtr(ent, &s->entities)
+	Sys_AtomicLockRead(&s->lock.entity);
+	Rt_ArrayForEachPtr(ent, &s->entities) {
 		if (ent->hash == hash)
-			return ent;
+			break;
+		ent = NULL;
+	}
+	Sys_AtomicUnlockRead(&s->lock.entity);
 
-	return NULL;
+	return ent;
+}
+
+void
+E_SendMessage(NeEntityHandle dst, uint32_t msg, const void *data)
+{
+	struct NeEntityMessage em = { dst, msg, data };
+	Rt_QueuePush(&ECS_mboxes[E_WorkerId()], &em);
 }
 
 bool
 E_InitEntities(void)
 {
-	memset(&_entityTypes, 0x0, sizeof(_entityTypes));
+	memset(&f_entityTypes, 0x0, sizeof(f_entityTypes));
 
-	if (!Rt_InitArray(&_entityTypes, 10, sizeof(struct NeEntityType), MH_System))
+	if (!Rt_InitArray(&f_entityTypes, 10, sizeof(struct NeEntityType), MH_System))
 		return false;
 
-	E_ProcessFiles("/Entities", "ent", true, _LoadEntity);
+	ECS_mboxes = Sys_Alloc(sizeof(*ECS_mboxes), E_JobWorkerThreads() + 1, MH_System);
+	for (uint32_t i = 0; i < E_JobWorkerThreads() + 1; ++i)
+		if (!Rt_InitQueue(&ECS_mboxes[i], 10, sizeof(struct NeEntityMessage), MH_System))
+			return false;
+
+	E_ProcessFiles("/Entities", "ent", true, LoadEntity);
 
 	return true;
 }
 
 void
+E_DistributeMessages(void)
+{
+	for (uint32_t i = 0; i < E_JobWorkerThreads() + 1; ++i) {
+		struct NeQueue *mbox = &ECS_mboxes[i];
+
+		while (mbox->count) {
+			struct NeEntityMessage msg = *(struct NeEntityMessage *)Rt_QueuePop(mbox);
+			struct NeEntity *ent = msg.dst;
+			Rt_QueuePush(&ent->mbox, &msg);
+		}
+	}
+}
+
+void
+E_ProcessMessages(struct NeScene *s)
+{
+	Sys_AtomicLockRead(&s->lock.entity);
+	E_DispatchJobs(s->entities.count, (NeJobProc)ProcessEntityMessages, (void **)s->entities.data, NULL, NULL);
+
+	struct NeEntity *ent = NULL;
+	Rt_ArrayForEachPtr(ent, &s->entities)
+		while (ent->mbox.count)
+			Sys_Yield();
+
+	Sys_AtomicUnlockRead(&s->lock.entity);
+}
+
+void
+ProcessEntityMessages(int workerId, struct NeEntity *ent)
+{
+	int top = 0;
+	lua_State *vm = NULL;
+	uint64_t currentScript = 0;
+
+	// TODO: The lua_state handling is messy. It should be moved to Entity and initialized when a script component
+	// is attached, that way state will be kept.
+
+	while (ent->mbox.count) {
+		struct NeEntityMessage msg = *(struct NeEntityMessage *)Rt_QueuePop(&ent->mbox);
+		for (uint32_t j = 0; j < ent->compCount; ++j) {
+			const struct NeCompType *type = ECS_ComponentType(ent->comp[j].type);
+			if (type->messageHandler) {
+				type->messageHandler(E_ComponentPtr(ent->comp[j].handle), msg.msg, msg.data);
+			} else if (type->scriptMessageHandler) {
+				if (!vm) {
+					vm = Sc_CreateVM();
+					top = lua_gettop(vm);
+				}
+
+				const uint64_t hash = Rt_HashString(type->script);
+				if (currentScript != hash) {
+					lua_settop(vm, top);
+					Sc_LoadScriptFile(vm, type->script);
+				}
+
+				lua_getglobal(vm, "MessageHandler");
+				lua_pushlightuserdata(vm, E_ComponentPtr(ent->comp[j].handle));
+				lua_pushinteger(vm, msg.msg);
+				lua_pushlightuserdata(vm, (void *)msg.data);
+
+				if (lua_pcall(vm, 3, 0, 0)) {
+					Sys_LogEntry(ENT_MOD, LOG_CRITICAL, "Failed to execute MessageHandler for %s: %s", type->name, lua_tostring(vm, -1));
+					Sc_LogStackDump(vm, LOG_CRITICAL);
+				}
+			}
+		}
+	}
+
+	if (vm)
+		Sc_DestroyVM(vm);
+}
+
+void
 E_TermEntities(void)
 {
-	for (size_t i = 0; i < _entityTypes.count; ++i) {
-		struct NeEntityType *type = Rt_ArrayGet(&_entityTypes, i);
+	Sys_AtomicLockWrite(&f_entityTypeLock);
+
+	for (uint32_t i = 0; i < E_JobWorkerThreads() + 1; ++i)
+		Rt_TermQueue(&ECS_mboxes[i]);
+	Sys_Free(ECS_mboxes);
+
+	for (size_t i = 0; i < f_entityTypes.count; ++i) {
+		struct NeEntityType *type = Rt_ArrayGet(&f_entityTypes, i);
 		for (uint32_t j = 0; j < type->compCount; ++j) {
 			if (!type->initialArguments[j].data)
 				continue;
@@ -355,31 +468,49 @@ E_TermEntities(void)
 			Rt_TermArray(&type->initialArguments[j]);
 		}
 	}
-	Rt_TermArray(&_entityTypes);
+	Rt_TermArray(&f_entityTypes);
+
+	Sys_AtomicUnlockWrite(&f_entityTypeLock);
 }
 
 bool
 E_InitSceneEntities(struct NeScene *s)
 {
-	return Rt_InitArray(&s->entities, 100, sizeof(struct NeEntity *), MH_Scene);
+	return Rt_InitPtrArray(&s->entities, 100, MH_Scene) && Rt_InitPtrArray(&s->newEntities, 100, MH_Scene);
 }
 
 void
 E_TermSceneEntities(struct NeScene *s)
 {
-	size_t i = 0;
-	for (i = 0; i < s->entities.count; ++i)
-		Sys_Free(Rt_ArrayGetPtr(&s->entities, i));
+	struct NeEntity* ent;
+	Rt_ArrayForEachPtr(ent, &s->entities) {
+		Rt_TermQueue(&ent->mbox);
+		Sys_Free(ent);
+	}
 	Rt_TermArray(&s->entities);
+
+	for (size_t i = 0; i < s->newEntities.count; ++i)
+		Sys_Free(Rt_ArrayGetPtr(&s->newEntities, i));
+	Rt_TermArray(&s->newEntities);
+}
+
+void *
+ECS_GetComponent(struct NeScene *s, NeEntityHandle handle, NeCompTypeId type)
+{
+	struct NeEntity *ent = handle;
+	struct NeArray *compData = (struct NeArray *)s->compData.data;
+	for (uint8_t i = 0; i < ent->compCount; ++i)
+		if (ent->comp[i].type == type)
+			return Rt_ArrayGet(&compData[E_HANDLE_TYPE(ent->comp[i].handle)], E_HANDLE_ID(ent->comp[i].handle));
+	return NULL;
 }
 
 bool
-_AddComponent(struct NeScene *s, struct NeEntity *ent, NeCompTypeId type, NeCompHandle handle)
+AddComponent(struct NeScene *s, struct NeEntity *ent, NeCompTypeId type, NeCompHandle handle)
 {
-	uint8_t i = 0;
 	struct NeEntityComp *comp = NULL;
 
-	for (i = 0; i < ent->compCount; ++i)
+	for (uint32_t i = 0; i < ent->compCount; ++i)
 		if (ent->comp[i].type == type)
 			return false;
 
@@ -392,14 +523,14 @@ _AddComponent(struct NeScene *s, struct NeEntity *ent, NeCompTypeId type, NeComp
 }
 
 bool
-_CreateComponent(struct NeScene *s, struct NeEntity *ent, NeCompTypeId type, const void **args)
+CreateComponent(struct NeScene *s, struct NeEntity *ent, NeCompTypeId type, const void **args)
 {
 	NeCompHandle handle = E_CreateComponentIdS(s, type, ent, args);
 
-	if (handle == E_INVALID_HANDLE)
+	if (handle == NE_INVALID_HANDLE)
 		return false;
 
-	if (!_AddComponent(s, ent, type, handle)) {
+	if (!AddComponent(s, ent, type, handle)) {
 		Sys_LogEntry(ENT_MOD, LOG_CRITICAL, "Failed to add component of type [%d]", type);
 		return false;
 	}
@@ -408,7 +539,7 @@ _CreateComponent(struct NeScene *s, struct NeEntity *ent, NeCompTypeId type, con
 }
 
 static void
-_LoadEntity(const char *path)
+LoadEntity(const char *path)
 {
 	char buff[512];
 	struct NeStream stm = { 0 };
@@ -467,7 +598,9 @@ _LoadEntity(const char *path)
 		}
 	}
 
-	Rt_ArrayAdd(&_entityTypes, &type);
+	Sys_AtomicLockWrite(&f_entityTypeLock);
+	Rt_ArrayAdd(&f_entityTypes, &type);
+	Sys_AtomicUnlockWrite(&f_entityTypeLock);
 
 exit:
 	E_CloseStream(&stm);
@@ -499,7 +632,7 @@ exit:
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

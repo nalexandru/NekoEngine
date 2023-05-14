@@ -1,5 +1,5 @@
-#ifndef _NE_ENGINE_APPLICATION_H_
-#define _NE_ENGINE_APPLICATION_H_
+#ifndef NE_ENGINE_APPLICATION_H
+#define NE_ENGINE_APPLICATION_H
 
 #include <Engine/Types.h>
 #include <System/PlatformDetect.h>
@@ -15,7 +15,7 @@ struct NeApplicationInfo
 	struct NeVersion version;
 };
 
-ENGINE_API extern struct NeApplicationInfo App_applicationInfo;
+extern struct NeApplicationInfo App_applicationInfo;
 
 bool App_EarlyInit(int argc, char *argv[]);
 bool App_InitApplication(int argc, char *argv[]);
@@ -34,7 +34,7 @@ struct NeApplicationInfo App_applicationInfo =	\
 	{ maj, min, build, rev }					\
 }
 
-#endif /* _NE_ENGINE_APPLICATION_H_ */
+#endif /* NE_ENGINE_APPLICATION_H */
 
 /* NekoEngine
  *
@@ -62,7 +62,7 @@ struct NeApplicationInfo App_applicationInfo =	\
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

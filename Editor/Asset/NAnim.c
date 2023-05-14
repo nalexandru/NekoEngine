@@ -1,43 +1,50 @@
 #include <stdio.h>
-#include <assert.h>
 
 #include <Engine/IO.h>
 #include <Asset/NAnim.h>
 #include <Editor/Asset/Asset.h>
 
-void
-Asset_SaveNAnim(const struct NAnim *na, const char *path)
+bool
+EdAsset_SaveNAnim(const struct NAnim *na, const char *path)
 {
+	bool rc = false;
 	ASSET_WRITE_INIT();
 
 	FILE *fp = fopen(path, "wb");
-	assert(fp);
+	if (!fp)
+		return false;
 
 	ASSET_WRITE_GUARD(NANIM_1_HEADER);
-	
+
 	ASSET_WRITE_SEC(NANIM_INFO_ID, sizeof(na->info));
-	fwrite(&na->info, sizeof(na->info), 1, fp);
+	if (fwrite(&na->info, sizeof(na->info), 1, fp) != 1)
+		goto exit;
 	ASSET_WRITE_GUARD(NANIM_SEC_FOOTER);
-	
+
 	ASSET_WRITE_SEC(NANIM_CHN_ID, na->channelCount);
 
 	for (uint32_t i = 0; i < na->channelCount; ++i) {
 		const struct NAnimChannel *ch = &na->channels[i];
-		fwrite(ch->name, sizeof(ch->name), 1, fp);
+		if (fwrite(&ch->info, sizeof(ch->info), 1, fp) != 1)
+			goto exit;
 
-		fwrite(&ch->positionCount, sizeof(ch->positionCount), 1, fp);
-		fwrite(&ch->rotationCount, sizeof(ch->rotationCount), 1, fp);
-		fwrite(&ch->scalingCount, sizeof(ch->scalingCount), 1, fp);
+		if (fwrite(ch->positionKeys, sizeof(*ch->positionKeys), ch->info.positionCount, fp) != ch->info.positionCount)
+			goto exit;
 
-		fwrite(ch->positionKeys, sizeof(*ch->positionKeys), ch->positionCount, fp);
-		fwrite(ch->rotationKeys, sizeof(*ch->rotationKeys), ch->rotationCount, fp);
-		fwrite(ch->scalingKeys, sizeof(*ch->scalingKeys), ch->scalingCount, fp);
+		if (fwrite(ch->rotationKeys, sizeof(*ch->rotationKeys), ch->info.rotationCount, fp) != ch->info.rotationCount)
+			goto exit;
+
+		if (fwrite(ch->scalingKeys, sizeof(*ch->scalingKeys), ch->info.scalingCount, fp) != ch->info.scalingCount)
+			goto exit;
 	}
 
 	ASSET_WRITE_GUARD(NANIM_SEC_FOOTER);
 	ASSET_WRITE_GUARD(NANIM_FOOTER);
 
+	rc = true;
+exit:
 	fclose(fp);
+	return rc;
 }
 
 /* NekoEditor
@@ -66,7 +73,7 @@ Asset_SaveNAnim(const struct NAnim *na, const char *path)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

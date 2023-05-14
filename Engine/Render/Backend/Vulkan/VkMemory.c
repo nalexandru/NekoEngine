@@ -3,35 +3,32 @@
 
 #include "VulkanBackend.h"
 
-static void *_Alloc(void *ud, size_t size, size_t align, VkSystemAllocationScope scope);
-static void *_Realloc(void *ud, void *mem, size_t size, size_t align, VkSystemAllocationScope scope);
-static void _Free(void *ud, void *mem);
+static void * VKAPI_CALL Alloc(void *ud, size_t size, size_t align, VkSystemAllocationScope scope);
+static void * VKAPI_CALL ReAlloc(void *ud, void *mem, size_t size, size_t align, VkSystemAllocationScope scope);
+static void   VKAPI_CALL Free(void *ud, void *mem);
 
-//static void _InternalAlloc(void *ud, size_t size, VkInternalAllocationType type, VkSystemAllocationScope scope);
-//static void _InternalFree(void *ud, size_t size, VkInternalAllocationType type, VkSystemAllocationScope scope);
-
-struct VkAllocationCallbacks _transientAllocCB =
+struct VkAllocationCallbacks f_transientAllocCB =
 {
-	.pfnAllocation = _Alloc,
-	.pfnReallocation = _Realloc,
-	.pfnFree = _Free
+	.pfnAllocation = Alloc,
+	.pfnReallocation = ReAlloc,
+	.pfnFree = Free
 };
-VkAllocationCallbacks *Vkd_allocCb = NULL, *Vkd_transientAllocCb = &_transientAllocCB;
+VkAllocationCallbacks *Vkd_allocCb = NULL, *Vkd_transientAllocCb = &f_transientAllocCB;
 
-static void *
-_Alloc(void *ud, size_t size, size_t align, VkSystemAllocationScope scope)
+static void * VKAPI_CALL
+Alloc(void *ud, size_t size, size_t align, VkSystemAllocationScope scope)
 {
-	return Sys_Alloc(size, 1, MH_Frame);
+	return Sys_AlignedAlloc(size, 1, align, MH_Frame);
 }
 
-static void *
-_Realloc(void *ud, void *mem, size_t size, size_t align, VkSystemAllocationScope scope)
+static void * VKAPI_CALL
+ReAlloc(void *ud, void *mem, size_t size, size_t align, VkSystemAllocationScope scope)
 {
-	return NULL; // transient memory cannot be realloc'd
+	return Sys_AlignedReAlloc(mem, size, 1, align, MH_Frame);
 }
 
-static void
-_Free(void *ud, void *mem)
+static void VKAPI_CALL
+Free(void *ud, void *mem)
 {
 	(void)ud; (void)mem;
 }
@@ -62,7 +59,7 @@ _Free(void *ud, void *mem)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

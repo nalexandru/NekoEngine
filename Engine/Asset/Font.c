@@ -2,59 +2,51 @@
 
 #include <UI/Font.h>
 #include <Engine/IO.h>
+#include <Asset/NFont.h>
 #include <Engine/Asset.h>
 #include <Engine/Config.h>
 #include <Engine/Resource.h>
 #include <Render/Render.h>
 #include <System/Endian.h>
 
-#define FNT_MAGIC	0xB00B5000
-
-struct NeFontHeader
-{
-	uint32_t magic;
-	uint32_t texSize;
-	uint32_t glyphCount;
-};
-
 bool
-E_LoadFontAsset(struct NeStream *stm, struct NeFont *fnt)
+Asset_LoadFont(struct NeStream *stm, struct NeFont *font)
 {
-	struct NeFontHeader hdr;
+	struct NFontHeader hdr;
 
 	if (E_ReadStream(stm, &hdr, sizeof(hdr)) != sizeof(hdr))
 		return false;
 
-	if (Sys_BigEndian()) {
-		hdr.magic = Sys_SwapUint32(hdr.magic);
-		hdr.texSize = Sys_SwapUint32(hdr.texSize);
-		hdr.glyphCount = Sys_SwapUint32(hdr.glyphCount);
-	}
+#ifdef SYS_BIG_ENDIAN
+	hdr.magic = Sys_SwapUint32(hdr.magic);
+	hdr.texSize = Sys_SwapUint32(hdr.texSize);
+	hdr.glyphCount = Sys_SwapUint32(hdr.glyphCount);
+#endif
 
 	if (hdr.magic != FNT_MAGIC)
 		return false;
 
-	fnt->glyphCount = hdr.glyphCount;
+	font->glyphCount = hdr.glyphCount;
 
-	fnt->glyphs = Sys_Alloc(fnt->glyphCount, sizeof(*fnt->glyphs), MH_Asset);
-	if (E_ReadStream(stm, fnt->glyphs, sizeof(*fnt->glyphs) * fnt->glyphCount) != sizeof(*fnt->glyphs) * fnt->glyphCount)
+	font->glyphs = Sys_Alloc(font->glyphCount, sizeof(*font->glyphs), MH_Asset);
+	if (E_ReadStream(stm, font->glyphs, sizeof(*font->glyphs) * font->glyphCount) != sizeof(*font->glyphs) * font->glyphCount)
 		goto error;
 
-	if (Sys_BigEndian()) {
-		for (uint32_t i = 0; i < fnt->glyphCount; ++i) {
-			fnt->glyphs[i].u = Sys_SwapFloat(fnt->glyphs[i].u);
-			fnt->glyphs[i].v = Sys_SwapFloat(fnt->glyphs[i].v);
-			fnt->glyphs[i].tw = Sys_SwapFloat(fnt->glyphs[i].tw);
-			fnt->glyphs[i].th = Sys_SwapFloat(fnt->glyphs[i].th);
-			
-			fnt->glyphs[i].bearing.x = Sys_SwapInt32(fnt->glyphs[i].bearing.x);
-			fnt->glyphs[i].bearing.y = Sys_SwapInt32(fnt->glyphs[i].bearing.y);
-			fnt->glyphs[i].size.w = Sys_SwapInt32(fnt->glyphs[i].size.w);
-			fnt->glyphs[i].size.h = Sys_SwapInt32(fnt->glyphs[i].size.h);
-			fnt->glyphs[i].adv = Sys_SwapInt32(fnt->glyphs[i].adv);
-		}
+#ifdef SYS_BIG_ENDIAN
+	for (uint32_t i = 0; i < fnt->glyphCount; ++i) {
+		fnt->glyphs[i].u = Sys_SwapFloat(fnt->glyphs[i].u);
+		fnt->glyphs[i].v = Sys_SwapFloat(fnt->glyphs[i].v);
+		fnt->glyphs[i].tw = Sys_SwapFloat(fnt->glyphs[i].tw);
+		fnt->glyphs[i].th = Sys_SwapFloat(fnt->glyphs[i].th);
+
+		fnt->glyphs[i].bearing.x = Sys_SwapInt32(fnt->glyphs[i].bearing.x);
+		fnt->glyphs[i].bearing.y = Sys_SwapInt32(fnt->glyphs[i].bearing.y);
+		fnt->glyphs[i].size.w = Sys_SwapInt32(fnt->glyphs[i].size.w);
+		fnt->glyphs[i].size.h = Sys_SwapInt32(fnt->glyphs[i].size.h);
+		fnt->glyphs[i].adv = Sys_SwapInt32(fnt->glyphs[i].adv);
 	}
-	
+#endif
+
 	struct NeTextureCreateInfo tci =
 	{
 		.desc.depth = 1,
@@ -68,18 +60,18 @@ E_LoadFontAsset(struct NeStream *stm, struct NeFont *fnt)
 		.keepData = false
 	};
 
-	E_LoadImageAssetComp(stm, &tci, false, 1);
+	Asset_LoadImageComp(stm, &tci, false, 1);
 
-	fnt->texture = E_CreateResource("__SysFont_Texture", RES_TEXTURE, &tci);
-	if (fnt->texture == E_INVALID_HANDLE)
+	font->texture = E_CreateResource("__SysFont_Texture", RES_TEXTURE, &tci);
+	if (font->texture == NE_INVALID_HANDLE)
 		goto error;
 
 	return true;
 
 error:
-	Sys_Free(fnt->glyphs);
+	Sys_Free(font->glyphs);
 
-	memset(fnt, 0x0, sizeof(*fnt));
+	memset(font, 0x0, sizeof(*font));
 
 	return false;
 }
@@ -110,7 +102,7 @@ error:
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

@@ -1,5 +1,5 @@
-#ifndef _NE_ENGINE_PLUGIN_H_
-#define _NE_ENGINE_PLUGIN_H_
+#ifndef NE_ENGINE_PLUGIN_H
+#define NE_ENGINE_PLUGIN_H
 
 #include <Engine/Types.h>
 
@@ -29,6 +29,7 @@ enum NePluginLoadOrder
 	NEP_LOAD_PRE_RENDER,
 	NEP_LOAD_PRE_AUDIO,
 	NEP_LOAD_PRE_INPUT,
+	NEP_LOAD_PRE_UI,
 	NEP_LOAD_PRE_NETWORK,
 	NEP_LOAD_POST_INIT,
 	NEP_LOAD_POST_APP_INIT,
@@ -56,9 +57,12 @@ struct NePluginInterface
 typedef bool (*NePluginInitProc)(void);
 typedef void (*NePluginTermProc)(void);
 
+bool E_PluginLoaded(const char *name);
 void *E_GetInterface(const char *name);
 
 #ifdef _ENGINE_INTERNAL_
+
+void E_RegisterInterface(const char *name, void *ptr);
 
 bool E_InitPluginList(void);
 bool E_LoadPlugins(enum NePluginLoadOrder order);
@@ -71,7 +75,7 @@ void E_TermPluginList(void);
 }
 #endif
 
-#endif /* _NE_ENGINE_PLUGIN_H_ */
+#endif /* NE_ENGINE_PLUGIN_H */
 
 /* NekoEngine
  *
@@ -99,7 +103,7 @@ void E_TermPluginList(void);
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

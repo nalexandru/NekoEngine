@@ -5,13 +5,16 @@
 struct NeRenderContext *
 Re_CreateContext(void)
 {
-	struct NeRenderContext *ctx = Sys_Alloc(sizeof(*ctx), 1, MH_RenderDriver);
+	struct NeRenderContext *ctx = Sys_Alloc(sizeof(*ctx), 1, MH_RenderBackend);
 	
 	ctx->queue = [MTL_device newCommandQueue];
 
-	if (!Rt_InitArray(&ctx->submitted, 10, sizeof(struct Mtld_SubmitInfo), MH_RenderDriver))
+	if (!Rt_InitArray(&ctx->submitted, 10, sizeof(struct Mtld_SubmitInfo), MH_RenderBackend))
 		return nil;
 
+	if (!Rt_InitPtrArray(&ctx->resourceBarriers, 10, MH_RenderBackend))
+		return nil;
+	
 	if (@available(macOS 13, iOS 16, *)) {
 		NSError *err;
 		MTLIOCommandQueueDescriptor *ioDesc = [[MTLIOCommandQueueDescriptor alloc] init];
@@ -42,6 +45,7 @@ Re_DestroyContext(struct NeRenderContext *ctx)
 
 	[ctx->queue release];
 
+	Rt_TermArray(&ctx->resourceBarriers);
 	Rt_TermArray(&ctx->submitted);
 	
 	Sys_Free(ctx);
@@ -55,31 +59,42 @@ Re_BeginSecondary(struct NeRenderPassDesc *passDesc)
 }
 
 void
-Re_BeginDrawCommandBuffer(void)
+Re_BeginDrawCommandBuffer(struct NeSemaphore *wait)
 {
 	struct NeRenderContext *ctx = Re_CurrentContext();
 
 	ctx->type = RC_RENDER;
 	ctx->cmdBuffer = [ctx->queue commandBufferWithUnretainedReferences];
+	
+	if (wait)
+		[ctx->cmdBuffer encodeWaitForEvent: wait->event value: wait->value];
 }
 
 void
-Re_BeginComputeCommandBuffer(void)
+Re_BeginComputeCommandBuffer(struct NeSemaphore *wait)
 {
 	struct NeRenderContext *ctx = Re_CurrentContext();
 
 	ctx->type = RC_COMPUTE;
 	ctx->cmdBuffer = [ctx->queue commandBufferWithUnretainedReferences];
+	
+	if (wait)
+		[ctx->cmdBuffer encodeWaitForEvent: wait->event value: wait->value];
+	
 	ctx->encoders.compute = [ctx->cmdBuffer computeCommandEncoder];
 }
 
 void
-Re_BeginTransferCommandBuffer(void)
+Re_BeginTransferCommandBuffer(struct NeSemaphore *wait)
 {
 	struct NeRenderContext *ctx = Re_CurrentContext();
 
 	ctx->type = RC_BLIT;
 	ctx->cmdBuffer = [ctx->queue commandBuffer];
+	
+	if (wait)
+		[ctx->cmdBuffer encodeWaitForEvent: wait->event value: wait->value];
+	
 	ctx->encoders.blit = [ctx->cmdBuffer blitCommandEncoder];
 }
 
@@ -95,8 +110,9 @@ Re_EndCommandBuffer(void)
 	else if (ctx->type == RC_BLIT)
 		[ctx->encoders.blit endEncoding];
 
+	ctx->encoders.render = nil;
 	ctx->boundPipeline = nil;
-
+	
 	return cb;
 }
 
@@ -114,19 +130,19 @@ Re_CmdBindPipeline(struct NePipeline *pipeline)
 		ctx->type = RC_COMPUTE;
 		ctx->encoders.compute = [ctx->cmdBuffer computeCommandEncoder];
 	}
-	
+
 	if (ctx->type == RC_RENDER) {
 		[ctx->encoders.render setRenderPipelineState: pipeline->render.state];
 		if (pipeline->render.depthStencil)
 			[ctx->encoders.render setDepthStencilState: pipeline->render.depthStencil];
 
-		MTLDrv_SetRenderHeaps(ctx->encoders.render);
+		MTLBk_SetRenderHeaps(ctx->encoders.render);
 		MTL_SetRenderArguments(ctx->encoders.render);
 	} else if (ctx->type == RC_COMPUTE) {
 		[ctx->encoders.compute setComputePipelineState: pipeline->compute.state];
 		ctx->threadsPerThreadgroup = pipeline->compute.threadsPerThreadgroup;
 
-		MTLDrv_SetComputeHeaps(ctx->encoders.compute);
+		MTLBk_SetComputeHeaps(ctx->encoders.compute);
 		MTL_SetComputeArguments(ctx->encoders.compute);
 	}
 }
@@ -190,24 +206,44 @@ void
 Re_CmdBeginRenderPass(struct NeRenderPassDesc *passDesc, struct NeFramebuffer *fb, enum NeRenderCommandContents contents)
 {
 	struct NeRenderContext *ctx = Re_CurrentContext();
+	const bool depth = passDesc->depthFormat != MTLPixelFormatInvalid;
 
 	for (uint32_t i = 0; i < passDesc->colorAttachments; ++i)
 		passDesc->desc.colorAttachments[i].texture = fb->attachments[i];
 	
-	if (passDesc->depthFormat != MTLPixelFormatInvalid && passDesc->colorAttachments < fb->attachmentCount)
+	if (depth && passDesc->colorAttachments < fb->attachmentCount)
 		passDesc->desc.depthAttachment.texture = fb->attachments[passDesc->colorAttachments];
 
 	for (uint32_t i = 0; i < passDesc->inputAttachments; ++i)
-		passDesc->desc.colorAttachments[passDesc->colorAttachments + i].texture = fb->attachments[passDesc->colorAttachments + i + 1];
+		passDesc->desc.colorAttachments[passDesc->colorAttachments + i].texture = fb->attachments[passDesc->colorAttachments + i + (depth ? 1 : 0)];
 
 	ctx->encoders.render = [ctx->cmdBuffer renderCommandEncoderWithDescriptor: passDesc->desc];
+	
+	if (ctx->scopeBarrier) {
+#if TARGET_OS_OSX
+		const MTLBarrierScope scope = MTLBarrierScopeBuffers | MTLBarrierScopeRenderTargets | MTLBarrierScopeTextures;
+#else
+		const MTLBarrierScope scope = MTLBarrierScopeBuffers | MTLBarrierScopeTextures;
+#endif
+		[ctx->encoders.render memoryBarrierWithScope: scope
+										 afterStages: MTLRenderStageFragment
+										beforeStages: MTLRenderStageVertex];
+		ctx->scopeBarrier = false;
+	}
+	
+	if (ctx->resourceBarriers.count) {
+		[ctx->encoders.render memoryBarrierWithResources: (id<MTLResource> *)ctx->resourceBarriers.data
+												   count: ctx->resourceBarriers.count
+											 afterStages: MTLRenderStageFragment
+											beforeStages: MTLRenderStageVertex];
+		Rt_ClearArray(&ctx->resourceBarriers, false);
+	}
 }
 
 void
 Re_CmdEndRenderPass(void)
 {
 	struct NeRenderContext *ctx = Re_CurrentContext();
-
 	[ctx->encoders.render endEncoding];
 }
 
@@ -370,14 +406,39 @@ Re_CmdBuildAccelerationStructures(uint32_t count, struct NeAccelerationStructure
 }
 
 void
-Re_Barrier(enum NePipelineDependency dep,
+Re_CmdBarrier(enum NePipelineDependency dep,
 	uint32_t memBarrierCount, const struct NeMemoryBarrier *memBarriers,
 	uint32_t bufferBarrierCount, const struct NeBufferBarrier *bufferBarriers,
 	uint32_t imageBarrierCount, const struct NeImageBarrier *imageBarriers)
 {
-//	struct NeRenderContext *ctx = Re_CurrentContext();
+	struct NeRenderContext *ctx = Re_CurrentContext();
 
-//	[ctx->encoders.render memoryBarrierWithResources:<#(id<MTLResource>  _Nonnull const * _Nonnull)#> count:<#(NSUInteger)#> afterStages:<#(MTLRenderStages)#> beforeStages:<#(MTLRenderStages)#>]
+	if (ctx->type == RC_RENDER) {
+		ctx->scopeBarrier = memBarrierCount > 0;
+		
+		for (uint32_t i = 0; i < bufferBarrierCount; ++i)
+			Rt_ArrayAddPtr(&ctx->resourceBarriers, bufferBarriers[i].buffer->buff);
+		
+		for (uint32_t i = 0; i < imageBarrierCount; ++i)
+			Rt_ArrayAddPtr(&ctx->resourceBarriers, imageBarriers[i].texture->tex);
+	} else if (ctx->type == RC_COMPUTE) {
+		if (memBarrierCount)
+#if TARGET_OS_OSX
+			[ctx->encoders.compute memoryBarrierWithScope: MTLBarrierScopeBuffers | MTLBarrierScopeRenderTargets | MTLBarrierScopeTextures];
+#else
+		[ctx->encoders.compute memoryBarrierWithScope: MTLBarrierScopeBuffers | MTLBarrierScopeTextures];
+#endif
+		
+		id<MTLResource> *res = Sys_Alloc(sizeof(*res), bufferBarrierCount + imageBarrierCount, MH_Frame);
+		
+		for (uint32_t i = 0; i < bufferBarrierCount; ++i)
+			res[i] = bufferBarriers[i].buffer->buff;
+		
+		for (uint32_t i = 0; i < imageBarrierCount; ++i)
+			res[bufferBarrierCount + i] = imageBarriers[i].texture->tex;
+		
+		[ctx->encoders.compute memoryBarrierWithResources: res count: bufferBarrierCount + imageBarrierCount];
+	}
 }
 
 void
@@ -566,14 +627,12 @@ Re_ExecuteDirectIO(void)
 }
 
 static inline bool
-_Queue(NeCommandBufferHandle cmdBuffer, struct NeSemaphore *wait, struct NeSemaphore *signal)
+_Queue(NeCommandBufferHandle cmdBuffer, struct NeSemaphore *signal)
 {
 	struct NeRenderContext *ctx = Re_CurrentContext();
 
 	struct Mtld_SubmitInfo si =
 	{
-		.wait = wait ? wait->event : nil,
-		.waitValue = wait ? wait->value : 0,
 		.signal = signal ? signal->event : nil,
 		.signalValue = signal ? ++signal->value : 0,
 		.cmdBuffer = cmdBuffer
@@ -604,9 +663,9 @@ Re_ExecuteNoWait(NeCommandBufferHandle cmdBuffer)
 	[cb commit];
 }
 
-bool Re_QueueGraphics(NeCommandBufferHandle cmdBuffer, struct NeSemaphore *wait, struct NeSemaphore *signal) { return _Queue(cmdBuffer, wait, signal); }
-bool Re_QueueCompute(NeCommandBufferHandle cmdBuffer, struct NeSemaphore *wait, struct NeSemaphore *signal) { return _Queue(cmdBuffer, wait, signal); }
-bool Re_QueueTransfer(NeCommandBufferHandle cmdBuffer, struct NeSemaphore *wait, struct NeSemaphore *signal) { return _Queue(cmdBuffer, wait, signal); }
+bool Re_QueueGraphics(NeCommandBufferHandle cmdBuffer, struct NeSemaphore *signal) { return _Queue(cmdBuffer, signal); }
+bool Re_QueueCompute(NeCommandBufferHandle cmdBuffer, struct NeSemaphore *signal) { return _Queue(cmdBuffer, signal); }
+bool Re_QueueTransfer(NeCommandBufferHandle cmdBuffer, struct NeSemaphore *signal) { return _Queue(cmdBuffer, signal); }
 bool Re_ExecuteGraphics(NeCommandBufferHandle cmdBuffer) { return _Execute(cmdBuffer); }
 bool Re_ExecuteCompute(NeCommandBufferHandle cmdBuffer) { return _Execute(cmdBuffer); }
 bool Re_ExecuteTransfer(NeCommandBufferHandle cmdBuffer) { return _Execute(cmdBuffer); }
@@ -637,7 +696,7 @@ bool Re_ExecuteTransfer(NeCommandBufferHandle cmdBuffer) { return _Execute(cmdBu
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

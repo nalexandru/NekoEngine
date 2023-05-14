@@ -18,8 +18,8 @@ struct ClientHandlerArgs
 	NeSocket sk;
 };
 
-static void _serverProc(struct NeServer *s);
-static void _clientProc(struct ClientHandlerArgs *args);
+static void ServerProc(struct NeServer *s);
+static void ClientProc(struct ClientHandlerArgs *args);
 
 bool
 Net_InitServer(struct NeServer **s, uint16_t port, NeClientHandlerProc clientHandler)
@@ -41,7 +41,7 @@ Net_StartServer(struct NeServer *s)
 	if (!Net_Listen(s->sk, s->port, 64))
 		return false;
 
-	return Sys_InitThread(&s->thread, "Server Thread", (void (*)(void *))_serverProc, s);
+	return Sys_InitThread(&s->thread, "Server Thread", (void (*)(void *))ServerProc, s);
 }
 
 void
@@ -60,7 +60,7 @@ Net_TermServer(struct NeServer *s)
 }
 
 static void
-_serverProc(struct NeServer *s)
+ServerProc(struct NeServer *s)
 {
 	while (!s->stop) {
 		NeSocket sk = Net_Accept(s->sk);
@@ -73,13 +73,13 @@ _serverProc(struct NeServer *s)
 		args->clientHandler = s->clientHandler;
 
 		NeThread t;
-		Sys_InitThread(&t, "Client Thread", (void (*)(void *)) _clientProc, args);
+		Sys_InitThread(&t, "Client Thread", (void (*)(void *))ClientProc, args);
 		Sys_DetachThread(t);
 	}
 }
 
 static void
-_clientProc(struct ClientHandlerArgs *args)
+ClientProc(struct ClientHandlerArgs *args)
 {
 	args->clientHandler(args->sk);
 	Sys_Free(args);

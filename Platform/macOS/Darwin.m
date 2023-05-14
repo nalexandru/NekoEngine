@@ -9,6 +9,8 @@
 #include <pthread.h>
 #include <sys/time.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/event.h>
 #include <sys/socket.h>
 #include <sys/sysctl.h>
 #include <sys/utsname.h>
@@ -31,6 +33,8 @@
 
 #import <Foundation/Foundation.h>
 
+#include "macOSPlatform.h"
+
 #define INFO_STR_LEN	128
 
 natural_t Darwin_numCpus = 0;
@@ -42,7 +46,7 @@ char Darwin_cpuName[INFO_STR_LEN];
 NSURL *Darwin_appSupportURL = nil;
 bool Darwin_screenVisible = true;
 
-static uint64_t _machTimerFreq;
+static uint64_t f_machTimerFreq;
 
 bool
 Sys_InitDbgOut(void)
@@ -53,9 +57,9 @@ Sys_InitDbgOut(void)
 void
 Sys_DbgOut(int color, const char *module, const char *severity, const char *text)
 {
-	@autoreleasepool {
+	AUTORELEASE_BEGIN
 		NSLog(@"[%s][%s]: %s\n", module, severity, text);
-	}
+	AUTORELEASE_END
 }
 
 void
@@ -66,7 +70,7 @@ Sys_TermDbgOut(void)
 uint64_t
 Sys_Time(void)
 {
-	return mach_absolute_time() * _machTimerFreq;
+	return mach_absolute_time() * f_machTimerFreq;
 }
 
 bool
@@ -187,20 +191,26 @@ Sys_OperatingSystemVersionString(void)
 struct NeSysVersion
 Sys_OperatingSystemVersion(void)
 {
+	struct NeSysVersion sv;
+
+#if defined(MAC_OS_X_VERSION_10_10) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_10
 	NSOperatingSystemVersion osVer = [[NSProcessInfo processInfo] operatingSystemVersion];
-	struct NeSysVersion sv =
-	{
-		.major = (uint32_t)osVer.majorVersion,
-		.minor = (uint32_t)osVer.minorVersion,
-		.revision = (uint32_t)osVer.patchVersion
-	};
+	sv.major = (uint32_t)osVer.majorVersion;
+	sv.minor = (uint32_t)osVer.minorVersion;
+	sv.revision = (uint32_t)osVer.patchVersion;
+#else
+	struct utsname un;
+	uname(&un);
+	sscanf(un.release, "%d.%d.%d", &sv.major, &sv.minor, &sv.revision);
+#endif
+
 	return sv;
 }
 
 uint32_t
 Sys_Capabilities(void)
 {
-	return 0;//     SC_MMIO;
+	return SC_MMIO;
 }
 
 bool
@@ -213,29 +223,29 @@ void *
 Sys_LoadLibrary(const char *name)
 {
 	char *path = NULL;
-	
+
 	if (!name)
 		return dlopen(NULL, RTLD_NOW);
-	
+
 	if (access(name, R_OK) < 0) {
 		char *prefix = "", *suffix = "";
 		size_t len = strlen(name);
-		
+
 		path = Sys_Alloc(sizeof(char), 2048, MH_Transient);
 		if (!path)
 			return NULL;
-		
+
 		if (!strchr(name, '/') && strncmp(name, "lib", 3))
 			prefix = "lib";
-	
+
 		if (len < 7 || strncmp(name + len - 6, ".dylib", 6))
 			suffix = ".dylib";
-		
+
 		snprintf(path, 2048, "%s%s%s", prefix, name, suffix);
 	} else {
 		path = (char *)name;
 	}
-	
+
 	return dlopen(path, RTLD_NOW);
 }
 
@@ -275,56 +285,136 @@ Sys_USleep(uint32_t usec)
 void
 Sys_DirectoryPath(enum NeSystemDirectory sd, char *out, size_t len)
 {
-	@autoreleasepool {
-		switch (sd) {
-		case SD_SAVE_GAME: {
-			NSArray<NSURL *> *urls = [[NSFileManager defaultManager] URLsForDirectory: NSDocumentDirectory
-																			inDomains: NSUserDomainMask];
+	AUTORELEASE_BEGIN
 
-			NSURL *path = [[urls firstObject] URLByAppendingPathComponent: [NSString stringWithUTF8String: App_applicationInfo.name]];
+	switch (sd) {
+	case SD_SAVE_GAME: {
+#if defined(MAC_OS_X_VERSION_10_6) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6
+		NSArray *urls = [[NSFileManager defaultManager] URLsForDirectory: NSDocumentDirectory inDomains: NSUserDomainMask];
+		NSURL *path = [[urls objectAtIndex: 0] URLByAppendingPathComponent: [NSString stringWithUTF8String: App_applicationInfo.name]];
 
-			snprintf(out, len, "%s", [[path path] UTF8String]);
-		} break;
-		case SD_APP_DATA: {
-			const char *path = [[Darwin_appSupportURL path] UTF8String];
-			snprintf(out, len, "%s", path);
-		} break;
-		case SD_TEMP: {
-			snprintf(out, len, "%s", [[[[NSFileManager defaultManager] temporaryDirectory] path] UTF8String]);
-		} break;
-		}
+		strlcpy(out, [[path path] UTF8String], len);
+#else
+		NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true);
+		NSString *path = [[paths objectAtIndex: 0] stringByAppendingPathComponent: [NSString stringWithUTF8String: App_applicationInfo.name]];
+
+		snprintf(out, len, "%s/Save", [path UTF8String]);
+#endif
+	} break;
+	case SD_APP_DATA: {
+		const char *path = [[Darwin_appSupportURL path] UTF8String];
+		strlcpy(out, path, len);
+	} break;
+	case SD_TEMP: {
+#if defined(MAC_OS_X_VERSION_10_12) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_12
+		strlcpy(out, [[[[NSFileManager defaultManager] temporaryDirectory] path] UTF8String], len);
+#else
+		strlcpy(out, [NSTemporaryDirectory() UTF8String], len);
+#endif
+	} break;
 	}
+
+	AUTORELEASE_END
 }
 
 bool
 Sys_FileExists(const char *path)
 {
-	@autoreleasepool {
+	AUTORELEASE_BEGIN
 		BOOL isDir;
 		return [[NSFileManager defaultManager] fileExistsAtPath: [NSString stringWithUTF8String: path]
 													isDirectory: &isDir] && !isDir;
-	}
+	AUTORELEASE_END
 }
 
 bool
 Sys_DirectoryExists(const char *path)
 {
-	@autoreleasepool {
+	AUTORELEASE_BEGIN
 		BOOL isDir;
 		return [[NSFileManager defaultManager] fileExistsAtPath: [NSString stringWithUTF8String: path]
 													isDirectory: &isDir] && isDir;
-	}
+	AUTORELEASE_END
 }
 
 bool
 Sys_CreateDirectory(const char *path)
 {
-	@autoreleasepool {
+#if defined(MAC_OS_X_VERSION_10_5) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5
+	AUTORELEASE_BEGIN
 		return [[NSFileManager defaultManager] createDirectoryAtPath: [NSString stringWithUTF8String: path]
 										 withIntermediateDirectories: true
 														  attributes: nil
 															   error: nil];
+	AUTORELEASE_END
+#else
+	if (!mkdir(path, 0700))
+		return true;
+	
+	if (errno != ENOENT)
+		return false;
+	
+	char *dir = Sys_Alloc(sizeof(*dir), 4096, MH_Transient);
+	memcpy(dir, path, strlen(path));
+	
+	for (char *p = dir + 1; *p; ++p) {
+		if (*p != '/')
+			continue;
+		
+		*p = 0x0;
+		
+		if (mkdir(dir, 0700) && errno != EEXIST)
+			return false;
+		
+		*p = '/';
 	}
+	
+	if (mkdir(path, 0700))
+		return errno == EEXIST;
+	else
+		return true;
+#endif
+}
+
+struct DirWatch
+{
+	int kq, filter, fd;
+	NeDirWatchCallback cb;
+	void *ud;
+	struct kevent ev;
+};
+
+void *
+Sys_CreateDirWatch(const char *path, enum NeFSEvent mask, NeDirWatchCallback callback, void *ud)
+{
+	struct DirWatch *dw = Sys_Alloc(sizeof(*dw), 1, MH_System);
+	if (!dw)
+		return NULL;
+
+	//struct kevent
+
+	/*dw->fd = open(path, )
+	dw->ud = ud;
+	dw->kq = kqueue();
+	dw->cb = callback;
+	
+	int fflags = 0;
+	if ((mask & FE_Create) == FE_Create)
+		
+	if ((mask & FE_Delete) == FE_Delete)
+		fflags |= NOTE_DELETE;
+	if ((mask & FE_Modify) == FE_Modify)
+		fflags |= NOTE_CLOSE_WRITE;
+	
+	EV_SET(&dw->ev, dw->fd, EVFILT_FS, EV_ADD | EV_ENABLE | EV_ONESHOT, fflags, 0, 0);*/
+	
+	return dw;
+}
+
+void
+Sys_DestroyDirWatch(void *handle)
+{
+	Sys_Free(handle);
 }
 
 void
@@ -337,7 +427,7 @@ Sys_ExecutableLocation(char *buff, size_t len)
 void
 Sys_GetWorkingDirectory(char *buff, size_t len)
 {
-	snprintf(buff, len, "%s", [[[NSFileManager defaultManager] currentDirectoryPath] UTF8String]);
+	strlcpy(buff, [[[NSFileManager defaultManager] currentDirectoryPath] UTF8String], len);
 }
 
 void
@@ -349,7 +439,7 @@ Sys_SetWorkingDirectory(const char *dir)
 void
 Sys_UserName(char *buff, size_t len)
 {
-	snprintf(buff, len, "%s", [NSUserName() UTF8String]);
+	strlcpy(buff, [NSUserName() UTF8String], len);
 }
 
 void
@@ -375,42 +465,49 @@ Sys_UnmountPlatformResources(void)
 bool
 Sys_InitDarwinPlatform(void)
 {
-	static bool _initialized = false;
-	
-	if (_initialized)
+	static bool initialized = false;
+	if (initialized)
 		return true;
-	
+
 	mach_timebase_info_data_t tb;
 	mach_timebase_info(&tb);
-	
-	_machTimerFreq = tb.numer / tb.denom;
-	
+
+	f_machTimerFreq = tb.numer / tb.denom;
+
 	char dataDir[2048];
 	getcwd(dataDir, 2048);
-	
-	strncat(dataDir, "/Data", 5);
-	
+
+	strlcat(dataDir, "/Data", sizeof(dataDir));
+
 	E_SetCVarStr("Engine_DataDir", dataDir);
-	
-	NSArray<NSURL *> *urls = [[NSFileManager defaultManager] URLsForDirectory: NSApplicationSupportDirectory
-																	inDomains: NSUserDomainMask];
-	
-	Darwin_appSupportURL = [[urls firstObject] URLByAppendingPathComponent: [NSString stringWithUTF8String: App_applicationInfo.name]];
+
+#if defined(MAC_OS_X_VERSION_10_6) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6
+	NSArray *urls = [[NSFileManager defaultManager] URLsForDirectory: NSApplicationSupportDirectory inDomains: NSUserDomainMask];
+	Darwin_appSupportURL = [[urls objectAtIndex: 0] URLByAppendingPathComponent: [NSString stringWithUTF8String: App_applicationInfo.name]];
 	[Darwin_appSupportURL retain];
-	
+
 	if (![[NSFileManager defaultManager] fileExistsAtPath: [Darwin_appSupportURL path]])
 		[[NSFileManager defaultManager] createDirectoryAtPath: [Darwin_appSupportURL path]
 								  withIntermediateDirectories: TRUE
 												   attributes: nil
 														error: nil];
-	
-	NSString *appSupportPath = [[Darwin_appSupportURL path] stringByAppendingPathComponent: @"Engine.log"];
-	E_SetCVarStr("Engine_LogFile", [appSupportPath UTF8String]);
-	
+#else
+	NSArray *paths = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, true);
+	NSString *appSupportPath = [[paths objectAtIndex: 0] stringByAppendingPathComponent: [NSString stringWithUTF8String: App_applicationInfo.name]];
+	Darwin_appSupportURL = [NSURL fileURLWithPath: appSupportPath];
+	[Darwin_appSupportURL retain];
+
+	if (![[NSFileManager defaultManager] fileExistsAtPath: appSupportPath])
+		Sys_CreateDirectory([appSupportPath UTF8String]);
+#endif
+
+	NSString *logPath = [[Darwin_appSupportURL path] stringByAppendingPathComponent: @"Engine.log"];
+	E_SetCVarStr("Engine_LogFile", [logPath UTF8String]);
+
 	uname(&Darwin_uname);
-	
-	_initialized = true;
-	
+
+	initialized = true;
+
 	return true;
 }
 
@@ -420,24 +517,42 @@ Sys_TermDarwinPlatform(void)
 	[Darwin_appSupportURL release];
 }
 
+bool
+Sys_LockMemory(void *mem, size_t size)
+{
+	return mlock(mem, size) == 0;
+}
+
+bool
+Sys_UnlockMemory(void *mem, size_t size)
+{
+	return munlock(mem, size) == 0;
+}
+
+void
+Sys_DebugBreak(void)
+{
+	raise(SIGTRAP);
+}
+
 bool Net_InitPlatform(void) { return true; }
 
 NeSocket
 Net_Socket(enum NeSocketType type, enum NeSocketProto proto)
 {
 	int st = SOCK_STREAM, sp = IPPROTO_TCP;
-	
+
 	switch (type) {
 	case ST_STREAM: st = SOCK_STREAM; break;
 	case ST_DGRAM: st = SOCK_DGRAM; break;
 	case ST_RAW: st = SOCK_RAW; break;
 	}
-	
-	switch (sp) {
+
+	switch (proto) {
 	case SP_TCP: sp = IPPROTO_TCP; break;
 	case SP_UDP: sp = IPPROTO_UDP; break;
 	}
-	
+
 	return socket(AF_INET, st, sp);
 }
 
@@ -447,7 +562,7 @@ Net_Connect(NeSocket socket, const char *host, uint16_t port)
 	struct hostent *h = gethostbyname(host);
 	if (!h)
 		return false;
-	
+
 	struct sockaddr_in addr =
 	{
 		.sin_family = AF_INET,
@@ -468,7 +583,7 @@ Net_Listen(NeSocket socket, uint16_t port, int32_t backlog)
 	};
 	if (bind(socket, (struct sockaddr *)&addr, sizeof(addr)) < 0)
 		return false;
-	
+
 	return listen(socket, backlog) == 0;
 }
 
@@ -505,7 +620,7 @@ void Net_TermPlatform(void) { }
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (c) 2015-2022, Alexandru Naiman
+ * Copyright (c) 2015-2023, Alexandru Naiman
  *
  * All rights reserved.
  *
@@ -524,7 +639,7 @@ void Net_TermPlatform(void) { }
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

@@ -1,5 +1,5 @@
-#ifndef _NE_ANIMATION_ANIMATOR_H_
-#define _NE_ANIMATION_ANIMATOR_H_
+#ifndef NE_ANIMATION_ANIMATOR_H
+#define NE_ANIMATION_ANIMATOR_H
 
 #include <Render/Types.h>
 #include <Engine/Component.h>
@@ -14,11 +14,10 @@ struct NeAnimator
 
 	struct NeSkeleton *skel;
 	bool playing, oneShot, loop, dirty;
-	double time, prevTime;
+	float time, prevTime;
 	NeHandle clip, prevClip;
 	uint64_t boneBufferSize;
 	NeBufferHandle boneBuffer, vertexBuffer;
-	//struct NeArray transforms, prevTransforms;
 	struct NeMatrix *transforms;
 };
 
@@ -26,7 +25,7 @@ struct NeAnimator
 }
 #endif
 
-#endif /* _NE_ANIMATION_ANIMATOR_H_ */
+#endif /* NE_ANIMATION_ANIMATOR_H */
 
 /* NekoEngine
  *
@@ -54,7 +53,7 @@ struct NeAnimator
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

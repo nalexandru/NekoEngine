@@ -33,29 +33,29 @@
 #define SSTR_MESH				"mesh"
 #define SSTR_TASK				"task"
 
-struct NeShaderModuleInfo
+struct ShaderModuleInfo
 {
 	uint64_t hash;
 	void *module;
 };
 
-static struct NeArray _modules, _shaders;
+static struct NeArray f_modules, f_shaders;
 
-static void _loadShader(const char *path);
+static void LoadShader(const char *path);
 
 bool
 Re_LoadShaders(void)
 {
-	if (!Rt_InitArray(&_shaders, 10, sizeof(struct NeShader), MH_Render))
+	if (!Rt_InitArray(&f_shaders, 10, sizeof(struct NeShader), MH_Render))
 		return false;
 
-	if (!Rt_InitArray(&_modules, 10, sizeof(struct NeShaderModuleInfo), MH_Render)) {
-		Rt_TermArray(&_shaders);
+	if (!Rt_InitArray(&f_modules, 10, sizeof(struct ShaderModuleInfo), MH_Render)) {
+		Rt_TermArray(&f_shaders);
 		return false;
 	}
 
-	E_ProcessFiles("/Shaders", "shader", true, _loadShader);
-	Rt_ArraySort(&_shaders, Rt_U64CmpFunc);
+	E_ProcessFiles("/Shaders", "shader", true, LoadShader);
+	Rt_ArraySort(&f_shaders, Rt_U64CmpFunc);
 
 	return true;
 }
@@ -64,24 +64,24 @@ void
 Re_UnloadShaders(void)
 {
 	struct NeShader *s;
-	Rt_ArrayForEach(s, &_shaders) {
+	Rt_ArrayForEach(s, &f_shaders) {
 		Sys_Free(s->stages);
 		Sys_Free(s->transparentStages.stages);
 	}
 
-	Rt_TermArray(&_modules);
-	Rt_TermArray(&_shaders);
+	Rt_TermArray(&f_modules);
+	Rt_TermArray(&f_shaders);
 }
 
 struct NeShader *
 Re_GetShader(const char *name)
 {
 	uint64_t hash = Rt_HashString(name);
-	return Rt_ArrayBSearch(&_shaders, &hash, Rt_U64CmpFunc);
+	return Rt_ArrayBSearch(&f_shaders, &hash, Rt_U64CmpFunc);
 }
 
 static inline uint32_t
-_loadModules(struct NeShader *s, uint32_t startPos, uint32_t count, const struct NeMetadata *meta, struct NeShaderStageInfo *si)
+LoadModules(struct NeShader *s, uint32_t startPos, uint32_t count, const struct NeMetadata *meta, struct NeShaderStageInfo *si)
 {
 	uint32_t pos = startPos;
 	for (uint32_t j = 0; j < count; ++j) {
@@ -96,12 +96,12 @@ _loadModules(struct NeShader *s, uint32_t startPos, uint32_t count, const struct
 				meta->json[val.end] = 0x0;
 
 				uint64_t hash = Rt_HashString(tmp);
-				struct NeShaderModuleInfo *modInfo = Rt_ArrayBSearch(&_shaders, &hash, Rt_U64CmpFunc);
+				struct ShaderModuleInfo *modInfo = Rt_ArrayBSearch(&f_shaders, &hash, Rt_U64CmpFunc);
 
 				if (modInfo) {
 					s->stages[j].module = modInfo->module;
 				} else {
-					struct NeShaderModuleInfo info =
+					struct ShaderModuleInfo info =
 					{
 						.hash = hash,
 						.module = Re_ShaderModule(tmp)
@@ -113,8 +113,8 @@ _loadModules(struct NeShader *s, uint32_t startPos, uint32_t count, const struct
 
 					si->stages[j].module = info.module;
 
-					Rt_ArrayAdd(&_modules, &info);
-					Rt_ArraySort(&_modules, Rt_U64CmpFunc);
+					Rt_ArrayAdd(&f_modules, &info);
+					Rt_ArraySort(&f_modules, Rt_U64CmpFunc);
 				}
 			} else if (JSON_STRING("stage", key, meta->json)) {
 				if (JSON_STRING(SSTR_VERTEX, val, meta->json))
@@ -156,7 +156,7 @@ _loadModules(struct NeShader *s, uint32_t startPos, uint32_t count, const struct
 }
 
 static void
-_loadShader(const char *path)
+LoadShader(const char *path)
 {
 	struct NeMetadata meta =
 	{
@@ -164,7 +164,7 @@ _loadShader(const char *path)
 		.id = SHADER_META_ID
 	};
 
-	if (!E_LoadMetadata(&meta, path))
+	if (!Asset_LoadMetadata(&meta, path))
 		return;
 
 	struct NeShader s = { 0 };
@@ -189,7 +189,7 @@ _loadShader(const char *path)
 			s.opaqueStages.stageCount = val.size;
 			s.opaqueStages.stages = Sys_Alloc(s.opaqueStages.stageCount, sizeof(*s.opaqueStages.stages), MH_Render);
 
-			i = _loadModules(&s, i, val.size, &meta, &s.opaqueStages);
+			i = LoadModules(&s, i, val.size, &meta, &s.opaqueStages);
 		} else if (JSON_STRING("transparentModules", key, meta.json)) {
 			if (val.type != JSMN_ARRAY)
 				continue;
@@ -197,12 +197,12 @@ _loadShader(const char *path)
 			s.transparentStages.stageCount = val.size;
 			s.transparentStages.stages = Sys_Alloc(s.transparentStages.stageCount, sizeof(*s.transparentStages.stages), MH_Render);
 
-			i = _loadModules(&s, i, val.size, &meta, &s.transparentStages);
+			i = LoadModules(&s, i, val.size, &meta, &s.transparentStages);
 		}
 	}
 
 	s.hash = Rt_HashString(s.name);
-	Rt_ArrayAdd(&_shaders, &s);
+	Rt_ArrayAdd(&f_shaders, &s);
 }
 
 /* NekoEngine
@@ -231,7 +231,7 @@ _loadShader(const char *path)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

@@ -48,7 +48,10 @@ Sys_InitThread(NeThread *t, const char *name, void (*proc)(void *), void *args)
 	(void)name;
 
 	pthread_attr_init(&attr);
+
+#if defined(MAC_OS_VERSION_11_0) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_VERSION_11_0
 	pthread_attr_set_qos_class_np(&attr, QOS_CLASS_USER_INTERACTIVE, 0);
+#endif
 
 	if (!pthread_create((pthread_t *)t, &attr, (void *(*)(void *))proc, args))
 		return false;
@@ -61,9 +64,11 @@ Sys_InitThread(NeThread *t, const char *name, void (*proc)(void *), void *args)
 void
 Sys_SetThreadAffinity(NeThread t, int cpu)
 {
+#if defined(MAC_OS_X_VERSION_10_5) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5
 	thread_affinity_policy_data_t pd = { cpu };
 	mach_port_t machThread = pthread_mach_thread_np((pthread_t)t);
 	thread_policy_set(machThread, THREAD_AFFINITY_POLICY, (thread_policy_t)&pd, THREAD_AFFINITY_POLICY_COUNT);
+#endif
 }
 
 void
@@ -127,9 +132,9 @@ Sys_InitFutex(NeFutex *ftx)
 	pthread_mutex_t *m = Sys_Alloc(sizeof(*m), 1, MH_System);
 	if (!m)
 		return false;
-	
+
 	*ftx = m;
-	
+
 	return !pthread_mutex_init(m, NULL);
 }
 
@@ -158,9 +163,9 @@ Sys_InitConditionVariable(NeConditionVariable *cv)
 	pthread_cond_t *c = Sys_Alloc(sizeof(*c), 1, MH_System);
 	if (!c)
 		return false;
-	
+
 	*cv = c;
-	
+
 	return !pthread_cond_init(c, NULL);
 }
 
@@ -202,7 +207,7 @@ Sys_TermConditionVariable(NeConditionVariable cv)
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (c) 2015-2022, Alexandru Naiman
+ * Copyright (c) 2015-2023, Alexandru Naiman
  *
  * All rights reserved.
  *
@@ -221,7 +226,7 @@ Sys_TermConditionVariable(NeConditionVariable cv)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

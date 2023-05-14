@@ -64,6 +64,6 @@ main()
 
 	dst.u = v.u; dst.v = v.v;
 	dst.r = v.r; dst.g = v.g; dst.b = v.b; dst.a = v.a;
-	
+
 	ComputeArgs.dst.data[gl_GlobalInvocationID.x] = dst;
 }

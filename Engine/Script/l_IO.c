@@ -1,117 +1,16 @@
 #include <Engine/IO.h>
 #include <Engine/Config.h>
-#include <Script/Script.h>
-#include <Engine/Console.h>
-#include <Runtime/Runtime.h>
+#include <Script/Interface.h>
+#include <System/Log.h>
 
-#include "Interface.h"
+#define SIO_MOD	"ScriptIO"
 
 static int32_t *_readBufferSize = NULL;
-
-SIF_FUNC(OpenFile)
-{
-	NeFile f = E_OpenFile(luaL_checkstring(vm, 1), (enum NeFileOpenMode)luaL_checkinteger(vm, 2));
-	if (f)
-		lua_pushlightuserdata(vm, f);
-	else
-		lua_pushnil(vm);
-	return 1;
-}
-
-SIF_FUNC(ReadFile)
-{
-	if (!lua_islightuserdata(vm, 1))
-		luaL_argerror(vm, 1, "");
-
-	char *dst = Sys_Alloc(sizeof(*dst), *_readBufferSize, MH_Frame);
-
-	E_FGets(lua_touserdata(vm, 1), dst, *_readBufferSize);
-
-	if (dst)
-		lua_pushstring(vm, dst);
-	else
-		lua_pushnil(vm);
-
-	return 1;
-}
-
-SIF_FUNC(ReadFullFile)
-{
-	if (!lua_islightuserdata(vm, 1))
-		luaL_argerror(vm, 1, "");
-
-	int64_t size = 0;
-	char *txt = E_ReadFileText(lua_touserdata(vm, 1), &size, true);
-
-	if (txt)
-		lua_pushstring(vm, txt);
-	else
-		lua_pushnil(vm);
-
-	return 1;
-}
-
-SIF_FUNC(WriteFile)
-{
-	if (!lua_islightuserdata(vm, 1))
-		luaL_argerror(vm, 1, "");
-
-	const char *str = luaL_checkstring(vm, 2);
-
-	E_WriteFile(lua_touserdata(vm, 1), str, strlen(str));
-
-	return 0;
-}
-
-SIF_FUNC(FTell)
-{
-	if (!lua_islightuserdata(vm, 1))
-		luaL_argerror(vm, 1, "");
-
-	lua_pushinteger(vm, E_FTell(lua_touserdata(vm, 1)));
-	return 1;
-}
-
-SIF_FUNC(FSeek)
-{
-	if (!lua_islightuserdata(vm, 1))
-		luaL_argerror(vm, 1, "");
-
-	lua_pushinteger(vm, E_FSeek(lua_touserdata(vm, 1), luaL_checkinteger(vm, 2), (enum NeFileSeekStart)luaL_checkinteger(vm, 3)));
-	return 1;
-}
-
-SIF_FUNC(FileLength)
-{
-	if (!lua_islightuserdata(vm, 1))
-		luaL_argerror(vm, 1, "");
-
-	lua_pushinteger(vm, E_FileLength(lua_touserdata(vm, 1)));
-	return 1;
-}
-
-SIF_FUNC(FEof)
-{
-	if (!lua_islightuserdata(vm, 1))
-		luaL_argerror(vm, 1, "");
-
-	lua_pushboolean(vm, E_FEof(lua_touserdata(vm, 1)));
-	return 1;
-}
 
 SIF_FUNC(FileExists)
 {
 	lua_pushboolean(vm, E_FileExists(luaL_checkstring(vm, 1)));
 	return 1;
-}
-
-SIF_FUNC(CloseFile)
-{
-	if (!lua_islightuserdata(vm, 1))
-		luaL_argerror(vm, 1, "");
-
-	E_CloseFile(lua_touserdata(vm, 1));
-	return 0;
 }
 
 SIF_FUNC(ListFiles)
@@ -128,7 +27,7 @@ SIF_FUNC(ListFiles)
 		lua_pushstring(vm, *i);
 		lua_rawseti(vm, -2, idx++);
 	}
-	
+
 	E_FreeFileList(files);
 
 	return 1;
@@ -169,19 +68,14 @@ SIF_FUNC(FileStream)
 	const char *path = luaL_checkstring(vm, 1);
 	int mode = (int)luaL_checkinteger(vm, 2);
 
-	struct NeStream *stm = Sys_Alloc(sizeof(*stm), 1, MH_Script);
-	if (!stm) {
+	struct NeStream stm;
+	if (!E_FileStream(path, mode, &stm)) {
 		lua_pushnil(vm);
 		return 1;
 	}
 
-	if (!E_FileStream(path, mode, stm)) {
-		Sys_Free(stm);
-		lua_pushnil(vm);
-		return 1;
-	}
-
-	lua_pushlightuserdata(vm, stm);
+	struct NeStream *ud = lua_newuserdatauv(vm, sizeof(*ud), 0);
+	memcpy(ud, &stm, sizeof(*ud));
 	return 1;
 }
 
@@ -191,154 +85,172 @@ SIF_FUNC(MemoryStream)
 	return 0;
 }
 
-SIF_FUNC(CloseStream)
+SIF_FUNC(Tell)
 {
-	if (!lua_islightuserdata(vm, 1))
-		luaL_argerror(vm, 1, "");
-
-	struct NeStream *stm = lua_touserdata(vm, 1);
-
-	E_CloseStream(stm);
-
-	Sys_Free(stm);
-
-	return 0;
-}
-
-SIF_FUNC(StreamTell)
-{
-	if (!lua_islightuserdata(vm, 1))
-		luaL_argerror(vm, 1, "");
-
-	lua_pushinteger(vm, E_StreamTell(lua_touserdata(vm, 1)));
+	lua_pushinteger(vm, E_StreamTell(luaL_checkudata(vm, 1, SIF_NE_STREAM)));
 	return 1;
 }
 
-SIF_FUNC(StreamSeek)
+SIF_FUNC(Seek)
 {
-	if (!lua_islightuserdata(vm, 1))
-		luaL_argerror(vm, 1, "");
-
-	lua_pushinteger(vm, E_StreamSeek(lua_touserdata(vm, 1), luaL_checkinteger(vm, 2), (enum NeFileSeekStart)luaL_checkinteger(vm, 3)));
+	lua_pushinteger(vm, E_SeekStream(luaL_checkudata(vm, 1, SIF_NE_STREAM), luaL_checkinteger(vm, 2),
+										(enum NeFileSeekStart)luaL_checkinteger(vm, 3)));
 	return 1;
 }
 
-SIF_FUNC(StreamLength)
+SIF_FUNC(Length)
 {
-	if (!lua_islightuserdata(vm, 1))
-		luaL_argerror(vm, 1, "");
-
-	lua_pushinteger(vm, E_StreamLength(lua_touserdata(vm, 1)));
+	lua_pushinteger(vm, E_StreamLength(luaL_checkudata(vm, 1, SIF_NE_STREAM)));
 	return 1;
 }
 
-SIF_FUNC(EndOfStream)
+SIF_FUNC(End)
 {
-	if (!lua_islightuserdata(vm, 1))
-		luaL_argerror(vm, 1, "");
-
-	lua_pushboolean(vm, E_EndOfStream(lua_touserdata(vm, 1)));
+	lua_pushboolean(vm, E_EndOfStream(luaL_checkudata(vm, 1, SIF_NE_STREAM)));
 	return 1;
 }
 
-SIF_FUNC(ReadStream)
+SIF_FUNC(Read)
 {
-	if (!lua_islightuserdata(vm, 1))
-		luaL_argerror(vm, 1, "");
+	int64_t ch = luaL_checkinteger(vm, 2);
+	if (ch <= 0)
+		luaL_argerror(vm, 2, "Number of characters must be positive.");
 
-	char *dst = Sys_Alloc(sizeof(*dst), *_readBufferSize, MH_Frame);
-
-	E_ReadStreamLine(lua_touserdata(vm, 1), dst, *_readBufferSize);
-
-	if (dst)
-		lua_pushstring(vm, dst);
-	else
+	char *dst = Sys_Alloc(sizeof(*dst), ch, MH_Frame);
+	if (!dst)
 		lua_pushnil(vm);
 
+	E_ReadStreamLine(luaL_checkudata(vm, 1, SIF_NE_STREAM), dst, ch);
+	lua_pushstring(vm, dst);
 	return 1;
 }
 
-SIF_FUNC(WriteStream)
+SIF_FUNC(ReadLine)
 {
-	if (!lua_islightuserdata(vm, 1))
-		luaL_argerror(vm, 1, "");
+	char *dst = Sys_Alloc(sizeof(*dst), *_readBufferSize, MH_Frame);
+	if (!dst)
+		lua_pushnil(vm);
 
+	E_ReadStreamLine(luaL_checkudata(vm, 1, SIF_NE_STREAM), dst, *_readBufferSize);
+	lua_pushstring(vm, dst);
+	return 1;
+}
+
+SIF_FUNC(Write)
+{
 	const char *str = luaL_checkstring(vm, 2);
+	E_WriteStream(luaL_checkudata(vm, 1, SIF_NE_STREAM), str, strlen(str));
+	return 0;
+}
 
-	E_WriteStream(lua_touserdata(vm, 1), str, strlen(str));
+SIF_FUNC(Close)
+{
+	E_CloseStream(luaL_checkudata(vm, 1, SIF_NE_STREAM));
+	return 0;
+}
+
+SIF_FUNC(__gc)
+{
+	struct NeStream *stm = luaL_testudata(vm, 1, SIF_NE_STREAM);
+	if (stm && stm->type != ST_Closed)
+		Sys_LogEntry(SIO_MOD, LOG_WARNING, "Stream not closed by script");
+	return 0;
+}
+
+SIF_FUNC(__tostring)
+{
+	if (luaL_testudata(vm, 1, SIF_NE_STREAM)) {
+		lua_pushliteral(vm, "NeStream");
+		return 1;
+	}
 
 	return 0;
 }
 
-void
-SIface_OpenIO(lua_State *vm)
+NE_SCRIPT_INTEFACE(NeIO)
 {
+	luaL_Reg meta[] = {
+		{ "__index",     NULL },
+		SIF_REG(__tostring),
+		SIF_REG(__gc),
+		SIF_ENDREG()
+	};
+
+	luaL_Reg meth[] = {
+		SIF_REG(Read),
+		SIF_REG(ReadLine),
+		SIF_REG(Write),
+		SIF_REG(Tell),
+		SIF_REG(Seek),
+		SIF_REG(Length),
+		SIF_REG(End),
+		SIF_REG(Close),
+		SIF_ENDREG()
+	};
+
+	luaL_newmetatable(vm, SIF_NE_STREAM);
+	luaL_setfuncs(vm, meta, 0);
+	luaL_newlibtable(vm, meth);
+	luaL_setfuncs(vm, meth, 0);
+	lua_setfield(vm, -2, "__index");
+	lua_pop(vm, 1);
+
 	luaL_Reg reg[] =
 	{
-		SIF_REG(OpenFile),
-		SIF_REG(ReadFile),
-		SIF_REG(ReadFullFile),
-		SIF_REG(WriteFile),
-		SIF_REG(FTell),
-		SIF_REG(FSeek),
-		SIF_REG(FileLength),
-		SIF_REG(FEof),
+		SIF_REG(FileStream),
+		SIF_REG(MemoryStream),
 		SIF_REG(FileExists),
-		SIF_REG(CloseFile),
 		SIF_REG(ListFiles),
 		SIF_REG(IsDirectory),
 		SIF_REG(ProcessFiles),
 		SIF_REG(EnableWrite),
 		SIF_REG(DisableWrite),
 		SIF_REG(CreateDirectory),
-		SIF_REG(FileStream),
-		SIF_REG(MemoryStream),
-		SIF_REG(CloseStream),
-		SIF_REG(StreamTell),
-		SIF_REG(StreamSeek),
-		SIF_REG(StreamLength),
-		SIF_REG(EndOfStream),
-		SIF_REG(ReadStream),
-		SIF_REG(WriteStream),
-
 		SIF_ENDREG()
 	};
 
 	luaL_newlib(vm, reg);
 	lua_setglobal(vm, "IO");
 
-	lua_pushinteger(vm, IO_READ);
-	lua_setglobal(vm, "IO_READ");
+	lua_newtable(vm);
+	{
+		lua_pushinteger(vm, IO_READ);
+		lua_setfield(vm, -2, "Read");
+		lua_pushinteger(vm, IO_WRITE);
+		lua_setfield(vm, -2, "Write");
+		lua_pushinteger(vm, IO_APPEND);
+		lua_setfield(vm, -2, "Append");
+	}
+	lua_setglobal(vm, "OpenMode");
 
-	lua_pushinteger(vm, IO_WRITE);
-	lua_setglobal(vm, "IO_WRITE");
+	lua_newtable(vm);
+	{
+		lua_pushinteger(vm, IO_SEEK_SET);
+		lua_setfield(vm, -2, "Set");
+		lua_pushinteger(vm, IO_SEEK_CUR);
+		lua_setfield(vm, -2, "Cur");
+		lua_pushinteger(vm, IO_SEEK_END);
+		lua_setfield(vm, -2, "End");
+	}
+	lua_setglobal(vm, "Seek");
 
-	lua_pushinteger(vm, IO_APPEND);
-	lua_setglobal(vm, "IO_APPEND");
-
-	lua_pushinteger(vm, IO_SEEK_SET);
-	lua_setglobal(vm, "IO_SEEK_SET");
-
-	lua_pushinteger(vm, IO_SEEK_CUR);
-	lua_setglobal(vm, "IO_SEEK_CUR");
-
-	lua_pushinteger(vm, IO_SEEK_END);
-	lua_setglobal(vm, "IO_SEEK_END");
-
-	lua_pushinteger(vm, WD_Data);
-	lua_setglobal(vm, "WD_Data");
-
-	lua_pushinteger(vm, WD_Save);
-	lua_setglobal(vm, "WD_Save");
-
-	lua_pushinteger(vm, WD_Temp);
-	lua_setglobal(vm, "WD_Temp");
-
-	lua_pushinteger(vm, WD_Config);
-	lua_setglobal(vm, "WD_Config");
+	lua_newtable(vm);
+	{
+		lua_pushinteger(vm, WD_Data);
+		lua_setfield(vm, -2, "Data");
+		lua_pushinteger(vm, WD_Save);
+		lua_setfield(vm, -2, "Save");
+		lua_pushinteger(vm, WD_Temp);
+		lua_setfield(vm, -2, "Temp");
+		lua_pushinteger(vm, WD_Config);
+		lua_setfield(vm, -2, "Config");
+	}
+	lua_setglobal(vm, "WriteDirectory");
 
 	if (!_readBufferSize)
-		_readBufferSize = &E_GetCVarI32("Script_ReadBufferSize", 16384)->i32;
+		_readBufferSize = &E_GetCVarI32("Script_ReadBufferSize", 1024)->i32;
+
+	return 1;
 }
 
 /* NekoEngine
@@ -367,7 +279,7 @@ SIface_OpenIO(lua_State *vm)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

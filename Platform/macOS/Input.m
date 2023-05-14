@@ -8,27 +8,29 @@
 
 #import <Cocoa/Cocoa.h>
 #import <Carbon/Carbon.h>
+
+#if defined(MAC_OS_X_VERSION_10_9) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_9
 #import <GameController/GameController.h>
+#endif
 
 #define MACXINMOD	L"macOSInput"
 
 enum NeButton macOS_keymap[256];
 
-bool __InSys_rawMouseAxis = true;
+bool In_p_rawMouseAxis = true;
 
-static inline enum NeButton _mapKey(const int key);
+static inline enum NeButton MapKey(const int key);
 
 bool
 In_SysInit(void)
 {
-	//[GCController startWirelessControllerDiscoveryWithCompletionHandler]
-	
-	#pragma unroll(256)
 	for (uint16_t i = 0; i < 256; ++i)
-		macOS_keymap[i] = _mapKey(i);
+		macOS_keymap[i] = MapKey(i);
 
+#if defined(MAC_OS_X_VERSION_10_9) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_9
 	In_connectedControllers = [GCController controllers].count;
-	
+#endif
+
 	return true;
 }
 
@@ -40,15 +42,16 @@ In_SysTerm(void)
 void
 In_SysPollControllers(void)
 {
+#if defined(MAC_OS_X_VERSION_10_9) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_9
 	NSArray<GCController *> *controllers = [GCController controllers];
 	In_connectedControllers = controllers.count;
-	
+
 	for (NSUInteger i = 0; i < controllers.count; ++i) {
 		GCController *ctl = [controllers objectAtIndex: i];
 		GCExtendedGamepad *gpad = [ctl extendedGamepad];
-		
+
 		In_controllerState[i].buttons = 0;
-		
+
 		GCControllerDirectionPad *dpad = [gpad leftThumbstick];
 		In_controllerState[i].axis[AXIS_LSTICK_X] = -[[dpad xAxis] value];
 		In_controllerState[i].axis[AXIS_LSTICK_Y] = [[dpad yAxis] value];
@@ -60,10 +63,10 @@ In_SysPollControllers(void)
 		In_controllerState[i].axis[AXIS_RSTICK_Y] = [[dpad yAxis] value];
 		if ([[dpad down] isPressed])
 			In_controllerState[i].buttons |= 0x0080;
-		
+
 		In_controllerState[i].axis[AXIS_LTRIGGER] = [[gpad leftTrigger] value];
 		In_controllerState[i].axis[AXIS_RTRIGGER] = [[gpad rightTrigger] value];
-		
+
 		dpad = [gpad dpad];
 		if ([[dpad up] isPressed])
 			In_controllerState[i].buttons |= 0x0001;
@@ -73,7 +76,7 @@ In_SysPollControllers(void)
 			In_controllerState[i].buttons |= 0x0004;
 		if ([[dpad right] isPressed])
 			In_controllerState[i].buttons |= 0x0008;
-		
+
 		if ([[gpad buttonA] isPressed])
 			In_controllerState[i].buttons |= 0x1000;
 		if ([[gpad buttonB] isPressed])
@@ -82,17 +85,18 @@ In_SysPollControllers(void)
 			In_controllerState[i].buttons |= 0x4000;
 		if ([[gpad buttonY] isPressed])
 			In_controllerState[i].buttons |= 0x8000;
-		
+
 		if ([[gpad leftShoulder] isPressed])
 			In_controllerState[i].buttons |= 0x0100;
 		if ([[gpad rightShoulder] isPressed])
 			In_controllerState[i].buttons |= 0x0200;
-		
+
 		if ([[gpad buttonHome] isPressed])
 			In_controllerState[i].buttons |= 0x0010;
 		if ([[gpad buttonMenu] isPressed])
 			In_controllerState[i].buttons |= 0x0020;
 	}
+#endif
 }
 
 void
@@ -100,7 +104,7 @@ In_PointerPosition(uint16_t *x, uint16_t *y)
 {
 	NSWindow *win = [[NSApplication sharedApplication] keyWindow];
 	NSPoint pos = [win mouseLocationOutsideOfEventStream];
-	
+
 	*x = pos.x;
 	*y = [[win contentView] frame].size.height - pos.y - 1;
 }
@@ -111,7 +115,7 @@ In_SetPointerPosition(uint16_t x, uint16_t y)
 	NSWindow *win = [[NSApplication sharedApplication] keyWindow];
 	NSPoint pos = [win convertPointToScreen:NSMakePoint((float)x,
 						(float)([[win contentView] frame].size.height - y - 1))];
-	
+
 	CGAssociateMouseAndMouseCursorPosition(false);
 	CGWarpMouseCursorPosition(CGPointMake(pos.x, 
 		CGDisplayBounds(CGMainDisplayID()).size.height - pos.y));
@@ -136,7 +140,7 @@ In_ShowPointer(bool show)
 }
 
 enum NeButton
-_mapKey(int key)
+MapKey(int key)
 {
 	switch (key) {
 	case kVK_ANSI_0: return BTN_KEY_0;
@@ -269,7 +273,7 @@ _mapKey(int key)
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (c) 2015-2022, Alexandru Naiman
+ * Copyright (c) 2015-2023, Alexandru Naiman
  *
  * All rights reserved.
  *
@@ -288,7 +292,7 @@ _mapKey(int key)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

@@ -55,7 +55,8 @@ void
 NeComponentInspector::_Init()
 {
 	struct NeComponentFields *cf;
-	Rt_ArrayForEach(cf, &Ed_componentFields, struct NeComponentFields *) {
+	Rt_LockTSArray(&Ed_componentFields);
+	Rt_ArrayForEach(cf, &Ed_componentFields.a, struct NeComponentFields *) {
 		if (cf->type != _typeId)
 			continue;
 
@@ -65,6 +66,7 @@ NeComponentInspector::_Init()
 
 		_rootLayout->addWidget(new NeDataView(E_ComponentPtr(_handle), fields));
 	}
+	Rt_UnlockTSArray(&Ed_componentFields);
 }
 
 NeComponentInspector::~NeComponentInspector() noexcept
@@ -105,7 +107,7 @@ NeComponentInspector::Create(const struct NeEntityComp *c)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

@@ -1,5 +1,5 @@
-#ifndef _NE_ENGINE_CONSOLE_H_
-#define _NE_ENGINE_CONSOLE_H_
+#ifndef NE_ENGINE_CONSOLE_H
+#define NE_ENGINE_CONSOLE_H
 
 #include <stdarg.h>
 
@@ -17,7 +17,9 @@ void E_ConsolePrint(const char *fmt, ...);
 void E_ClearConsole(void);
 void E_ToggleConsole(void);
 void E_DrawConsole(void);
+void E_ShowConsole(bool visible);
 
+bool E_ConsoleVisible(void);
 bool E_ConsoleKey(enum NeButton key, bool down);
 
 void E_TermConsole(void);
@@ -26,7 +28,7 @@ void E_TermConsole(void);
 }
 #endif
 
-#endif /* _NE_ENGINE_CONSOLE_H_ */
+#endif /* NE_ENGINE_CONSOLE_H */
 
 /* NekoEngine
  *
@@ -54,7 +56,7 @@ void E_TermConsole(void);
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

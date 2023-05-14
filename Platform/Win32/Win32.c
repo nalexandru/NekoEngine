@@ -1,3 +1,6 @@
+#define _CRTDBG_MAP_ALLOC
+#include <crtdbg.h>
+
 #include <stdio.h>
 
 #if defined(_M_AMD64) || defined(_M_IX86) && _MSC_VER >= 1400
@@ -11,9 +14,10 @@
 #include <Engine/Engine.h>
 #include <Engine/Application.h>
 #include <Network/Network.h>
+#include <Engine/Config.h>
 
 #include "Win32Platform.h"
-#include <ShlObj.h>
+
 #include <fcntl.h>
 #include <io.h>
 
@@ -24,35 +28,103 @@ __declspec(dllexport) DWORD AmdPowerXpressRequestHighPerformance = 0x00000001;
 
 __declspec(dllexport) HINSTANCE Win32_instance;
 
-static uint32_t _cpuCount = 0, _cpuThreadCount = 0, _cpuFreq = 0;
-static HANDLE _stdout, _stderr, _k32;
-static WORD _cpuArch, _colors[4] =
+struct DirWatch
+{
+	bool stop;
+	HANDLE dir, thread;
+	DWORD filter, bufferSize;
+	FILE_NOTIFY_INFORMATION *buffer;
+	void *ud;
+	NeDirWatchCallback cb;
+	OVERLAPPED ol;
+};
+
+static uint32_t f_cpuCount = 0, f_cpuThreadCount = 0, f_cpuFreq = 0;
+static HANDLE f_stdout, f_stderr;
+static HMODULE f_k32, f_dwmapi;
+static WORD f_cpuArch, f_colors[4] =
 {
 	13, 7, 14, 12
 };
-static WORD _defaultColor;
-static char _hostname[MAX_COMPUTERNAME_LENGTH + 1], _cpu[50], _osName[128], _osVersionString[48];
-static struct NeSysVersion _osVersion;
+static WORD f_defaultColor;
+static char f_hostname[MAX_COMPUTERNAME_LENGTH + 1], f_cpu[50], f_osName[128], f_osVersionString[48];
+static struct NeSysVersion f_osVersion;
+static bool f_dbgConsole;
 
-static inline void _LoadOSInfo(void);
-static inline void _CalcCPUFreq(void);
+BOOL (WINAPI *k32_AttachConsole)(DWORD) = NULL;
+void (WINAPI *k32_GetNativeSystemInfo)(LPSYSTEM_INFO) = NULL;
+BOOL (WINAPI *k32_GetLogicalProcessorInformation)(PSYSTEM_LOGICAL_PROCESSOR_INFORMATION, PDWORD) = NULL;
+HRESULT (WINAPI *dwmapi_DwmSetWindowAttribute)(HWND, DWORD, LPCVOID, DWORD) = NULL;
+
+#ifdef NE_NT5_SUPPORT
+static HMODULE f_s32, f_u32, f_xInput2;
+
+BOOL (WINAPI *k32_CancelIoEx)(HANDLE, LPOVERLAPPED) = NULL;
+BOOL (WINAPI *u32_RegisterRawInputDevices)(PCRAWINPUTDEVICE, UINT, UINT) = NULL;
+UINT (WINAPI *u32_GetRawInputData)(HRAWINPUT, UINT, LPVOID, PUINT, UINT) = NULL;
+LRESULT (WINAPI *u32_DefRawInputProc)(PRAWINPUT *, INT, UINT) = NULL;
+HRESULT (WINAPI *s32_SHGetKnownFolderPath)(REFKNOWNFOLDERID, DWORD, HANDLE, PWSTR *) = NULL;
+void (WINAPI *k32_InitializeSRWLock)(PSRWLOCK) = NULL;
+void (WINAPI *k32_AcquireSRWLockExclusive)(PSRWLOCK) = NULL;
+void (WINAPI *k32_ReleaseSRWLockExclusive)(PSRWLOCK) = NULL;
+void (WINAPI *k32_InitializeConditionVariable)(PCONDITION_VARIABLE) = NULL;
+void (WINAPI *k32_WakeConditionVariable)(PCONDITION_VARIABLE) = NULL;
+void (WINAPI *k32_WakeAllConditionVariable)(PCONDITION_VARIABLE) = NULL;
+BOOL (WINAPI *k32_SleepConditionVariableCS)(PCONDITION_VARIABLE, PCRITICAL_SECTION, DWORD) = NULL;
+BOOL (WINAPI *k32_SleepConditionVariableSRW)(PCONDITION_VARIABLE, PSRWLOCK, DWORD, ULONG) = NULL;
+DWORD (WINAPI *xi2_XInputGetState)(DWORD dwUserIndex, XINPUT_STATE *) = NULL;
+
+static bool InitCompat(void);
+#endif
+
+static inline void LoadOSInfo(void);
+static inline void CalcCPUFreq(void);
+static DWORD DirWatchThreadProc(struct DirWatch *dw);
+
+int
+Sys_Main(int argc, char *argv[])
+{
+#if _DEBUG
+//	_crtBreakAlloc = 6081;
+	int flag = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG);
+	flag |= _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF;
+	_CrtSetDbgFlag(flag);
+#endif
+
+	if (!E_Init(argc, argv))
+		return -1;
+
+	return E_Run();
+}
+
+wchar_t *
+NeWin32_UTF8toUCS2L(const char *text, int ulen)
+{
+	int len = MultiByteToWideChar(CP_UTF8, 0, text, ulen, NULL, 0);
+	wchar_t *out = Sys_Alloc(sizeof(*out), len, MH_Transient);
+	MultiByteToWideChar(CP_UTF8, 0, text, ulen, out, len);
+	return out;
+}
 
 wchar_t *
 NeWin32_UTF8toUCS2(const char *text)
 {
-	int len = MultiByteToWideChar(CP_UTF8, 0, text, -1, NULL, 0);
-	wchar_t *out = Sys_Alloc(sizeof(*out), len, MH_Transient);
-	MultiByteToWideChar(CP_UTF8, 0, text, -1, out, len);
+	return NeWin32_UTF8toUCS2L(text, -1);
+}
+
+char *
+NeWin32_UCS2toUTF8L(const wchar_t *text, int wlen)
+{
+	int len = WideCharToMultiByte(CP_UTF8, 0, text, wlen, NULL, 0, NULL, NULL);
+	char *out = Sys_Alloc(sizeof(*out), len, MH_Transient);
+	WideCharToMultiByte(CP_UTF8, 0, text, wlen, out, len, NULL, NULL);
 	return out;
 }
 
 char *
 NeWin32_UCS2toUTF8(const wchar_t *text)
 {
-	int len = WideCharToMultiByte(CP_UTF8, 0, text, -1, NULL, 0, NULL, NULL);
-	char *out = Sys_Alloc(sizeof(*out), len, MH_Transient);
-	WideCharToMultiByte(CP_UTF8, 0, text, -1, out, len, NULL, NULL);
-	return out;
+	return NeWin32_UCS2toUTF8L(text, -1);
 }
 
 bool
@@ -60,10 +132,12 @@ Sys_InitDbgOut(void)
 {
 	CONSOLE_SCREEN_BUFFER_INFO csbi;
 
-	if (!IsDebuggerPresent() && Sys_MachineType() == MT_PC) {
+	if ((f_dbgConsole = (CVAR_BOOL("Win32_ForceDebugConsole") || !IsDebuggerPresent()) && Sys_MachineType() == MT_PC)) {
 		FreeConsole();
 		AllocConsole();
-		AttachConsole(GetCurrentProcessId());
+
+		if (k32_AttachConsole)
+			k32_AttachConsole(GetCurrentProcessId());
 
 		(void)freopen("CON", "w", stdout);
 		(void)freopen("CON", "w", stderr);
@@ -71,11 +145,11 @@ Sys_InitDbgOut(void)
 		SetConsoleTitleA("Debug Console");
 	}
 
-	_stdout = GetStdHandle(STD_OUTPUT_HANDLE);
-	_stderr = GetStdHandle(STD_ERROR_HANDLE);
+	f_stdout = GetStdHandle(STD_OUTPUT_HANDLE);
+	f_stderr = GetStdHandle(STD_ERROR_HANDLE);
 
-	GetConsoleScreenBufferInfo(_stdout, &csbi);
-	_defaultColor = csbi.wAttributes;
+	GetConsoleScreenBufferInfo(f_stdout, &csbi);
+	f_defaultColor = csbi.wAttributes;
 
 	return true;
 }
@@ -83,21 +157,17 @@ Sys_InitDbgOut(void)
 void
 Sys_DbgOut(int color, const char *module, const char *severity, const char *text)
 {
-	SetConsoleTextAttribute(_stdout, _colors[color]);
+	SetConsoleTextAttribute(f_stdout, f_colors[color]);
 
-	if (IsDebuggerPresent()) {
+	if (!f_dbgConsole && IsDebuggerPresent()) {
 		char buff[4096];
 		snprintf(buff, 4096, "[%s][%s]: %s\n", module, severity, text);
 		OutputDebugStringA(buff);
-
-		/*wchar_t buff[4096];
-		swprintf(buff, 4096, L"[%ls][%ls]: %ls\n", module, severity, text);
-		OutputDebugStringW(buff);*/
 	} else {
 		fprintf(stdout, "[%s][%s]: %s\n", module, severity, text);
 	}
 
-	SetConsoleTextAttribute(_stdout, _defaultColor);
+	SetConsoleTextAttribute(f_stdout, f_defaultColor);
 }
 
 void
@@ -123,18 +193,19 @@ Sys_MapFile(const char *path, bool write, void **ptr, uint64_t *size)
 	DWORD fileAccess, fileShare, mapAccess, protect;
 
 	if (!write) {
-		mapAccess = FILE_MAP_READ;
+		mapAccess = FILE_MAP_READ | FILE_MAP_LARGE_PAGES;
 		fileAccess = GENERIC_READ;
 		fileShare = FILE_SHARE_READ;
-		protect = PAGE_READONLY;
+		protect = PAGE_READONLY | SEC_LARGE_PAGES;
 	} else {
-		mapAccess = FILE_MAP_WRITE;
+		mapAccess = FILE_MAP_WRITE | FILE_MAP_LARGE_PAGES;
 		fileAccess = GENERIC_READ | GENERIC_WRITE;
 		fileShare = FILE_SHARE_WRITE;
-		protect = PAGE_READWRITE;
+		protect = PAGE_READWRITE | SEC_LARGE_PAGES;
 	}
 
-	file = CreateFileA(path, fileAccess, fileShare, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+	file = CreateFileW(NeWin32_UTF8toUCS2(path), fileAccess, fileShare, NULL, OPEN_EXISTING,
+						FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
 	if (file == INVALID_HANDLE_VALUE)
 		return false;
 
@@ -142,7 +213,7 @@ Sys_MapFile(const char *path, bool write, void **ptr, uint64_t *size)
 	GetFileSizeEx(file, &sz);
 	*size = sz.QuadPart;
 
-	map = CreateFileMappingA(file, NULL, protect, 0, 0, NULL);
+	map = CreateFileMappingW(file, NULL, protect, 0, 0, NULL);
 	if (!map) {
 		CloseHandle(file);
 		return false;
@@ -165,18 +236,18 @@ Sys_UnmapFile(const void *ptr, uint64_t size)
 const char *
 Sys_Hostname(void)
 {
-	DWORD size = sizeof(_hostname);
+	DWORD size = sizeof(f_hostname);
 
-	if (!_hostname[0])
-		GetComputerNameA(_hostname, &size);
+	if (!f_hostname[0])
+		GetComputerNameA(f_hostname, &size);
 
-	return _hostname;
+	return f_hostname;
 }
 
 const char *
 Sys_Machine(void)
 {
-	switch (_cpuArch)
+	switch (f_cpuArch)
 	{
 	case PROCESSOR_ARCHITECTURE_AMD64:			return "x64";
 	case PROCESSOR_ARCHITECTURE_INTEL:			return "x86";
@@ -199,18 +270,18 @@ Sys_Machine(void)
 const char *
 Sys_CpuName(void)
 {
-	if (!_cpu[0]) {
+	if (!f_cpu[0]) {
 #if defined(_M_AMD64) || defined(_M_IX86)
 		int cpuInfo[4] = { 0 };
 
 		__cpuid(cpuInfo, 0x80000002);
-		memcpy(_cpu, cpuInfo, sizeof(cpuInfo));
+		memcpy(f_cpu, cpuInfo, sizeof(cpuInfo));
 
 		__cpuid(cpuInfo, 0x80000003);
-		memcpy(_cpu + 16, cpuInfo, sizeof(cpuInfo));
+		memcpy(f_cpu + 16, cpuInfo, sizeof(cpuInfo));
 
 		__cpuid(cpuInfo, 0x80000004);
-		memcpy(_cpu + 32, cpuInfo, sizeof(cpuInfo));
+		memcpy(f_cpu + 32, cpuInfo, sizeof(cpuInfo));
 #elif defined(_M_ARM64)
 #else // Unknown architecture, attempt to read from registry
 		HKEY key;
@@ -218,36 +289,36 @@ Sys_CpuName(void)
 
 		if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, "HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0", 0, KEY_READ, &key)
 				== ERROR_SUCCESS) {
-			size = sizeof(_cpu);
-			RegQueryValueExA(key, "ProcessorNameString", 0, 0, (LPBYTE)_cpu, &size);
+			size = sizeof(f_cpu);
+			RegQueryValueExA(key, "ProcessorNameString", 0, 0, (LPBYTE)f_cpu, &size);
 
 			RegCloseKey(key);
 		}
 #endif
 
-		if (!_cpu[0])
-			snprintf(_cpu, sizeof(_cpu), "Unknown");
+		if (!f_cpu[0])
+			snprintf(f_cpu, sizeof(f_cpu), "Unknown");
 	}
 
-	return _cpu;
+	return f_cpu;
 }
 
 uint32_t
 Sys_CpuFreq(void)
 {
-	return _cpuFreq;
+	return f_cpuFreq;
 }
 
 uint32_t
 Sys_CpuCount(void)
 {
-	return _cpuCount;
+	return f_cpuCount;
 }
 
 uint32_t
 Sys_CpuThreadCount(void)
 {
-	return _cpuThreadCount;
+	return f_cpuThreadCount;
 }
 
 uint64_t
@@ -269,19 +340,19 @@ Sys_FreeMemory(void)
 const char *
 Sys_OperatingSystem(void)
 {
-	return _osName;
+	return f_osName;
 }
 
 const char *
 Sys_OperatingSystemVersionString(void)
 {
-	return _osVersionString;
+	return f_osVersionString;
 }
 
 struct NeSysVersion
 Sys_OperatingSystemVersion(void)
 {
-	return _osVersion;
+	return f_osVersion;
 }
 
 enum NeMachineType
@@ -308,18 +379,10 @@ Sys_MessageBox(const char *title, const char *message, int icon)
 	UINT type = MB_OK;
 
 	switch (icon) {
-		case MSG_ICON_NONE:
-			type = 0;
-		break;
-		case MSG_ICON_INFO:
-			type |= MB_ICONINFORMATION;
-		break;
-		case MSG_ICON_WARN:
-			type |= MB_ICONWARNING;
-		break;
-		case MSG_ICON_ERROR:
-			type |= MB_ICONERROR;
-		break;
+		case MSG_ICON_NONE: type = 0; break;
+		case MSG_ICON_INFO: type |= MB_ICONINFORMATION; break;
+		case MSG_ICON_WARN: type |= MB_ICONWARNING; break;
+		case MSG_ICON_ERROR: type |= MB_ICONERROR; break;
 	}
 
 	MessageBoxW((HWND)E_screen, NeWin32_UTF8toUCS2(message), NeWin32_UTF8toUCS2(title), type);
@@ -386,50 +449,68 @@ Sys_InitPlatform(void)
 
 	Win32_instance = GetModuleHandle(NULL);
 
-	_k32 = LoadLibraryW(L"kernel32");
-	if (!_k32)
+	f_k32 = LoadLibrary(TEXT("kernel32"));
+	if (!f_k32)
 		return false;
 
-	GetNativeSystemInfo(&si);
-	_cpuArch = si.wProcessorArchitecture;
+	f_dwmapi = LoadLibrary(TEXT("dwmapi"));
 
-	DWORD len = 0;
-	GetLogicalProcessorInformation(NULL, &len);
-
-	SYSTEM_LOGICAL_PROCESSOR_INFORMATION *info = calloc(len, sizeof(*info));
-	if (!info)
+#ifdef NE_NT5_SUPPORT
+	if (!InitCompat())
 		return false;
+#endif
 
-	GetLogicalProcessorInformation(info, &len);
+	k32_AttachConsole = (BOOL (WINAPI *)(DWORD))GetProcAddress(f_k32, "AttachConsole");
+	k32_GetNativeSystemInfo = (void (WINAPI *)(LPSYSTEM_INFO))GetProcAddress(f_k32, "GetNativeSystemInfo");
+	k32_GetLogicalProcessorInformation = (BOOL (WINAPI *)(PSYSTEM_LOGICAL_PROCESSOR_INFORMATION, PDWORD))GetProcAddress(f_k32, "GetLogicalProcessorInformation");
 
-	_cpuCount = 0;
-	_cpuThreadCount = 0;
-	for (DWORD i = 0; i < len / sizeof(*info); ++i) {
-		if (info[i].Relationship != RelationProcessorCore)
-			continue;
+	if (!k32_GetNativeSystemInfo)
+		k32_GetNativeSystemInfo = GetSystemInfo;
 
-		++_cpuCount;
+	k32_GetNativeSystemInfo(&si);
+	f_cpuArch = si.wProcessorArchitecture;
 
-		DWORD bitSetCount = 0;
-		ULONG_PTR bitTest = (ULONG_PTR)1 << (sizeof(ULONG_PTR) * 8 - 1);
+	if (k32_GetLogicalProcessorInformation) {
+		DWORD len = 0;
+		k32_GetLogicalProcessorInformation(NULL, &len);
 
-		for (DWORD j = 0; j <= sizeof(ULONG_PTR) * 8 - 1; ++j) {
-			bitSetCount += ((info[i].ProcessorMask & bitTest) ? 1 : 0);
-			bitTest /= 2;
+		SYSTEM_LOGICAL_PROCESSOR_INFORMATION *info = calloc(len, sizeof(*info));
+		if (!info)
+			return false;
+
+		k32_GetLogicalProcessorInformation(info, &len);
+
+		f_cpuCount = 0;
+		f_cpuThreadCount = 0;
+		for (DWORD i = 0; i < len / sizeof(*info); ++i) {
+			if (info[i].Relationship != RelationProcessorCore)
+				continue;
+
+			++f_cpuCount;
+
+			DWORD bitSetCount = 0;
+			ULONG_PTR bitTest = (ULONG_PTR) 1 << (sizeof(ULONG_PTR) * 8 - 1);
+
+			for (DWORD j = 0; j <= sizeof(ULONG_PTR) * 8 - 1; ++j) {
+				bitSetCount += ((info[i].ProcessorMask & bitTest) ? 1 : 0);
+				bitTest /= 2;
+			}
+
+			f_cpuThreadCount += bitSetCount;
 		}
 
-		_cpuThreadCount += bitSetCount;
+		free(info);
+	} else {
+		f_cpuCount = f_cpuThreadCount = si.dwNumberOfProcessors;
 	}
 
-	free(info);
-
-	_LoadOSInfo();
-	_CalcCPUFreq();
+	LoadOSInfo();
+	CalcCPUFreq();
 
 	if (FAILED(CoInitializeEx(NULL, COINIT_MULTITHREADED)))
 		return false;
 
-	k32_SetThreadDescription = (HRESULT (WINAPI *)(HANDLE, PCWSTR))GetProcAddress(_k32, "SetThreadDescription");
+	k32_SetThreadDescription = (HRESULT (WINAPI *)(HANDLE, PCWSTR))GetProcAddress(f_k32, "SetThreadDescription");
 
 #ifdef _M_IX86	// Enable low precision on x86 platforms
 	_controlfp(_PC_24, _MCW_PC);
@@ -443,7 +524,18 @@ Sys_TermPlatform(void)
 {
 	CoUninitialize();
 
-	FreeLibrary(_k32);
+#ifdef NE_NT5_SUPPORT
+	FreeLibrary(f_u32);
+	FreeLibrary(f_s32);
+
+	if (f_xInput2)
+		FreeLibrary(f_xInput2);
+#endif
+
+	if (f_dwmapi)
+		FreeLibrary(f_dwmapi);
+
+	FreeLibrary(f_k32);
 }
 
 void
@@ -475,13 +567,17 @@ Sys_USleep(uint32_t usec)
 void
 Sys_DirectoryPath(enum NeSystemDirectory sd, char *out, size_t len)
 {
-	WCHAR *path = NULL;
+#ifdef NE_NT5_SUPPORT
+	if (!InitCompat())
+		return;
+#endif
 
+	WCHAR *path = NULL;
 	memset(out, 0x0, len);
 
 	switch (sd) {
-	case SD_SAVE_GAME: SHGetKnownFolderPath(&FOLDERID_SavedGames, 0, NULL, &path); break;
-	case SD_APP_DATA: SHGetKnownFolderPath(&FOLDERID_LocalAppData, 0, NULL, &path); break;
+	case SD_SAVE_GAME: Win32_SHGetKnownFolderPath(&FOLDERID_SavedGames, 0, NULL, &path); break;
+	case SD_APP_DATA: Win32_SHGetKnownFolderPath(&FOLDERID_LocalAppData, 0, NULL, &path); break;
 	case SD_TEMP: GetTempPathA((DWORD)len, out); break;
 	}
 
@@ -517,19 +613,76 @@ Sys_CreateDirectory(const char *path)
 	char *dir = Sys_Alloc(sizeof(*dir), 4096, MH_Transient);
 	memcpy(dir, path, strnlen(path, 4096));
 
-	for (char *p = dir + 1; *p; ++p) {
-		if (*p != '/')
+	for (char *p = strrchr(dir, '\\'); p > dir; --p) {
+		if (*p != '\\' && *p != '/')
 			continue;
 
 		*p = 0x0;
 
+		if (Sys_DirectoryExists(dir))
+			break;
+
 		if (!CreateDirectoryA(dir, NULL) && GetLastError() != ERROR_PATH_NOT_FOUND)
 			return false;
 
-		*p = '/';
+		*p = '\\';
 	}
 
 	return !CreateDirectoryA(path, NULL) ? GetLastError() == ERROR_PATH_NOT_FOUND : true;
+}
+
+void *
+Sys_CreateDirWatch(const char *path, enum NeFSEvent mask, NeDirWatchCallback callback, void *ud)
+{
+	struct DirWatch *dw = Sys_Alloc(sizeof(*dw), 1, MH_System);
+
+	dw->ud = ud;
+	dw->cb = callback;
+	dw->dir = CreateFileW(NeWin32_UTF8toUCS2(path), FILE_LIST_DIRECTORY, FILE_SHARE_READ | FILE_SHARE_DELETE | FILE_SHARE_WRITE,
+							NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+
+	if ((mask & FE_Create))
+		dw->filter |= FILE_NOTIFY_CHANGE_CREATION;
+
+	if ((mask & FE_Create) == FE_Create || (mask & FE_Delete) == FE_Delete)
+		dw->filter |= FILE_NOTIFY_CHANGE_FILE_NAME;
+
+	if (mask & FE_Modify)
+		dw->filter |= FILE_NOTIFY_CHANGE_LAST_WRITE;
+
+	dw->ol.hEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+
+	CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)DirWatchThreadProc, dw, 0, NULL);
+
+	return dw;
+}
+
+void
+Sys_DestroyDirWatch(void *handle)
+{
+	if (!handle)
+		return;
+
+	struct DirWatch *dw = handle;
+
+	dw->stop = true;
+
+#ifndef NE_NT5_SUPPORT
+	CancelIoEx(dw->dir, &dw->ol);
+	WaitForSingleObject(dw->thread, INFINITE);
+#else
+	/* is there a better way of stopping ReadDirectoryChangesW on NT5.x and earlier ? */
+	if (k32_CancelIoEx) {
+		k32_CancelIoEx(dw->dir, &dw->ol);
+		WaitForSingleObject(dw->thread, INFINITE);
+	} else {
+		TerminateThread(dw->thread);
+	}
+#endif
+
+	CloseHandle(dw->ol.hEvent);
+	CloseHandle(dw->dir);
+	Sys_Free(dw);
 }
 
 void
@@ -538,7 +691,7 @@ Sys_ExecutableLocation(char *buff, size_t len)
 	DWORD dLen = (DWORD)len;
 	LPWSTR str = Sys_Alloc(sizeof(*str), len, MH_Transient);
 	GetModuleFileNameW(NULL, str, dLen);
-	snprintf(buff, len, "%s", NeWin32_UCS2toUTF8(str));
+	strlcpy(buff, NeWin32_UCS2toUTF8(str), len);
 	char *p = strrchr(buff, '\\');
 	*p = 0x0;
 }
@@ -549,7 +702,7 @@ Sys_GetWorkingDirectory(char *buff, size_t len)
 	DWORD dLen = (DWORD)len;
 	LPWSTR str = Sys_Alloc(sizeof(*str), len, MH_Transient);
 	GetCurrentDirectoryW(dLen, str);
-	snprintf(buff, len, "%s", NeWin32_UCS2toUTF8(str));
+	strlcpy(buff, NeWin32_UCS2toUTF8(str), len);
 }
 
 void
@@ -565,7 +718,7 @@ Sys_UserName(char *buff, size_t len)
 	DWORD dLen = (DWORD)len;
 	LPWSTR str = Sys_Alloc(sizeof(*str), len, MH_Transient);
 	GetUserNameW(str, &dLen);
-	snprintf(buff, len, "%s", NeWin32_UCS2toUTF8(str));
+	strlcpy(buff, NeWin32_UCS2toUTF8(str), len);
 }
 
 intptr_t
@@ -626,7 +779,7 @@ Sys_Execute(char * const *argv, const char *wd, FILE **in, FILE **out, FILE **er
 
 	// Maximum size according to
 	// https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa
-	char cmdline[32768] = { 0 };
+	char *cmdline = Sys_Alloc(sizeof(*cmdline), 32768, MH_Transient);
 	while (*arg) {
 		size_t len = strlen(cmdline);
 		if ((sizeof(cmdline) - len) - strlen(*arg++) < 0)
@@ -686,6 +839,24 @@ bool
 Sys_TerminateProcess(intptr_t handle)
 {
 	return TerminateProcess((HANDLE)handle, 0);
+}
+
+bool
+Sys_LockMemory(void *mem, size_t size)
+{
+	return VirtualLock(mem, size);
+}
+
+bool
+Sys_UnlockMemory(void *mem, size_t size)
+{
+	return VirtualUnlock(mem, size);
+}
+
+void
+Sys_DebugBreak(void)
+{
+	__debugbreak();
 }
 
 bool
@@ -776,7 +947,7 @@ Net_TermPlatform(void)
 }
 
 void
-_LoadOSInfo(void)
+LoadOSInfo(void)
 {
 	OSVERSIONINFOEXA osvi = { 0 };
 	bool embedded = false, server = false;
@@ -799,13 +970,13 @@ _LoadOSInfo(void)
 		osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOA);
 		GetVersionExA((LPOSVERSIONINFOA)&osvi);
 
-		(void)snprintf(spStr, sizeof(spStr), "%s", osvi.szCSDVersion);
+		(void)snprintf(spStr, sizeof(spStr), " %s", osvi.szCSDVersion);
 	}
 
 	switch (osvi.dwPlatformId) {
-	case VER_PLATFORM_WIN32s: (void)snprintf(_osName, sizeof(_osName), "%s", "Windows 3.x (Win32s)"); break;
-	case VER_PLATFORM_WIN32_WINDOWS: (void)snprintf(_osName, sizeof(_osName), "%s", "Windows"); break;
-	case VER_PLATFORM_WIN32_NT: (void)snprintf(_osName, sizeof(_osName), "%s%s%s", "Windows NT",
+	case VER_PLATFORM_WIN32s: (void)strlcpy(f_osName, "Windows 3.x (Win32s)", sizeof(f_osName)); break;
+	case VER_PLATFORM_WIN32_WINDOWS: (void)strlcpy(f_osName, "Windows", sizeof(f_osName)); break;
+	case VER_PLATFORM_WIN32_NT: (void)snprintf(f_osName, sizeof(f_osName), "Windows NT%s%s",
 		embedded ? " Embedded" : "",
 		server ? " Server" : " Workstation"); break;
 	}
@@ -823,10 +994,10 @@ _LoadOSInfo(void)
 		RegOpenKeyExA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", 0, KEY_READ, &key);
 		
 		regSize = sizeof(verStr);
-		RegQueryValueExA(key, "CurrentVersion", 0, NULL, verStr, &regSize);
+		RegQueryValueExA(key, "CurrentVersion", 0, NULL, (LPBYTE)verStr, &regSize);
 
 		regSize = sizeof(buildStr);
-		RegQueryValueExA(key, "CurrentBuild", 0, NULL, buildStr, &regSize);
+		RegQueryValueExA(key, "CurrentBuild", 0, NULL, (LPBYTE)buildStr, &regSize);
 
 		/*
 		 * At some point Microsoft changed the above registry
@@ -836,40 +1007,179 @@ _LoadOSInfo(void)
 		 * than 10240 set the appropriate verStr.
 		 */
 		if (!strncmp(verStr, "6.3", 3) && atoi(buildStr) > 10240)
-			(void)snprintf(verStr, sizeof(verStr), "10.0");
+			(void)strlcpy(verStr, "10.0", sizeof(verStr));
 
-		(void)sscanf(verStr, "%u.%u", &_osVersion.major, &_osVersion.minor);
-		_osVersion.revision = atoi(buildStr);
+		(void)sscanf(verStr, "%u.%u", &f_osVersion.major, &f_osVersion.minor);
+		f_osVersion.revision = atoi(buildStr);
 
-		(void)snprintf(_osVersionString, sizeof(_osVersionString), "%s.%s%s", verStr, buildStr, spStr);
+		(void)snprintf(f_osVersionString, sizeof(f_osVersionString), "%s.%s%s", verStr, buildStr, spStr);
 	} else {
-		_osVersion.major = osvi.dwMajorVersion;
-		_osVersion.minor = osvi.dwMinorVersion;
-		_osVersion.revision = osvi.dwBuildNumber;
+		f_osVersion.major = osvi.dwMajorVersion;
+		f_osVersion.minor = osvi.dwMinorVersion;
+		f_osVersion.revision = osvi.dwBuildNumber;
 
-		(void)snprintf(_osVersionString, sizeof(_osVersionString), "%lu.%lu.%lu%s", osvi.dwMajorVersion, osvi.dwMinorVersion, osvi.dwBuildNumber, spStr);
+		(void)snprintf(f_osVersionString, sizeof(f_osVersionString), "%lu.%lu.%lu%s", osvi.dwMajorVersion, osvi.dwMinorVersion, osvi.dwBuildNumber, spStr);
 	}
 }
 
 void
-_CalcCPUFreq(void)
+CalcCPUFreq(void)
 {
-	ULONGLONG winFSB, winRes;
+	DWORD winFSB, winRes;
 	double cpuFSB, cpuRes, freq;
 
 	cpuFSB = (double)__rdtsc();
-	winFSB = GetTickCount64();
+	winFSB = GetTickCount();
 
 	Sleep(300);
 
 	cpuRes = (double)__rdtsc();
-	winRes = GetTickCount64();
+	winRes = GetTickCount();
 
 	freq = cpuRes - cpuFSB;
 	freq /= winRes - winFSB;
 
-	_cpuFreq = (uint32_t)(freq / 1000);
+	f_cpuFreq = (uint32_t)(freq / 1000);
 }
+
+static DWORD
+DirWatchThreadProc(struct DirWatch *dw)
+{
+	uint8_t buff[4096] = { 0 };
+	char pathBuff[MAX_PATH];
+
+	while (!dw->stop) {
+		ZeroMemory(buff, sizeof(buff));
+
+#ifndef NE_NT5_SUPPORT
+		ReadDirectoryChangesW(dw->dir, buff, sizeof(buff), TRUE, dw->filter, NULL, &dw->ol, NULL);
+		if (WaitForSingleObject(dw->ol.hEvent, INFINITE) != WAIT_OBJECT_0)
+			continue;
+#else
+		if (k32_CancelIoEx) {
+			ReadDirectoryChangesW(dw->dir, buff, sizeof(buff), TRUE, dw->filter, NULL, &dw->ol, NULL);
+			if (WaitForSingleObject(dw->ol.hEvent, INFINITE) != WAIT_OBJECT_0)
+				continue;
+		} else {
+			DWORD bytes;
+			if (!ReadDirectoryChangesW(dw->dir, buff, sizeof(buff), TRUE, dw->filter, &bytes, NULL, NULL))
+				continue;
+		}
+#endif
+
+		size_t offset = 0;
+		while (offset < sizeof(buff)) {
+			FILE_NOTIFY_INFORMATION *fni = (FILE_NOTIFY_INFORMATION *)&buff[offset];
+			if (offset && offset == fni->NextEntryOffset)
+				break;
+
+			ZeroMemory(pathBuff, sizeof(pathBuff));
+			WideCharToMultiByte(CP_UTF8, 0, fni->FileName, fni->FileNameLength, pathBuff, sizeof(pathBuff), NULL, NULL);
+
+			switch (fni->Action) {
+			case FILE_ACTION_ADDED: dw->cb(pathBuff, FE_Create, dw->ud); break;
+			case FILE_ACTION_REMOVED: dw->cb(pathBuff, FE_Delete, dw->ud); break;
+			case FILE_ACTION_MODIFIED: dw->cb(pathBuff, FE_Modify, dw->ud); break;
+			}
+
+			if (!(offset = fni->NextEntryOffset))
+				break;
+		}
+	}
+
+	return 0;
+}
+
+#ifdef NE_NT5_SUPPORT
+
+HRESULT WINAPI
+Win32c_SHGetKnownFolderPath(REFKNOWNFOLDERID rfid, DWORD dwFlags, HANDLE hToken, PWSTR *ppszPath)
+{
+	*ppszPath = NULL;
+	WCHAR *append = NULL;
+
+	int csidl = 0;
+	if (IsEqualGUID(rfid, &FOLDERID_SavedGames)) {
+		csidl = CSIDL_PROFILE;
+		append = L"\\Saved Games";
+	} else if (IsEqualGUID(rfid, &FOLDERID_LocalAppData)) {
+		csidl = CSIDL_LOCAL_APPDATA;
+	} else {
+		return E_INVALIDARG;
+	}
+
+	TCHAR path[MAX_PATH] = { 0 };
+	const HRESULT hr = SHGetFolderPathW(HWND_DESKTOP, csidl, hToken, dwFlags, path);
+	if (FAILED(hr))
+		return hr;
+
+	*ppszPath = CoTaskMemAlloc(sizeof(path) + (append ? wcslen(append) : 0));
+	if (!*ppszPath)
+		return E_OUTOFMEMORY;
+
+	memcpy(*ppszPath, path, sizeof(path));
+	if (append)
+		wcsncat(*ppszPath, append, wcslen(append));
+
+	return hr;
+}
+
+static bool
+InitCompat(void)
+{
+	if (s32_SHGetKnownFolderPath)
+		return true; // already initialized
+
+	f_u32 = LoadLibrary(TEXT("user32"));
+	if (!f_u32)
+		return false;
+
+	f_s32 = LoadLibrary(TEXT("shell32"));
+	if (!f_s32)
+		return false;
+
+	f_xInput2 = LoadLibrary(TEXT("XInput2"));
+
+	k32_CancelIoEx = (BOOL (WINAPI *)(HANDLE, LPOVERLAPPED))GetProcAddress(f_k32, "CancelIoEx");
+
+	k32_InitializeSRWLock = (void (WINAPI *)(PSRWLOCK))GetProcAddress(f_k32, "InitializeSRWLock");
+	k32_AcquireSRWLockExclusive = (void (WINAPI *)(PSRWLOCK))GetProcAddress(f_k32, "AcquireSRWLockExclusive");
+	k32_ReleaseSRWLockExclusive = (void (WINAPI *)(PSRWLOCK))GetProcAddress(f_k32, "ReleaseSRWLockExclusive");
+
+	k32_InitializeConditionVariable = (void (WINAPI *)(PCONDITION_VARIABLE))GetProcAddress(f_k32, "InitializeConditionVariable");
+	k32_WakeConditionVariable = (void (WINAPI *)(PCONDITION_VARIABLE))GetProcAddress(f_k32, "WakeConditionVariable");
+	k32_WakeAllConditionVariable = (void (WINAPI *)(PCONDITION_VARIABLE))GetProcAddress(f_k32, "WakeAllConditionVariable");
+	k32_SleepConditionVariableCS = (BOOL (WINAPI *)(PCONDITION_VARIABLE, PCRITICAL_SECTION, DWORD))GetProcAddress(f_k32, "SleepConditionVariableCS");
+	k32_SleepConditionVariableSRW = (BOOL (WINAPI *)(PCONDITION_VARIABLE, PSRWLOCK, DWORD, ULONG))GetProcAddress(f_k32, "SleepConditionVariableSRW");
+
+	u32_RegisterRawInputDevices = (BOOL (WINAPI *)(PCRAWINPUTDEVICE, UINT, UINT))GetProcAddress(f_u32, "RegisterRawInputDevices");
+	u32_GetRawInputData = (UINT (WINAPI *)(HRAWINPUT, UINT, LPVOID, PUINT, UINT))GetProcAddress(f_u32, "GetRawInputData");
+	u32_DefRawInputProc = (LRESULT (WINAPI *)(PRAWINPUT *, INT, UINT))GetProcAddress(f_u32, "DefRawInputProc");
+
+	s32_SHGetKnownFolderPath = (HRESULT (WINAPI *)(REFKNOWNFOLDERID, DWORD, HANDLE, PWSTR *))GetProcAddress(f_s32, "SHGetKnownFolderPath");
+	if (!s32_SHGetKnownFolderPath)
+		s32_SHGetKnownFolderPath = Win32c_SHGetKnownFolderPath;
+
+	if (f_dwmapi)
+		dwmapi_DwmSetWindowAttribute = (HRESULT (WINAPI *)(HWND, DWORD, LPCVOID, DWORD))GetProcAddress(f_dwmapi, "DwmSetWindowAttribute");
+
+	if (f_xInput2)
+		xi2_XInputGetState = (DWORD (WINAPI *)(DWORD dwUserIndex, XINPUT_STATE *))GetProcAddress(f_xInput2, "XInputGetState");
+
+	if (!k32_InitializeConditionVariable) {
+		// k32_InitializeConditionVariable is used to determine if the system supports condition variables
+		// so we'll leave it NULL.
+
+		k32_WakeConditionVariable = Win32c_WakeConditionVariable;
+		k32_WakeAllConditionVariable = Win32c_WakeAllConditionVariable;
+		k32_SleepConditionVariableCS = Win32c_SleepConditionVariableCS;
+		k32_SleepConditionVariableSRW = Win32c_SleepConditionVariableSRW;
+	}
+
+	return true;
+}
+
+#endif
 
 /* NekoEngine
  *
@@ -897,7 +1207,7 @@ _CalcCPUFreq(void)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

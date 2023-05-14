@@ -278,7 +278,7 @@ static lua_CFunction lsys_sym (lua_State *L, void *lib, const char *sym) {
 #endif
 
 
-#ifndef __PS3__
+
 /*
 ** return registry.LUA_NOENV as a boolean
 */
@@ -289,7 +289,6 @@ static int noenv (lua_State *L) {
   lua_pop(L, 1);  /* remove value */
   return b;
 }
-#endif
 
 
 /*
@@ -301,7 +300,7 @@ static void setpath (lua_State *L, const char *fieldname,
   const char *dftmark;
   const char *nver = lua_pushfstring(L, "%s%s", envname, LUA_VERSUFFIX);
 
-#if !defined(__PS3__) && !defined(LUA_USE_XBOX)
+#if !defined(LUA_USE_PS3) && !defined(LUA_USE_XBOX)
   const char *path = getenv(nver);  /* try versioned name */
   if (path == NULL)  /* no versioned environment variable? */
     path = getenv(envname);  /* try unversioned name */
@@ -716,8 +715,13 @@ static const luaL_Reg ll_funcs[] = {
 
 
 static void createsearcherstable (lua_State *L) {
-  static const lua_CFunction searchers[] =
-    {searcher_preload, searcher_Lua, searcher_C, searcher_Croot, NULL};
+  static const lua_CFunction searchers[] = {
+    searcher_preload,
+    searcher_Lua,
+    searcher_C,
+    searcher_Croot,
+    NULL
+  };
   int i;
   /* create 'searchers' table */
   lua_createtable(L, sizeof(searchers)/sizeof(searchers[0]) - 1, 0);

@@ -16,15 +16,14 @@
 #include <System/System.h>
 #include <System/Window.h>
 #include <Scene/Scene.h>
-#include <Scene/Camera.h>
 #include <Render/Render.h>
 #include <Render/Backend.h>
+#include <Render/Graph/Graph.h>
 #include <Engine/XR.h>
 #include <Engine/Event.h>
 #include <Engine/Events.h>
 #include <Engine/Console.h>
 #include <Engine/Version.h>
-#include <Engine/Profiler.h>
 #include <Engine/Resource.h>
 #include <Engine/ECSystem.h>
 #include <Engine/Application.h>
@@ -33,24 +32,18 @@
 #include <Script/Script.h>
 #include <UI/UI.h>
 
-#ifdef _NEKO_EDITOR_
-#	include <Editor/Editor.h>
-#endif
-
 #include "ECS.h"
 
 #define EMOD	"Engine"
-
-#define E_CONFIG_FILE	"Data/Config/Engine.ini"
 
 void *E_screen = NULL;
 uint32_t *E_screenWidth = NULL;
 uint32_t *E_screenHeight = NULL;
 double E_deltaTime = 0.0;
 
-static bool _shutdown;
-static double _startTime, _prevTime;
-static int32_t *_frameLimiter = NULL;
+static bool f_shutdown;
+static double f_startTime, f_prevTime;
+static int32_t *f_frameLimiter = NULL;
 
 struct NeEngineSubsystem
 {
@@ -60,12 +53,11 @@ struct NeEngineSubsystem
 	enum NePluginLoadOrder loadPlugins;
 };
 
-static struct NeEngineSubsystem _subsystems[] =
+static struct NeEngineSubsystem f_subsystems[] =
 {
 	{ "Window", Sys_CreateWindow, Sys_DestroyWindow, -1 },
 	{ "Job System", E_InitJobSystem, E_TermJobSystem, -1 },
 	{ "I/O System", E_InitIOSystem, E_TermIOSystem, NEP_LOAD_PRE_IO },
-	{ "Event System", E_InitEventSystem, E_TermEventSystem, -1 },
 	{ "Scripting", Sc_InitScriptSystem, Sc_TermScriptSystem, NEP_LOAD_PRE_SCRIPTING },
 	{ "Components", E_InitComponents, E_TermComponents, NEP_LOAD_PRE_ECS },
 	{ "Entities", E_InitEntities, E_TermEntities, -1},
@@ -75,46 +67,49 @@ static struct NeEngineSubsystem _subsystems[] =
 	{ "Audio System", Au_Init, Au_Term, NEP_LOAD_PRE_AUDIO },
 	{ "Resource Purge", NULL, E_PurgeResources, -1 },
 	{ "Input", In_InitInput, In_TermInput, NEP_LOAD_PRE_INPUT },
-	{ "UI", UI_InitUI, UI_TermUI, -1 },
+	{ "UI", UI_InitUI, UI_TermUI, NEP_LOAD_PRE_UI },
 	{ "Console", E_InitConsole, E_TermConsole, -1 },
 	{ "Network", Net_Init, Net_Term, NEP_LOAD_PRE_NETWORK },
 	{ "Animation System", Anim_InitAnimationSystem, Anim_TermAnimationSystem, -1 }
 };
-static const int32_t _subsystemCount = sizeof(_subsystems) / sizeof(_subsystems[0]);
 
 bool
 E_Init(int argc, char *argv[])
 {
 	int opt;
-	const char *configFile = E_CONFIG_FILE;
+	const char *configFile = NULL;
 	const char *logFile = NULL;
 	const char *dataDir = NULL;
 	const char *scene = NULL;
 	bool waitForDebugger = false;
 
+#ifdef SYS_PLATFORM_WINDOWS
+	bool forceDebugConsole = false;
+
+	while ((opt = getopt(argc, argv, "c:d:l:s:wi")) != -1) {
+#else
 	while ((opt = getopt(argc, argv, "c:d:l:s:w")) != -1) {
+#endif
 		switch (opt) {
-		case 'c':
-			configFile = optarg;
-			break;
-		case 'd':
-			dataDir = optarg;
-			break;
-		case 'l':
-			logFile = optarg;
-			break;
-		case 's':
-			scene = optarg;
-		break;
-		case 'w':
-			waitForDebugger = true;
-			break;
+		case 'c': configFile = optarg; break;
+		case 'd': dataDir = optarg; break;
+		case 'l': logFile = optarg; break;
+		case 's': scene = optarg; break;
+		case 'w': waitForDebugger = true; break;
+#ifdef SYS_PLATFORM_WINDOWS
+		case 'i': forceDebugConsole = true; break;
+#endif
 		}
 	}
 
 	srand((unsigned int)time(NULL));
 
 	E_InitConfig(configFile);
+
+#ifdef SYS_PLATFORM_WINDOWS
+	if (forceDebugConsole)
+		E_SetCVarBln("Win32_ForceDebugConsole", true);
+#endif
 
 	Sys_Init();
 	Sys_InitMemory();
@@ -125,8 +120,6 @@ E_Init(int argc, char *argv[])
 
 	if (dataDir)
 		E_SetCVarStr("Engine_DataDir", dataDir);
-
-	//__MathDbg_SanityTest();
 
 	E_screenWidth = &E_GetCVarU32("Engine_ScreenWidth", 1280)->u32;
 	E_screenHeight = &E_GetCVarU32("Engine_ScreenHeight", 853)->u32;
@@ -149,7 +142,11 @@ E_Init(int argc, char *argv[])
 	Sys_LogEntry(EMOD, LOG_INFORMATION, "\tFrequency: %d MHz", Sys_CpuFreq());
 	Sys_LogEntry(EMOD, LOG_INFORMATION, "\tCount: %d / %d", Sys_CpuCount(), Sys_CpuThreadCount());
 	Sys_LogEntry(EMOD, LOG_INFORMATION, "\tArchitecture: %s", Sys_Machine());
-	Sys_LogEntry(EMOD, LOG_INFORMATION, "\tBig Endian: %s", Sys_BigEndian() ? "yes" : "no");
+#ifdef SYS_BIG_ENDIAN
+	Sys_LogEntry(EMOD, LOG_INFORMATION, "\tBig Endian: yes");
+#else
+	Sys_LogEntry(EMOD, LOG_INFORMATION, "\tBig Endian: no");
+#endif
 	Sys_LogEntry(EMOD, LOG_INFORMATION, "RAM: %llu MB", Sys_TotalMemory() / 1024 / 1024);
 
 	if (!E_InitPluginList()) {
@@ -157,26 +154,29 @@ E_Init(int argc, char *argv[])
 		return false;
 	}
 
+	if (!E_InitEventSystem())
+		return false;
+
 	if (!E_LoadPlugins(NEP_LOAD_EARLY_INIT))
 		return false;
 
 	if (!App_EarlyInit(argc, argv))
 		return false;
 
-	for (int32_t i = 0; i < _subsystemCount; ++i) {
-		if (_subsystems[i].loadPlugins != -1)
-			if (!E_LoadPlugins(_subsystems[i].loadPlugins))
+	for (int32_t i = 0; i < NE_ARRAY_SIZE(f_subsystems); ++i) {
+		if (f_subsystems[i].loadPlugins != -1)
+			if (!E_LoadPlugins(f_subsystems[i].loadPlugins))
 				return false;
 
-		if (!_subsystems[i].init)
+		if (!f_subsystems[i].init)
 			continue;
 
-		if (!_subsystems[i].init()) {
+		if (!f_subsystems[i].init()) {
 			char *msg = Sys_Alloc(sizeof(*msg), 512, MH_Transient);
-			snprintf(msg, 512, "Failed to initialize %s. The program will now exit.", _subsystems[i].name);
+			snprintf(msg, 512, "Failed to initialize %s. The program will now exit.", f_subsystems[i].name);
 			Sys_MessageBox("Fatal Error", msg, MSG_ICON_ERROR);
 
-			Sys_LogEntry(EMOD, LOG_CRITICAL, "Failed to initialize %s", _subsystems[i].name);
+			Sys_LogEntry(EMOD, LOG_CRITICAL, "Failed to initialize %s", f_subsystems[i].name);
 			return false;
 		}
 	}
@@ -206,8 +206,8 @@ E_Init(int argc, char *argv[])
 	Sys_SetWindowTitle(App_applicationInfo.name);
 #endif
 
-	_startTime = (double)Sys_Time();
-	_frameLimiter = &E_GetCVarI32("Engine_FrameLimiter", 0)->i32;
+	f_startTime = (double)Sys_Time();
+	f_frameLimiter = &E_GetCVarI32("Engine_FrameLimiter", 0)->i32;
 
 	Sys_LogEntry(EMOD, LOG_INFORMATION, "Engine start up complete.");
 
@@ -220,7 +220,18 @@ E_Init(int argc, char *argv[])
 
 	E_LoadPlugins(NEP_LOAD_POST_APP_INIT);
 
+	E_ProcessEvents();
 	Sys_ResetHeap(MH_Transient);
+
+	E_ConsolePrint("NekoEngine v%s on %s %s %s", E_VER_STR, Sys_OperatingSystem(),
+					Sys_OperatingSystemVersionString(), Sys_Machine());
+
+	if (!Re_activeGraph)
+		Re_activeGraph = Re_CreateDefaultGraph();
+
+	lua_State *vm = Sc_CreateVM();
+	Sc_LoadScriptFile(vm, "/Scripts/test.lua");
+	Sc_DestroyVM(vm);
 
 	if (scene) {
 		Scn_StartSceneLoad(scene);
@@ -230,31 +241,27 @@ E_Init(int argc, char *argv[])
 			Scn_StartSceneLoad(scene);
 	}
 
-	lua_State *vm = Sc_CreateVM();
-	Sc_LoadScriptFile(vm, "/Scripts/test.lua");
-	Sc_DestroyVM(vm);
-
 	return true;
 }
 
 int
 E_Run(void)
 {
-	while (!_shutdown) {
+	while (!f_shutdown) {
 		if (!Sys_ProcessEvents()) {
-			_shutdown = true;
+			f_shutdown = true;
 			break;
 		}
 
 		if (!E_ProcessXrEvents()) {
-			_shutdown = true;
+			f_shutdown = true;
 			break;
 		}
 
-		if (Sys_ScreenVisible())
-			E_Frame();
-
-	//	Prof_Reset();
+		if (!Sys_ScreenVisible())
+			continue;
+		
+		E_Frame();
 		Sys_ResetHeap(MH_Transient);
 	}
 
@@ -274,57 +281,49 @@ E_Frame(void)
 		return;
 	}
 
-	E_deltaTime = now - _prevTime;
-	_prevTime = now;
+	E_deltaTime = now - f_prevTime;
+	f_prevTime = now;
 
-	if (!Scn_activeScene || !Scn_activeCamera) {
+	if (!Scn_activeScene || Scn_activeScene->camera == NE_INVALID_HANDLE) {
 		E_ProcessEvents();
 		App_Frame();
 
 		return;
 	}
 
-	Prof_BeginRegion("Logic", 1.f, 1.f, 1.f);
+	E_ReloadSystemScripts();
 
-	E_ExecuteSystemGroupS(Scn_activeScene, ECSYS_GROUP_LOGIC);
+	E_ProcessMessages(Scn_activeScene);
+
+	E_ExecuteSystemGroupS(Scn_activeScene, ECSYS_GROUP_LOGIC_HASH);
 	E_ProcessEvents();
-	Prof_EndRegion();
 
-	E_ExecuteSystemGroupS(Scn_activeScene, ECSYS_GROUP_POST_LOGIC);
+	E_ExecuteSystemGroupS(Scn_activeScene, ECSYS_GROUP_POST_LOGIC_HASH);
+	Scn_Commit(Scn_activeScene);
 
+	E_DistributeMessages();
 	E_DrawConsole();
 
-	Prof_BeginRegion("Render", 1.f, 1.f, 1.f);
-
-#ifndef _NEKO_EDITOR_
 	Re_RenderFrame();
 	E_XrPresent();
-#else
-	Ed_RenderFrame();
-#endif
-
-	Prof_EndRegion();
 
 	In_Update();
-
-	Prof_BeginRegion("Application", 1.f, 1.f, 1.f);
 	App_Frame();
-	Prof_EndRegion();
 
-	if (*_frameLimiter)
-		nextFrame = now + (1.0 / *_frameLimiter);
+	if (*f_frameLimiter)
+		nextFrame = now + (1.0 / *f_frameLimiter);
 }
 
 double
 E_Time(void)
 {
-	return ((double)Sys_Time() - _startTime) * 0.000000001;
+	return ((double)Sys_Time() - f_startTime) * 1e-9;
 }
 
 void
 E_Shutdown(void)
 {
-	_shutdown = true;
+	f_shutdown = true;
 }
 
 void
@@ -346,21 +345,23 @@ E_Term(void)
 
 	Re_WaitIdle();
 
+	E_UnloadPlugins(NEP_LOAD_POST_APP_INIT);
 	App_TermApplication();
 
-	if (Scn_activeScene)
-		Scn_UnloadScene(Scn_activeScene);
+	Scn_UnloadScenes();
+	E_UnloadPlugins(NEP_LOAD_POST_INIT);
 
-	for (int32_t i = _subsystemCount - 1; i >= 0; --i) {
-		if (!_subsystems[i].term)
+	for (int32_t i = NE_ARRAY_SIZE(f_subsystems) - 1; i >= 0; --i) {
+		if (!f_subsystems[i].term)
 			continue;
 
-		_subsystems[i].term();
+		f_subsystems[i].term();
 
-		if (_subsystems[i].loadPlugins != -1)
-			E_UnloadPlugins(_subsystems[i].loadPlugins);
+		if (f_subsystems[i].loadPlugins != -1)
+			E_UnloadPlugins(f_subsystems[i].loadPlugins);
 	}
 
+	E_TermEventSystem();
 	E_TermPluginList();
 
 	Sys_LogMemoryStatistics();
@@ -399,7 +400,7 @@ E_Term(void)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

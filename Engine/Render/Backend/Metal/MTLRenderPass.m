@@ -4,7 +4,7 @@ struct NeRenderPassDesc *
 Re_CreateRenderPassDesc(const struct NeAttachmentDesc *attachments, uint32_t count, const struct NeAttachmentDesc *depthAttachment,
 	const struct NeAttachmentDesc *inputAttachments, uint32_t inputCount)
 {
-	struct NeRenderPassDesc *rp = Sys_Alloc(sizeof(*rp), 1, MH_RenderDriver);
+	struct NeRenderPassDesc *rp = Sys_Alloc(sizeof(*rp), 1, MH_RenderBackend);
 	if (!rp)
 		return NULL;
 	
@@ -18,7 +18,7 @@ Re_CreateRenderPassDesc(const struct NeAttachmentDesc *attachments, uint32_t cou
 	
 	rp->colorAttachments = count;
 	rp->inputAttachments = inputCount;
-	rp->attachmentFormats = Sys_Alloc(sizeof(*rp->attachmentFormats), count + inputCount, MH_RenderDriver);
+	rp->attachmentFormats = Sys_Alloc(sizeof(*rp->attachmentFormats), count + inputCount, MH_RenderBackend);
 	
 	for (uint32_t i = 0; i < count; ++i) {
 		const struct NeAttachmentDesc *at = &attachments[i];
@@ -111,7 +111,7 @@ Re_DestroyRenderPassDesc(struct NeRenderPassDesc *rp)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

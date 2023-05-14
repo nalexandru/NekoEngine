@@ -12,20 +12,21 @@ struct NeAssetImportArgs
 {
 	const struct NeAssetImportHandler *ai;
 	char *path;
+	struct NeAssetImportOptions options;
 };
 
-struct NeArray _importers;
+struct NeArray f_importers;
 
-static bool _importInProgress = false;
+static bool f_importInProgress = false;
 
-static void _ImportJob(int i, struct NeAssetImportArgs *args);
-static void _ImportCompleted(uint64_t id, void *args);
+static void ImportJob(int i, struct NeAssetImportArgs *args);
+static void ImportCompleted(uint64_t id, void (*completed)(void));
 
 void
-Asset_Import(const char *path)
+Asset_Import(const char *path, const struct NeAssetImportOptions *options, void (*completed)(void))
 {
 	struct NeAssetImportHandler *ai = NULL;
-	Rt_ArrayForEach(ai, &_importers) {
+	Rt_ArrayForEach(ai, &f_importers) {
 		if (!ai->Match(path))
 			continue;
 
@@ -33,8 +34,11 @@ Asset_Import(const char *path)
 		args->ai = ai;
 		args->path = Rt_StrDup(path, MH_Editor);
 
-		_importInProgress = true;
-		E_ExecuteJob((NeJobProc)_ImportJob, args, (NeJobCompletedProc)_ImportCompleted, NULL);
+		if (options)
+			args->options = *options;
+
+		f_importInProgress = true;
+		E_ExecuteJob((NeJobProc)ImportJob, args, (NeJobCompletedProc)ImportCompleted, completed);
 
 		return;
 	}
@@ -46,16 +50,16 @@ Asset_Import(const char *path)
 bool
 Asset_ImportInProgress(void)
 {
-	return _importInProgress;
+	return f_importInProgress;
 }
 
 bool
 Asset_RegisterImporter(const struct NeAssetImportHandler *ai)
 {
-	if (!_importers.data)
-		if (!Rt_InitArray(&_importers, 10, sizeof(struct NeAssetImportHandler), MH_System))
+	if (!f_importers.data)
+		if (!Rt_InitArray(&f_importers, 10, sizeof(struct NeAssetImportHandler), MH_System))
 			return false;
-	return Rt_ArrayAdd(&_importers, ai);
+	return Rt_ArrayAdd(&f_importers, ai);
 }
 
 bool
@@ -67,13 +71,13 @@ Init_AssetImporter(void)
 void
 Term_AssetImporter(void)
 {
-	Rt_TermArray(&_importers);
+	Rt_TermArray(&f_importers);
 }
 
 static void
-_ImportJob(int i, struct NeAssetImportArgs *args)
+ImportJob(int i, struct NeAssetImportArgs *args)
 {
-	if (!args->ai->Import(args->path))
+	if (!args->ai->Import(args->path, &args->options))
 		Sys_LogEntry(ED_AI_MOD, LOG_CRITICAL, "Import failed for asset: %s", args->path);
 
 	Sys_Free(args->path);
@@ -81,9 +85,12 @@ _ImportJob(int i, struct NeAssetImportArgs *args)
 }
 
 static void
-_ImportCompleted(uint64_t id, void *args)
+ImportCompleted(uint64_t id, void (*completed)(void))
 {
-	_importInProgress = false;
+	if (completed)
+		completed();
+
+	f_importInProgress = false;
 }
 
 /* NekoEditor
@@ -112,7 +119,7 @@ _ImportCompleted(uint64_t id, void *args)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

@@ -1,168 +1,207 @@
 #include <string.h>
 
 #include <Scene/Scene.h>
-#include <Engine/Types.h>
-#include <Engine/Component.h>
-#include <Script/Script.h>
 #include <System/Memory.h>
+#include <Engine/Config.h>
+#include <Engine/Component.h>
+#include <Script/Interface.h>
 
-#include "Interface.h"
 #include "../Engine/ECS.h"
 
-static inline uint8_t *
-_DataPtr(lua_State *vm)
+static inline void
+PushBuffer(lua_State *vm, struct ScBuffer *buff)
 {
-	if (!lua_islightuserdata(vm, 1))
-		luaL_argerror(vm, 1, "Must be light user data");
-
-	const size_t offset = luaL_checkinteger(vm, 2) + sizeof(struct NeCompBase);
-	const size_t fieldSize = luaL_checkinteger(vm, 3);
-
-	struct NeCompBase *comp = lua_touserdata(vm, 1);
-
-	struct NeScene *s = Scn_GetScene((uint8_t)comp->_sceneId);
-	if (s->loaded)
-		Sys_AtomicLockRead(&s->compLock);
-
-	const size_t compSize = E_ComponentTypeSize(comp->_typeId);
-	
-	if (s->loaded)
-		Sys_AtomicUnlockRead(&s->compLock);
-
-	if (offset >= compSize)
-		luaL_argerror(vm, 2, "Offset must be smaller than the component size");
-
-	if (offset + fieldSize > compSize)
-		luaL_argerror(vm, 3, "Offset + Size must be smaller than or equal to the component size");
-
-	return (uint8_t *)comp + offset;
+	struct ScBuffer *d = lua_newuserdatauv(vm, sizeof(*d), 0);
+	luaL_setmetatable(vm, SIF_NE_BUFFER);
+	memcpy(d, buff, sizeof(*d));
 }
 
-SIF_FUNC(GetI32)
+static inline void
+PushTexture(lua_State *vm, struct ScTexture *tex)
 {
-	lua_pushinteger(vm, *(int32_t *)_DataPtr(vm));
-	return 1;
+	struct ScTexture *d = lua_newuserdatauv(vm, sizeof(*d), 0);
+	luaL_setmetatable(vm, SIF_NE_TEXTURE);
+	memcpy(d, tex, sizeof(*d));
 }
 
-SIF_FUNC(SetI32)
+SIF_FUNC(Index)
 {
-	*(int32_t *)(_DataPtr(vm)) = (int32_t)luaL_checkinteger(vm, 4);
+	SIF_GETCOMPONENT(1, sc, struct NeScriptComponent *);
+	const uint64_t hash = Rt_HashString(luaL_checkstring(vm, 2));
+
+	struct NeScriptField *f;
+	Rt_ArrayForEach(f, &sc->fields) {
+		if (f->hash != hash)
+			continue;
+
+		switch (f->type) {
+		case SFT_Integer: lua_pushinteger(vm, f->integer); break;
+		case SFT_Number: lua_pushnumber(vm, f->number); break;
+		case SFT_Boolean: lua_pushboolean(vm, f->boolean); break;
+		case SFT_Pointer: lua_pushlightuserdata(vm, f->usrdata); break;
+		case SFT_String: lua_pushstring(vm, f->string); break;
+		case SFT_Vec2: SIface_PushVec2(vm, f->vec2); break;
+		case SFT_Vec3: SIface_PushVec3(vm, f->vec3); break;
+		case SFT_Vec4: SIface_PushVec4(vm, f->vec4); break;
+		case SFT_Quaternion: SIface_PushQuaternion(vm, f->quat); break;
+		case SFT_Matrix: SIface_PushMatrix(vm, f->matrix); break;
+		case SFT_Buffer: PushBuffer(vm, f->buffer); break;
+		case SFT_Texture: PushTexture(vm, f->texture); break;
+		case SFT_Entity: Sc_PushScriptWrapper(vm, f->usrdata, SIF_NE_ENTITY); break;
+		}
+
+		return 1;
+	}
+
+	luaL_argerror(vm, 2, "Field not found");
 	return 0;
 }
 
-SIF_FUNC(GetI64)
+SIF_FUNC(NewIndex)
 {
-	lua_pushinteger(vm, *(int64_t *)_DataPtr(vm));
-	return 1;
-}
+	SIF_GETCOMPONENT(1, sc, struct NeScriptComponent *);
+	const uint64_t hash = Rt_HashString(luaL_checkstring(vm, 2));
 
-SIF_FUNC(SetI64)
-{
-	*(int64_t *)(_DataPtr(vm)) = (int64_t)luaL_checkinteger(vm, 4);
+	struct NeScriptField *f = NULL;
+	Rt_ArrayForEach(f, &sc->fields) {
+		if (f->hash == hash)
+			break;
+
+		f = NULL;
+	}
+
+	if (!f) {
+		f = Rt_ArrayAllocate(&sc->fields);
+		f->hash = hash;
+	}
+
+	if (f->readOnly)
+		luaL_argerror(vm, 2, "The field is read only.");
+
+#define CHECK_FIELD_TYPE(field, fieldType)						\
+	if (f->type > SFT_Pointer && f->type != fieldType) {		\
+		Sys_Free(f->usrdata);									\
+		f->field = Sys_Alloc(sizeof(*f->field), 1, MH_Script);	\
+		f->type = fieldType;									\
+	}
+
+	switch (lua_type(vm, 3)) {
+		case LUA_TNIL: {
+			f->type = SFT_Pointer;
+			f->usrdata = NULL;
+		} break;
+		case LUA_TBOOLEAN: {
+			f->type = SFT_Boolean;
+			f->boolean = lua_toboolean(vm, 3);
+		} break;
+		case LUA_TUSERDATA: {
+			union {
+				float *p;
+				struct ScBuffer *sb;
+				struct ScTexture *st;
+				NeEntityHandle ent;
+			} u;
+			if ((u.p = luaL_testudata(vm, 3, SIF_NE_VEC3))) {
+				CHECK_FIELD_TYPE(vec3, SFT_Vec3);
+				memcpy(f->vec3, u.p, sizeof(float) * 3);
+			} else if ((u.p = luaL_testudata(vm, 3, SIF_NE_VEC4))) {
+				CHECK_FIELD_TYPE(vec4, SFT_Vec4);
+				memcpy(f->vec4, u.p, sizeof(*f->vec4));
+			} else if ((u.p = luaL_testudata(vm, 3, SIF_NE_QUATERNION))) {
+				CHECK_FIELD_TYPE(quat, SFT_Quaternion);
+				memcpy(f->quat, u.p, sizeof(*f->quat));
+			} else if ((u.p = luaL_testudata(vm, 3, SIF_NE_MATRIX))) {
+				CHECK_FIELD_TYPE(matrix, SFT_Matrix);
+				memcpy(f->matrix, u.p, sizeof(*f->matrix));
+			} else if ((u.sb = luaL_testudata(vm, 3, SIF_NE_BUFFER))) {
+				CHECK_FIELD_TYPE(buffer, SFT_Buffer);
+				memcpy(f->buffer, u.sb, sizeof(*f->buffer));
+			} else if ((u.st = luaL_testudata(vm, 3, SIF_NE_TEXTURE))) {
+				CHECK_FIELD_TYPE(texture, SFT_Texture);
+				memcpy(f->texture, u.st, sizeof(*f->texture));
+			} else if ((u.p = luaL_testudata(vm, 3, SIF_NE_VEC2))) {
+				CHECK_FIELD_TYPE(vec2, SFT_Vec2);
+				memcpy(f->vec2, u.p, sizeof(float) * 2);
+			} else if ((u.ent = luaL_testudata(vm, 3, SIF_NE_ENTITY))) {
+				f->type = SFT_Entity;
+				f->usrdata = lua_touserdata(vm, 3);
+			} else {
+				f->type = SFT_Pointer;
+				f->usrdata = lua_touserdata(vm, 3);
+			}
+		} break;
+		case LUA_TLIGHTUSERDATA: {
+			f->type = SFT_Pointer;
+			f->usrdata = lua_touserdata(vm, 3);
+		} break;
+		case LUA_TNUMBER: {
+			if (lua_isinteger(vm, 3)) {
+				f->type = SFT_Integer;
+				f->integer = lua_tointeger(vm, 3);
+			} else {
+				f->type = SFT_Number;
+				f->number = lua_tonumber(vm, 3);
+			}
+		} break;
+		case LUA_TSTRING: {
+			size_t len;
+			const char *str = luaL_checklstring(vm, 3, &len); ++len;
+
+			if (f->type > SFT_Pointer)
+				Sys_Free(f->usrdata);
+
+			f->type = SFT_String;
+			f->string = Sys_Alloc(sizeof(*f->string), len, MH_Script);
+			strlcpy(f->string, str, len);
+		} break;
+		case LUA_TTABLE:
+		case LUA_TFUNCTION:
+		case LUA_TTHREAD: {
+			luaL_argerror(vm, 3, "Type not supported");
+		} break;
+	}
+
+#undef CHECK_FIELD_TYPE
+
 	return 0;
 }
 
-SIF_FUNC(GetFlt)
+SIF_FUNC(ToString)
 {
-	lua_pushnumber(vm, *(float *)_DataPtr(vm));
-	return 1;
-}
-
-SIF_FUNC(SetFlt)
-{
-	*(float *)(_DataPtr(vm)) = (float)luaL_checknumber(vm, 4);
-	return 0;
-}
-
-SIF_FUNC(GetDbl)
-{
-	lua_pushnumber(vm, *(double *)_DataPtr(vm));
-	return 1;
-}
-
-SIF_FUNC(SetDbl)
-{
-	*(double *)(_DataPtr(vm)) = (double)luaL_checknumber(vm, 4);
-	return 0;
-}
-
-SIF_FUNC(GetBln)
-{
-	lua_pushboolean(vm, *(bool *)_DataPtr(vm));
-	return 1;
-}
-
-SIF_FUNC(SetBln)
-{
-	if (!lua_isboolean(vm, 4))
-		luaL_argerror(vm, 4, "");
-	*(bool *)(_DataPtr(vm)) = lua_toboolean(vm, 4);
-	return 0;
-}
-
-SIF_FUNC(GetStr)
-{
-	lua_pushstring(vm, *(char **)_DataPtr(vm));
-	return 1;
-}
-
-SIF_FUNC(SetStr)
-{
-	char **str = (char **)_DataPtr(vm);
-	const char *val = luaL_checkstring(vm, 4);
-	size_t len = strlen(val);
-
-	if (*str)
-		Sys_Free(*str);
-	*str = NULL;
-
-	if (!len)
+	void *p = lua_touserdata(vm, 1);
+	if (!p || !lua_getmetatable(vm, 1))
 		return 0;
 
-	*str = Sys_Alloc(sizeof(char), len + 1, MH_Script);
-	snprintf(*str, len, "%s", val);
+	int mt = lua_gettop(vm);
 
-	return 0;
-}
+	lua_pushstring(vm, "__name");
+	lua_rawget(vm, mt);
 
-SIF_FUNC(GetPtr)
-{
-	lua_pushlightuserdata(vm, *(void **)_DataPtr(vm));
+	int f = lua_gettop(vm);
+	char *str = lua_isstring(vm, f) ? Rt_TransientStrDup(lua_tostring(vm, f)) : "ScriptComponent";
+	lua_remove(vm, f);
+
+	lua_pop(vm, 1);
+
+	lua_pushstring(vm, str);
 	return 1;
 }
 
-SIF_FUNC(SetPtr)
-{
-	if (!lua_islightuserdata(vm, 4))
-		luaL_argerror(vm, 4, "");
-	*(void **)(_DataPtr(vm)) = lua_touserdata(vm, 4);
-	return 0;
-}
-
-void
-SIface_OpenScriptComponent(lua_State *vm)
+int
+SIface_ScriptComponent(lua_State *vm)
 {
 	luaL_Reg reg[] =
 	{
-		SIF_REG(GetI32),
-		SIF_REG(SetI32),
-		SIF_REG(GetI64),
-		SIF_REG(SetI64),
-		SIF_REG(GetFlt),
-		SIF_REG(SetFlt),
-		SIF_REG(GetDbl),
-		SIF_REG(SetDbl),
-		SIF_REG(GetBln),
-		SIF_REG(SetBln),
-		SIF_REG(GetStr),
-		SIF_REG(SetStr),
-		SIF_REG(GetPtr),
-		SIF_REG(SetPtr),
+		SIF_REG(Index),
+		SIF_REG(NewIndex),
+		SIF_REG(ToString),
 		SIF_ENDREG()
 	};
 
 	luaL_newlib(vm, reg);
-	lua_setglobal(vm, "CompIF");
+	lua_setglobal(vm, "Component");
+
+	return 1;
 }
 
 /* NekoEngine
@@ -191,7 +230,7 @@ SIface_OpenScriptComponent(lua_State *vm)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

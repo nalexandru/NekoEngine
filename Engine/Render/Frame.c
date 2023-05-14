@@ -16,22 +16,6 @@ struct NeRenderGraph *Re_activeGraph = NULL;
 void
 Re_RenderFrame(void)
 {
-	///////////////////////////////////
-	if (!Re_activeGraph) {
-		Re_activeGraph = Re_CreateGraph();
-
-		Re_AddPass(Re_activeGraph, &RP_skinning);
-		Re_AddPass(Re_activeGraph, &RP_depthPrePass);
-		Re_AddPass(Re_activeGraph, &RP_lightCulling);
-		Re_AddPass(Re_activeGraph, &RP_opaque);
-		Re_AddPass(Re_activeGraph, &RP_sky);
-		Re_AddPass(Re_activeGraph, &RP_transparent);
-//		Re_AddPass(Re_activeGraph, &RP_debugBounds);
-//		Re_AddPass(Re_activeGraph, &RP_lightBounds);
-		Re_AddPass(Re_activeGraph, &RP_ui);
-	}
-	///////////////////////////////////
-
 	void *image = Re_AcquireNextImage(Re_swapchain);
 	if (image == RE_INVALID_IMAGE)
 		return;
@@ -39,11 +23,13 @@ Re_RenderFrame(void)
 	for (uint32_t i = 0; i < E_JobWorkerThreads() + 1; ++i)
 		Re_ResetContext(Re_contexts[i]);
 	Re_DestroyResources();
+
+	Re_ResetTransientHeap();
 	Sys_ResetHeap(MH_Frame);
 
 	struct NeTextureDesc desc;
 	Re_SwapchainTextureDesc(Re_swapchain, &desc);
-	Re_RenderScene(Scn_activeScene, Scn_activeCamera, Re_activeGraph, &desc, Re_SwapchainTexture(Re_swapchain, image));
+	Re_RenderScene(Scn_activeScene, Scn_activeScene->camera, Re_activeGraph, &desc, Re_SwapchainTexture(Re_swapchain, image));
 
 	Re_Present(Re_swapchain, image, NULL);
 
@@ -51,19 +37,20 @@ Re_RenderFrame(void)
 }
 
 void
-Re_RenderScene(struct NeScene *scn, struct NeCamera *cam, struct NeRenderGraph *graph, const struct NeTextureDesc *desc, struct NeTexture *target)
+Re_RenderScene(struct NeScene *scn, NeHandle camHandle, struct NeRenderGraph *graph, const struct NeTextureDesc *desc, struct NeTexture *target)
 {
+	E_ExecuteSystemGroupS(scn, ECSYS_GROUP_PRE_RENDER_HASH);
+
+	const struct NeCamera *cam = E_ComponentPtr(camHandle);
 	Scn_StartDrawableCollection(scn, cam);
 
 	Scn_StartDataUpdate(scn, cam);
 	Re_TransferMaterials();
-	
-	E_ExecuteSystemGroupS(scn, ECSYS_GROUP_PRE_RENDER);
 
 	Re_BuildGraph(Re_activeGraph, desc, target);
 	Re_ExecuteGraph(Re_activeGraph);
-	
-	E_ExecuteSystemGroupS(scn, ECSYS_GROUP_POST_RENDER);
+
+	E_ExecuteSystemGroupS(scn, ECSYS_GROUP_POST_RENDER_HASH);
 }
 
 /* NekoEngine
@@ -92,7 +79,7 @@ Re_RenderScene(struct NeScene *scn, struct NeCamera *cam, struct NeRenderGraph *
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

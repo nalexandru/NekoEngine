@@ -17,7 +17,10 @@ layout(std430, buffer_reference, buffer_reference_align = 16) readonly buffer In
 layout(std430, buffer_reference, buffer_reference_align = 16) readonly buffer SceneBuffer
 {
 	mat4 viewProjection;
+
+	mat4 projection;
 	mat4 inverseProjection;
+
 	vec4 cameraPosition;
 
 	vec4 sunPosition;
@@ -67,7 +70,7 @@ layout(std430, buffer_reference, buffer_reference_align = 16) readonly buffer Sc
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

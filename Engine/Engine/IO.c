@@ -290,6 +290,22 @@ E_ProcessFiles(const char *path, const char *ext, bool recurse, void (*cb)(const
 	PHYSFS_freeList((void *)files);
 }
 
+void *
+E_WatchDirectory(const char *path, enum NeFSEvent mask, NeDirWatchCallback callback, void *ud)
+{
+	const char *realPath = E_RealPath(path);
+	if (!realPath || !Sys_DirectoryExists(realPath))
+		return NULL;
+
+	return Sys_CreateDirWatch(realPath, mask, callback, ud);
+}
+
+void
+E_RemoveWatch(void *watch)
+{
+	Sys_DestroyDirWatch(watch);
+}
+
 bool
 E_EnableWrite(enum NeWriteDirectory wd)
 {
@@ -326,22 +342,33 @@ E_FileStream(const char *path, enum NeFileOpenMode mode, struct NeStream *stm)
 
 	memset(stm, 0x0, sizeof(*stm));
 
-	if (Sys_Capabilities() & SC_MMIO) {
-		stm->ptr = E_MapFile(path, mode, &stm->size);
-		stm->pos = 0;
-		stm->type = ST_MappedFile;
-		stm->f = NULL;
-	}
+	stm->f = E_OpenFile(path, mode);
+	if (!stm->f)
+		return false;
 
-	if (!stm->ptr) {
-		stm->f = E_OpenFile(path, mode);
-		if (!stm->f)
-			return false;
+	stm->size = (uint64_t)E_FileLength(stm->f);
+	stm->pos = 0;
+	stm->type = ST_File;
 
-		stm->size = (uint64_t)E_FileLength(stm->f);
-		stm->pos = 0;
-		stm->type = ST_File;
-	}
+	stm->open = stm->ptr || stm->f;
+	return stm->open;
+}
+
+bool
+E_MappedFileStream(const char *path, enum NeFileOpenMode mode, struct NeStream *stm)
+{
+	if (!path || !strlen(path))
+		return false;
+
+	memset(stm, 0x0, sizeof(*stm));
+
+	if (!(Sys_Capabilities() & SC_MMIO))
+		return false;
+
+	stm->ptr = E_MapFile(path, mode, &stm->size);
+	stm->pos = 0;
+	stm->type = ST_MappedFile;
+	stm->f = NULL;
 
 	stm->open = stm->ptr || stm->f;
 	return stm->open;
@@ -448,7 +475,7 @@ E_RealPath(const char *path)
 	if (!realPath)
 		return NULL;
 
-	snprintf(realPath, 4096, "%s/%s", realDir, path);
+	snprintf(realPath, 4096, "%s%s", realDir, path);
 	return realPath;
 }
 
@@ -478,7 +505,7 @@ E_RealPath(const char *path)
 * specific prior written permission.
 *
 * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
-* IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+* IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
 * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
 * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
 * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

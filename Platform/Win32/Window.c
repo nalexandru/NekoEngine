@@ -2,7 +2,7 @@
 #include <stdbool.h>
 
 #include "Win32Platform.h"
-#include <Dbt.h>
+#include <dbt.h>
 #include <dwmapi.h>
 
 #include <Input/Input.h>
@@ -13,7 +13,11 @@
 
 #include "Win32Platform.h"
 
-static HWND _window;
+#ifndef DWMWA_USE_IMMERSIVE_DARK_MODE
+#	define DWMWA_USE_IMMERSIVE_DARK_MODE 20
+#endif
+
+static HWND f_window;
 
 #define WND_CLASS_NAME				L"NekoEngineWindowClass"
 #define WM_SHOWCURSOR_MSG_GUID		L"NE_WM_SHOWCURSOR_{916fcbf2-b4be-4df8-884b-f0dc086e03ad}"
@@ -23,12 +27,12 @@ __declspec(dllexport) UINT WM_SHOWCURSOR = 0;
 __declspec(dllexport) UINT WM_HIDECURSOR = 0;
 
 static LRESULT CALLBACK
-_WndProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
+NeWndProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
 {
 	switch (umsg) {
 	case WM_PAINT: {
 		PAINTSTRUCT ps;
-		HDC hdc = BeginPaint(hwnd, &ps);
+		BeginPaint(hwnd, &ps);
 		EndPaint(hwnd, &ps);
 	} break;
 	case WM_ERASEBKGND: {
@@ -55,7 +59,6 @@ _WndProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
 		if (*E_screenWidth != LOWORD(lparam) || *E_screenHeight != HIWORD(lparam))
 			E_ScreenResized(LOWORD(lparam), HIWORD(lparam));
 	} break;
-#ifdef _NEKO_EDITOR_
 	case WM_KEYDOWN: {
 		In_buttonState[Win32_keymap[wparam]] = true;
 	} break;
@@ -86,7 +89,6 @@ _WndProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
 	case WM_XBUTTONUP: {
 		In_buttonState[BTN_MOUSE_MMB + HIWORD(wparam)] = false;
 	} break;
-#endif
 	default: {
 		if (umsg == WM_SHOWCURSOR) {
 			ShowCursor(true);
@@ -104,7 +106,7 @@ _WndProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
 bool
 Sys_CreateWindow(void)
 {
-	if (_window)
+	if (f_window)
 		return true;
 
 	RECT rc;
@@ -114,7 +116,7 @@ Sys_CreateWindow(void)
 
 	WNDCLASSW wincl = { 0 };
 	wincl.style = CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;
-	wincl.lpfnWndProc = _WndProc;
+	wincl.lpfnWndProc = NeWndProc;
 	wincl.hInstance = Win32_instance;
 	wincl.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
 	wincl.lpszClassName = WND_CLASS_NAME;
@@ -140,25 +142,27 @@ Sys_CreateWindow(void)
 	x = (GetSystemMetrics(SM_CXSCREEN) - *E_screenWidth) / 2;
 	y = (GetSystemMetrics(SM_CYSCREEN) - *E_screenHeight) / 2;
 
-	_window = CreateWindowExW(exStyle, WND_CLASS_NAME,
-		L"NekoEngine", style, x, y, rc.right - rc.left, rc.bottom - rc.top,
-		HWND_DESKTOP, NULL, Win32_instance, NULL);
+	f_window = CreateWindowExW(exStyle, WND_CLASS_NAME,
+							   L"NekoEngine", style, x, y, rc.right - rc.left, rc.bottom - rc.top,
+							   HWND_DESKTOP, NULL, Win32_instance, NULL);
 
-	if (!_window) {
+	if (!f_window) {
 		MessageBoxW(HWND_DESKTOP, L"Failed to create window. The program will now exit.", L"FATAL ERROR", MB_OK | MB_ICONERROR);
 		return false;
 	}
 
-	BOOL value = TRUE;
-	DwmSetWindowAttribute(_window, DWMWA_USE_IMMERSIVE_DARK_MODE, &value, sizeof(value));
-
-	if (!CVAR_BOOL("Window_CreateHidden")) {
-		ShowWindow(_window, SW_SHOWDEFAULT);
-		SetForegroundWindow(_window);
-		SetActiveWindow(_window);
+	if (dwmapi_DwmSetWindowAttribute) {
+		BOOL value = TRUE;
+		dwmapi_DwmSetWindowAttribute(f_window, DWMWA_USE_IMMERSIVE_DARK_MODE, &value, sizeof(value));
 	}
 
-	E_screen = _window;
+	if (!CVAR_BOOL("Window_CreateHidden")) {
+		ShowWindow(f_window, SW_SHOWDEFAULT);
+		SetForegroundWindow(f_window);
+		SetActiveWindow(f_window);
+	}
+
+	E_screen = f_window;
 
 	return true;
 }
@@ -171,14 +175,14 @@ Sys_SetEngineWindow(void *wnd)
 
 	*E_screenWidth = rc.right - rc.left;
 	*E_screenHeight = rc.bottom - rc.top;
-	_window = (HWND)wnd;
+	f_window = (HWND)wnd;
 	E_screen = wnd;
 }
 
 void
 Sys_SetWindowTitle(const char *name)
 {
-	SetWindowTextW(_window, NeWin32_UTF8toUCS2(name));
+	SetWindowTextW(f_window, NeWin32_UTF8toUCS2(name));
 }
 
 void
@@ -247,7 +251,7 @@ Sys_DestroyWindow(void)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

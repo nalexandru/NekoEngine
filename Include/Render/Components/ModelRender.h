@@ -1,5 +1,5 @@
-#ifndef _NE_RENDER_COMPONENTS_MODEL_RENDER_H_
-#define _NE_RENDER_COMPONENTS_MODEL_RENDER_H_
+#ifndef NE_RENDER_COMPONENTS_MODEL_RENDER_H
+#define NE_RENDER_COMPONENTS_MODEL_RENDER_H
 
 #include <Render/Types.h>
 #include <Engine/Component.h>
@@ -15,7 +15,8 @@ struct NeModelRender
 	NeHandle model;
 	NeBufferHandle vertexBuffer;
 	struct NeMaterial *materials;
-	uint32_t *bounds, **meshBounds;
+	struct NeBounds bounds, *meshBounds;
+	uint32_t meshCount;
 };
 
 void Re_SetModel(struct NeModelRender *mr, NeHandle model);
@@ -24,7 +25,7 @@ void Re_SetModel(struct NeModelRender *mr, NeHandle model);
 }
 #endif
 
-#endif /* _NE_RENDER_COMPONENTS_MODEL_RENDER_H_ */
+#endif /* NE_RENDER_COMPONENTS_MODEL_RENDER_H */
 
 /* NekoEngine
  *
@@ -52,7 +53,7 @@ void Re_SetModel(struct NeModelRender *mr, NeHandle model);
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT

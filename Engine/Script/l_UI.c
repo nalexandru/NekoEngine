@@ -1,38 +1,45 @@
 #include <UI/UI.h>
-#include <Script/Script.h>
-#include <Engine/Console.h>
-#include <Runtime/Runtime.h>
+#include <Scene/Components.h>
+#include <Script/Interface.h>
 
-#include "Interface.h"
-
-SIF_FUNC(DrawText)
+SIF_FUNC(Text)
 {
-	if (!lua_islightuserdata(vm, 1))
-		luaL_argerror(vm, 1, "");
+	SIF_CHECKCOMPONENT(1, ctx, NE_UI_CONTEXT, struct NeUIContext *);
 
-	struct NeFont *f = NULL;
-	if (lua_islightuserdata(vm, 6))
-		f = lua_touserdata(vm, 6);
-	else if (!lua_isnil(vm, 6))
-		luaL_argerror(vm, 6, "");
-
-	UI_DrawText(lua_touserdata(vm, 1), luaL_checkstring(vm, 2),
-		(float)luaL_checknumber(vm, 3), (float)luaL_checknumber(vm, 4), (float)luaL_checknumber(vm, 5), f);
+	struct NeFont *f = lua_touserdata(vm, 6);
+	UI_DrawText(ctx, luaL_checkstring(vm, 2),
+		luaL_checknumber(vm, 3), luaL_checknumber(vm, 4), luaL_checknumber(vm, 5), f);
 
 	return 0;
 }
 
-void
-SIface_OpenUI(lua_State *vm)
+SIF_FUNC(__tostring)
 {
-	luaL_Reg reg[] =
-	{
-		SIF_REG(DrawText),
+	lua_pushliteral(vm, "NeUIContext");
+	return 1;
+}
+
+NE_SCRIPT_INTEFACE(NeUI)
+{
+	luaL_Reg meta[] = {
+		{ "__index",     NULL },
+		SIF_REG(__tostring),
 		SIF_ENDREG()
 	};
 
-	luaL_newlib(vm, reg);
-	lua_setglobal(vm, "UI");
+	luaL_Reg meth[] = {
+		SIF_REG(Text),
+		SIF_ENDREG()
+	};
+
+	luaL_newmetatable(vm, NE_UI_CONTEXT);
+	luaL_setfuncs(vm, meta, 0);
+	luaL_newlibtable(vm, meth);
+	luaL_setfuncs(vm, meth, 0);
+	lua_setfield(vm, -2, "__index");
+	lua_pop(vm, 1);
+
+	return 1;
 }
 
 /* NekoEngine
@@ -61,7 +68,7 @@ SIface_OpenUI(lua_State *vm)
  * specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ALEXANDRU NAIMAN "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARANTIES OF
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL ALEXANDRU NAIMAN BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
