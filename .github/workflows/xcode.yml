@@ -12,6 +12,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+      
+      - name: Deps
+        working-directory: ${{github.workspace}}
+        run: python build_deps.py
 
       - name: Build
         working-directory: ${{github.workspace}}
