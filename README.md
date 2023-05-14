@@ -72,7 +72,7 @@ pkg_add cmake glslang openal python3
 
 #### Build
 1. Clone the repository
-2. Clone the data repository found at https://github.com/nalexandru/NekoEngineData in SOURCE_DIR\build\Data
+2. Clone the data repository found at https://github.com/nalexandru/NekoEngineData in SOURCE_DIR\bin\Data
 3. Run SOURCE_DIR\build_deps.py*
 4. Build NekoEngine.xcodeproj
 
